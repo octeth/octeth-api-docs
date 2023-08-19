@@ -48,7 +48,8 @@ export default defineConfig({
                     {text: 'Getting Started', link: '/getting-started'},
                     {text: 'Authorization', link: '/authorization'},
                     {text: 'Error Handling', link: '/error-handling'},
-                    {text: 'Support', link: '/support'}
+                    {text: 'Support', link: '/support'},
+                    {text: 'Changelog', link: 'https://github.com/octeth/octeth-api-docs/releases'}
                 ]
             },
             {
