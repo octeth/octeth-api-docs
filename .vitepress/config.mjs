@@ -2,6 +2,12 @@ import {defineConfig} from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+    head: [
+        [
+            'link',
+            {rel:'icon', href:'assets/logo_icon.png'}
+        ]
+    ],
     externalLinkIcon: false,
     land: 'en-US',
     title: "Octeth API Docs",
