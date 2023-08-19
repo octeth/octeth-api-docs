@@ -1,0 +1,6 @@
+---
+layout: doc
+---
+
+# Email Gateway
+
