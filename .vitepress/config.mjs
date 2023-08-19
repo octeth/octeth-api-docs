@@ -5,7 +5,7 @@ export default defineConfig({
     head: [
         [
             'link',
-            {rel:'icon', href:'assets/logo_icon.png'}
+            {rel:'icon', href:'images/logo_icon.png'}
         ]
     ],
     externalLinkIcon: false,
@@ -22,8 +22,8 @@ export default defineConfig({
             }
         },
         logo: {
-            light: 'assets/logo_black.png',
-            dark: 'assets/logo_white.png',
+            light: 'images/logo_black.png',
+            dark: 'images/logo_white.png',
             alt: 'Octeth'
         },
         siteTitle: 'API Docs',
