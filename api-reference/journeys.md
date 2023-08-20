@@ -26,15 +26,20 @@ This API end-point accepts raw POST body in JSON syntax.
 {
   "SessionID": "<user_session_id>",
   "APIKey": "",
-  "Name": "Contact Form Journey"
+  "Name": "Contact Form Journey",
+  "Trigger": "ListSubscrpition",
+  "Trigger_ListID": 10
 }
 ```
 
-| Parameter | Description                                                               |          |
-|-----------|---------------------------------------------------------------------------|----------|
-| SessionID | The user session ID.                                                      | Required | 
-| APIKey    | The API key of the user. Either `SessionID` or `APIKey` must be provided. | Required | 
-| Name      | Name of the journey                                                       | Required | 
+| Parameter       | Description                                                                                                                                        |          |
+|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| SessionID       | The user session ID.                                                                                                                               | Required | 
+| APIKey          | The API key of the user. Either `SessionID` or `APIKey` must be provided.                                                                          | Required | 
+| Name            | Name of the journey                                                                                                                                | Required | 
+| Trigger         | Any of these trigger types: `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Manual`.                  | Required | 
+| Trigger_ListID  | If the trigger is `ListSubscription` or `ListUnsubscrpition`, the value of this parameter must be `0` (any list) or a specific subscriber list ID. | Optional | 
+| Trigger_EmailID | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, the value of this parameter must be `0` (any email) or a specific email ID.  | Optional | 
 
 **Success Response:**
 
