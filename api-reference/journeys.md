@@ -540,7 +540,7 @@ The entire action list must be provided. Missing actions in the provided action 
 
 **Wait Action Object:**
 
-The action object varies for each action type. Below, you can find the list of action types and their object structures:
+This action forces the journey to pause for a given period of time.
 
 ```json
 {
@@ -559,6 +559,28 @@ The action object varies for each action type. Below, you can find the list of a
 | ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
 | WaitUnit              | Set to one of `seconds`, `minutes`, `hours`, `days`.                                                                             |
 | WaitAmount            | Set to an integer value based on the `WaitUnit` parameter.                                                                       |
+
+**UpdateCustomFieldValue Action Object:**
+
+This action will update subscriber's custom field.
+
+```json
+{
+  "ActionID": 1,
+  "Action": "Wait",
+  "ParentActionCondition": "",
+  "TargetCustomFieldID": 10,
+  "NewCustomFieldValue": "New Value"
+}
+```
+
+| Parameter             | Description                                                                                                                      |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
+| Action                | Set this parameter to `wait`                                                                                                     |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
+| TargetCustomFieldID   | The ID number of subscriber's custom field                                                                                       |
+| NewCustomFieldValue   | The new value of the given custom field.                                                                                         |
 
 **Success Response:**
 
