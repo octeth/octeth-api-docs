@@ -19,7 +19,7 @@ will be set to Manual.
 **Request Body:**
 
 ::: info
-This API end-point accepts raw POST body in JSON syntax.
+This API end-point accepts raw body in JSON syntax.
 :::
 
 ```json
@@ -82,6 +82,10 @@ This API request will yield a list of journeys established within the specified 
 
 ### <Badge type="info" text="GET" /> `https://octeth.mydomain.com/api/v1/journeys`
 
+::: info
+This API end-point accepts raw body in JSON syntax.
+:::
+
 **Request Parameters:**
 
 | Parameter | Description                                                               |          |
@@ -119,6 +123,10 @@ This API request will yield a list of journeys established within the specified 
 This API call will remove the specific journey that corresponds to the JourneyID parameter.
 
 ### <Badge type="info" text="POST" /> `https://octeth.mydomain.com/api/v1/journey.delete`
+
+::: info
+This API end-point accepts raw body in JSON syntax.
+:::
 
 **Request Body:**
 
@@ -175,6 +183,10 @@ This API call will remove the specific journey that corresponds to the JourneyID
 This API call will remove the specific journey that corresponds to the JourneyID parameter.
 
 ### <Badge type="info" text="GET" /> `https://octeth.mydomain.com/api/v1/journey`
+
+::: info
+This API end-point accepts raw body in JSON syntax.
+:::
 
 **Request Parameters:**
 
@@ -273,6 +285,10 @@ This API call will transition a journey from a Disabled status to an Enabled sta
 
 ### <Badge type="info" text="GET" /> `https://octeth.mydomain.com/api/v1/journey.enable`
 
+::: info
+This API end-point accepts raw body in JSON syntax.
+:::
+
 **Request Parameters:**
 
 | Parameter | Description                                                               |          |
@@ -351,6 +367,10 @@ This API call will transition a journey from an Enabled status to a Disabled sta
 
 ### <Badge type="info" text="GET" /> `https://octeth.mydomain.com/api/v1/journey.disable`
 
+::: info
+This API end-point accepts raw body in JSON syntax.
+:::
+
 **Request Parameters:**
 
 | Parameter | Description                                                               |          |
@@ -428,6 +448,10 @@ This API call will transition a journey from an Enabled status to a Disabled sta
 Utilize this API call to modify the parameters of a journey.
 
 ### <Badge type="info" text="PATCH" /> `https://octeth.mydomain.com/api/v1/journey`
+
+::: info
+This API end-point accepts raw body in JSON syntax.
+:::
 
 **Request Body:**
 
@@ -658,6 +682,117 @@ This action will stop all journeys except the current one for the subscriber.
 | ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
 | Action                | Set this parameter to `ExitAllOtherJourneys`                                                                                     |
 | ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
+
+**Webhook Action Object:**
+
+This action will stop all journeys except the current one for the subscriber.
+
+```json
+{
+  "ActionID": 1,
+  "Action": "Webhook",
+  "ParentActionCondition": "",
+  "WebhookURL": ""
+}
+```
+
+| Parameter             | Description                                                                                                                      |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
+| Action                | Set this parameter to `Webhook`                                                                                                  |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
+| WebhookURL            | Webhook URL to execute                                                                                                           |
+
+**StartJourney Action Object:**
+
+This action will stop all journeys except the current one for the subscriber.
+
+```json
+{
+  "ActionID": 1,
+  "Action": "StartJourney",
+  "ParentActionCondition": "",
+  "TargetJourneyID": 0
+}
+```
+
+| Parameter             | Description                                                                                                                      |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
+| Action                | Set this parameter to `StartJourney`                                                                                             |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
+| TargetJourneyID       | ID number of the journey to start for the subscriber                                                                             |
+
+**Subscribe Action Object:**
+
+This action will stop all journeys except the current one for the subscriber.
+
+```json
+{
+  "ActionID": 1,
+  "Action": "Subscribe",
+  "ParentActionCondition": "",
+  "TargetListID": 0
+}
+```
+
+| Parameter             | Description                                                                                                                      |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
+| Action                | Set this parameter to `Subscribe`                                                                                                |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
+| TargetListID          | ID number of the list to subscribe                                                                                               |
+
+**AddTag Action Object:**
+
+This action will stop all journeys except the current one for the subscriber.
+
+```json
+{
+  "ActionID": 1,
+  "Action": "AddTag",
+  "ParentActionCondition": "",
+  "TargetTagID": 0
+}
+```
+
+| Parameter             | Description                                                                                                                      |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
+| Action                | Set this parameter to `AddTag`                                                                                                   |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
+| TargetTagID           | ID number of the tag                                                                                                             |
+
+**RemoveTag Action Object:**
+
+This action will stop all journeys except the current one for the subscriber.
+
+```json
+{
+  "ActionID": 1,
+  "Action": "RemoveTag",
+  "ParentActionCondition": "",
+  "TargetTagID": 0
+}
+```
+
+| Parameter             | Description                                                                                                                      |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
+| Action                | Set this parameter to `RemoveTag`                                                                                                |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
+| TargetTagID           | ID number of the tag                                                                                                             |
+
+
+
+
+
+
+
+
+
+
+
 
 **Success Response:**
 
