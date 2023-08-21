@@ -118,9 +118,9 @@ This API request will yield a list of journeys established within the specified 
 
 This API call will remove the specific journey that corresponds to the JourneyID parameter.
 
-### <Badge type="info" text="DELETE" /> `https://octeth.mydomain.com/api/v1/journey`
+### <Badge type="info" text="POST" /> `https://octeth.mydomain.com/api/v1/journey.delete`
 
-**Request Parameters:**
+**Request Body:**
 
 | Parameter | Description                                                               |          |
 |-----------|---------------------------------------------------------------------------|----------|
