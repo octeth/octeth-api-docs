@@ -86,7 +86,7 @@ This API request will yield a list of journeys established within the specified 
 This API end-point accepts raw body in JSON syntax.
 :::
 
-**Request Parameters:**
+**Request Body:**
 
 | Parameter | Description                                                               |          |
 |-----------|---------------------------------------------------------------------------|----------|
@@ -188,7 +188,7 @@ This API call will remove the specific journey that corresponds to the JourneyID
 This API end-point accepts raw body in JSON syntax.
 :::
 
-**Request Parameters:**
+**Request Body:**
 
 | Parameter | Description                                                               |          |
 |-----------|---------------------------------------------------------------------------|----------|
@@ -289,7 +289,7 @@ This API call will transition a journey from a Disabled status to an Enabled sta
 This API end-point accepts raw body in JSON syntax.
 :::
 
-**Request Parameters:**
+**Request Body:**
 
 | Parameter | Description                                                               |          |
 |-----------|---------------------------------------------------------------------------|----------|
@@ -371,7 +371,7 @@ This API call will transition a journey from an Enabled status to a Disabled sta
 This API end-point accepts raw body in JSON syntax.
 :::
 
-**Request Parameters:**
+**Request Body:**
 
 | Parameter | Description                                                               |          |
 |-----------|---------------------------------------------------------------------------|----------|
