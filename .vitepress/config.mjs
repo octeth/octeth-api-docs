@@ -7,6 +7,10 @@ export default defineConfig({
         [
             'link',
             {rel:'icon', href:'/logo_icon.png'}
+        ],
+        [
+            'script',
+            { defer: '', 'data-domain':'apidocs.octeth.com', src:'https://analytics.metricshq.com/js/script.js'},
         ]
     ],
     externalLinkIcon: false,

@@ -2,24 +2,24 @@
 layout: doc
 ---
 
-# Journeys
+# Journeys API Documentation
 
-::: warning
-The API calls detailed on this page are compatible with Octeth's most recent authorization method. You can include the
-SessionID or APIKey parameter within the JSON request body.
+::: note
+The API calls detailed in this document are compatible with Octeth's latest authorization method. You have the option to
+include either the `SessionID` or `APIKey` parameter within the JSON request body.
 :::
 
 ## Create a Journey
 
-Use this API command to create a new journey. The created journey will be set as Disabled by default and trigger mode
-will be set to Manual.
+This API command allows you to create a new journey. By default, the newly created journey will be set to 'Disabled' and
+the trigger mode will be set to 'Manual'.
 
-### <Badge type="info" text="POST" /> `https://octeth.mydomain.com/api/v1/journey`
+### <Badge type="info" text="POST" /> `/api/v1/journey`
 
 **Request Body:**
 
-::: info
-This API end-point accepts raw body in JSON syntax.
+::: note
+This API endpoint accepts raw body in JSON format.
 :::
 
 ```json
@@ -27,19 +27,19 @@ This API end-point accepts raw body in JSON syntax.
   "SessionID": "<user_session_id>",
   "APIKey": "",
   "Name": "Contact Form Journey",
-  "Trigger": "ListSubscrpition",
+  "Trigger": "ListSubscription",
   "Trigger_ListID": 10
 }
 ```
 
-| Parameter       | Description                                                                                                                                        |          |
+| Parameter       | Description                                                                                                                                        | Required |
 |-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| SessionID       | The user session ID.                                                                                                                               | Required | 
-| APIKey          | The API key of the user. Either `SessionID` or `APIKey` must be provided.                                                                          | Required | 
-| Name            | Name of the journey                                                                                                                                | Required | 
-| Trigger         | Any of these trigger types: `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Manual`.                  | Required | 
-| Trigger_ListID  | If the trigger is `ListSubscription` or `ListUnsubscrpition`, the value of this parameter must be `0` (any list) or a specific subscriber list ID. | Optional | 
-| Trigger_EmailID | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, the value of this parameter must be `0` (any email) or a specific email ID.  | Optional | 
+| SessionID       | The user's session ID.                                                                                                                             | Yes      | 
+| APIKey          | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                               | Yes      | 
+| Name            | The name of the journey.                                                                                                                           | Yes      | 
+| Trigger         | The trigger type. Options include: `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Manual`.           | Yes      | 
+| Trigger_ListID  | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (any list) or a specific subscriber list ID.            | No       | 
+| Trigger_EmailID | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (any email) or a specific email ID.             | No       | 
 
 **Success Response:**
 
@@ -78,24 +78,28 @@ This API end-point accepts raw body in JSON syntax.
 
 ## Journey List
 
-This API request will yield a list of journeys established within the specified user account.
+This API endpoint returns a list of journeys associated with a specific user account.
 
-### <Badge type="info" text="GET" /> `https://octeth.mydomain.com/api/v1/journeys`
+### <Badge type="info" text="GET" /> `/api/v1/journeys`
 
 ::: info
-This API end-point accepts raw body in JSON syntax.
+This API endpoint accepts a raw JSON body.
 :::
 
-**Request Body:**
+**Request Body Parameters:**
 
-| Parameter | Description                                                               |          |
+| Parameter | Description                                                               | Required |
 |-----------|---------------------------------------------------------------------------|----------|
-| SessionID | The user session ID.                                                      | Required | 
-| APIKey    | The API key of the user. Either `SessionID` or `APIKey` must be provided. | Required | 
+| SessionID | The ID of the user's current session.                                     | Yes      | 
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.      | Yes      | 
 
-**Success Response:**
+**Successful Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
+
+The successful response will return a JSON object containing an array of journeys. Each journey object includes the
+journey ID, related user ID, journey name, trigger type, trigger parameters, status, creation date, update date, and
+journey statistics.
 
 ```json
 {
@@ -118,25 +122,29 @@ This API end-point accepts raw body in JSON syntax.
 }
 ```
 
+In the `JourneyStats` object, `ActiveSubscribers` represents the number of active subscribers, and `TotalSubscribers`
+represents the total number of subscribers for the journey.
+
 ## Delete a Journey
 
-This API call will remove the specific journey that corresponds to the JourneyID parameter.
+This API call is designed to delete a specific journey. The journey to be deleted is identified by the `JourneyID`
+parameter.
 
-### <Badge type="info" text="POST" /> `https://octeth.mydomain.com/api/v1/journey.delete`
+### <Badge type="info" text="POST" /> `/api/v1/journey.delete`
 
 ::: info
-This API end-point accepts raw body in JSON syntax.
+Please note that this API endpoint requires a raw body in JSON format.
 :::
 
-**Request Body:**
+**Request Body Parameters:**
 
-| Parameter | Description                                                               |          |
-|-----------|---------------------------------------------------------------------------|----------|
-| SessionID | The user session ID.                                                      | Required | 
-| APIKey    | The API key of the user. Either `SessionID` or `APIKey` must be provided. | Required | 
-| JourneyID | Journey ID to delete.                                                     | Required | 
+| Parameter | Description                                                                  | Required |
+|-----------|------------------------------------------------------------------------------|----------|
+| SessionID | This is the user's session ID.                                               | Yes      | 
+| APIKey    | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
+| JourneyID | This is the ID of the journey to be deleted.                                 | Yes      | 
 
-**Success Response:**
+**Successful Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -146,7 +154,7 @@ This API end-point accepts raw body in JSON syntax.
 }
 ```
 
-**Error Response:**
+**Error Responses:**
 
 <Badge type="danger" text="HTTP Code: 404 Not Found" /> 
 
@@ -178,23 +186,25 @@ This API end-point accepts raw body in JSON syntax.
 }
 ```
 
+Please ensure that the `JourneyID` parameter is provided and is valid to avoid errors.
+
 ## Retrieve a Journey
 
-This API call will remove the specific journey that corresponds to the JourneyID parameter.
+This API call retrieves the details of a specific journey corresponding to the provided JourneyID parameter.
 
-### <Badge type="info" text="GET" /> `https://octeth.mydomain.com/api/v1/journey`
+### <Badge type="info" text="GET" /> `/api/v1/journey`
 
 ::: info
-This API end-point accepts raw body in JSON syntax.
+This API endpoint expects a request body in JSON format.
 :::
 
 **Request Body:**
 
-| Parameter | Description                                                               |          |
+| Parameter | Description                                                               | Required |
 |-----------|---------------------------------------------------------------------------|----------|
-| SessionID | The user session ID.                                                      | Required | 
-| APIKey    | The API key of the user. Either `SessionID` or `APIKey` must be provided. | Required | 
-| JourneyID | Journey ID to retrieve.                                                   | Required | 
+| SessionID | The ID of the user's current session.                                     | Yes      | 
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.      | Yes      | 
+| JourneyID | The ID of the journey to be retrieved.                                    | Yes      | 
 
 **Success Response:**
 
@@ -281,23 +291,23 @@ This API end-point accepts raw body in JSON syntax.
 
 ## Enable a Journey
 
-This API call will transition a journey from a Disabled status to an Enabled status.
+This API call allows you to change a journey's status from Disabled to Enabled.
 
-### <Badge type="info" text="GET" /> `https://octeth.mydomain.com/api/v1/journey.enable`
+### <Badge type="info" text="GET" /> `/api/v1/journey.enable`
 
 ::: info
-This API end-point accepts raw body in JSON syntax.
+Please note that this API endpoint requires a raw JSON body.
 :::
 
-**Request Body:**
+**Request Body Parameters:**
 
-| Parameter | Description                                                               |          |
-|-----------|---------------------------------------------------------------------------|----------|
-| SessionID | The user session ID.                                                      | Required | 
-| APIKey    | The API key of the user. Either `SessionID` or `APIKey` must be provided. | Required | 
-| JourneyID | Journey ID to enable.                                                     | Required | 
+| Parameter | Description                                                                  | Required |
+|-----------|------------------------------------------------------------------------------|----------|
+| SessionID | This is the user's session ID.                                               | Yes      | 
+| APIKey    | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
+| JourneyID | This is the ID of the journey you wish to enable.                            | Yes      | 
 
-**Success Response:**
+**Successful Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -316,7 +326,7 @@ This API end-point accepts raw body in JSON syntax.
 }
 ```
 
-**Error Response:**
+**Error Responses:**
 
 <Badge type="danger" text="HTTP Code: 404 Not Found" /> 
 
@@ -361,25 +371,25 @@ This API end-point accepts raw body in JSON syntax.
 }
 ```
 
-## Disable a Journey
+## Disabling a Journey
 
-This API call will transition a journey from an Enabled status to a Disabled status.
+This API call allows you to change the status of a journey from 'Enabled' to 'Disabled'.
 
-### <Badge type="info" text="GET" /> `https://octeth.mydomain.com/api/v1/journey.disable`
+### <Badge type="info" text="GET" /> `/api/v1/journey.disable`
 
 ::: info
-This API end-point accepts raw body in JSON syntax.
+Please note that this API endpoint requires a raw JSON body.
 :::
 
-**Request Body:**
+**Required Parameters:**
 
-| Parameter | Description                                                               |          |
-|-----------|---------------------------------------------------------------------------|----------|
-| SessionID | The user session ID.                                                      | Required | 
-| APIKey    | The API key of the user. Either `SessionID` or `APIKey` must be provided. | Required | 
-| JourneyID | Journey ID to disable.                                                    | Required | 
+| Parameter | Description                                                               | Requirement |
+|-----------|---------------------------------------------------------------------------|-------------|
+| SessionID | This is the user's session ID.                                            | Mandatory   | 
+| APIKey    | This is the user's API key. Either the `SessionID` or `APIKey` is needed. | Mandatory   | 
+| JourneyID | This is the ID of the journey you wish to disable.                        | Mandatory   | 
 
-**Success Response:**
+**Successful Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -398,7 +408,7 @@ This API end-point accepts raw body in JSON syntax.
 }
 ```
 
-**Error Response:**
+**Error Responses:**
 
 <Badge type="danger" text="HTTP Code: 404 Not Found" /> 
 
@@ -443,29 +453,29 @@ This API end-point accepts raw body in JSON syntax.
 }
 ```
 
-## Update a Journey
+## Modify a Journey
 
-Utilize this API call to modify the parameters of a journey.
+This API call allows you to update the details of a specific journey.
 
-### <Badge type="info" text="PATCH" /> `https://octeth.mydomain.com/api/v1/journey`
+### <Badge type="info" text="PATCH" /> `/api/v1/journey`
 
 ::: info
-This API end-point accepts raw body in JSON syntax.
+This endpoint expects a raw JSON body.
 :::
 
-**Request Body:**
+**Request Body Parameters:**
 
-| Parameter       | Description                                                                                                                                        |          |
+| Parameter       | Description                                                                                                                                        | Required |
 |-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| SessionID       | The user session ID.                                                                                                                               | Required | 
-| APIKey          | The API key of the user. Either `SessionID` or `APIKey` must be provided.                                                                          | Required | 
-| JourneyID       | Journey ID to update.                                                                                                                              | Required | 
-| Name            | New name of the journey.                                                                                                                           | Optional | 
-| Trigger         | Any of these trigger types: `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Manual`.                  | Optional | 
-| Trigger_ListID  | If the trigger is `ListSubscription` or `ListUnsubscrpition`, the value of this parameter must be `0` (any list) or a specific subscriber list ID. | Optional | 
-| Trigger_EmailID | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, the value of this parameter must be `0` (any email) or a specific email ID.  | Optional | 
+| SessionID       | The ID of the user's current session.                                                                                                              | Yes      | 
+| APIKey          | The user's API key. You must provide either the `SessionID` or `APIKey`.                                                                           | Yes      | 
+| JourneyID       | The ID of the journey you want to update.                                                                                                          | Yes      | 
+| Name            | The new name for the journey.                                                                                                                      | No       | 
+| Trigger         | The type of trigger. Options include: `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Manual`.        | No       | 
+| Trigger_ListID  | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (for any list) or a specific subscriber list ID.        | No       | 
+| Trigger_EmailID | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (for any email) or a specific email ID.         | No       | 
 
-**Success Response:**
+**Successful Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -484,7 +494,7 @@ This API end-point accepts raw body in JSON syntax.
 }
 ```
 
-**Error Response:**
+**Error Responses:**
 
 <Badge type="danger" text="HTTP Code: 400 Bad Request" />
 
@@ -542,29 +552,28 @@ This API end-point accepts raw body in JSON syntax.
 }
 ```
 
-## Update Journey Actions
+## Modifying Journey Actions
 
-Every time you would like to make a change on journey actions, you need to pass the entire action list to this API
-end-point. Utilize this API end-point to set/update journey actions.
+This API endpoint allows you to modify journey actions. To do so, you must provide the complete list of actions.
 
-::: danger
-The entire action list must be provided. Missing actions in the provided action list will be deleted from the journey.
+::: warning
+Please note that any actions not included in the provided list will be removed from the journey.
 :::
 
-### <Badge type="info" text="PATCH" /> `https://octeth.mydomain.com/api/v1/journey.actions`
+### <Badge type="info" text="PATCH" /> `/api/v1/journey.actions`
 
 **Request Body:**
 
-| Parameter | Description                                                                                |          |
+| Parameter | Description                                                                                | Required |
 |-----------|--------------------------------------------------------------------------------------------|----------|
-| SessionID | The user session ID.                                                                       | Required | 
-| APIKey    | The API key of the user. Either `SessionID` or `APIKey` must be provided.                  | Required | 
-| JourneyID | Journey ID to update.                                                                      | Required | 
-| Actions   | The list of action objects must be proivded. Please see below for action object structure. | Required | 
+| SessionID | The user's session ID.                                                                     | Yes      | 
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.                        | Yes      | 
+| JourneyID | The ID of the journey to be updated.                                                       | Yes      | 
+| Actions   | The list of action objects. See below for the structure of action objects.                 | Yes      | 
 
-**Wait Action Object:**
+**`Wait` Action Object:**
 
-This action forces the journey to pause for a given period of time.
+This action pauses the journey for a specified period.
 
 ```json
 {
@@ -578,15 +587,15 @@ This action forces the journey to pause for a given period of time.
 
 | Parameter             | Description                                                                                                                      |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
-| Action                | Set this parameter to `Wait`                                                                                                     |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
+| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
+| Action                | Set this parameter to `Wait`.                                                                                                    |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
 | WaitUnit              | Set to one of `seconds`, `minutes`, `hours`, `days`.                                                                             |
 | WaitAmount            | Set to an integer value based on the `WaitUnit` parameter.                                                                       |
 
-**UpdateCustomFieldValue Action Object:**
+**`UpdateCustomFieldValue` Action Object:**
 
-This action will update subscriber's custom field.
+This action updates a subscriber's custom field.
 
 ```json
 {
@@ -600,15 +609,15 @@ This action will update subscriber's custom field.
 
 | Parameter             | Description                                                                                                                      |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
-| Action                | Set this parameter to `UpdateCustomFieldValue`                                                                                                     |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
-| TargetCustomFieldID   | The ID number of subscriber's custom field                                                                                       |
-| NewCustomFieldValue   | The new value of the given custom field.                                                                                         |
+| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
+| Action                | Set this parameter to `UpdateCustomFieldValue`.                                                                                  |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
+| TargetCustomFieldID   | The ID of the subscriber's custom field.                                                                                         |
+| NewCustomFieldValue   | The new value for the custom field.                                                                                              |
 
-**Unsubscribe Action Object:**
+**`Unsubscribe` Action Object:**
 
-This action will unsubscribe the subscriber from the target list.
+This action unsubscribes the subscriber from the target list.
 
 ```json
 {
@@ -621,14 +630,14 @@ This action will unsubscribe the subscriber from the target list.
 
 | Parameter             | Description                                                                                                                      |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
-| Action                | Set this parameter to `Unsubscribe`                                                                                              |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
-| TargetListID          | The ID number of target list to unsubscribe                                                                                      |
+| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
+| Action                | Set this parameter to `Unsubscribe`.                                                                                             |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
+| TargetListID          | The ID of the target list from which to unsubscribe.                                                                             |
 
-**ExitJourney Action Object:**
+**`ExitJourney` Action Object:**
 
-This action will stop the given journey for the subscriber.
+This action stops the specified journey for the subscriber.
 
 ```json
 {
@@ -641,15 +650,14 @@ This action will stop the given journey for the subscriber.
 
 | Parameter             | Description                                                                                                                      |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
-| Action                | Set this parameter to `ExitJourney`                                                                                              |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
-| TargetJourneyID       | The target Journey ID to stop for the subscriber.                                                                                |
+| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
+| Action                | Set this parameter to `ExitJourney`.                                                                                             |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
+| TargetJourneyID       | The ID of the journey to stop for the subscriber.                                                                                |
 
-**ExitThisJourney Action Object:**
+**`ExitThisJourney` Action Object:**
 
-This action will stop the current journey for the subscriber.
+This action stops the current journey for the subscriber.
 
 ```json
 {
@@ -661,13 +669,13 @@ This action will stop the current journey for the subscriber.
 
 | Parameter             | Description                                                                                                                      |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
-| Action                | Set this parameter to `ExitThisJourney`                                                                                          |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
+| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
+| Action                | Set this parameter to `ExitThisJourney`.                                                                                         |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
 
-**ExitAllOtherJourneys Action Object:**
+**`ExitAllOtherJourneys` Action Object:**
 
-This action will stop all journeys except the current one for the subscriber.
+This action stops all journeys except the current one for the subscriber.
 
 ```json
 {
@@ -679,13 +687,13 @@ This action will stop all journeys except the current one for the subscriber.
 
 | Parameter             | Description                                                                                                                      |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
-| Action                | Set this parameter to `ExitAllOtherJourneys`                                                                                     |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
+| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
+| Action                | Set this parameter to `ExitAllOtherJourneys`.                                                                                    |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
 
-**Webhook Action Object:**
+**`Webhook` Action Object:**
 
-This action will stop all journeys except the current one for the subscriber.
+This action triggers a webhook.
 
 ```json
 {
@@ -698,14 +706,14 @@ This action will stop all journeys except the current one for the subscriber.
 
 | Parameter             | Description                                                                                                                      |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
-| Action                | Set this parameter to `Webhook`                                                                                                  |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
-| WebhookURL            | Webhook URL to execute                                                                                                           |
+| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
+| Action                | Set this parameter to `Webhook`.                                                                                                 |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
+| WebhookURL            | The URL of the webhook to trigger.                                                                                               |
 
-**StartJourney Action Object:**
+**`StartJourney` Action Object:**
 
-This action will stop all journeys except the current one for the subscriber.
+This action starts a journey for the subscriber.
 
 ```json
 {
@@ -718,14 +726,14 @@ This action will stop all journeys except the current one for the subscriber.
 
 | Parameter             | Description                                                                                                                      |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
-| Action                | Set this parameter to `StartJourney`                                                                                             |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
-| TargetJourneyID       | ID number of the journey to start for the subscriber                                                                             |
+| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
+| Action                | Set this parameter to `StartJourney`.                                                                                            |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
+| TargetJourneyID       | The ID of the journey to start for the subscriber.                                                                               |
 
-**Subscribe Action Object:**
+**`Subscribe` Action Object:**
 
-This action will stop all journeys except the current one for the subscriber.
+This action subscribes the subscriber to a list.
 
 ```json
 {
@@ -738,14 +746,14 @@ This action will stop all journeys except the current one for the subscriber.
 
 | Parameter             | Description                                                                                                                      |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
-| Action                | Set this parameter to `Subscribe`                                                                                                |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
-| TargetListID          | ID number of the list to subscribe                                                                                               |
+| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
+| Action                | Set this parameter to `Subscribe`.                                                                                               |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
+| TargetListID          | The ID of the list to which to subscribe.                                                                                        |
 
-**AddTag Action Object:**
+**`AddTag` Action Object:**
 
-This action will stop all journeys except the current one for the subscriber.
+This action adds a tag to the subscriber.
 
 ```json
 {
@@ -758,14 +766,14 @@ This action will stop all journeys except the current one for the subscriber.
 
 | Parameter             | Description                                                                                                                      |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
-| Action                | Set this parameter to `AddTag`                                                                                                   |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
-| TargetTagID           | ID number of the tag                                                                                                             |
+| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
+| Action                | Set this parameter to `AddTag`.                                                                                                  |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
+| TargetTagID           | The ID of the tag to add.                                                                                                        |
 
-**RemoveTag Action Object:**
+**`RemoveTag` Action Object:**
 
-This action will stop all journeys except the current one for the subscriber.
+This action will halt all journeys except the current one for the subscriber.
 
 ```json
 {
@@ -778,21 +786,10 @@ This action will stop all journeys except the current one for the subscriber.
 
 | Parameter             | Description                                                                                                                      |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If you provide an ActionID, it will update that specific action. Otherwise, set this parameter to `null` to create a new action. |
-| Action                | Set this parameter to `RemoveTag`                                                                                                |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Set this parameter as empty unless you are setting an action for a yes/no condition.                  |
-| TargetTagID           | ID number of the tag                                                                                                             |
-
-
-
-
-
-
-
-
-
-
-
+| ActionID              | Provide an ActionID to update a specific action. Set this parameter to `null` to create a new action.                           |
+| Action                | Set this parameter to `RemoveTag`.                                                                                               |
+| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
+| TargetTagID           | The ID of the tag.                                                                                                               |
 
 **Success Response:**
 
@@ -867,7 +864,3 @@ This action will stop all journeys except the current one for the subscriber.
   ]
 }
 ```
-
-
-
-
