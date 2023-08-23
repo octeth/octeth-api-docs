@@ -783,7 +783,7 @@ This action will implement a decision with a criteria and set of actions for bot
 |-----------|-------------------------------------------------------------------------------------------------------|
 | ActionID  | Provide an ActionID to update a specific action. Set this parameter to `null` to create a new action. |
 | Action    | Set this parameter to `RemoveTag`.                                                                    |
-| Criteria  | The array of criteria. Please refer to the criteria object below.                                     |
+| Criteria  | The array of criteria. [Please refer to the criteria object below](/api-reference/criteria-syntax).   |
 | Actions   | The array of action objects in case `True` and `False` cases.                                         |
 
 **Success Response:**
