@@ -225,30 +225,24 @@ This API endpoint expects a request body in JSON format.
   "Actions": [
     {
       "ActionID": 1,
-      "RelParentActionID": 0,
-      "ConditionType": "",
       "OrderNo": 1,
       "Action": "Wait",
       "ActionParameters": {
         "WaitUnit": "seconds",
         "WaitAmount": 20
       },
-      "ActionParametersRaw": "{\"WaitUnit\":\"seconds\",\"WaitAmount\":20}",
       "Stats": {
         "ActiveSubscribers": "0"
       }
     },
     {
       "ActionID": 11,
-      "RelParentActionID": 0,
-      "ConditionType": "",
       "OrderNo": 2,
       "Action": "Wait",
       "ActionParameters": {
         "WaitUnit": "minutes",
         "WaitAmount": 10
       },
-      "ActionParametersRaw": "{\"WaitUnit\":\"minutes\",\"WaitAmount\":10}",
       "Stats": {
         "ActiveSubscribers": "0"
       }
@@ -579,7 +573,6 @@ This action pauses the journey for a specified period.
 {
   "ActionID": 1,
   "Action": "Wait",
-  "ParentActionCondition": "",
   "WaitUnit": "seconds",
   "WaitAmount": 20
 }
@@ -589,7 +582,6 @@ This action pauses the journey for a specified period.
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
 | Action                | Set this parameter to `Wait`.                                                                                                    |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
 | WaitUnit              | Set to one of `seconds`, `minutes`, `hours`, `days`.                                                                             |
 | WaitAmount            | Set to an integer value based on the `WaitUnit` parameter.                                                                       |
 
@@ -601,7 +593,6 @@ This action updates a subscriber's custom field.
 {
   "ActionID": 1,
   "Action": "UpdateCustomFieldValue",
-  "ParentActionCondition": "",
   "TargetCustomFieldID": 10,
   "NewCustomFieldValue": "New Value"
 }
@@ -611,7 +602,6 @@ This action updates a subscriber's custom field.
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
 | Action                | Set this parameter to `UpdateCustomFieldValue`.                                                                                  |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
 | TargetCustomFieldID   | The ID of the subscriber's custom field.                                                                                         |
 | NewCustomFieldValue   | The new value for the custom field.                                                                                              |
 
@@ -623,7 +613,6 @@ This action unsubscribes the subscriber from the target list.
 {
   "ActionID": 1,
   "Action": "Unsubscribe",
-  "ParentActionCondition": "",
   "TargetListID": 10
 }
 ```
@@ -632,7 +621,6 @@ This action unsubscribes the subscriber from the target list.
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
 | Action                | Set this parameter to `Unsubscribe`.                                                                                             |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
 | TargetListID          | The ID of the target list from which to unsubscribe.                                                                             |
 
 **`ExitJourney` Action Object:**
@@ -643,7 +631,6 @@ This action stops the specified journey for the subscriber.
 {
   "ActionID": 1,
   "Action": "ExitJourney",
-  "ParentActionCondition": "",
   "TargetJourneyID": 10
 }
 ```
@@ -652,7 +639,6 @@ This action stops the specified journey for the subscriber.
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
 | Action                | Set this parameter to `ExitJourney`.                                                                                             |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
 | TargetJourneyID       | The ID of the journey to stop for the subscriber.                                                                                |
 
 **`ExitThisJourney` Action Object:**
@@ -662,8 +648,7 @@ This action stops the current journey for the subscriber.
 ```json
 {
   "ActionID": 1,
-  "Action": "ExitThisJourney",
-  "ParentActionCondition": ""
+  "Action": "ExitThisJourney"
 }
 ```
 
@@ -671,7 +656,6 @@ This action stops the current journey for the subscriber.
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
 | Action                | Set this parameter to `ExitThisJourney`.                                                                                         |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
 
 **`ExitAllOtherJourneys` Action Object:**
 
@@ -680,8 +664,7 @@ This action stops all journeys except the current one for the subscriber.
 ```json
 {
   "ActionID": 1,
-  "Action": "ExitAllOtherJourneys",
-  "ParentActionCondition": ""
+  "Action": "ExitAllOtherJourneys"
 }
 ```
 
@@ -689,7 +672,6 @@ This action stops all journeys except the current one for the subscriber.
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
 | Action                | Set this parameter to `ExitAllOtherJourneys`.                                                                                    |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
 
 **`Webhook` Action Object:**
 
@@ -699,7 +681,6 @@ This action triggers a webhook.
 {
   "ActionID": 1,
   "Action": "Webhook",
-  "ParentActionCondition": "",
   "WebhookURL": ""
 }
 ```
@@ -708,7 +689,6 @@ This action triggers a webhook.
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
 | Action                | Set this parameter to `Webhook`.                                                                                                 |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
 | WebhookURL            | The URL of the webhook to trigger.                                                                                               |
 
 **`StartJourney` Action Object:**
@@ -719,7 +699,6 @@ This action starts a journey for the subscriber.
 {
   "ActionID": 1,
   "Action": "StartJourney",
-  "ParentActionCondition": "",
   "TargetJourneyID": 0
 }
 ```
@@ -728,7 +707,6 @@ This action starts a journey for the subscriber.
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
 | Action                | Set this parameter to `StartJourney`.                                                                                            |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
 | TargetJourneyID       | The ID of the journey to start for the subscriber.                                                                               |
 
 **`Subscribe` Action Object:**
@@ -739,7 +717,6 @@ This action subscribes the subscriber to a list.
 {
   "ActionID": 1,
   "Action": "Subscribe",
-  "ParentActionCondition": "",
   "TargetListID": 0
 }
 ```
@@ -748,7 +725,6 @@ This action subscribes the subscriber to a list.
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
 | Action                | Set this parameter to `Subscribe`.                                                                                               |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
 | TargetListID          | The ID of the list to which to subscribe.                                                                                        |
 
 **`AddTag` Action Object:**
@@ -759,7 +735,6 @@ This action adds a tag to the subscriber.
 {
   "ActionID": 1,
   "Action": "AddTag",
-  "ParentActionCondition": "",
   "TargetTagID": 0
 }
 ```
@@ -768,7 +743,6 @@ This action adds a tag to the subscriber.
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
 | Action                | Set this parameter to `AddTag`.                                                                                                  |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
 | TargetTagID           | The ID of the tag to add.                                                                                                        |
 
 **`RemoveTag` Action Object:**
@@ -779,17 +753,38 @@ This action will halt all journeys except the current one for the subscriber.
 {
   "ActionID": 1,
   "Action": "RemoveTag",
-  "ParentActionCondition": "",
   "TargetTagID": 0
 }
 ```
 
-| Parameter             | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | Provide an ActionID to update a specific action. Set this parameter to `null` to create a new action.                           |
-| Action                | Set this parameter to `RemoveTag`.                                                                                               |
-| ParentActionCondition | Set to empty, `Yes`, `No`. Leave this parameter empty unless you are setting an action for a yes/no condition.                   |
-| TargetTagID           | The ID of the tag.                                                                                                               |
+| Parameter             | Description                                                                                                    |
+|-----------------------|----------------------------------------------------------------------------------------------------------------|
+| ActionID              | Provide an ActionID to update a specific action. Set this parameter to `null` to create a new action.          |
+| Action                | Set this parameter to `RemoveTag`.                                                                             |
+| TargetTagID           | The ID of the tag.                                                                                             |
+
+**`Decision` Action Object:**
+
+This action will implement a decision with a criteria and set of actions for both `true` and `false` cases.
+
+```json
+{
+  "ActionID": 1,
+  "Action": "Decision",
+  "Criteria": [],
+  "Actions": {
+    "True": [],
+    "False": []
+  }
+}
+```
+
+| Parameter | Description                                                                                           |
+|-----------|-------------------------------------------------------------------------------------------------------|
+| ActionID  | Provide an ActionID to update a specific action. Set this parameter to `null` to create a new action. |
+| Action    | Set this parameter to `RemoveTag`.                                                                    |
+| Criteria  | The array of criteria. Please refer to the criteria object below.                                     |
+| Actions   | The array of action objects in case `True` and `False` cases.                                         |
 
 **Success Response:**
 
@@ -801,30 +796,24 @@ This action will halt all journeys except the current one for the subscriber.
   "Actions": [
     {
       "ActionID": 1,
-      "RelParentActionID": 0,
-      "ConditionType": "",
       "OrderNo": 1,
       "Action": "Wait",
       "ActionParameters": {
         "WaitUnit": "seconds",
         "WaitAmount": 20
       },
-      "ActionParametersRaw": "{\"WaitUnit\":\"seconds\",\"WaitAmount\":20}",
       "Stats": {
         "ActiveSubscribers": "0"
       }
     },
     {
       "ActionID": 11,
-      "RelParentActionID": 0,
-      "ConditionType": "",
       "OrderNo": 2,
       "Action": "Wait",
       "ActionParameters": {
         "WaitUnit": "minutes",
         "WaitAmount": 10
       },
-      "ActionParametersRaw": "{\"WaitUnit\":\"minutes\",\"WaitAmount\":10}",
       "Stats": {
         "ActiveSubscribers": "0"
       }
