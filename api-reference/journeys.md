@@ -4,7 +4,7 @@ layout: doc
 
 # Journeys API Documentation
 
-::: note
+::: info
 The API calls detailed in this document are compatible with Octeth's latest authorization method. You have the option to
 include either the `SessionID` or `APIKey` parameter within the JSON request body.
 :::
@@ -18,7 +18,7 @@ the trigger mode will be set to 'Manual'.
 
 **Request Body:**
 
-::: note
+::: info
 This API endpoint accepts raw body in JSON format.
 :::
 
