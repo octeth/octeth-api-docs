@@ -23,7 +23,7 @@ scenarios where the API is being used to build a separate top UI layer and CAPTC
 In case of any errors during the login process, such as missing or incorrect credentials, missing or invalid CAPTCHA, or
 incorrect 2FA code, the API endpoint will return specific error codes to help identify the issue.
 
-### <Badge type="info" text="POST" /> `https://octeth.mydomain.com/api.php`
+### <Badge type="info" text="POST" /> `/api.php`
 
 **Request Parameters:**
 
@@ -72,7 +72,7 @@ This API end-point is designed to update an administrator account on the system.
 credentials, especially when building a separate top UI layer, or for gathering a session ID for your next user API
 end-point execution.
 
-### <Badge type="tip" text="POST" /> `https://octeth.mydomain.com/api.php`
+### <Badge type="tip" text="POST" /> `/api.php`
 
 **Request Parameters:**
 
