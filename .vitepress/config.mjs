@@ -75,6 +75,14 @@ export default defineConfig({
                     {text: 'Email Campaigns', link: '/api-reference/email-campaigns'},
                     {text: 'System Management', link: '/api-reference/system-management'},
                 ]
+            },
+            {
+                text: 'PLUGIN DEVELOPMENT',
+                collapsed: false,
+                items: [
+                    {text: 'Getting Started', link: '#'},
+                    {text: 'Hook Reference', link: '#'},
+                ]
             }
         ],
 
