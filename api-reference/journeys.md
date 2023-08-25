@@ -565,228 +565,7 @@ Please note that any actions not included in the provided list will be removed f
 | JourneyID | The ID of the journey to be updated.                                                       | Yes      | 
 | Actions   | The list of action objects. See below for the structure of action objects.                 | Yes      | 
 
-**`Wait` Action Object:**
-
-This action pauses the journey for a specified period.
-
-```json
-{
-  "ActionID": 1,
-  "Action": "Wait",
-  "WaitUnit": "seconds",
-  "WaitAmount": 20
-}
-```
-
-| Parameter             | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
-| Action                | Set this parameter to `Wait`.                                                                                                    |
-| WaitUnit              | Set to one of `seconds`, `minutes`, `hours`, `days`.                                                                             |
-| WaitAmount            | Set to an integer value based on the `WaitUnit` parameter.                                                                       |
-
-**`UpdateCustomFieldValue` Action Object:**
-
-This action updates a subscriber's custom field.
-
-```json
-{
-  "ActionID": 1,
-  "Action": "UpdateCustomFieldValue",
-  "TargetCustomFieldID": 10,
-  "NewCustomFieldValue": "New Value"
-}
-```
-
-| Parameter             | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
-| Action                | Set this parameter to `UpdateCustomFieldValue`.                                                                                  |
-| TargetCustomFieldID   | The ID of the subscriber's custom field.                                                                                         |
-| NewCustomFieldValue   | The new value for the custom field.                                                                                              |
-
-**`Unsubscribe` Action Object:**
-
-This action unsubscribes the subscriber from the target list.
-
-```json
-{
-  "ActionID": 1,
-  "Action": "Unsubscribe",
-  "TargetListID": 10
-}
-```
-
-| Parameter             | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
-| Action                | Set this parameter to `Unsubscribe`.                                                                                             |
-| TargetListID          | The ID of the target list from which to unsubscribe.                                                                             |
-
-**`ExitJourney` Action Object:**
-
-This action stops the specified journey for the subscriber.
-
-```json
-{
-  "ActionID": 1,
-  "Action": "ExitJourney",
-  "TargetJourneyID": 10
-}
-```
-
-| Parameter             | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
-| Action                | Set this parameter to `ExitJourney`.                                                                                             |
-| TargetJourneyID       | The ID of the journey to stop for the subscriber.                                                                                |
-
-**`ExitThisJourney` Action Object:**
-
-This action stops the current journey for the subscriber.
-
-```json
-{
-  "ActionID": 1,
-  "Action": "ExitThisJourney"
-}
-```
-
-| Parameter             | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
-| Action                | Set this parameter to `ExitThisJourney`.                                                                                         |
-
-**`ExitAllOtherJourneys` Action Object:**
-
-This action stops all journeys except the current one for the subscriber.
-
-```json
-{
-  "ActionID": 1,
-  "Action": "ExitAllOtherJourneys"
-}
-```
-
-| Parameter             | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
-| Action                | Set this parameter to `ExitAllOtherJourneys`.                                                                                    |
-
-**`Webhook` Action Object:**
-
-This action triggers a webhook.
-
-```json
-{
-  "ActionID": 1,
-  "Action": "Webhook",
-  "WebhookURL": ""
-}
-```
-
-| Parameter             | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
-| Action                | Set this parameter to `Webhook`.                                                                                                 |
-| WebhookURL            | The URL of the webhook to trigger.                                                                                               |
-
-**`StartJourney` Action Object:**
-
-This action starts a journey for the subscriber.
-
-```json
-{
-  "ActionID": 1,
-  "Action": "StartJourney",
-  "TargetJourneyID": 0
-}
-```
-
-| Parameter             | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
-| Action                | Set this parameter to `StartJourney`.                                                                                            |
-| TargetJourneyID       | The ID of the journey to start for the subscriber.                                                                               |
-
-**`Subscribe` Action Object:**
-
-This action subscribes the subscriber to a list.
-
-```json
-{
-  "ActionID": 1,
-  "Action": "Subscribe",
-  "TargetListID": 0
-}
-```
-
-| Parameter             | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
-| Action                | Set this parameter to `Subscribe`.                                                                                               |
-| TargetListID          | The ID of the list to which to subscribe.                                                                                        |
-
-**`AddTag` Action Object:**
-
-This action adds a tag to the subscriber.
-
-```json
-{
-  "ActionID": 1,
-  "Action": "AddTag",
-  "TargetTagID": 0
-}
-```
-
-| Parameter             | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
-| Action                | Set this parameter to `AddTag`.                                                                                                  |
-| TargetTagID           | The ID of the tag to add.                                                                                                        |
-
-**`RemoveTag` Action Object:**
-
-This action will halt all journeys except the current one for the subscriber.
-
-```json
-{
-  "ActionID": 1,
-  "Action": "RemoveTag",
-  "TargetTagID": 0
-}
-```
-
-| Parameter             | Description                                                                                                    |
-|-----------------------|----------------------------------------------------------------------------------------------------------------|
-| ActionID              | Provide an ActionID to update a specific action. Set this parameter to `null` to create a new action.          |
-| Action                | Set this parameter to `RemoveTag`.                                                                             |
-| TargetTagID           | The ID of the tag.                                                                                             |
-
-**`Decision` Action Object:**
-
-This action will implement a decision with a criteria and set of actions for both `true` and `false` cases.
-
-```json
-{
-  "ActionID": 1,
-  "Action": "Decision",
-  "CriteriaOperator": "or",
-  "Criteria": [],
-  "Actions": {
-    "True": [],
-    "False": []
-  }
-}
-```
-
-| Parameter        | Description                                                                                           |
-|------------------|-------------------------------------------------------------------------------------------------------|
-| ActionID         | Provide an ActionID to update a specific action. Set this parameter to `null` to create a new action. |
-| Action           | Set this parameter to `RemoveTag`.                                                                    |
-| CriteriaOperator | It can be set as `and`, `or`                                                                          |
-| Criteria         | The array of criteria. [Please refer to the criteria object below](/api-reference/criteria-syntax).   |
-| Actions          | The array of action objects in case `True` and `False` cases.                                         |
+> For the detailed usage instructions of journey actions, refer to the [Journey Actions](/api-reference/journey-actions). 
 
 **Success Response:**
 
@@ -855,3 +634,207 @@ This action will implement a decision with a criteria and set of actions for bot
   ]
 }
 ```
+
+## Trigger a Journey For A Subscriber
+
+This API call will triger a journey for a subscriber.
+
+### <Badge type="info" text="GET" /> `/api/v1/subscriber.journey.trigger`
+
+::: info
+Please note that this API endpoint requires a raw JSON body.
+:::
+
+**Request Body Parameters:**
+
+| Parameter    | Description                                                                  | Required |
+|--------------|------------------------------------------------------------------------------|----------|
+| SessionID    | This is the user's session ID.                                               | Yes      | 
+| APIKey       | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
+| JourneyID    | This is the ID of the journey you would like to trigger for a subscriber.    | Yes      | 
+| ListID       | List ID of the subscriber.                                                   | Yes      | 
+| SubscriberID | ID of the target subscriber.                                                 | Yes      | 
+
+**Successful Response:**
+
+<Badge type="info" text="HTTP Code: 200 OK" /> 
+
+```json
+{
+  "JourneyID": "18",
+  "ListID": "26",
+  "SubscriberID": "1"
+}
+```
+
+**Error Responses:**
+
+<Badge type="danger" text="HTTP Code: 404 Not Found" /> 
+
+```json
+{
+  "Errors": [
+    {
+      "Code": 7,
+      "Message": "Journey not found"
+    }
+  ]
+}
+```
+
+<Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" /> 
+
+```json
+{
+  "Errors": [
+    {
+      "Code": 1,
+      "Message": "Missing JourneyID parameter"
+    },
+    {
+      "Code": 2,
+      "Message": "Invalid JourneyID parameter"
+    }
+  ]
+}
+```
+
+## Remove Subscriber From A Journey
+
+This API call will remove a subscriber from an enrolled journey.
+
+### <Badge type="info" text="GET" /> `/api/v1/subscriber.journey.remove`
+
+::: info
+Please note that this API endpoint requires a raw JSON body.
+:::
+
+**Request Body Parameters:**
+
+| Parameter    | Description                                                                  | Required |
+|--------------|------------------------------------------------------------------------------|----------|
+| SessionID    | This is the user's session ID.                                               | Yes      | 
+| APIKey       | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
+| JourneyID    | This is the ID of the journey you would like remove from a subscriber.       | Yes      | 
+| ListID       | List ID of the subscriber.                                                   | Yes      | 
+| SubscriberID | ID of the target subscriber.                                                 | Yes      | 
+
+**Successful Response:**
+
+<Badge type="info" text="HTTP Code: 200 OK" /> 
+
+```json
+{
+  "JourneyID": "18",
+  "ListID": "26",
+  "SubscriberID": "1"
+}
+```
+
+**Error Responses:**
+
+<Badge type="danger" text="HTTP Code: 404 Not Found" /> 
+
+```json
+{
+  "Errors": [
+    {
+      "Code": 7,
+      "Message": "Journey not found"
+    }
+  ]
+}
+```
+
+<Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" /> 
+
+```json
+{
+  "Errors": [
+    {
+      "Code": 1,
+      "Message": "Missing JourneyID parameter"
+    },
+    {
+      "Code": 2,
+      "Message": "Invalid JourneyID parameter"
+    }
+  ]
+}
+```
+
+## Enrolled Journeys
+
+This API call will return the list of journeys for a given subscriber
+
+### <Badge type="info" text="GET" /> `/api/v1/subscriber.journey.list`
+
+::: info
+Please note that this API endpoint requires a raw JSON body.
+:::
+
+**Request Body Parameters:**
+
+| Parameter    | Description                                                                  | Required |
+|--------------|------------------------------------------------------------------------------|----------|
+| SessionID    | This is the user's session ID.                                               | Yes      | 
+| APIKey       | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
+| ListID       | List ID of the subscriber.                                                   | Yes      | 
+| SubscriberID | ID of the target subscriber.                                                 | Yes      | 
+
+**Successful Response:**
+
+<Badge type="info" text="HTTP Code: 200 OK" /> 
+
+```json
+{
+    "ListID": "26",
+    "SubscriberID": "1",
+    "Journeys": [
+        {
+            "JourneyID": "18",
+            "RelUserID": "1",
+            "JourneyName": "Test",
+            "Trigger": "ListSubscription:0",
+            "TriggerParameters": "{\"ListID\":0}",
+            "Status": "Enabled",
+            "CreatedAt": "2023-08-23 13:26:23",
+            "UpdatedAt": "2023-08-25 10:40:02"
+        }
+    ]
+}
+```
+
+**Error Responses:**
+
+<Badge type="danger" text="HTTP Code: 404 Not Found" /> 
+
+```json
+{
+    "Errors": [
+        {
+            "Code": 9,
+            "Message": "Subscriber not found"
+        }
+    ]
+}
+```
+
+<Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" /> 
+
+```json
+{
+    "Errors": [
+        {
+            "Code": 3,
+            "Message": "Missing SubscriberID parameter"
+        },
+        {
+            "Code": 6,
+            "Message": "Invalid SubscriberID parameter"
+        }
+    ]
+}
+```
+
+
