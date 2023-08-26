@@ -241,7 +241,8 @@ This API endpoint expects a request body in JSON format.
         "WaitAmount": 20
       },
       "Stats": {
-        "ActiveSubscribers": "0"
+        "ActiveSubscribers": "0",
+        "TotalSubscribers": "0"
       }
     },
     {
@@ -253,7 +254,8 @@ This API endpoint expects a request body in JSON format.
         "WaitAmount": 10
       },
       "Stats": {
-        "ActiveSubscribers": "0"
+        "ActiveSubscribers": "0",
+        "TotalSubscribers": "0"
       }
     }
   ]
@@ -514,7 +516,8 @@ Please note that any actions not included in the provided list will be removed f
         "WaitAmount": 20
       },
       "Stats": {
-        "ActiveSubscribers": "0"
+        "ActiveSubscribers": "0",
+        "TotalSubscribers": "0"
       }
     },
     {
@@ -526,7 +529,8 @@ Please note that any actions not included in the provided list will be removed f
         "WaitAmount": 10
       },
       "Stats": {
-        "ActiveSubscribers": "0"
+        "ActiveSubscribers": "0",
+        "TotalSubscribers": "0"
       }
     }
   ]
