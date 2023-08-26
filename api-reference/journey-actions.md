@@ -211,7 +211,7 @@ This action will halt all journeys except the current one for the subscriber.
 This action will implement a basic yes or no condition with a single criteria and set of actions for both `yes` and `no` cases.
 
 ::: warning
-This action will be deprecated in future Octeth version releases. Please use `Decision` action instead.
+This action is deprecated and will be removed in one of the coming Octeth version releases. Please use `Decision` action instead.
 ::: 
 
 ```json
