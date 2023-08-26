@@ -206,6 +206,40 @@ This action will halt all journeys except the current one for the subscriber.
 | Action                | Set this parameter to `RemoveTag`.                                                                             |
 | TargetTagID           | The ID of the tag.                                                                                             |
 
+## YesNo
+
+This action will implement a basic yes or no condition with a single criteria and set of actions for both `yes` and `no` cases.
+
+::: warning
+This action will be deprecated in future Octeth version releases. Please use `Decision` action instead.
+::: 
+
+```json
+{
+    "ActionID":null, 
+    "Action":"YesNo",
+    "CriteriaLeft":"EmailAddress",
+    "CriteriaOperator":"Contains",
+    "CriteriaRight":"@gmail",
+    "CriteriaOption":"",
+    "Actions": {
+        "Yes": [],
+        "No": []
+    }
+}
+```
+
+| Parameter        | Description                                                                                                                                                                                                                                                                      |
+|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ActionID         | Provide an ActionID to update a specific action. Set this parameter to `null` to create a new action.                                                                                                                                                                            |
+| Action           | Set this parameter to `YesNo`.                                                                                                                                                                                                                                                   |
+| CriteriaLeft     | The left side of the criteria. It can be `SubscriberID`, `EmailAddress`, `BounceType`, `SubscriptionStatus`, `SubscriptionDate`, `SubscriptionIP`, `OptInDate`, `CustomField:XX` (XX represents the custom field ID), `Opens`, `Clicks`                                          |
+| CriteriaOperator | Set the operator to compare left to the right. It can be `Contains`, `Does not contain`, `Begins with`, `Ends with`, `Equals to`, `Is greater than`, `Is smaller than`, `Is before`, `Is after`, `Is set`, `Is not set`, `Is`, `Is not`, `At most`, `At least`, `Only`           |
+| CriteriaRight    | It can be any value or an array of campaign or autoresponder ID numbers. If you are going to provide campaign ID numbers, ID numbers should have a prefix `c`. For autoresponders, prefix `a`. Example: `['c100', 'c101']` for campaigns, `['a100', 'a101']` for autoresponders. |
+| CriteriaOption   | This parameter accepts `any` or `all`. It defines how to match campaign or autoresponder opens or clicks.                                                                                                                                                                        |
+| Actions.Yes      | The array of action objects in case of `Yes` condition.                                                                                                                                                                                                                          |
+| Actions.No       | The array of action objects in case of `No` condition.                                                                                                                                                                                                                           |
+
 ## `Decision`
 
 This action will implement a decision with a criteria and set of actions for both `true` and `false` cases.
@@ -226,7 +260,7 @@ This action will implement a decision with a criteria and set of actions for bot
 | Parameter        | Description                                                                                           |
 |------------------|-------------------------------------------------------------------------------------------------------|
 | ActionID         | Provide an ActionID to update a specific action. Set this parameter to `null` to create a new action. |
-| Action           | Set this parameter to `RemoveTag`.                                                                    |
+| Action           | Set this parameter to `Decision`.                                                                     |
 | CriteriaOperator | It can be set as `and`, `or`. Default value is `and`                                                  |
 | Criteria         | The array of criteria. [Please refer to the criteria object below](/api-reference/criteria-syntax).   |
 | Actions          | The array of action objects in case `True` and `False` cases.                                         |
