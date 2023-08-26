@@ -81,6 +81,21 @@ Filter people based on tag membership.
 * `operator` - one of `has this tag`, `does not have this tag`, `has any of these tags`, `has all of these tags`, `has no tags`
 * `value` - comma separated list of tag ids
 
+### Journeys
+
+Filter people based on their journey enrollments.
+
+```json
+{
+  "type": "journeys",
+  "operator": "in journey",
+  "value": "..."
+}
+```
+
+* `operator` - one of `in journey`, `completed journey`, `not in journey`
+* `value` - the ID number of the target journey
+
 ### Custom Fields
 
 Filter people based on custom field values.
