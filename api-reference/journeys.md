@@ -41,7 +41,7 @@ This API endpoint accepts raw body in JSON format.
 | Trigger_ListID  | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (any list) or a specific subscriber list ID.            | No       | 
 | Trigger_EmailID | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (any email) or a specific email ID.             | No       | 
 
-**Success Response:**
+**Example Success Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -61,7 +61,7 @@ This API endpoint accepts raw body in JSON format.
 }
 ```
 
-**Error Response:**
+**Example Error Response:**
 
 <Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" /> 
 
@@ -75,6 +75,20 @@ This API endpoint accepts raw body in JSON format.
   ]
 }
 ```
+
+**HTTP Resposne and Error Codes:**
+
+| HTTP Response Code | Error Code | Description                               |
+|--------------------|------------|-------------------------------------------|
+| 422                | 1          | Missing Name parameter                    |
+| n/a                | 2          | [reserved]                                |
+| 400                | 3          | Invalid trigger                           |
+| 422                | 4          | Missing Trigger_ListID parameter          |
+| 422                | 5          | Invalid Trigger_ListID parameter          |
+| 404                | 6          | Trigger_ListID matching record not found  |
+| 422                | 7          | Missing Trigger_EmailID parameter         |
+| 422                | 8          | Invalid Trigger_EmailID parameter         |
+| 404                | 9          | Trigger_EmailID matching record not found |
 
 ## Journey List
 
@@ -93,7 +107,7 @@ This API endpoint accepts a raw JSON body.
 | SessionID | The ID of the user's current session.                                     | Yes      | 
 | APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.      | Yes      | 
 
-**Successful Response:**
+**Example Successful Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -125,6 +139,10 @@ journey statistics.
 In the `JourneyStats` object, `ActiveSubscribers` represents the number of active subscribers, and `TotalSubscribers`
 represents the total number of subscribers for the journey.
 
+**HTTP Response and Error Codes:**
+
+This API endpoint doesn't return any errors.
+
 ## Delete a Journey
 
 This API call is designed to delete a specific journey. The journey to be deleted is identified by the `JourneyID`
@@ -144,7 +162,7 @@ Please note that this API endpoint requires a raw body in JSON format.
 | APIKey    | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
 | JourneyID | This is the ID of the journey to be deleted.                                 | Yes      | 
 
-**Successful Response:**
+**Example Successful Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -154,7 +172,7 @@ Please note that this API endpoint requires a raw body in JSON format.
 }
 ```
 
-**Error Responses:**
+**Example Error Responses:**
 
 <Badge type="danger" text="HTTP Code: 404 Not Found" /> 
 
@@ -169,24 +187,15 @@ Please note that this API endpoint requires a raw body in JSON format.
 }
 ```
 
-<Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" /> 
-
-```json
-{
-  "Errors": [
-    {
-      "Code": 1,
-      "Message": "Missing JourneyID parameter"
-    },
-    {
-      "Code": 2,
-      "Message": "Invalid JourneyID parameter"
-    }
-  ]
-}
-```
-
 Please ensure that the `JourneyID` parameter is provided and is valid to avoid errors.
+
+**HTTP Response and Error Codes:**
+
+| HTTP Response Code | Error Code | Description                 |
+|--------------------|------------|-----------------------------|
+| 422                | 1          | Missing JourneyID parameter |
+| 422                | 2          | Invalid JourneyID parameter |
+| 404                | 3          | Journey not found           |
 
 ## Retrieve a Journey
 
@@ -206,7 +215,7 @@ This API endpoint expects a request body in JSON format.
 | APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.      | Yes      | 
 | JourneyID | The ID of the journey to be retrieved.                                    | Yes      | 
 
-**Success Response:**
+**Example Success Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -251,7 +260,7 @@ This API endpoint expects a request body in JSON format.
 }
 ```
 
-**Error Response:**
+**Example Error Response:**
 
 <Badge type="danger" text="HTTP Code: 404 Not Found" /> 
 
@@ -266,22 +275,13 @@ This API endpoint expects a request body in JSON format.
 }
 ```
 
-<Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" /> 
+**HTTP Response and Error Codes:**
 
-```json
-{
-  "Errors": [
-    {
-      "Code": 1,
-      "Message": "Missing JourneyID parameter"
-    },
-    {
-      "Code": 2,
-      "Message": "Invalid JourneyID parameter"
-    }
-  ]
-}
-```
+| HTTP Response Code | Error Code | Description                 |
+|--------------------|------------|-----------------------------|
+| 422                | 1          | Missing JourneyID parameter |
+| 422                | 2          | Invalid JourneyID parameter |
+| 404                | 3          | Journey not found           |
 
 ## Enable a Journey
 
@@ -301,7 +301,7 @@ Please note that this API endpoint requires a raw JSON body.
 | APIKey    | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
 | JourneyID | This is the ID of the journey you wish to enable.                            | Yes      | 
 
-**Successful Response:**
+**Example Successful Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -320,7 +320,7 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-**Error Responses:**
+**Example Error Response:**
 
 <Badge type="danger" text="HTTP Code: 404 Not Found" /> 
 
@@ -335,35 +335,14 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-<Badge type="danger" text="HTTP Code: 409 Conflict" />
+**HTTP Response and Error Codes:**
 
-```json
-{
-  "Errors": [
-    {
-      "Code": 4,
-      "Message": "Journey is already enabled"
-    }
-  ]
-}
-```
-
-<Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" /> 
-
-```json
-{
-  "Errors": [
-    {
-      "Code": 1,
-      "Message": "Missing JourneyID parameter"
-    },
-    {
-      "Code": 2,
-      "Message": "Invalid JourneyID parameter"
-    }
-  ]
-}
-```
+| HTTP Response Code | Error Code | Description                 |
+|--------------------|------------|-----------------------------|
+| 422                | 1          | Missing JourneyID parameter |
+| 422                | 2          | Invalid JourneyID parameter |
+| 404                | 3          | Journey not found           |
+| 409                | 4          | Journey is already enabled  |
 
 ## Disabling a Journey
 
@@ -383,7 +362,7 @@ Please note that this API endpoint requires a raw JSON body.
 | APIKey    | This is the user's API key. Either the `SessionID` or `APIKey` is needed. | Mandatory   | 
 | JourneyID | This is the ID of the journey you wish to disable.                        | Mandatory   | 
 
-**Successful Response:**
+**Example Successful Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -402,7 +381,7 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-**Error Responses:**
+**Example Error Response:**
 
 <Badge type="danger" text="HTTP Code: 404 Not Found" /> 
 
@@ -417,35 +396,14 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-<Badge type="danger" text="HTTP Code: 409 Conflict" />
+**HTTP Response and Error Codes:**
 
-```json
-{
-  "Errors": [
-    {
-      "Code": 4,
-      "Message": "Journey is already disabled"
-    }
-  ]
-}
-```
-
-<Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" /> 
-
-```json
-{
-  "Errors": [
-    {
-      "Code": 1,
-      "Message": "Missing JourneyID parameter"
-    },
-    {
-      "Code": 2,
-      "Message": "Invalid JourneyID parameter"
-    }
-  ]
-}
-```
+| HTTP Response Code | Error Code | Description                 |
+|--------------------|------------|-----------------------------|
+| 422                | 1          | Missing JourneyID parameter |
+| 422                | 2          | Invalid JourneyID parameter |
+| 404                | 3          | Journey not found           |
+| 409                | 4          | Journey is already disabled |
 
 ## Modify a Journey
 
@@ -469,7 +427,7 @@ This endpoint expects a raw JSON body.
 | Trigger_ListID  | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (for any list) or a specific subscriber list ID.        | No       | 
 | Trigger_EmailID | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (for any email) or a specific email ID.         | No       | 
 
-**Successful Response:**
+**Example Successful Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -488,7 +446,7 @@ This endpoint expects a raw JSON body.
 }
 ```
 
-**Error Responses:**
+**Example Error Response:**
 
 <Badge type="danger" text="HTTP Code: 400 Bad Request" />
 
@@ -503,48 +461,20 @@ This endpoint expects a raw JSON body.
 }
 ```
 
-<Badge type="danger" text="HTTP Code: 404 Not Found" /> 
+**HTTP Response and Error Codes:**
 
-```json
-{
-  "Errors": [
-    {
-      "Code": 10,
-      "Message": "Journey not found"
-    }
-  ]
-}
-```
-
-<Badge type="danger" text="HTTP Code: 409 Conflict" />
-
-```json
-{
-  "Errors": [
-    {
-      "Code": 4,
-      "Message": "Journey is already disabled"
-    }
-  ]
-}
-```
-
-<Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" /> 
-
-```json
-{
-  "Errors": [
-    {
-      "Code": 1,
-      "Message": "Missing JourneyID parameter"
-    },
-    {
-      "Code": 2,
-      "Message": "Invalid JourneyID parameter"
-    }
-  ]
-}
-```
+| HTTP Response Code | Error Code | Description                               |
+|--------------------|------------|-------------------------------------------|
+| 422                | 1          | Missing JourneyID parameter               |
+| 422                | 2          | Invalid JourneyID parameter               |
+| 400                | 3          | Invalid trigger                           |
+| 422                | 4          | Missing Trigger_ListID parameter          |
+| 422                | 5          | Invalid Trigger_ListID parameter          |
+| 404                | 6          | Trigger_ListID matching record not found  |
+| 422                | 7          | Missing Trigger_EmailID parameter         |
+| 422                | 8          | Invalid Trigger_EmailID parameter         |
+| 404                | 9          | Trigger_EmailID matching record not found |
+| 404                | 10         | Journey not found                         |
 
 ## Modifying Journey Actions
 
@@ -567,7 +497,7 @@ Please note that any actions not included in the provided list will be removed f
 
 > For the detailed usage instructions of journey actions, refer to the [Journey Actions](/api-reference/journey-actions). 
 
-**Success Response:**
+**Example Success Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -603,7 +533,7 @@ Please note that any actions not included in the provided list will be removed f
 }
 ```
 
-**Error Response:**
+**Example Error Response:**
 
 <Badge type="danger" text="HTTP Code: 404 Not Found" />
 
@@ -618,22 +548,15 @@ Please note that any actions not included in the provided list will be removed f
 }
 ```
 
-<Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" />
+**HTTP Response and Error Codes:**
 
-```json
-{
-  "Errors": [
-    {
-      "Code": 1,
-      "Message": "Missing JourneyID parameter"
-    },
-    {
-      "Code": 2,
-      "Message": "Invalid JourneyID parameter"
-    }
-  ]
-}
-```
+| HTTP Response Code | Error Code | Description                 |
+|--------------------|------------|-----------------------------|
+| 422                | 1          | Missing JourneyID parameter |
+| 422                | 2          | Missing Actions parameter   |
+| 422                | 3          | Invalid JourneyID parameter |
+| 422                | 4          | Invalid Actions parameter   |
+| 404                | 5          | Journey not found           |
 
 ## Trigger a Journey For A Subscriber
 
@@ -655,7 +578,7 @@ Please note that this API endpoint requires a raw JSON body.
 | ListID       | List ID of the subscriber.                                                   | Yes      | 
 | SubscriberID | ID of the target subscriber.                                                 | Yes      | 
 
-**Successful Response:**
+**Example Successful Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -667,7 +590,7 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-**Error Responses:**
+**Example Error Response:**
 
 <Badge type="danger" text="HTTP Code: 404 Not Found" /> 
 
@@ -682,22 +605,20 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-<Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" /> 
+**HTTP Response and Error Codes:**
 
-```json
-{
-  "Errors": [
-    {
-      "Code": 1,
-      "Message": "Missing JourneyID parameter"
-    },
-    {
-      "Code": 2,
-      "Message": "Invalid JourneyID parameter"
-    }
-  ]
-}
-```
+| HTTP Response Code | Error Code | Description                                   |
+|--------------------|------------|-----------------------------------------------|
+| 422                | 1          | Missing JourneyID parameter                   |
+| 422                | 2          | Missing ListID parameter                      |
+| 422                | 3          | Missing SubscriberID parameter                |
+| 422                | 4          | Invalid JourneyID parameter                   |
+| 422                | 5          | Invalid ListID parameter                      |
+| 422                | 6          | Invalid SubscriberID parameter                |
+| 404                | 7          | Journey not found                             |
+| 404                | 8          | List not found                                |
+| 404                | 9          | Subscriber not found                          |
+| 403                | 10         | Journey is disabled. Operation not permitted. |
 
 ## Remove Subscriber From A Journey
 
@@ -719,7 +640,7 @@ Please note that this API endpoint requires a raw JSON body.
 | ListID       | List ID of the subscriber.                                                   | Yes      | 
 | SubscriberID | ID of the target subscriber.                                                 | Yes      | 
 
-**Successful Response:**
+**Example Successful Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -731,7 +652,7 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-**Error Responses:**
+**Example Error Response:**
 
 <Badge type="danger" text="HTTP Code: 404 Not Found" /> 
 
@@ -746,22 +667,19 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-<Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" /> 
+**HTTP Response and Error Codes:**
 
-```json
-{
-  "Errors": [
-    {
-      "Code": 1,
-      "Message": "Missing JourneyID parameter"
-    },
-    {
-      "Code": 2,
-      "Message": "Invalid JourneyID parameter"
-    }
-  ]
-}
-```
+| HTTP Response Code | Error Code | Description                    |
+|--------------------|------------|--------------------------------|
+| 422                | 1          | Missing JourneyID parameter    |
+| 422                | 2          | Missing ListID parameter       |
+| 422                | 3          | Missing SubscriberID parameter |
+| 422                | 4          | Invalid JourneyID parameter    |
+| 422                | 5          | Invalid ListID parameter       |
+| 422                | 6          | Invalid SubscriberID parameter |
+| 404                | 7          | Journey not found              |
+| 404                | 8          | List not found                 |
+| 404                | 9          | Subscriber not found           |
 
 ## Enrolled Journeys
 
@@ -782,7 +700,7 @@ Please note that this API endpoint requires a raw JSON body.
 | ListID       | List ID of the subscriber.                                                   | Yes      | 
 | SubscriberID | ID of the target subscriber.                                                 | Yes      | 
 
-**Successful Response:**
+**Example Successful Response:**
 
 <Badge type="info" text="HTTP Code: 200 OK" /> 
 
@@ -805,7 +723,7 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-**Error Responses:**
+**Example Error Response:**
 
 <Badge type="danger" text="HTTP Code: 404 Not Found" /> 
 
@@ -820,21 +738,15 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-<Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" /> 
+**HTTP Response and Error Codes:**
 
-```json
-{
-    "Errors": [
-        {
-            "Code": 3,
-            "Message": "Missing SubscriberID parameter"
-        },
-        {
-            "Code": 6,
-            "Message": "Invalid SubscriberID parameter"
-        }
-    ]
-}
-```
-
+| HTTP Response Code | Error Code | Description                    |
+|--------------------|------------|--------------------------------|
+| n/a                | 1          | [reserved]                     |
+| 422                | 2          | Missing ListID parameter       |
+| 422                | 3          | Missing SubscriberID parameter |
+| 422                | 5          | Invalid ListID parameter       |
+| 422                | 6          | Invalid SubscriberID parameter |
+| 404                | 8          | List not found                 |
+| 404                | 9          | Subscriber not found           |
 
