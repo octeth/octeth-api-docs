@@ -76,7 +76,7 @@ This API endpoint accepts raw body in JSON format.
 }
 ```
 
-**HTTP Resposne and Error Codes:**
+**HTTP Response and Error Codes:**
 
 | HTTP Response Code | Error Code | Description                               |
 |--------------------|------------|-------------------------------------------|
