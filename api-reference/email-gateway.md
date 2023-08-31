@@ -8,6 +8,109 @@ layout: doc
 Each API end-point on this article may have a different authentication method. Please make sure you use the correct authentication method.
 :::
 
+## Retrieve Sender Emails
+
+This API command will return the list of sender domains set for the given user account.
+
+### <Badge type="tip" text="POST" /> `/api.php`
+
+**Request Parameters:**
+
+| Parameter | Description                                                          | Required |
+|-----------|----------------------------------------------------------------------|----------|
+| Command   | `EmailGateway.GetDomains`                                            | Yes      | 
+| SessionID | The user's session ID.                                               | Yes      | 
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
+
+**Example Success Response:**
+
+<Badge type="info" text="HTTP Code: 200 OK" /> 
+
+```json
+{
+    "Success": true,
+    "ErrorCode": 0,
+    "Domains": [
+        {
+            "DomainID": "1",
+            "SenderDomain": "abc.com",
+            "CreatedAt": "2022-12-14 09:57:11",
+            "Status": "Enabled",
+            "VerificationMeta": {
+                "DNSRecords": {
+                    "sl.abc.com": [
+                        "CNAME",
+                        "mailer.deliveryservers.com"
+                    ],
+                    "key1._domainkey.sl.abc.com": [
+                        "CNAME",
+                        "key1._domainkey.mailer.deliveryservers.com"
+                    ],
+                    "_DMARC.sl.abc.com": [
+                        "CNAME",
+                        "_DMARC.mailer.deliveryservers.com"
+                    ],
+                    "track.sl.abc.com": [
+                        "CNAME",
+                        "track.mailer.deliveryservers.com"
+                    ],
+                    "87ER9i6bTe.sl.abc.com": [
+                        "TXT",
+                        "Z1crTW8ybTNheUVRRHR4QXhHWVd2U2xtS1o3RUZtdUx3WUhnYVdMMVZlOD0="
+                    ]
+                }
+            },
+            "PolicyMeta": [],
+            "Options": {
+                "LinkTracking": true,
+                "OpenTracking": true,
+                "UnsubscribeLink": false
+            }
+        },
+        {
+            "DomainID": "2",
+            "SenderDomain": "abc2.com",
+            "CreatedAt": "2022-12-14 12:38:48",
+            "Status": "Approval Pending",
+            "VerificationMeta": {
+                "DNSRecords": {
+                    "sl.abc2.com": [
+                        "CNAME",
+                        "mailer.deliveryservers.com"
+                    ],
+                    "key1._domainkey.sl.abc2.com": [
+                        "CNAME",
+                        "key1._domainkey.mailer.deliveryservers.com"
+                    ],
+                    "_DMARC.sl.abc2.com": [
+                        "CNAME",
+                        "_DMARC.mailer.deliveryservers.com"
+                    ],
+                    "track.sl.abc2.com": [
+                        "CNAME",
+                        "track.mailer.deliveryservers.com"
+                    ],
+                    "QD6O8em5yB.sl.abc2.com": [
+                        "TXT",
+                        "Mzg1OW55VlRsR045bm1qWk1VNlE1VElkcmJhKzVSU0plbmNaRE9jWjR2cz0="
+                    ]
+                }
+            },
+            "PolicyMeta": [],
+            "Options": {
+                "LinkTracking": true,
+                "OpenTracking": true,
+                "UnsubscribeLink": false
+            }
+        }
+    ]
+}
+```
+
+**Example Error Response:**
+
+There's no error case for this API end-point.
+
 ## Send Email
 
 This API command allows you to send an email using one of the verified sender domains.
