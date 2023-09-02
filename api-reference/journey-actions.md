@@ -267,6 +267,7 @@ This action will implement a decision with a criteria and set of actions for bot
 | Criteria         | The array of criteria. [Please refer to the criteria object below](/api-reference/criteria-syntax).   |
 | Actions          | The array of action objects in case `True` and `False` cases.                                         |
 
+
 ## `SendEmail`
 
 This action sends the email to the subscriber.
