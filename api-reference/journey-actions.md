@@ -1,8 +1,8 @@
 ---
 layout: doc
 prev:
-    text: 'Return Back'
-    link: 'javascript:history.back()'
+text: 'Return Back'
+link: 'javascript:history.back()'
 next: false
 ---
 
@@ -208,24 +208,26 @@ This action will halt all journeys except the current one for the subscriber.
 
 ## YesNo
 
-This action will implement a basic yes or no condition with a single criteria and set of actions for both `yes` and `no` cases.
+This action will implement a basic yes or no condition with a single criteria and set of actions for both `yes` and `no`
+cases.
 
 ::: warning
-This action is deprecated and will be removed in one of the coming Octeth version releases. Please use `Decision` action instead.
-::: 
+This action is deprecated and will be removed in one of the coming Octeth version releases. Please use `Decision` action
+instead.
+:::
 
 ```json
 {
-    "ActionID":null, 
-    "Action":"YesNo",
-    "CriteriaLeft":"EmailAddress",
-    "CriteriaOperator":"Contains",
-    "CriteriaRight":"@gmail",
-    "CriteriaOption":"",
-    "Actions": {
-        "Yes": [],
-        "No": []
-    }
+  "ActionID": null,
+  "Action": "YesNo",
+  "CriteriaLeft": "EmailAddress",
+  "CriteriaOperator": "Contains",
+  "CriteriaRight": "@gmail",
+  "CriteriaOption": "",
+  "Actions": {
+    "Yes": [],
+    "No": []
+  }
 }
 ```
 
@@ -264,3 +266,47 @@ This action will implement a decision with a criteria and set of actions for bot
 | CriteriaOperator | It can be set as `and`, `or`. Default value is `and`                                                  |
 | Criteria         | The array of criteria. [Please refer to the criteria object below](/api-reference/criteria-syntax).   |
 | Actions          | The array of action objects in case `True` and `False` cases.                                         |
+
+## `SendEmail`
+
+This action sends the email to the subscriber.
+
+```json
+{
+  "ActionID": 1,
+  "Action": "SendEmail",
+  "EmailID": 1,
+  "SenderDomainID": 2,
+  "From": {
+    "Name": "From Name",
+    "Email": "from@email.com"
+  },
+  "ReplyTo": {
+    "Name": "Reply-To Name",
+    "Email": "replyto@email.com"
+  },
+  "CC": [
+    {
+      "Name": "CC Name",
+      "Email": "cc@email.com"
+    }
+  ],
+  "BCC": [
+    {
+      "Name": "BCC Name",
+      "Email": "bcc@email.com"
+    }
+  ]
+}
+```
+
+| Parameter      | Description                                                                                                      |
+|----------------|------------------------------------------------------------------------------------------------------------------|
+| ActionID       | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
+| Action         | Set this parameter to `AddTag`.                                                                                  |
+| EmailID        | The ID of the target email content.                                                                              |
+| SenderDomainID | The ID of the email gateway sender domain to use when sending the email.                                         |
+| From           | `From.Name` and `From.Email` parameters to set as `From` header of the email.                                    |
+| Reply-To       | `ReplyTo.Name` and `ReplyTo.Email` parameters to set as `Reply-To` header of the email.                          |
+| CC             | The array with `Name` and `Email` parameters to set as `CC` header of the email.                                 |
+| BCC            | The array with `Name` and `Email` parameters to set as `BCC` header of the email.                                |
