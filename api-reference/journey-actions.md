@@ -1,8 +1,8 @@
 ---
 layout: doc
 prev:
-text: 'Return Back'
-link: 'javascript:history.back()'
+    text: 'Return Back'
+    link: 'javascript:history.back()'
 next: false
 ---
 
@@ -266,7 +266,6 @@ This action will implement a decision with a criteria and set of actions for bot
 | CriteriaOperator | It can be set as `and`, `or`. Default value is `and`                                                  |
 | Criteria         | The array of criteria. [Please refer to the criteria object below](/api-reference/criteria-syntax).   |
 | Actions          | The array of action objects in case `True` and `False` cases.                                         |
-
 
 ## `SendEmail`
 
