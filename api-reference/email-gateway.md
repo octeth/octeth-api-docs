@@ -154,7 +154,7 @@ Authentication is made via `Bearer` token as request header. The bearer token is
 |--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
 | SenderApiKey | The API key of the sender. Alternatively, this parameter can be passed as `Bearer` authorization token.                                                       | No       |
 | From         | An array containing the `name` and `email` of the sender. Both `name` and `email` are required fields.                                                        | Yes      |
-| ReplyTo      | An array of Reply-To email addresses. Each item in the array should be an associative array with `name` and `email` keys.                                     | No       |
+| Reply-To     | An array of Reply-To email addresses. Each item in the array should be an associative array with `name` and `email` keys.                                     | No       |
 | To           | An array of recipients. Each recipient is an array containing `name` and `email`. Both `name` and `email` are required fields.                                | Yes      |
 | Cc           | An array of CC email addresses. Each array item is an associative array with `name` and `email` keys.                                                         | No       |
 | Bcc          | An array of BCC email addresses. Each item in the array should be an associative array with `name` and `email` keys.                                          | No       |
