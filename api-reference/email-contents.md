@@ -343,13 +343,13 @@ This API end-point will return the list of personalization tags for a specific s
 
 **Request Parameters:**
 
-| Parameter | Description                                                                                                                                         | Required |
-|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| Command   | `Email.PersonalizationTags`                                                                                                                         | Yes      | 
-| SessionID | The user's session ID.                                                                                                                              | Yes      | 
-| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                | Yes      | 
-| Scope     | Defines the scope of the API request. It can have the following values: `Subscriber`, `CampaignLinks`, `OptLinks`, `ListLinks`, `AllLinks`, `User`. | Yes      |
-| ListId    | This parameter is required if `Subscriber` is included in the `Scope`. It represents the ID of the list.                                            | No       |
+| Parameter | Description                                                                                                                                                                            | Required |
+|-----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| Command   | `Email.PersonalizationTags`                                                                                                                                                            | Yes      | 
+| SessionID | The user's session ID.                                                                                                                                                                 | Yes      | 
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                                   | Yes      | 
+| Scope[]   | Defines the scope of the API request. It must be provided as an `Array`. It can have the following values: `Subscriber`, `CampaignLinks`, `OptLinks`, `ListLinks`, `AllLinks`, `User`. | Yes      |
+| ListId    | This parameter is required if `Subscriber` is included in the `Scope`. It represents the ID of the list.                                                                               | No       |
 
 **Example Success Response:**
 
