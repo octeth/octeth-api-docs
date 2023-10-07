@@ -27,6 +27,7 @@ This API endpoint accepts raw body in JSON format.
   "SessionID": "<user_session_id>",
   "APIKey": "",
   "Name": "Contact Form Journey",
+  "Notes": "This is an administrative note for the journey",
   "Trigger": "ListSubscription",
   "Trigger_ListID": 10
 }
@@ -55,6 +56,7 @@ This API endpoint accepts raw body in JSON format.
     "Trigger": "Manual",
     "TriggerParameters": [],
     "Status": "Disabled",
+    "Notes": "This is an administrative note for the journey",
     "CreatedAt": "2023-08-11 17:19:34",
     "UpdatedAt": "2023-08-11 17:19:34"
   }
@@ -125,6 +127,7 @@ journey statistics.
       "Trigger": "Manual",
       "TriggerParameters": "[]",
       "Status": "Disabled",
+      "Notes": "This is an administrative note for the journey",
       "CreatedAt": "2023-08-11 17:19:34",
       "UpdatedAt": "2023-08-11 17:19:34",
       "JourneyStats": {
@@ -228,6 +231,7 @@ This API endpoint expects a request body in JSON format.
     "Trigger": "Manual",
     "TriggerParameters": [],
     "Status": "Disabled",
+    "Notes": "This is an administrative note for the journey",
     "CreatedAt": "2023-08-11 18:13:17",
     "UpdatedAt": "2023-08-11 18:13:17"
   },
@@ -419,15 +423,16 @@ This endpoint expects a raw JSON body.
 
 **Request Body Parameters:**
 
-| Parameter       | Description                                                                                                                                        | Required |
-|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| SessionID       | The ID of the user's current session.                                                                                                              | Yes      | 
-| APIKey          | The user's API key. You must provide either the `SessionID` or `APIKey`.                                                                           | Yes      | 
-| JourneyID       | The ID of the journey you want to update.                                                                                                          | Yes      | 
-| Name            | The new name for the journey.                                                                                                                      | No       | 
-| Trigger         | The type of trigger. Options include: `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Manual`.        | No       | 
-| Trigger_ListID  | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (for any list) or a specific subscriber list ID.        | No       | 
-| Trigger_EmailID | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (for any email) or a specific email ID.         | No       | 
+| Parameter       | Description                                                                                                                                 | Required |
+|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| SessionID       | The ID of the user's current session.                                                                                                       | Yes      | 
+| APIKey          | The user's API key. You must provide either the `SessionID` or `APIKey`.                                                                    | Yes      | 
+| JourneyID       | The ID of the journey you want to update.                                                                                                   | Yes      | 
+| Name            | The new name for the journey.                                                                                                               | No       | 
+| Notes           | The administrative note for the journey.                                                                                                    | No       | 
+| Trigger         | The type of trigger. Options include: `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Manual`. | No       | 
+| Trigger_ListID  | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (for any list) or a specific subscriber list ID. | No       | 
+| Trigger_EmailID | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (for any email) or a specific email ID.  | No       | 
 
 **Example Successful Response:**
 
@@ -442,6 +447,7 @@ This endpoint expects a raw JSON body.
     "Trigger": "Manual",
     "TriggerParameters": [],
     "Status": "Disabled",
+    "Notes": "This is an administrative note for the journey",
     "CreatedAt": "2023-08-11 18:13:17",
     "UpdatedAt": "2023-08-11 18:13:17"
   }
