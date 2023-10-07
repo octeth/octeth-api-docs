@@ -123,6 +123,23 @@ This action stops all journeys except the current one for the subscriber.
 | ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
 | Action                | Set this parameter to `ExitAllOtherJourneys`.                                                                                    |
 
+## `ExitAllJourneys`
+
+This action stops all active journeys of the subscriber.
+
+```json
+{
+  "ActionID": 1,
+  "Action": "ExitAllJourneys",
+  "Notes": "Administative note"
+}
+```
+
+| Parameter             | Description                                                                                                      |
+|-----------------------|------------------------------------------------------------------------------------------------------------------|
+| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
+| Action                | Set this parameter to `ExitAllJourneys`.                                                                         |
+
 ## `Webhook`
 
 This action triggers a webhook.
