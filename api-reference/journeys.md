@@ -511,35 +511,169 @@ Please note that any actions not included in the provided list will be removed f
 
 ```json
 {
-  "Journey": 8,
-  "Actions": [
-    {
-      "ActionID": 1,
-      "OrderNo": 1,
-      "Action": "Wait",
-      "ActionParameters": {
-        "WaitUnit": "seconds",
-        "WaitAmount": 20
-      },
-      "Stats": {
-        "ActiveSubscribers": "0",
-        "TotalSubscribers": "0"
-      }
-    },
-    {
-      "ActionID": 11,
-      "OrderNo": 2,
-      "Action": "Wait",
-      "ActionParameters": {
-        "WaitUnit": "minutes",
-        "WaitAmount": 10
-      },
-      "Stats": {
-        "ActiveSubscribers": "0",
-        "TotalSubscribers": "0"
-      }
-    }
-  ]
+    "JourneyID": 22,
+    "Actions": [
+        {
+            "ActionID": 401,
+            "OrderNo": 1,
+            "Action": "Wait",
+            "ActionParameters": {
+                "WaitUnit": "seconds",
+                "WaitAmount": 3
+            },
+            "Notes": "note-1",
+            "CompletedRuns": "0",
+            "Stats": {
+                "ActiveSubscribers": "0",
+                "TotalSubscribers": "0"
+            }
+        },
+        {
+            "ActionID": 402,
+            "OrderNo": 2,
+            "Action": "SendEmail",
+            "ActionParameters": {
+                "EmailID": 129,
+                "SenderDomainID": 101,
+                "From": {
+                    "Name": "From Name",
+                    "Email": "from@email.com"
+                },
+                "ReplyTo": {
+                    "Name": "Reply-To Name",
+                    "Email": "replyto@email.com"
+                },
+                "CC": [
+                    {
+                        "Name": "CC Name 1",
+                        "Email": "cc1@email.com"
+                    },
+                    {
+                        "Name": "CC Name 2",
+                        "Email": "cc2@email.com"
+                    }
+                ],
+                "BCC": [
+                    {
+                        "Name": "BCC Name 1",
+                        "Email": "bcc1@email.com"
+                    },
+                    {
+                        "Name": "BCC Name 2",
+                        "Email": "bcc2@email.com"
+                    }
+                ],
+                "Email": {
+                    "EmailName": "Email name for administrative purposes",
+                    "ContentType": "Both",
+                    "Mode": "Editor",
+                    "FetchURL": "",
+                    "FetchPlainURL": "",
+                    "Subject": "{{{Hey|Hi|Hello}}}! Subject of the email",
+                    "PlainContent": "Plain contetn",
+                    "HTMLContent": "<p><strong>HTML content</strong></p>",
+                    "ExtraContent1": "",
+                    "ExtraContent2": "",
+                    "ImageEmbedding": "Disabled",
+                    "PreHeaderText": "",
+                    "Options": []
+                }
+            },
+            "Notes": "note-2",
+            "CompletedRuns": "0",
+            "Stats": {
+                "ActiveSubscribers": "0",
+                "TotalSubscribers": "0",
+                "EmailSent": 0,
+                "EmailOpened": 0,
+                "EmailClicked": 0,
+                "EmailConverted": 0,
+                "EmailUnsubscribed": 0,
+                "EmailBounced": 0,
+                "EmailSpamComplaint": 0
+            }
+        },
+        {
+            "ActionID": 403,
+            "OrderNo": 3,
+            "Action": "Wait",
+            "ActionParameters": {
+                "WaitUnit": "seconds",
+                "WaitAmount": 3
+            },
+            "Notes": "",
+            "CompletedRuns": "0",
+            "Stats": {
+                "ActiveSubscribers": "0",
+                "TotalSubscribers": "0"
+            }
+        },
+        {
+            "ActionID": 404,
+            "OrderNo": 4,
+            "Action": "SendEmail",
+            "ActionParameters": {
+                "EmailID": 129,
+                "SenderDomainID": 101,
+                "From": {
+                    "Name": "From Name",
+                    "Email": "from@email.com"
+                },
+                "ReplyTo": {
+                    "Name": "Reply-To Name",
+                    "Email": "replyto@email.com"
+                },
+                "CC": [
+                    {
+                        "Name": "CC Name 1",
+                        "Email": "cc1@email.com"
+                    },
+                    {
+                        "Name": "CC Name 2",
+                        "Email": "cc2@email.com"
+                    }
+                ],
+                "BCC": [
+                    {
+                        "Name": "BCC Name 1",
+                        "Email": "bcc1@email.com"
+                    },
+                    {
+                        "Name": "BCC Name 2",
+                        "Email": "bcc2@email.com"
+                    }
+                ],
+                "Email": {
+                    "EmailName": "Email name for administrative purposes",
+                    "ContentType": "Both",
+                    "Mode": "Editor",
+                    "FetchURL": "",
+                    "FetchPlainURL": "",
+                    "Subject": "{{{Hey|Hi|Hello}}}! Subject of the email",
+                    "PlainContent": "Plain contetn",
+                    "HTMLContent": "<p><strong>HTML content</strong></p>",
+                    "ExtraContent1": "",
+                    "ExtraContent2": "",
+                    "ImageEmbedding": "Disabled",
+                    "PreHeaderText": "",
+                    "Options": []
+                }
+            },
+            "Notes": "note-3",
+            "CompletedRuns": "0",
+            "Stats": {
+                "ActiveSubscribers": "0",
+                "TotalSubscribers": "0",
+                "EmailSent": 0,
+                "EmailOpened": 0,
+                "EmailClicked": 0,
+                "EmailConverted": 0,
+                "EmailUnsubscribed": 0,
+                "EmailBounced": 0,
+                "EmailSpamComplaint": 0
+            }
+        }
+    ]
 }
 ```
 

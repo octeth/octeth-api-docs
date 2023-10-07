@@ -17,16 +17,18 @@ This action pauses the journey for a specified period.
   "ActionID": 1,
   "Action": "Wait",
   "WaitUnit": "seconds",
-  "WaitAmount": 20
+  "WaitAmount": 20,
+  "Notes": "Administative note"
 }
 ```
 
-| Parameter             | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
-| Action                | Set this parameter to `Wait`.                                                                                                    |
-| WaitUnit              | Set to one of `seconds`, `minutes`, `hours`, `days`.                                                                             |
-| WaitAmount            | Set to an integer value based on the `WaitUnit` parameter.                                                                       |
+| Parameter  | Description                                                                                                      |
+|------------|------------------------------------------------------------------------------------------------------------------|
+| ActionID   | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
+| Action     | Set this parameter to `Wait`.                                                                                    |
+| WaitUnit   | Set to one of `seconds`, `minutes`, `hours`, `days`.                                                             |
+| WaitAmount | Set to an integer value based on the `WaitUnit` parameter.                                                       |
+| Notes      | The administrative note for the journey action.                                                                  |
 
 ## `UpdateCustomFieldValue`
 
@@ -37,7 +39,8 @@ This action updates a subscriber's custom field.
   "ActionID": 1,
   "Action": "UpdateCustomFieldValue",
   "TargetCustomFieldID": 10,
-  "NewCustomFieldValue": "New Value"
+  "NewCustomFieldValue": "New Value",
+  "Notes": "Administative note"
 }
 ```
 
@@ -56,7 +59,8 @@ This action unsubscribes the subscriber from the target list.
 {
   "ActionID": 1,
   "Action": "Unsubscribe",
-  "TargetListID": 10
+  "TargetListID": 10,
+  "Notes": "Administative note"
 }
 ```
 
@@ -74,7 +78,8 @@ This action stops the specified journey for the subscriber.
 {
   "ActionID": 1,
   "Action": "ExitJourney",
-  "TargetJourneyID": 10
+  "TargetJourneyID": 10,
+  "Notes": "Administative note"
 }
 ```
 
@@ -91,7 +96,8 @@ This action stops the current journey for the subscriber.
 ```json
 {
   "ActionID": 1,
-  "Action": "ExitThisJourney"
+  "Action": "ExitThisJourney",
+  "Notes": "Administative note"
 }
 ```
 
@@ -107,7 +113,8 @@ This action stops all journeys except the current one for the subscriber.
 ```json
 {
   "ActionID": 1,
-  "Action": "ExitAllOtherJourneys"
+  "Action": "ExitAllOtherJourneys",
+  "Notes": "Administative note"
 }
 ```
 
@@ -124,7 +131,8 @@ This action triggers a webhook.
 {
   "ActionID": 1,
   "Action": "Webhook",
-  "WebhookURL": ""
+  "WebhookURL": "",
+  "Notes": "Administative note"
 }
 ```
 
@@ -142,7 +150,8 @@ This action starts a journey for the subscriber.
 {
   "ActionID": 1,
   "Action": "StartJourney",
-  "TargetJourneyID": 0
+  "TargetJourneyID": 0,
+  "Notes": "Administative note"
 }
 ```
 
@@ -160,7 +169,8 @@ This action subscribes the subscriber to a list.
 {
   "ActionID": 1,
   "Action": "Subscribe",
-  "TargetListID": 0
+  "TargetListID": 0,
+  "Notes": "Administative note"
 }
 ```
 
@@ -178,7 +188,8 @@ This action adds a tag to the subscriber.
 {
   "ActionID": 1,
   "Action": "AddTag",
-  "TargetTagID": 0
+  "TargetTagID": 0,
+  "Notes": "Administative note"
 }
 ```
 
@@ -196,7 +207,8 @@ This action will halt all journeys except the current one for the subscriber.
 {
   "ActionID": 1,
   "Action": "RemoveTag",
-  "TargetTagID": 0
+  "TargetTagID": 0,
+  "Notes": "Administative note"
 }
 ```
 
@@ -220,6 +232,7 @@ instead.
 {
   "ActionID": null,
   "Action": "YesNo",
+  "Notes": "Administative note",
   "CriteriaLeft": "EmailAddress",
   "CriteriaOperator": "Contains",
   "CriteriaRight": "@gmail",
@@ -250,6 +263,7 @@ This action will implement a decision with a criteria and set of actions for bot
 {
   "ActionID": 1,
   "Action": "Decision",
+  "Notes": "Administative note",
   "CriteriaOperator": "or",
   "Criteria": [],
   "Actions": {
@@ -275,6 +289,7 @@ This action sends the email to the subscriber.
 {
   "ActionID": 1,
   "Action": "SendEmail",
+  "Notes": "Administative note",
   "EmailID": 1,
   "SenderDomainID": 2,
   "From": {
