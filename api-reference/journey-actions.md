@@ -83,11 +83,26 @@ This action stops the specified journey for the subscriber.
 }
 ```
 
-| Parameter             | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                 |
-| Action                | Set this parameter to `ExitJourney`.                                                                                             |
-| TargetJourneyID       | The ID of the journey to stop for the subscriber.                                                                                |
+or an array of journey ID numbers can be passed as shown below:
+
+```json
+{
+  "ActionID": 1,
+  "Action": "ExitJourney",
+  "TargetJourneyID": [
+    10,
+    11,
+    12
+  ],
+  "Notes": "Administative note"
+}
+```
+
+| Parameter             | Description                                                                                                      |
+|-----------------------|------------------------------------------------------------------------------------------------------------------|
+| ActionID              | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
+| Action                | Set this parameter to `ExitJourney`.                                                                             |
+| TargetJourneyID       | The ID of the journey to stop for the subscriber. Alternatively, it can be an array of Journey ID numbers.       |
 
 ## `ExitThisJourney`
 
