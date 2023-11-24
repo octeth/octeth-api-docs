@@ -9,7 +9,7 @@ layout: doc
 This API endpoint performs a health check of various system components including MySQL, Elasticsearch, RabbitMQ, Redis,
 and Session status. Authorization is required via a Bearer token admin API key.
 
-### <Badge type="info" text="HTTP REQUEST TYPE: GET" /> `/api/v1/system-health-check`
+### <Badge type="info" text="GET" /> `/api/v1/system-health-check`
 
 **Authorization:**
 

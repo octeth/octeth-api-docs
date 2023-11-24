@@ -462,7 +462,7 @@ A successful response indicates that the specified campaigns have been deleted.
 This API endpoint retrieves a list of campaigns based on specified criteria, including status, search keywords, and
 optional statistics.
 
-### <Badge type="info" text="HTTP REQUEST TYPE: POST" /> `/api.php`
+### <Badge type="info" text="POST" /> `/api.php`
 
 **Request Parameters:**
 

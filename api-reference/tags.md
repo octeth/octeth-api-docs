@@ -263,7 +263,7 @@ A successful response indicates that the tag has been assigned.
 This API endpoint is used for removing tags from individual subscribers or groups of subscribers within a specific
 subscriber list based on certain criteria or rules.
 
-### <Badge type="info" text="HTTP REQUEST TYPE: POST" /> `/api.php`
+### <Badge type="info" text="POST" /> `/api.php`
 
 **Request Parameters:**
 
