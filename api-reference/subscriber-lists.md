@@ -6,16 +6,17 @@ layout: doc
 
 ## Create a Subscriber List
 
-This API endpoint is used to create a new subscriber list. It checks for required fields, validates user limits, and then proceeds to create a new list.
+This API endpoint is used to create a new subscriber list. It checks for required fields, validates user limits, and
+then proceeds to create a new list.
 
 ### <Badge type="info" text="POST" /> `/api.php`
 
 **Request Parameters:**
 
-| Parameter           | Description                                                                                                           |          |
-|---------------------|-----------------------------------------------------------------------------------------------------------------------|----------|
-| Command             | `ListCreate`                                                                                                          | Required |
-| SubscriberListName  | The name of the subscriber list to create.                                                                            | Required |
+| Parameter           | Description                                |          |
+|---------------------|--------------------------------------------|----------|
+| Command             | `List.Create`                              | Required |
+| SubscriberListName  | The name of the subscriber list to create. | Required |
 
 **Success Response:**
 
@@ -48,14 +49,17 @@ A successful response will return a JSON object containing the following keys:
 ```json
 {
   "Success": false,
-  "ErrorCode": [1],
+  "ErrorCode": [
+    1
+  ],
   "ErrorText": "Missing required fields: SubscriberListName"
 }
 ```
 
 ## Update a Subscriber List
 
-This API endpoint is used to update an existing subscriber list. It checks if the required fields are provided, verifies the existence of the list, and then updates various properties of the list as specified.
+This API endpoint is used to update an existing subscriber list. It checks if the required fields are provided, verifies
+the existence of the list, and then updates various properties of the list as specified.
 
 ### <Badge type="info" text="POST" /> `/api.php`
 
@@ -63,7 +67,7 @@ This API endpoint is used to update an existing subscriber list. It checks if th
 
 | Parameter                                | Description                                                                           |          |
 |------------------------------------------|---------------------------------------------------------------------------------------|----------|
-| Command                                  | `ListUpdate`                                                                          | Required |
+| Command                                  | `List.Update`                                                                         | Required |
 | SubscriberListId                         | The ID of the subscriber list to update.                                              | Required |
 | Name                                     | *(Optional)* New name for the subscriber list.                                        | Optional |
 | SenderName                               | *(Optional)* New sender's name. Only available if enabled in group options.           | Optional |
@@ -104,6 +108,7 @@ This API endpoint is used to update an existing subscriber list. It checks if th
 **Success Response:**
 
 A successful response will return a JSON object containing the following keys:
+
 - `Success`: true
 - `ErrorCode`: 0
 - `ErrorText`: An empty string indicating no error.
@@ -114,34 +119,34 @@ A successful response will return a JSON object containing the following keys:
 - `1`: Missing subscriber list ID.
 - `2`: Invalid subscriber list ID.
 - `3`: Invalid opt-in mode
-
-
-
-
+- `10`: Invalid opt out suppression list option or global suppression list option.
 
 ## Get Subscriber List Details
 
-This API endpoint retrieves the details of a specific subscriber list. It requires the list ID and returns the information associated with that list.
+This API endpoint retrieves the details of a specific subscriber list. It requires the list ID and returns the
+information associated with that list.
 
 ### <Badge type="info" text="POST" /> `/api.php`
 
 **Request Parameters:**
 
-| Parameter           | Description                                      |          |
-|---------------------|--------------------------------------------------|----------|
-| Command             | `ListGet`                                        | Required |
-| ListId              | The ID of the subscriber list to retrieve.       | Required |
+| Parameter           | Description                                |          |
+|---------------------|--------------------------------------------|----------|
+| Command             | `List.Get`                                 | Required |
+| ListId              | The ID of the subscriber list to retrieve. | Required |
 
 **Success Response:**
 
 A successful response will return a JSON object containing the following keys:
+
 - `Success`: true or false (false if the list does not exist).
 - `ErrorCode`: 0 (indicating no error).
 - `List`: An array containing the details of the subscriber list.
 
 **Error Response:**
 
-- If the `ListId` is missing or the list does not exist, the `Success` key will be false, and the `ErrorCode` will indicate the nature of the error.
+- If the `ListId` is missing or the list does not exist, the `Success` key will be false, and the `ErrorCode` will
+  indicate the nature of the error.
 
 **Example Success Response:**
 
@@ -162,14 +167,18 @@ A successful response will return a JSON object containing the following keys:
 ```json
 {
   "Success": false,
-  "ErrorCode": [1], // Assuming 1 indicates a missing or invalid ListId
+  "ErrorCode": [
+    1
+  ],
+  // Assuming 1 indicates a missing or invalid ListId
   "ErrorText": "List ID is missing or invalid."
 }
 ```
 
 ## Retrieve List Assets
 
-This API endpoint retrieves various assets related to a specific subscriber list, including segments, custom fields, subscriber tags, and autoresponders.
+This API endpoint retrieves various assets related to a specific subscriber list, including segments, custom fields,
+subscriber tags, and autoresponders.
 
 ### <Badge type="info" text="POST" /> `/api.php`
 
@@ -177,12 +186,13 @@ This API endpoint retrieves various assets related to a specific subscriber list
 
 | Parameter | Description                                                     |          |
 |-----------|-----------------------------------------------------------------|----------|
-| Command   | `ListAssets`                                                    | Required |
+| Command   | `List.Assets`                                                   | Required |
 | ListId    | The ID of the subscriber list whose assets are to be retrieved. | Required |
 
 **Success Response:**
 
 A successful response will return a JSON object containing the following keys:
+
 - `Success`: true or false (false if the list does not exist).
 - `ErrorCode`: 0 (indicating no error).
 - `List`: An array containing the details of the subscriber list.
@@ -193,7 +203,8 @@ A successful response will return a JSON object containing the following keys:
 
 **Error Response:**
 
-- If the `ListId` is missing or the list does not exist, the `Success` key will be false, and the `ErrorCode` will indicate the nature of the error.
+- If the `ListId` is missing or the list does not exist, the `Success` key will be false, and the `ErrorCode` will
+  indicate the nature of the error.
 
 **Example Success Response:**
 
@@ -201,11 +212,21 @@ A successful response will return a JSON object containing the following keys:
 {
   "Success": true,
   "ErrorCode": 0,
-  "List": { /* List details */ },
-  "Segments": [ /* Array of segments */ ],
-  "CustomFields": [ /* Array of custom fields */ ],
-  "SubscriberTags": [ /* Array of tags */ ],
-  "AutoResponders": [ /* Array of autoresponders */ ]
+  "List": {
+    /* List details */
+  },
+  "Segments": [
+    /* Array of segments */
+  ],
+  "CustomFields": [
+    /* Array of custom fields */
+  ],
+  "SubscriberTags": [
+    /* Array of tags */
+  ],
+  "AutoResponders": [
+    /* Array of autoresponders */
+  ]
 }
 ```
 
@@ -214,7 +235,10 @@ A successful response will return a JSON object containing the following keys:
 ```json
 {
   "Success": false,
-  "ErrorCode": [1], // Assuming 1 indicates a missing or invalid ListId
+  "ErrorCode": [
+    1
+  ],
+  // Assuming 1 indicates a missing or invalid ListId
   "ErrorText": "List ID is missing or invalid."
 }
 ```
@@ -229,7 +253,7 @@ This API endpoint allows the deletion of one or more subscriber lists. It requir
 
 | Parameter | Description                                                |          |
 |-----------|------------------------------------------------------------|----------|
-| Command   | `ListsDelete`                                              | Required |
+| Command   | `Lists.Delete`                                             | Required |
 | Lists     | A comma-separated string of subscriber list IDs to delete. | Required |
 
 **Success Response:**
@@ -242,7 +266,8 @@ A successful response indicates that the specified lists have been deleted.
 
 **Error Response:**
 
-- If the `Lists` parameter is missing or invalid, the response will indicate failure.
+- `1`: Subscriber list IDs are missing. (This code is inferred from the error text "Subscriber list ids are missing" in
+  the PHP code.)
 
 **Example Success Response:**
 
@@ -259,19 +284,18 @@ A successful response indicates that the specified lists have been deleted.
 ```json
 {
   "Success": false,
-  "ErrorCode": [1], // Assuming 1 indicates missing or invalid list IDs
+  "ErrorCode": [
+    1
+  ],
+  // Assuming 1 indicates missing or invalid list IDs
   "ErrorText": "Subscriber list ids are missing"
 }
 ```
 
-
-
-
-
-
 ## Retrieve Subscriber Lists
 
-This API endpoint retrieves a list of subscriber lists owned by a user. It includes various optional parameters to customize the query, such as pagination and sorting.
+This API endpoint retrieves a list of subscriber lists owned by a user. It includes various optional parameters to
+customize the query, such as pagination and sorting.
 
 ### <Badge type="info" text="POST" /> `/api.php`
 
@@ -279,7 +303,7 @@ This API endpoint retrieves a list of subscriber lists owned by a user. It inclu
 
 | Parameter         | Description                                                              |          |
 |-------------------|--------------------------------------------------------------------------|----------|
-| Command           | `ListsGet`                                                               | Required |
+| Command           | `Lists.Get`                                                              | Required |
 | RecordsPerRequest | *(Optional)* The number of records to return per request. Defaults to 0. | Optional |
 | RecordsFrom       | *(Optional)* The starting record number for the request. Defaults to 0.  | Optional |
 | OrderField        | *(Optional)* The field to order the lists by. Defaults to 'ListID'.      | Optional |
@@ -288,6 +312,7 @@ This API endpoint retrieves a list of subscriber lists owned by a user. It inclu
 **Success Response:**
 
 A successful response will return a JSON object containing the following keys:
+
 - `Success`: true
 - `ErrorCode`: 0 (indicating no error)
 - `ErrorText`: An empty string, indicating no error
