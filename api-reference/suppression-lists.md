@@ -30,8 +30,7 @@ A successful response will return a list of suppressed email addresses.
 
 **Error Response:**
 
-The error response will be triggered if there are issues with the provided parameters. However, specific error codes are
-not defined in the provided PHP code.
+- No specific error codes defined in the provided code.
 
 **Example Success Response:**
 
@@ -80,8 +79,8 @@ A successful response indicates that the specified email address has been remove
 
 **Error Response:**
 
-- `1`: Missing email address.
-- `2`: Invalid email address or email address not found in the suppression list.
+- `1`: Missing Email Address.
+- `2`: Invalid Email Address or Email Address not in suppression list.
 
 **Example Success Response:**
 
@@ -131,8 +130,8 @@ A successful response indicates that the email addresses have been imported into
 
 **Error Response:**
 
-- If neither `EmailAddresses` nor `EmailAddressesBulk` is provided, or if there are validation errors, the response will
-  indicate failure.
+- `1`: Missing Email Addresses.
+- `2`: Invalid format or content in Email Addresses.
 
 **Example Success Response:**
 

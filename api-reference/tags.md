@@ -4,35 +4,24 @@ layout: doc
 
 # Tags
 
-## Create Subscriber Tag
+## Create Subscriber Tags
 
-This API endpoint is used for creating a new tag associated with a specific subscriber list.
+This API endpoint is used for creating a new tag within a specified subscriber list. It facilitates the categorization
+or grouping of subscribers in a list by assigning a unique tag name.
 
 ### <Badge type="info" text="POST" /> `/api.php`
 
 **Request Parameters:**
 
-| Parameter        | Description                                              |          |
-|------------------|----------------------------------------------------------|----------|
-| Command          | `Subscriber.Tags`                                        | Required |
-| SubscriberListId | The ID of the subscriber list to associate the tag with. | Required |
-| Tag              | The name of the tag to create.                           | Required |
+| Parameter          | Description                              | Required |
+|--------------------|------------------------------------------|----------|
+| Command            | `Subscriber.Tags.Create`                 | Yes      |
+| subscriberlistid   | The ID of the subscriber list            | Yes      |
+| tag                | Name of the tag to be created            | Yes      |
 
 **Success Response:**
 
-A successful response indicates that the tag has been created.
-
-- `Success`: true
-- `TagID`: The ID of the newly created tag.
-
-**Error Response:**
-
-- `1`: Missing subscriber list ID.
-- `2`: Missing tag name.
-- `4`: Invalid subscriber list ID or the list does not belong to the user.
-- `5`: Failure to create the tag due to a duplicate tag name.
-
-**Example Success Response:**
+A successful response indicates that the tag has been created and returns the ID of the new tag:
 
 ```json
 {
@@ -40,6 +29,15 @@ A successful response indicates that the tag has been created.
   "TagID": 12345
 }
 ```
+
+**Error Response:**
+
+Error responses vary based on the issue encountered. Examples include:
+
+- `1`: Missing subscriber list ID
+- `2`: Missing tag name
+- `4`: Invalid subscriber list ID
+- `5`: There is another tag with the same name
 
 **Example Error Response:**
 
@@ -52,6 +50,10 @@ A successful response indicates that the tag has been created.
   "ErrorText": "Missing subscriber list id"
 }
 ```
+
+The API requires the ID of the subscriber list where the tag will be created and the name for the new tag. If the tag
+name already exists within the same list, the request will fail, indicating a duplicate name issue. The API also
+verifies the existence and ownership of the subscriber list.
 
 ## Delete Subscriber Tags
 
@@ -75,9 +77,8 @@ A successful response indicates that the specified tags have been deleted.
 
 **Error Response:**
 
-- `2`: Missing subscriber list ID. (Note: The error message 'Tag ids are missing' seems to be associated with a
-  missing 'tagids' parameter, but it's not marked as required in the code.)
-- `4`: Invalid subscriber list ID or the list does not belong to the user.
+- `1`: Missing subscriber list ID.
+- `4`: Invalid subscriber list ID.
 
 **Example Success Response:**
 
@@ -179,7 +180,7 @@ A successful response indicates that the tag has been updated.
 - `1`: Missing tag ID.
 - `2`: Missing subscriber list ID.
 - `3`: Missing tag name.
-- `4`: Invalid tag ID or subscriber list ID, or the list does not belong to the user.
+- `4`: Invalid subscriber list ID or tag ID.
 
 **Example Success Response:**
 
