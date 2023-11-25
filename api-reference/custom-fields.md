@@ -4,299 +4,271 @@ layout: doc
 
 # Custom Fields
 
-## Create Custom Field
+## Create a New Custom Field
 
-This API endpoint is used to create a new custom field in a subscriber list. It supports the creation of fields with
-various types and options, including preset fields.
+<Badge type="info" text="POST" /> `/api.php`
 
-### <Badge type="info" text="POST" /> `/api.php`
+This endpoint is used to create a new custom field for a subscriber list. It allows for various field types and configurations, including preset fields, validation rules, and merge tag aliases.
 
-**Request Parameters:**
+**Request Body Parameters:**
 
-| Parameter          | Description                                                                                     |          |
-|--------------------|-------------------------------------------------------------------------------------------------|----------|
-| Command            | `CustomField.Create`                                                                            | Required |
-| SubscriberListId   | The ID of the subscriber list to which the custom field will be added.                          | Required |
-| FieldName          | *(Optional if `PresetName` is provided)* The name of the custom field.                          | Optional |
-| FieldType          | *(Optional if `PresetName` is provided)* The type of the custom field (e.g., 'Date field').     | Optional |
-| PresetName         | *(Optional)* The name of a preset custom field.                                                 | Optional |
-| DefaultValue       | *(Optional)* The default value for the custom field.                                            | Optional |
-| ValidationMethod   | *(Optional)* The method of validation for the custom field (e.g., 'Custom').                    | Optional |
-| ValidationRule     | *(Optional)* The rule for validation, required if ValidationMethod is 'Custom'.                 | Optional |
-| MergeTagAlias      | *(Optional)* An alias for the merge tag associated with the custom field.                       | Optional |
-| OptionLabel        | *(Optional)* Labels for options in the custom field.                                            | Optional |
-| OptionValue        | *(Optional)* Values for options in the custom field.                                            | Optional |
-| OptionSelected     | *(Optional)* Indicates which options are selected by default.                                   | Optional |
-| IsRequired         | *(Optional)* Indicates whether the field is required ('Yes' or 'No').                           | Optional |
-| IsUnique           | *(Optional)* Indicates whether the field value must be unique ('Yes' or 'No').                  | Optional |
-| Visibility         | *(Optional)* The visibility of the field ('Public' or 'User Only').                             | Optional |
-| IsGlobal           | *(Optional)* Indicates whether the field is global ('Yes' or 'No').                             | Optional |
-| Years              | *(Optional)* Required if the FieldType is 'Date field'. Specifies the range of years available. | Optional |
+| Parameter        | Description                                                           | Required?   |
+|------------------|-----------------------------------------------------------------------|-------------|
+| SessionID        | The ID of the user's current session                                  | Yes         |
+| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided.  | Yes         |
+| Command          | CustomField.Create                                                    | Yes         |
+| SubscriberListID | The ID of the subscriber list to which the custom field will be added | Yes         |
+| FieldName        | The name of the custom field                                          | Conditional |
+| FieldType        | The type of the custom field (e.g., 'Date field', 'Drop down', etc.)  | Conditional |
+| DefaultValue     | The default value for the custom field                                | No          |
+| ValidationMethod | The method used to validate the field (e.g., 'None', 'Custom')        | No          |
+| ValidationRule   | The rule used for custom validation                                   | Conditional |
+| MergeTagAlias    | An alias for the merge tag associated with the custom field           | No          |
+| PresetName       | The name of the preset to use for the custom field                    | Conditional |
+| Years            | The range of years for a 'Date field' type                            | Conditional |
+| OptionLabel      | The labels for the options of the field                               | Conditional |
+| OptionValue      | The values for the options of the field                               | Conditional |
+| OptionSelected   | The selected options of the field                                     | Conditional |
+| IsRequired       | Whether the field is required ('Yes' or 'No')                         | No          |
+| IsUnique         | Whether the field must have a unique value ('Yes' or 'No')            | No          |
+| Visibility       | The visibility of the field ('Public' or 'User Only')                 | No          |
+| IsGlobal         | Whether the field is global ('Yes' or 'No')                           | No          |
 
-**Success Response:**
+::: code-group
 
-A successful response will return a JSON object containing the following keys:
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=CustomField.Create' \
+  -d 'SubscriberListID=123' \
+  -d 'FieldName=Birthdate' \
+  -d 'FieldType=Date field' \
+  -d 'DefaultValue=1990-01-01' \
+  -d 'ValidationMethod=Custom' \
+  -d 'ValidationRule=after:1980-01-01' \
+  -d 'MergeTagAlias=birthday' \
+  -d 'IsRequired=Yes' \
+  -d 'IsUnique=No' \
+  -d 'Visibility=Public' \
+  -d 'IsGlobal=No'
+```
 
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
-- `ErrorText`: An empty string, indicating no error
-- `CustomFieldID`: The ID of the newly created custom field
-
-**Error Response:**
-
-- `1`: Missing subscriber list ID.
-- `2`: Missing field name.
-- `3`: Missing field type.
-- `4`: Missing validation rule. This is required when the `validationmethod` is set to 'Custom'.
-- `5`: Invalid or undefined `presetname`. This occurs when the `presetname` provided does not match any key in
-  the `$ArrayCustomFieldPresets`.
-- `1000`: Merge tag alias code has been set for another custom field. This error is returned if the
-  provided `mergetagalias` is already in use by another custom field in the same subscriber list.
-- `1001`: Merge tag alias code includes invalid characters. This is triggered if the provided `mergetagalias` contains
-  characters outside the allowed set.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0,
   "ErrorText": "",
-  "CustomFieldID": 12345
+  "CustomFieldID": 456
 }
 ```
 
-**Example Error Response:**
-
-```json
-{
-  "Success": false,
-  "ErrorCode": [
-    2
-  ],
-  // Assuming 2 indicates a missing field name
-  "ErrorText": "Missing field name"
-}
-```
-
-## Update Custom Field
-
-This API endpoint allows for updating an existing custom field in a subscriber list. It supports modifying various
-properties of the custom field.
-
-### <Badge type="info" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter          | Description                                                                                         |          |
-|--------------------|-----------------------------------------------------------------------------------------------------|----------|
-| Command            | `CustomField.Update`                                                                                | Required |
-| CustomFieldId      | The ID of the custom field to update.                                                               | Required |
-| FieldName          | The new name of the custom field.                                                                   | Required |
-| FieldType          | The new type of the custom field (e.g., 'Single line', 'Paragraph text').                           | Required |
-| DefaultValue       | *(Optional)* The new default value for the custom field.                                            | Optional |
-| ValidationMethod   | *(Optional)* The new method of validation for the custom field.                                     | Optional |
-| ValidationRule     | *(Optional)* The new rule for validation, required if ValidationMethod is 'Custom'.                 | Optional |
-| MergeTagAlias      | *(Optional)* An updated alias for the merge tag associated with the custom field.                   | Optional |
-| OptionLabel        | *(Optional)* New labels for options in the custom field.                                            | Optional |
-| OptionValue        | *(Optional)* New values for options in the custom field.                                            | Optional |
-| OptionSelected     | *(Optional)* Indicates which options are selected by default.                                       | Optional |
-| IsRequired         | *(Optional)* Indicates whether the field is now required ('Yes' or 'No').                           | Optional |
-| IsUnique           | *(Optional)* Indicates whether the field value must now be unique ('Yes' or 'No').                  | Optional |
-| Visibility         | *(Optional)* The new visibility of the field ('Public' or 'User Only').                             | Optional |
-| IsGlobal           | *(Optional)* Indicates whether the field is now global ('Yes' or 'No').                             | Optional |
-| Years              | *(Optional)* Required if the FieldType is 'Date field'. Specifies the new range of years available. | Optional |
-
-**Success Response:**
-
-A successful response indicates that the custom field has been updated.
-
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
-- `ErrorText`: An empty string, indicating that no error occurred during the operation.
-
-**Error Response:**
-
-- `1`: Missing custom field ID.
-- `2`: Missing field name.
-- `3`: Missing field type.
-- `4`: Missing validation rule.
-- `6`: Invalid custom field ID.
-- `7`: Invalid field type.
-- `8`: Invalid validation method.
-- `9`: Invalid visibility value.
-- `10`: Invalid IsRequired value.
-- `11`: Invalid IsUnique value.
-- `12`: Invalid IsGlobal value.
-- `1000`: Merge tag alias code has been set for another custom field.
-- `1001`: Merge tag alias code includes invalid characters.
-
-**Example Success Response:**
-
-```json
-{
-  "Success": true,
-  "ErrorCode": 0,
-  "ErrorText": ""
-}
-```
-
-**Example Error Response:**
-
-```json
-{
-  "Success": false,
-  "ErrorCode": [
-    2
-  ],
-  "ErrorText": "Missing field name"
-}
-```
-
-## Copy Custom Fields
-
-This API endpoint allows for copying all custom fields from one subscriber list (source list) to another (target list).
-
-### <Badge type="info" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter   | Description                                              |          |
-|-------------|----------------------------------------------------------|----------|
-| Command     | `CustomFields.Copy`                                      | Required |
-| SourceListId | The ID of the subscriber list from which to copy fields. | Required |
-| TargetListId | The ID of the subscriber list to which to copy fields.   | Required |
-
-**Success Response:**
-
-A successful response indicates that all custom fields from the source list have been copied to the target list.
-
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
-- `ErrorText`: An empty string, indicating that no error occurred during the operation.
-
-**Error Response:**
-
-- `1`: Missing source subscriber list ID.
-- `2`: Missing target subscriber list ID.
-- `4`: Invalid source or target subscriber list ID.
-
-**Example Success Response:**
-
-```json
-{
-  "Success": true,
-  "ErrorCode": 0,
-  "ErrorText": ""
-}
-```
-
-**Example Error Response:**
-
-```json
-{
-  "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing source subscriber list id"
-}
-```
-
-## Delete Custom Fields
-
-This API endpoint facilitates the deletion of one or more custom fields from a subscriber list.
-
-### <Badge type="info" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter     | Description                                             |          |
-|---------------|---------------------------------------------------------|----------|
-| Command       | `CustomFields.Delete`                                   | Required |
-| CustomFields  | A comma-separated string of custom field IDs to delete. | Required |
-
-**Success Response:**
-
-A successful response indicates that the specified custom fields have been deleted.
-
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
-- `ErrorText`: An empty string, indicating that no error occurred during the operation.
-
-**Error Response:**
-
-- If the `CustomFields` parameter is missing or invalid, the response will indicate failure.
-
-**Example Success Response:**
-
-```json
-{
-  "Success": true,
-  "ErrorCode": 0,
-  "ErrorText": ""
-}
-```
-
-**Example Error Response:**
-
-```json
-{
-  "Success": false,
-  "ErrorCode": [1], // Assuming 1 indicates missing or invalid custom field IDs
-  "ErrorText": "Custom field ids are missing"
-}
-```
-
-## Retrieve Custom Fields
-
-This API endpoint allows for retrieving custom fields associated with a specified subscriber list. It can also return global custom fields if requested.
-
-### <Badge type="info" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter                | Description                                                                     |          |
-|--------------------------|---------------------------------------------------------------------------------|----------|
-| Command                  | `CustomFields.Get`                                                              | Required |
-| SubscriberListId         | The ID of the subscriber list for which to retrieve custom fields.              | Required |
-| OrderField               | *(Optional)* Field to order the custom fields by.                               | Optional |
-| OrderType                | *(Optional)* Type of order (e.g., 'ASC', 'DESC').                               | Optional |
-| ReturnGlobalCustomFields | *(Optional)* Boolean indicating whether to return global custom fields as well. | Optional |
-
-**Success Response:**
-
-A successful response will return a JSON object containing the following keys:
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
-- `ErrorText`: An empty string, indicating no error
-- `TotalFieldCount`: The total number of custom fields
-- `CustomFields`: An array of custom fields associated with the specified subscriber list
-
-**Error Response:**
-
-- `1`: Missing subscriber list ID.
-
-**Example Success Response:**
-
-```json
-{
-  "Success": true,
-  "ErrorCode": 0,
-  "ErrorText": "",
-  "TotalFieldCount": 10,
-  "CustomFields": [
-    // Array of custom fields
-  ]
-}
-```
-
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
   "ErrorCode": [1],
   "ErrorText": "Missing subscriber list id"
 }
+```
+
+```text [Error Codes]
+1: Missing subscriber list id
+2: Missing field name
+3: Missing field type
+4: Missing validation rule
+5: Invalid preset name
+1000: Merge tag alias code has been set for another custom field
+1001: Merge tag alias code includes invalid characters
+```
+
+## Update Custom Field
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint is used to update the details of an existing custom field in the system.
+
+**Request Body Parameters:**
+
+| Parameter        | Description                                                           | Required? |
+|------------------|-----------------------------------------------------------------------|-----------|
+| SessionID        | The ID of the user's current session                                  | Yes       |
+| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided.  | Yes       |
+| Command          | CustomField.Update                                                    | Yes       |
+| CustomFieldID    | The unique identifier for the custom field to be updated              | Yes       |
+| FieldName        | The name of the custom field                                          | Yes       |
+| FieldType        | The type of the custom field (e.g., 'Single line', 'Paragraph text')  | Yes       |
+| SubscriberListID | The ID of the subscriber list associated with the custom field        | No        |
+| DefaultValue     | The default value for the custom field                                | No        |
+| MergeTagAlias    | The merge tag alias for the custom field                              | No        |
+| ValidationMethod | The method used to validate the custom field's value                  | No        |
+| ValidationRule   | The rule applied for validating the custom field's value              | No        |
+| OptionLabel      | The label for the field option                                        | No        |
+| OptionValue      | The value for the field option                                        | No        |
+| OptionSelected   | The selected option for the field                                     | No        |
+| Visibility       | The visibility setting for the custom field ('Public' or 'User Only') | No        |
+| IsGlobal         | Whether the custom field is global ('Yes' or 'No')                    | No        |
+| IsRequired       | Whether the custom field is required ('Yes' or 'No')                  | No        |
+| IsUnique         | Whether the custom field is unique ('Yes' or 'No')                    | No        |
+| Years            | The years option for a date field                                     | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "Command": "CustomField.Update",
+    "CustomFieldID": "123",
+    "FieldName": "New Field Name",
+    "FieldType": "Single line"
+}'
+```
+
+```json [Success Response]
+{
+    "Success": true,
+    "ErrorCode": 0,
+    "ErrorText": ""
+}
+```
+
+```json [Error Response]
+{
+    "Success": false,
+    "ErrorCode": [1],
+    "ErrorText": ["Missing custom field id"]
+}
+```
+
+```text [Error Codes]
+1: Missing custom field id
+2: Missing field name
+3: Missing field type
+4: Missing validation rule
+6: Invalid custom field id
+7: Invalid field type
+8: Invalid validation method
+9: Invalid visibility value
+10: Invalid IsRequired value
+11: Invalid IsUnique value
+12: Invalid IsGlobal value
+1000: Merge tag alias code has been set for another custom field
+1001: Merge tag alias code includes invalid characters.
+```
+
+## Delete Custom Fields
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint is used to delete one or more custom fields associated with a user. The custom fields to be deleted are specified by their IDs.
+
+**Request Body Parameters:**
+
+| Parameter    | Description                                                          | Required? |
+|--------------|----------------------------------------------------------------------|-----------|
+| SessionID    | The ID of the user's current session                                 | Yes       |
+| APIKey       | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command      | CustomFields.Delete                                                  | Yes       |
+| CustomFields | A comma-separated list of custom field IDs to delete                 | Yes       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "Command": "CustomFields.Delete",
+    "CustomFields": "1,2,3"
+}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": ""
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": {
+    "customfields": 1
+  },
+  "ErrorText": ["Custom field ids are missing"]
+}
+```
+
+```text [Error Codes]
+1: Custom field ids are missing
+```
+:::
+
+## Retrieve Custom Fields
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint retrieves custom fields associated with a specific subscriber list. It allows for the optional return of global custom fields as well.
+
+**Request Body Parameters:**
+
+| Parameter                | Description                                                           | Required? |
+|--------------------------|-----------------------------------------------------------------------|-----------|
+| SessionID                | The ID of the user's current session                                  | Yes       |
+| APIKey                   | The user's API key. Either `SessionID` or `APIKey` must be provided.  | Yes       |
+| Command                  | CustomFields.Get                                                      | Yes       |
+| SubscriberListID         | The unique identifier for the subscriber list                         | Yes       |
+| ReturnGlobalCustomFields | A boolean value to specify if global custom fields should be returned | No        |
+| OrderField               | The field by which to order the custom fields                         | No        |
+| OrderType                | The order type, either 'ASC' for ascending or 'DESC' for descending   | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://yourdomain.com/api.php \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "Command": "CustomFields.Get",
+    "SubscriberListID": "123",
+    "ReturnGlobalCustomFields": true,
+    "OrderField": "FieldName",
+    "OrderType": "ASC"
+}'
+```
+
+```json [Success Response]
+{
+    "Success": true,
+    "ErrorCode": 0,
+    "ErrorText": "",
+    "TotalFieldCount": 5,
+    "CustomFields": [
+        {
+            "FieldID": "1",
+            "FieldName": "CustomField1",
+            "FieldType": "text",
+            // Additional custom field details...
+        },
+        // Additional custom fields...
+    ]
+}
+```
+
+```json [Error Response]
+{
+    "Success": false,
+    "ErrorCode": 1,
+    "ErrorText": "Missing subscriber list id"
+}
+```
+
+```text [Error Codes]
+1: Missing subscriber list id
 ```

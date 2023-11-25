@@ -4,312 +4,346 @@ layout: doc
 
 # Tags
 
-## Create Subscriber Tags
+## Tag a Subscriber
 
-This API endpoint is used for creating a new tag within a specified subscriber list. It facilitates the categorization
-or grouping of subscribers in a list by assigning a unique tag name.
+<Badge type="info" text="POST" /> `/api.php`
 
-### <Badge type="info" text="POST" /> `/api.php`
+This endpoint allows you to tag subscribers within a list. You can either tag specific subscribers by providing their IDs or tag all subscribers that match certain criteria defined by a JSON ruleset.
 
-**Request Parameters:**
+**Request Body Parameters:**
 
-| Parameter          | Description                              | Required |
-|--------------------|------------------------------------------|----------|
-| Command            | `Subscriber.Tags.Create`                 | Yes      |
-| subscriberlistid   | The ID of the subscriber list            | Yes      |
-| tag                | Name of the tag to be created            | Yes      |
+| Parameter        | Description                                                                   | Required?   |
+|------------------|-------------------------------------------------------------------------------|-------------|
+| SessionID        | The ID of the user's current session                                          | Yes         |
+| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided.          | Yes         |
+| Command          | Subscriber.Tag                                                                | Yes         |
+| TagID            | The unique identifier for the tag                                             | Yes         |
+| SubscriberListID | The unique identifier for the subscriber list                                 | Yes         |
+| SubscriberID     | The unique identifier(s) for the subscriber(s) to be tagged (comma-separated) | No          |
+| RulesJSON        | The JSON string defining the rules to match subscribers                       | Conditional |
+| RulesOperator    | The operator to be used with the rules (`and`/`or`)                           | Conditional |
+| TriggerEvents    | Whether to trigger events when tagging (1 for yes, 0 for no)                  | No          |
 
-**Success Response:**
+::: code-group
 
-A successful response indicates that the tag has been created and returns the ID of the new tag:
-
-```json
-{
-  "Success": true,
-  "TagID": 12345
-}
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=Subscriber.Tag' \
+  -d 'TagID=123' \
+  -d 'SubscriberListID=456' \
+  -d 'SubscriberID=789,1011' \
+  -d 'TriggerEvents=1'
 ```
 
-**Error Response:**
-
-Error responses vary based on the issue encountered. Examples include:
-
-- `1`: Missing subscriber list ID
-- `2`: Missing tag name
-- `4`: Invalid subscriber list ID
-- `5`: There is another tag with the same name
-
-**Example Error Response:**
-
-```json
-{
-  "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing subscriber list id"
-}
-```
-
-The API requires the ID of the subscriber list where the tag will be created and the name for the new tag. If the tag
-name already exists within the same list, the request will fail, indicating a duplicate name issue. The API also
-verifies the existence and ownership of the subscriber list.
-
-## Delete Subscriber Tags
-
-This API endpoint allows for deleting tags associated with a specific subscriber list.
-
-### <Badge type="info" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter        | Description                                                       |          |
-|------------------|-------------------------------------------------------------------|----------|
-| Command          | `Subscriber.Tags.Delete`                                          | Required |
-| SubscriberListId | The ID of the subscriber list associated with the tags to delete. | Required |
-| TagIds           | A comma-separated string of tag IDs to delete.                    | Optional |
-
-**Success Response:**
-
-A successful response indicates that the specified tags have been deleted.
-
-- `Success`: true
-
-**Error Response:**
-
-- `1`: Missing subscriber list ID.
-- `4`: Invalid subscriber list ID.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [
-    2
-  ],
-  "ErrorText": "Tag ids are missing"
+  "ErrorCode": [1],
+  "ErrorText": ["Missing tag id"]
 }
 ```
 
+```text [Error Codes]
+1: Missing tag id
+2: Missing subscriber list id
+3: Missing subscriber id
+4: Invalid list id
+5: Invalid subscriber id
+6: Missing RulesJSON parameter or Invalid tag id
+7: Missing RulesOperator parameter
+8: Invalid query builder response
+```
+:::
+
+::: warning NOTICE
+- Please note that if `SubscriberID` is not provided, then `RulesJSON` and `RulesOperator` are required. 
+- The `RulesOperator` will default to 'or' if not provided as 'and'. 
+- When tagging by criteria, the system will process a batch tagging based on the rules defined in `RulesJSON`.
+- If `TriggerEvents` is set to 1, any events associated with tagging will be triggered.
+:::
+
+## Untag a Subscriber
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint allows you to remove a tag from a subscriber or a list of subscribers. You can specify a single subscriber by their ID or use a JSON rule set to untag multiple subscribers that match certain criteria.
+
+**Request Body Parameters:**
+
+| Parameter        | Description                                                                 | Required? |
+|------------------|-----------------------------------------------------------------------------|-----------|
+| SessionID        | The ID of the user's current session                                        | Yes       |
+| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
+| Command          | Subscriber.Untag                                                            | Yes       |
+| TagID            | The unique identifier of the tag to be removed                              | Yes       |
+| SubscriberListID | The unique identifier of the subscriber list                                | Yes       |
+| SubscriberID     | The unique identifier of the subscriber (optional if RulesJSON is provided) | No        |
+| RulesJSON        | JSON string representing the rules to match subscribers (optional)          | No        |
+| RulesOperator    | Operator to be used with rules: 'and' or 'or' (default is 'or')             | No        |
+| TriggerEvents    | Whether to trigger events after untagging: 1 for yes, 0 for no              | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "Command": "Subscriber.Untag",
+    "TagID": "123",
+    "SubscriberListID": "456",
+    "SubscriberID": "789",
+    "TriggerEvents": "1"
+}'
+```
+
+```json [Success Response]
+{
+    "Success": true
+}
+```
+
+```json [Error Response]
+{
+    "Success": false,
+    "ErrorCode": [1],
+    "ErrorText": ["Missing tag id"]
+}
+```
+
+```text [Error Codes]
+1: Missing tag id
+2: Missing subscriber list id
+3: Missing subscriber id
+4: Invalid list id
+5: Invalid subscriber id
+6: Invalid tag id or Missing RulesJSON parameter
+7: Missing RulesOperator parameter
+8: Invalid query builder response
+```
+:::
+
+## Create a New Subscriber Tag
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint is used to create a new tag for a subscriber in a specific list. A tag is a label that can be used to categorize subscribers based on certain criteria or actions.
+
+**Request Body Parameters:**
+
+| Parameter        | Description                                                          | Required? |
+|------------------|----------------------------------------------------------------------|-----------|
+| SessionID        | The ID of the user's current session                                 | Yes       |
+| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command          | Subscriber.Tags.Create                                               | Yes       |
+| SubscriberListID | The unique identifier for the subscriber list                        | Yes       |
+| Tag              | The name of the tag to be created                                    | Yes       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://yourdomain.com/api.php \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "Command": "Subscriber.Tags.Create",
+    "SubscriberListID": "123",
+    "Tag": "VIP"
+}'
+```
+
+```json [Success Response]
+{
+    "Success": true,
+    "TagID": 456
+}
+```
+
+```json [Error Response]
+{
+    "Success": false,
+    "ErrorCode": [1, 2],
+    "ErrorText": ["Missing subscriber list id", "Missing tag name"]
+}
+```
+
+```text [Error Codes]
+1: Missing subscriber list id
+2: Missing tag name
+4: The specified list does not exist or does not belong to the user
+5: There is another tag with the same name
+```
+:::
+
+## Delete Subscriber Tags
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint allows for the deletion of tags from a subscriber list. The user must provide the ID of the subscriber list and can optionally specify tag IDs to delete.
+
+**Request Body Parameters:**
+
+| Parameter        | Description                                                          | Required? |
+|------------------|----------------------------------------------------------------------|-----------|
+| SessionID        | The ID of the user's current session                                 | Yes       |
+| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command          | Subscriber.Tags.Delete                                               | Yes       |
+| SubscriberListID | The unique identifier for the subscriber list                        | Yes       |
+| TagIDs           | Comma-separated list of tag IDs to delete (optional)                 | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=Subscriber.Tags.Delete' \
+  -d 'SubscriberListID=123' \
+  -d 'TagIDs=1,2,3'
+```
+
+```json [Success Response]
+{
+  "Success": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Tag ids are missing"]
+}
+```
+
+```text [Error Codes]
+2: Subscriber list ID is missing.
+4: The specified list does not exist or does not belong to the user.
+```
+:::
+
 ## Retrieve Subscriber Tags
 
-This API endpoint is designed to retrieve tags associated with a specific subscriber list, including the count of
-subscribers for each tag.
+<Badge type="info" text="POST" /> `/api.php`
 
-### <Badge type="info" text="POST" /> `/api.php`
+This endpoint retrieves a list of subscriber tags associated with a specific subscriber list. It allows for optional sorting and can include a count of subscribers for each tag.
 
-**Request Parameters:**
+**Request Body Parameters:**
 
-| Parameter              | Description                                                                           |          |
-|------------------------|---------------------------------------------------------------------------------------|----------|
-| Command                | `Subscriber.Tags.Get`                                                                 | Required |
-| SubscriberListId       | The ID of the subscriber list for which to retrieve tags.                             | Required |
-| OrderField             | *(Optional)* Field to order the tags by.                                              | Optional |
-| OrderType              | *(Optional)* Type of order (e.g., 'ASC', 'DESC').                                     | Optional |
-| DisableSubscriberCount | *(Optional)* Boolean indicating whether to disable the subscriber count for each tag. | Optional |
+| Parameter              | Description                                                          | Required? |
+|------------------------|----------------------------------------------------------------------|-----------|
+| SessionID              | The ID of the user's current session                                 | Yes       |
+| APIKey                 | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command                | Subscriber.Tags.Get                                                  | Yes       |
+| SubscriberListID       | The unique identifier for the subscriber list                        | Yes       |
+| OrderField             | The field by which to order the tags                                 | No        |
+| OrderType              | The type of ordering to apply (e.g., ASC, DESC)                      | No        |
+| DisableSubscriberCount | If set to 1, disables the count of subscribers for each tag          | No        |
 
-**Success Response:**
+::: code-group
 
-A successful response will return a JSON object containing the following keys:
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=Subscriber.Tags.Get' \
+  -d 'SubscriberListID=123' \
+  -d 'OrderField=TagName' \
+  -d 'OrderType=ASC' \
+  -d 'DisableSubscriberCount=0'
+```
 
-- `Success`: true
-- `TagCount`: The number of tags retrieved.
-- `Tags`: An array of tags associated with the specified subscriber list.
-
-**Error Response:**
-
-- `1`: Missing subscriber list ID.
-- `4`: Invalid subscriber list ID or the list does not belong to the user.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "TagCount": 5,
   "Tags": [
-    // Array of tags
+    {
+      "TagID": "1",
+      "TagName": "Interested",
+      "SubscriberCount": 150
+    },
+    {
+      "TagID": "2",
+      "TagName": "Purchased",
+      "SubscriberCount": 75
+    }
+    // ... other tags
   ]
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [
-    1
-  ],
+  "ErrorCode": 1,
   "ErrorText": "Missing subscriber list id"
 }
 ```
 
+```text [Error Codes]
+1: Missing subscriber list id
+4: The specified list does not exist or does not belong to the user
+```
+:::
+
 ## Update Subscriber Tag
 
-This API endpoint allows for updating an existing tag within a specific subscriber list.
+<Badge type="info" text="POST" /> `/api.php`
 
-### <Badge type="info" text="POST" /> `/api.php`
+This endpoint updates the tag information for a subscriber in a specified list. It requires the tag ID, subscriber list ID, and the new tag name to be provided.
 
-**Request Parameters:**
+**Request Body Parameters:**
 
-| Parameter          | Description                                            |          |
-|--------------------|--------------------------------------------------------|----------|
-| Command            | `Subscriber.Tags.Update`                               | Required |
-| TagId              | The ID of the tag to be updated.                       | Required |
-| SubscriberListId   | The ID of the subscriber list associated with the tag. | Required |
-| Tag                | The new name for the tag.                              | Required |
+| Parameter         | Description                                      | Required? |
+|-------------------|--------------------------------------------------|-----------|
+| SessionID         | The ID of the user's current session             | Yes       |
+| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command           | Subscriber.Tags.Update                           | Yes       |
+| TagID             | The unique identifier for the tag to be updated  | Yes       |
+| SubscriberListID  | The ID of the subscriber list                    | Yes       |
+| Tag               | The new name for the tag                         | Yes       |
 
-**Success Response:**
+::: code-group
 
-A successful response indicates that the tag has been updated.
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=example-session-id' \
+  -d 'APIKey=example-api-key' \
+  -d 'Command=Subscriber.Tags.Update' \
+  -d 'TagID=123' \
+  -d 'SubscriberListID=456' \
+  -d 'Tag=UpdatedTagName'
+```
 
-- `Success`: true
-
-**Error Response:**
-
-- `1`: Missing tag ID.
-- `2`: Missing subscriber list ID.
-- `3`: Missing tag name.
-- `4`: Invalid subscriber list ID or tag ID.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing tag id"
+  "ErrorCode": [1],
+  "ErrorText": ["Missing tag id"]
 }
 ```
 
-## Tag Subscriber(s)
-
-This API endpoint facilitates tagging individual subscribers or groups of subscribers within a specific subscriber list
-based on certain criteria or rules.
-
-### <Badge type="info" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter          | Description                                                                          |          |
-|--------------------|--------------------------------------------------------------------------------------|----------|
-| Command            | `Subscriber.Tag`                                                                     | Required |
-| TagId              | The ID of the tag to be assigned to subscribers.                                     | Required |
-| SubscriberListId   | The ID of the subscriber list to which the tag belongs.                              | Required |
-| SubscriberId       | *(Optional)* The ID(s) of the subscriber(s) to be tagged.                            | Optional |
-| RulesJson          | *(Optional)* A JSON string defining the criteria for tagging subscribers.            | Optional |
-| RulesOperator      | *(Optional)* The logical operator ('and' or 'or') used between rules in `RulesJson`. | Optional |
-| TriggerEvents      | *(Optional)* Boolean indicating whether to trigger events.                           | Optional |
-
-**Success Response:**
-
-A successful response indicates that the tag has been assigned.
-
-- `Success`: true
-
-**Error Response:**
-
-- `1`: Missing tag ID.
-- `2`: Missing subscriber list ID.
-- `3`: Missing tag name.
-- `4`: Invalid list ID or list does not belong to the user.
-- `5`: Invalid subscriber ID.
-- `6`: Invalid tag ID.
-- `7`: Missing RulesJSON parameter.
-- `8`: Invalid query builder response or missing RulesOperator parameter.
-
-**Example Success Response:**
-
-```json
-{
-  "Success": true
-}
+```text [Error Codes]
+1: Missing tag id
+2: Missing subscriber list id
+3: Missing tag name
+4: Invalid tag id or subscriber list id
 ```
-
-**Example Error Response:**
-
-```json
-{
-  "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing tag id"
-}
-```
-
-## Untag Subscriber(s)
-
-This API endpoint is used for removing tags from individual subscribers or groups of subscribers within a specific
-subscriber list based on certain criteria or rules.
-
-### <Badge type="info" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter          | Description                                                                          |          |
-|--------------------|--------------------------------------------------------------------------------------|----------|
-| Command            | `Subscriber.Untag`                                                                   | Required |
-| TagId              | The ID of the tag to be removed from subscribers.                                    | Required |
-| SubscriberListId   | The ID of the subscriber list associated with the tag.                               | Required |
-| SubscriberId       | *(Optional)* The ID(s) of the subscriber(s) to be untagged.                          | Optional |
-| RulesJson          | *(Optional)* A JSON string defining the criteria for untagging subscribers.          | Optional |
-| RulesOperator      | *(Optional)* The logical operator ('and' or 'or') used between rules in `RulesJson`. | Optional |
-| TriggerEvents      | *(Optional)* Boolean indicating whether to trigger events.                           | Optional |
-
-**Success Response:**
-
-A successful response indicates that the tag has been removed.
-
-- `Success`: true
-
-**Error Response:**
-
-- `1`: Missing tag ID.
-- `2`: Missing subscriber list ID.
-- `3`: Missing subscriber ID.
-- `4`: Invalid list ID or list does not belong to the user.
-- `5`: Invalid subscriber ID.
-- `6`: Invalid tag ID.
-- `7`: Missing RulesJSON parameter.
-- `8`: Invalid query builder response or missing RulesOperator parameter.
-
-**Example Success Response:**
-
-```json
-{
-  "Success": true
-}
-```
-
-**Example Error Response:**
-
-```json
-{
-  "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing tag id"
-}
-```
+:::

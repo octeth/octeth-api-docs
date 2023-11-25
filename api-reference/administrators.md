@@ -4,118 +4,121 @@ layout: doc
 
 # Administrators
 
-## Administrator Login
+## Admin Login
 
-::: info
-This API end-point can be used to create a SessionID for admin only API end-point authorizations.
-:::
+<Badge type="info" text="POST" /> `/api.php`
 
-This API endpoint, `Admin.Login`, is primarily used for logging in an administrator into the system. It validates the
-provided credentials, which include the username and password, and optionally a two-factor authentication code if 2FA is
-enabled for the account.
+This endpoint is used for administrator authentication. It validates the provided credentials and, if successful, initiates a new admin session.
 
-Upon successful validation, it returns a session ID which can be used for subsequent API calls. This session ID is
-crucial as it maintains the state of the logged-in user for further interactions with the API.
+**Request Body Parameters:**
 
-Additionally, this endpoint provides the option to disable CAPTCHA during the login process. This can be useful in
-scenarios where the API is being used to build a separate top UI layer and CAPTCHA might not be necessary or feasible.
-
-In case of any errors during the login process, such as missing or incorrect credentials, missing or invalid CAPTCHA, or
-incorrect 2FA code, the API endpoint will return specific error codes to help identify the issue.
-
-### <Badge type="info" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter       | Description                                                                                                             |          |
-|-----------------|-------------------------------------------------------------------------------------------------------------------------|----------|
-| Command         | `Admin.Login`                                                                                                           | Required | 
-| Username        | Admin username                                                                                                          | Required | 
-| Password        | Admin password                                                                                                          | Required | 
-| TFACode         | Generated two factor authentication code. This parameter is required if the user has enabled 2FA for the admin account. | Optional |
-| DisableCaptcha  | Disables the captcha verification for API login. Available options: `true`, `false`                                     | Optional |
-| TFARecoveryCode | Enter the TFA recovery code to reset and disable TFA setup.                                                             | Optional |
+| Parameter      | Description                                                          | Required?   |
+|----------------|----------------------------------------------------------------------|-------------|
+| SessionID      | The ID of the user's current session                                 | Yes         |
+| APIKey         | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes         |
+| Command        | Admin.Login                                                          | Yes         |
+| Username       | The username of the admin attempting to log in                       | Yes         |
+| Password       | The password for the admin account                                   | Yes         |
+| Captcha        | The captcha code to verify if captcha is enabled                     | Conditional |
+| DisableCaptcha | Set to true to disable captcha verification                          | No          |
+| AdminApiKey    | The API key for admin verification                                   | No          |
+| Disable2FA     | Set to true to disable two-factor authentication                     | No          |
+| TfaCode        | The two-factor authentication code                                   | Conditional |
 
 ::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=Admin.Login' \
+  -d 'Username=admin' \
+  -d 'Password=123456'
+```
 
 ```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0,
-  "SessionID": "**********",
+  "SessionID": "newSessionId",
   "AdminInfo": {
     "AdminID": "1",
-    "Name": "Admin Name",
-    "EmailAddress": "test@test.com",
     "Username": "admin",
-    "Password": "*****",
-    "2FA_SecretKey": "*****",
-    "2FA_RecoveryKey": "*****",
-    "2FA_Enabled": "No",
-    "Options": []
+    // Other admin info fields
   }
 }
 ```
 
-```text [Error Codes]
-`1`: Missing username
-`2`: Missing password
-`3`: Invalid login credentials
-`4`: Missing catpcha
-`5`: Invalid captcha
-`6`: Invalid 2FA code
-```
-
-:::
-
-## Update Administrator Account
-
-This API end-point is designed to update an administrator account on the system. It can be used to validate user account
-credentials, especially when building a separate top UI layer, or for gathering a session ID for your next user API
-end-point execution.
-
-### <Badge type="tip" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter    | Description                                        |          |
-|--------------|----------------------------------------------------|----------|
-| Command      | `Admin.Update`                                     | Required | 
-| AdminID      | The corresponding ID of the admin to update        | Required |
-| Name         | The new name of the administrator account          | Required |
-| Username     | The new username of the administrator account      | Required |
-| Password     | The new password of the administrator account      | Required |
-| EmailAddress | The new email address of the administrator account | Required |
-
-**Success Response:**
-
-::: code-group
-
-```json [Success Response]
+```json [Error Response]
 {
-  "Command": "Admin.Update",
-  "Name": "Admin Name",
-  "Username": "admin",
-  "EmailAddress": "test@test.com",
-  "Password": "****",
-  "AdminID": 1
+  "Success": false,
+  "ErrorCode": [3]
 }
 ```
 
-```json [Error Response]
+```text [Error Codes]
+1: Missing username
+2: Missing password
+3: Invalid username or password
+4: Missing captcha
+5: Invalid captcha
+101: Invalid two-factor authentication code
+```
+:::
+
+## Update Administrator Details
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint allows for updating the details of an existing administrator account. It requires the admin to be authenticated and to own the account that is being updated.
+
+**Request Body Parameters:**
+
+| Parameter    | Description                                                          | Required? |
+|--------------|----------------------------------------------------------------------|-----------|
+| SessionID    | The ID of the user's current session                                 | Yes       |
+| APIKey       | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command      | Admin.Update                                                         | Yes       |
+| AdminID      | The unique identifier for the admin account                          | Yes       |
+| Name         | The full name of the admin                                           | Yes       |
+| Username     | The username for the admin account                                   | Yes       |
+| EmailAddress | The email address associated with the admin account                  | Yes       |
+| Password     | The new password for the admin account (optional)                    | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=Admin.Update' \
+  -d 'AdminID=1' \
+  -d 'Name=John Doe' \
+  -d 'Username=johndoe' \
+  -d 'EmailAddress=john.doe@example.com' \
+  -d 'Password=newpassword123'
+```
+
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0
 }
 ```
 
-```text [Error Codes]
-`1`: Missing username
-`2`: Missing password
-`3`: Invalid login credentials
-`4`: Missing catpcha
-`5`: Invalid catpcha
-`6`: Invalid 2FA code
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [7]
+}
 ```
 
+```text [Error Codes]
+1: Missing name
+2: Missing username
+4: Missing email address
+6: Invalid admin ID
+7: Invalid email address format
+8: Admin account not owned by the logged-in admin
+```
 :::

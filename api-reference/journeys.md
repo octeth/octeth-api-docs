@@ -4,34 +4,23 @@ layout: doc
 
 # Journeys API Documentation
 
-::: info
+::: warning NOTICE
 The API calls detailed in this document are compatible with Octeth's latest authorization method. You have the option to
 include either the `SessionID` or `APIKey` parameter within the JSON request body.
 :::
 
 ## Create a Journey
 
+<Badge type="info" text="POST" /> `/api/v1/journey`
+
 This API command allows you to create a new journey. By default, the newly created journey will be set to 'Disabled' and
 the trigger mode will be set to 'Manual'.
 
-### <Badge type="info" text="POST" /> `/api/v1/journey`
-
 **Request Body:**
 
-::: info
+::: warning NOTICE
 This API endpoint accepts raw body in JSON format.
 :::
-
-```json
-{
-  "SessionID": "<user_session_id>",
-  "APIKey": "",
-  "Name": "Contact Form Journey",
-  "Notes": "This is an administrative note for the journey",
-  "Trigger": "ListSubscription",
-  "Trigger_ListID": 10
-}
-```
 
 | Parameter       | Description                                                                                                                                        | Required |
 |-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------|----------|
@@ -42,11 +31,21 @@ This API endpoint accepts raw body in JSON format.
 | Trigger_ListID  | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (any list) or a specific subscriber list ID.            | No       | 
 | Trigger_EmailID | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (any email) or a specific email ID.             | No       | 
 
-**Example Success Response:**
+::: code-group
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+```json [Example Request]
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "Name": "Contact Form Journey",
+  "Notes": "This is an administrative note for the journey",
+  "Trigger": "ListSubscription",
+  "Trigger_ListID": 10
+}
+```
 
-```json
+```json [Success Response]
+200 OK 
 {
   "JourneyID": 5,
   "Journey": {
@@ -63,11 +62,8 @@ This API endpoint accepts raw body in JSON format.
 }
 ```
 
-**Example Error Response:**
-
-<Badge type="danger" text="HTTP Code: 422 Unprocessable Entity" /> 
-
-```json
+```json [Error Response]
+422 Unprocessable Entity
 {
   "Errors": [
     {
@@ -77,6 +73,8 @@ This API endpoint accepts raw body in JSON format.
   ]
 }
 ```
+
+:::
 
 **HTTP Response and Error Codes:**
 
@@ -94,11 +92,11 @@ This API endpoint accepts raw body in JSON format.
 
 ## Journey List
 
+<Badge type="info" text="GET" /> `/api/v1/journeys`
+
 This API endpoint returns a list of journeys associated with a specific user account.
 
-### <Badge type="info" text="GET" /> `/api/v1/journeys`
-
-::: info
+::: warning NOTICE
 This API endpoint accepts a raw JSON body.
 :::
 
@@ -148,12 +146,12 @@ This API endpoint doesn't return any errors.
 
 ## Delete a Journey
 
+<Badge type="info" text="POST" /> `/api/v1/journey.delete`
+
 This API call is designed to delete a specific journey. The journey to be deleted is identified by the `JourneyID`
 parameter.
 
-### <Badge type="info" text="POST" /> `/api/v1/journey.delete`
-
-::: info
+::: warning NOTICE
 Please note that this API endpoint requires a raw body in JSON format.
 :::
 
@@ -202,11 +200,11 @@ Please ensure that the `JourneyID` parameter is provided and is valid to avoid e
 
 ## Retrieve a Journey
 
+<Badge type="info" text="GET" /> `/api/v1/journey`
+
 This API call retrieves the details of a specific journey corresponding to the provided JourneyID parameter.
 
-### <Badge type="info" text="GET" /> `/api/v1/journey`
-
-::: info
+::: warning NOTICE
 This API endpoint expects a request body in JSON format.
 :::
 
@@ -291,11 +289,11 @@ This API endpoint expects a request body in JSON format.
 
 ## Enable a Journey
 
+<Badge type="info" text="GET" /> `/api/v1/journey.enable`
+
 This API call allows you to change a journey's status from Disabled to Enabled.
 
-### <Badge type="info" text="GET" /> `/api/v1/journey.enable`
-
-::: info
+::: warning NOTICE
 Please note that this API endpoint requires a raw JSON body.
 :::
 
@@ -352,11 +350,11 @@ Please note that this API endpoint requires a raw JSON body.
 
 ## Disabling a Journey
 
+<Badge type="info" text="GET" /> `/api/v1/journey.disable`
+
 This API call allows you to change the status of a journey from 'Enabled' to 'Disabled'.
 
-### <Badge type="info" text="GET" /> `/api/v1/journey.disable`
-
-::: info
+::: warning NOTICE
 Please note that this API endpoint requires a raw JSON body.
 :::
 
@@ -413,11 +411,11 @@ Please note that this API endpoint requires a raw JSON body.
 
 ## Modify a Journey
 
+<Badge type="info" text="PATCH" /> `/api/v1/journey`
+
 This API call allows you to update the details of a specific journey.
 
-### <Badge type="info" text="PATCH" /> `/api/v1/journey`
-
-::: info
+::: warning NOTICE
 This endpoint expects a raw JSON body.
 :::
 
@@ -486,13 +484,13 @@ This endpoint expects a raw JSON body.
 
 ## Modifying Journey Actions
 
+<Badge type="info" text="PATCH" /> `/api/v1/journey.actions`
+
 This API endpoint allows you to modify journey actions. To do so, you must provide the complete list of actions.
 
-::: warning
+::: warning NOTICE
 Please note that any actions not included in the provided list will be removed from the journey.
 :::
-
-### <Badge type="info" text="PATCH" /> `/api/v1/journey.actions`
 
 **Request Body:**
 
@@ -704,11 +702,11 @@ Please note that any actions not included in the provided list will be removed f
 
 ## Trigger a Journey For A Subscriber
 
+<Badge type="info" text="GET" /> `/api/v1/subscriber.journey.trigger`
+
 This API call will triger a journey for a subscriber.
 
-### <Badge type="info" text="GET" /> `/api/v1/subscriber.journey.trigger`
-
-::: info
+::: warning NOTICE
 Please note that this API endpoint requires a raw JSON body.
 :::
 
@@ -766,11 +764,11 @@ Please note that this API endpoint requires a raw JSON body.
 
 ## Remove Subscriber From A Journey
 
+<Badge type="info" text="GET" /> `/api/v1/subscriber.journey.remove`
+
 This API call will remove a subscriber from an enrolled journey.
 
-### <Badge type="info" text="GET" /> `/api/v1/subscriber.journey.remove`
-
-::: info
+::: warning NOTICE
 Please note that this API endpoint requires a raw JSON body.
 :::
 
@@ -827,11 +825,11 @@ Please note that this API endpoint requires a raw JSON body.
 
 ## Enrolled Journeys
 
+<Badge type="info" text="GET" /> `/api/v1/subscriber.journey.list`
+
 This API call will return the list of journeys for a given subscriber
 
-### <Badge type="info" text="GET" /> `/api/v1/subscriber.journey.list`
-
-::: info
+::: warning NOTICE
 Please note that this API endpoint requires a raw JSON body.
 :::
 

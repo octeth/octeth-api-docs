@@ -6,157 +6,160 @@ layout: doc
 
 ## Browse Suppression List
 
-This API endpoint is used to retrieve a list of suppressed email addresses for a user.
+<Badge type="info" text="POST" /> `/api.php`
 
-### <Badge type="info" text="POST" /> `/api.php`
+This endpoint retrieves a list of suppressed email addresses for a user, with optional search patterns and pagination.
 
-**Request Parameters:**
+**Request Body Parameters:**
 
-| Parameter      | Description                                                                            |          |
-|----------------|----------------------------------------------------------------------------------------|----------|
-| Command        | `Suppression.Browse`                                                                   | Required |
-| SearchPattern  | *(Optional)* A pattern to search for specific email addresses (supports wildcard `*`). | Optional |
-| StartFrom      | *(Optional)* The starting index from which to retrieve records. Default is 0.          | Optional |
-| RetrieveCount  | *(Optional)* The number of records to retrieve. Default is 100.                        | Optional |
+| Parameter     | Description                                                                    | Required? |
+|---------------|--------------------------------------------------------------------------------|-----------|
+| SessionID     | The ID of the user's current session                                           | Yes       |
+| APIKey        | The user's API key. Either `SessionID` or `APIKey` must be provided.           | Yes       |
+| Command       | Suppression.Browse                                                             | Yes       |
+| SearchPattern | The pattern to search for in the suppressed email list. Use '*' as a wildcard. | No        |
+| StartFrom     | The starting index for the list of suppressed emails to retrieve.              | No        |
+| RetrieveCount | The number of suppressed emails to retrieve.                                   | No        |
 
-**Success Response:**
+::: code-group
 
-A successful response will return a list of suppressed email addresses.
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=Suppression.Browse' \
+  -d 'SearchPattern=example*' \
+  -d 'StartFrom=0' \
+  -d 'RetrieveCount=100'
+```
 
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
-- `TotalRecords`: The total number of suppressed email addresses in the user's list.
-- `SuppressedEmails`: An array of suppressed email addresses.
-
-**Error Response:**
-
-- No specific error codes defined in the provided code.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0,
-  "TotalRecords": 500,
+  "TotalRecords": 250,
   "SuppressedEmails": [
-    // Array of suppressed email addresses
+    "example1@example.com",
+    "example2@example.com"
   ]
 }
 ```
 
-**Example Error Response:**
-
-```json
-{
-  "Success": false,
-  "ErrorCode": [
-    ErrorCode
-  ],
-  "ErrorText": "Error description"
-}
+```text [Error Response]
+This API call does not return any error codes.
 ```
 
-## Delete from Suppression List
+```text [Error Codes]
+This API call does not return any error codes.
+```
+:::
 
-This API endpoint allows for the removal of a specific email address from a user's suppression list.
+## Remove Email from Suppression List
 
-### <Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api.php`
 
-**Request Parameters:**
+This endpoint is used to remove an email address from a user's suppression list. The suppression list is a list of email addresses that a user has chosen not to receive communications from.
 
-| Parameter     | Description                                                |          |
-|---------------|------------------------------------------------------------|----------|
-| Command       | `Suppression.Delete`                                       | Required |
-| EmailAddress  | The email address to be removed from the suppression list. | Required |
+**Request Body Parameters:**
 
-**Success Response:**
+| Parameter    | Description                                                          | Required? |
+|--------------|----------------------------------------------------------------------|-----------|
+| SessionID    | The ID of the user's current session                                 | Yes       |
+| APIKey       | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command      | Suppression.Delete                                                   | Yes       |
+| EmailAddress | The email address to be removed from the suppression list            | Yes       |
 
-A successful response indicates that the specified email address has been removed from the suppression list.
+::: code-group
 
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+      "SessionID": "your-session-id", 
+      "APIKey": "your-api-key", 
+      "Command": "Suppression.Delete", 
+      "EmailAddress": "user@example.com"
+}'
+```
 
-**Error Response:**
-
-- `1`: Missing Email Address.
-- `2`: Invalid Email Address or Email Address not in suppression list.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing email address"
+  "ErrorCode": [1]
 }
 ```
 
-## Import into Suppression List
+```text [Error Codes]
+1: Missing required parameter: EmailAddress
+2: Invalid email address format
+```
+:::
 
-This API endpoint allows for importing email addresses into a user's suppression list. It supports importing individual
-email addresses or a bulk list.
+## Import Email Addresses to Suppression List
 
-### <Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api.php`
 
-**Request Parameters:**
+This endpoint is used to import email addresses into the suppression list. The suppression list is a list of email addresses that are excluded from receiving emails. This can be done by providing a JSON array of email addresses or a bulk string with email addresses separated by new lines.
 
-| Parameter          | Description                                                                 |          |
-|--------------------|-----------------------------------------------------------------------------|----------|
-| Command            | `Suppression.Import`                                                        | Required |
-| EmailAddresses     | *(Optional)* A JSON-encoded array of email addresses to import.             | Optional |
-| EmailAddressesBulk | *(Optional)* A newline-separated string of email addresses for bulk import. | Optional |
+**Request Body Parameters:**
 
-**Success Response:**
+| Parameter          | Description                                                                 | Required? |
+|--------------------|-----------------------------------------------------------------------------|-----------|
+| SessionID          | The ID of the user's current session                                        | Yes       |
+| APIKey             | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
+| Command            | Suppression.Import                                                          | Yes       |
+| EmailAddresses     | JSON array of email addresses to be added to the suppression list           | No        |
+| EmailAddressesBulk | Bulk string of email addresses separated by new lines                       | No        |
 
-A successful response indicates that the email addresses have been imported into the suppression list.
+::: code-group
 
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
-- `TotalImported`: The total number of email addresses successfully imported.
-- `TotalFailed`: The total number of email addresses that failed to import.
-- `FailedEmailAddresses`: An array of email addresses that failed to import.
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+        "SessionID": "your-session-id",
+        "APIKey": "your-api-key",
+        "Command": "Suppression.Import",
+        "EmailAddresses": "[\"user1@example.com\", \"user2@example.com\"]",
+        "EmailAddressesBulk": "user3@example.com\nuser4@example.com"
+      }'
+```
 
-**Error Response:**
-
-- `1`: Missing Email Addresses.
-- `2`: Invalid format or content in Email Addresses.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0,
-  "TotalImported": 100,
-  "TotalFailed": 10,
-  "FailedEmailAddresses": [
-    // Array of email addresses that failed to import
-  ]
+  "TotalImported": 4,
+  "TotalFailed": 0,
+  "FailedEmailAddresses": []
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [
-    1,
-    2
-  ],
-  "ErrorText": "Email addresses are missing"
+  "ErrorCode": [1, 2],
+  "ErrorMessage": "Invalid email address format or missing email addresses."
 }
 ```
 
+```text [Error Codes]
+1: Email addresses not provided in either 'EmailAddresses' or 'EmailAddressesBulk'.
+2: Invalid email address format.
+```
+:::
+
+ 
+::: warning NOTICE
+- Please note that at least one of the parameters `EmailAddresses` or `EmailAddressesBulk` must be provided. 
+- If both are provided, they will be processed together. 
+- The `EmailAddresses` parameter must be a valid JSON array of email addresses, and `EmailAddressesBulk` must be a string with email addresses separated by new lines. 
+- If an email address is invalid, it will be counted as failed and returned in the `FailedEmailAddresses` array in the response.
+:::

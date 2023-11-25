@@ -4,166 +4,300 @@ layout: doc
 
 # Users API Documentation
 
-Certainly! Below is the API documentation for the `User.Get` endpoint in markdown format based on the provided PHP code:
+## Retrieve Current User Information
 
-## Retrieve a User
+<Badge type="info" text="POST" /> `/api.php`
 
-Retrieve user information using either an email address or user ID.
-
-### <Badge type="info" text="POST" /> `/api.php`
+This endpoint retrieves the current user's public information, including personal details, group information, multi-factor authentication (MFA) setup, WooCommerce subscription ID, and email gateway usage and rate limits.
 
 **Request Body Parameters:**
 
-| Parameter    | Description                                                                                          | Required |
-|--------------|------------------------------------------------------------------------------------------------------|----------|
-| SessionID    | The ID of the user's current session.                                                                | Yes      | 
-| APIKey       | The user's API key. Either `SessionID` or `APIKey` must be provided.                                 | Yes      | 
-| Command      | `User.Get`                                                                                           | Yes      | 
-| EmailAddress | The email address of the user. Either `EmailAddress` or `UserID` must be provided, but not both.     | Yes*     | 
-| UserID       | The unique identifier of the user. Either `EmailAddress` or `UserID` must be provided, but not both. | Yes*     | 
+| Parameter       | Description                                           | Required? |
+|-----------------|-------------------------------------------------------|-----------|
+| SessionID       | The ID of the user's current session                  | Yes       |
+| APIKey          | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command         | User.Current                                          | Yes       |
 
-::: info
-(*) Only one of these parameters should be provided. If both are provided, `UserID` takes precedence.
-:::
+::: code-group
 
-**Example Successful Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
-{
-  "Success": true,
-  "ErrorCode": 0,
-  "UserInformation": {
-    "UserID": "12345",
-    "EmailAddress": "example@example.com",
-    "...": "..."
-  }
-}
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"SessionID": "your-session-id", "APIKey": "your-api-key", "Command": "User.Current"}'
 ```
 
-**HTTP Response and Error Codes:**
-
-| HTTP Code | Response JSON                          | Description                                |
-|-----------|----------------------------------------|--------------------------------------------|
-| 200 OK    | { "Success": true, ... }               | The request was successful.                |
-| 200 OK    | { "Success": false, "ErrorCode": [1] } | Missing `EmailAddress` parameter.          |
-| 200 OK    | { "Success": false, "ErrorCode": [2] } | Missing `UserID` parameter.                |
-| 200 OK    | { "Success": false, "ErrorCode": [3] } | User not found with the provided criteria. |
-
-## Retrieve Current User
-
-Retrieve publicly available information about the current logged-in user, including details related to email gateway
-usage and rate limits.
-
-### <Badge type="info" text="POST" /> `/api.php`
-
-**Request Body Parameters:**
-
-| Parameter    | Description                                                                                          | Required |
-|--------------|------------------------------------------------------------------------------------------------------|----------|
-| SessionID    | The ID of the user's current session.                                                                | Yes      | 
-| APIKey       | The user's API key. Either `SessionID` or `APIKey` must be provided.                                 | Yes      | 
-| Command      | `User.Current`                                                                                       | Yes      | 
-
-**Example Successful Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0,
   "UserInfo": {
     "UserID": "12345",
-    "RelUserGroupID": "...",
-    "EmailAddress": "example@example.com",
-    "...": "...",
-    "MFA_QRCode": "url_to_qrcode",
-    "MFA_SecretKey": "secret_key",
-    "SubscriptionID": "sub_id_or_false"
+    "RelUserGroupID": "1",
+    "EmailAddress": "user@example.com",
+    "Username": "johndoe",
+    "ReputationLevel": "5",
+    "UserSince": "2020-01-01T00:00:00Z",
+    "FirstName": "John",
+    "LastName": "Doe",
+    "CompanyName": "Example Corp",
+    "Website": "https://www.example.com",
+    "Street": "123 Example St",
+    "Street2": "Suite 100",
+    "City": "Example City",
+    "State": "EX",
+    "Zip": "12345",
+    "Country": "Exampleland",
+    "VAT": "EX1234567",
+    "Phone": "+1234567890",
+    "PhoneVerified": "Yes",
+    "Fax": "+1234567891",
+    "TimeZone": "UTC",
+    "LastActivityDateTime": "2023-01-01T12:00:00Z",
+    "AccountStatus": "Active",
+    "AvailableCredits": "100",
+    "2FA_Enabled": "No",
+    "2FA_RecoveryKey": "abcd-efgh-ijkl-mnop",
+    "SSOID": "sso-12345",
+    "GroupInfo": {
+      "UserGroupID": "1",
+      "GroupName": "Standard",
+      "GroupPlanName": "Basic Plan"
+    },
+    "MFA_QRCode": "https://example.com/mfa-qr-code",
+    "MFA_SecretKey": "MFA123SECRET",
+    "SubscriptionID": "123456789"
   },
   "Usage": {
     "EmailGateway_TotalSentThisMonth": 100,
-    "EmailGateway_TotalSentAllTime": 5000,
-    "Limit_Monthly": 1000,
-    "Limit_Lifetime": 50000
+    "EmailGateway_TotalSentAllTime": 1000,
+    "Limit_Monthly": 500,
+    "Limit_Lifetime": 10000
   },
   "SendRateLimits": {
     "EmailGateway": {
-      "RateLimits": "user_or_group_rate_limits",
-      "SendRates": "user_send_rates"
+      "RateLimits": {
+        "MaxSendPerMinute": 10,
+        "MaxSendPerHour": 200,
+        "MaxSendPerDay": 1000
+      },
+      "SendRates": {
+        "CurrentSendRatePerMinute": 5,
+        "CurrentSendRatePerHour": 150,
+        "CurrentSendRatePerDay": 800
+      }
     }
   }
 }
 ```
 
-**HTTP Response and Error Codes:**
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorMessage": "Invalid SessionID or APIKey"
+}
+```
 
-| HTTP Code  | Response JSON                                  | Description                            |
-|------------|------------------------------------------------|----------------------------------------|
-| 200 OK     | { "Success": true, ... }                       | The request was successful.            |
+```text [Error Codes]
+1: Invalid SessionID or APIKey
+2: User not found
+3: Access denied
+4: Required parameter missing
+5: Internal server error
+```
+:::
 
-## Update User Information
+## Retrieve User Information
 
-This API endpoint is used to update the information of a specific user. The user is identified by their `UserID`. The
-endpoint checks if the user is logged in and if the user ID matches the logged-in user's ID. If the user is an admin,
-they can update additional fields. The endpoint also validates the email address and username to ensure they are unique.
-If the user is not an admin and tries to update fields that are only updatable by an admin, an error is thrown.
+<Badge type="info" text="POST" /> `/api.php`
 
-### <Badge type="info" text="POST" /> `/api.php`
+This endpoint retrieves user information based on the provided email address or user ID.
 
 **Request Body Parameters:**
 
-| Parameter             | Description                                                               | Required |
-|-----------------------|---------------------------------------------------------------------------|----------|
-| SessionID             | The ID of the user's current session.                                     | Yes      | 
-| APIKey                | The user's API key. Either `SessionID` or `APIKey` must be provided.      | Yes      | 
-| Command               | `User.Update`                                                             | Yes      | 
-| UserID                | The ID of the user to update.                                             | Yes      |
-| AccountStatus         | The status of the user's account. Only updatable by an admin.             | No       |
-| AvailableCredits      | The number of available credits for the user. Only updatable by an admin. | No       |
-| SignupIpAddress       | The IP address from which the user signed up. Only updatable by an admin. | No       |
-| AccountApiKey         | The user's API key. Only updatable by an admin.                           | No       |
-| RelUserGroupId        | The ID of the user group the user belongs to. Only updatable by an admin. | No       |
-| ReputationLevel       | The reputation level of the user. Only updatable by an admin.             | No       |
-| UserSince             | The date and time the user joined. Only updatable by an admin.            | No       |
-| EmailAddress          | The user's email address.                                                 | No       |
-| Username              | The user's username.                                                      | No       |
-| Password              | The user's password.                                                      | No       |
-| FirstName             | The user's first name.                                                    | No       |
-| LastName              | The user's last name.                                                     | No       |
-| CompanyName           | The user's company name.                                                  | No       |
-| Website               | The user's website.                                                       | No       |
-| OtherEmailAddresses   | Other email addresses of the user.                                        | No       |
-| Street                | The user's street address.                                                | No       |
-| Street2               | The user's secondary street address.                                      | No       |
-| City                  | The user's city.                                                          | No       |
-| State                 | The user's state.                                                         | No       |
-| Zip                   | The user's zip code.                                                      | No       |
-| Country               | The user's country.                                                       | No       |
-| Vat                   | The user's VAT number.                                                    | No       |
-| Phone                 | The user's phone number.                                                  | No       |
-| PhoneVerified         | Whether the user's phone number is verified.                              | No       |
-| Fax                   | The user's fax number.                                                    | No       |
-| TimeZone              | The user's timezone.                                                      | No       |
-| Language              | The user's language.                                                      | No       |
-| LastActivityDateTime  | The date and time of the user's last activity.                            | No       |
-| ForwardToFriendHeader | The header of the user's "forward to friend" emails.                      | No       |
-| ForwardToFriendFooter | The footer of the user's "forward to friend" emails.                      | No       |
-| PreviewMyEmailAccount | The user's PreviewMyEmail account.                                        | No       |
-| PreviewMyEmailApiKey  | The user's PreviewMyEmail API key.                                        | No       |
-| Enable2fa             | Whether to enable two-factor authentication for the user.                 | No       |
-| 2facode               | The two-factor authentication code.                                       | No       |
-| Cancel2fa             | Whether to cancel two-factor authentication for the user.                 | No       |
-| RateLimits            | The rate limits for the user.                                             | No       |
-| CustomEmailHeaders    | Custom email headers for the user.                                        | No       |
+| Parameter     | Description                                           | Required? |
+|---------------|-------------------------------------------------------|-----------|
+| SessionID     | The ID of the user's current session                  | Yes       |
+| APIKey        | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command       | User.Get                                              | Yes       |
+| EmailAddress  | The email address of the user to retrieve information for. Required if `UserID` is not provided. | Conditional |
+| UserID        | The unique identifier of the user to retrieve information for. Required if `EmailAddress` is not provided. | Conditional |
 
-**Example Successful Response:**
+::: code-group
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "Command": "User.Get",
+    "EmailAddress": "user@example.com"
+}'
+```
 
-```json
+```json [Success Response]
+{
+    "Success": true,
+    "ErrorCode": 0,
+    "UserInformation": {
+        "UserID": "123",
+        "FirstName": "John",
+        "LastName": "Doe",
+        "EmailAddress": "user@example.com",
+        // Other user details
+    }
+}
+```
+
+```json [Error Response]
+{
+    "Success": false,
+    "ErrorCode": [3]
+}
+```
+
+```text [Error Codes]
+1: "EmailAddress is required when UserID is not provided."
+2: "UserID is required when EmailAddress is not provided."
+3: "User not found with the provided information."
+```
+:::
+
+## User Authentication
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint is used for authenticating a user with a username and password or an API key. It supports both standard and email-based logins, as well as two-factor authentication (2FA) recovery.
+
+**Request Body Parameters:**
+
+| Parameter         | Description                                                                 | Required? |
+|-------------------|-----------------------------------------------------------------------------|-----------|
+| SessionID         | The ID of the user's current session                                        | Yes       |
+| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
+| Command           | User.Login                                                                  | Yes       |
+| Username          | The username of the user trying to log in                                   | No*       |
+| Password          | The password of the user in plain text                                      | No*       |
+| PasswordEncrypted | Set to true if the password is already encrypted (MD5)                      | No        |
+| DisableCaptcha    | Set to true to disable captcha verification                                 | No        |
+| Captcha           | The captcha value that needs to be verified                                 | No*       |
+| TfaRecoveryCode   | The recovery code for users with 2FA enabled                                | No        |
+| Disable2fa        | Set to true to disable 2FA verification for this login attempt              | No        |
+| TfaCode           | The 2FA code from the user's authentication app                             | No        |
+
+::: warning NOTE
+(*) `username` and `password` are required unless an `APIKey` is provided. If `disablecaptcha` is not set to true, `captcha` is required.
+:::
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=User.Login' \
+  -d 'username=johndoe' \
+  -d 'password=examplePassword'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "SessionID": "newSessionId",
+  "UserInfo": {
+    "UserID": "123",
+    "Username": "johndoe",
+    "EmailAddress": "john@example.com",
+    "AccountStatus": "Enabled",
+    // Additional user info fields
+    "Password": "****** masked ******"
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [3],
+  "ErrorText": ["Invalid login information"]
+}
+```
+
+```text [Error Codes]
+1: Missing username
+2: Missing password
+3: Invalid login information
+4: Missing or invalid captcha
+5: Invalid captcha
+6: Invalid 2FA code or recovery code
+```
+:::
+
+## Update User Information
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint allows for updating user information. It can be used to modify various user details such as email address, username, personal information, and account settings. Some parameters can only be updated by an administrator.
+
+**Request Body Parameters:**
+
+| Parameter             | Description                                                                 | Required? |
+|-----------------------|-----------------------------------------------------------------------------|-----------|
+| SessionID             | The ID of the user's current session                                        | Yes       |
+| APIKey                | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
+| Command               | User.Update                                                                 | Yes       |
+| UserID                | The unique identifier of the user to update                                 | Yes       |
+| AccountStatus         | The new status of the user's account (admin only)                           | No        |
+| AvailableCredits      | The number of available credits for the user (admin only)                   | No        |
+| SignUpIPAddress       | The IP address from which the user signed up (admin only)                   | No        |
+| APIKey                | The new API key for the user (admin only)                                   | No        |
+| RelUserGroupID        | The ID of the user group to which the user belongs (admin only)             | No        |
+| ReputationLevel       | The reputation level of the user, either 'Trusted' or 'Untrusted' (admin only) | No     |
+| UserSince             | The date since the user has been a member (admin only)                      | No        |
+| EmailAddress          | The new email address for the user                                          | No        |
+| Username              | The new username for the user                                               | No        |
+| Password              | The new password for the user                                               | No        |
+| FirstName             | The user's first name                                                       | No        |
+| LastName              | The user's last name                                                        | No        |
+| CompanyName           | The name of the user's company                                              | No        |
+| Website               | The user's website URL                                                      | No        |
+| OtherEmailAddresses   | Other email addresses associated with the user                              | No        |
+| Street                | The user's street address                                                   | No        |
+| Street2               | Additional street address information for the user                          | No        |
+| City                  | The user's city                                                             | No        |
+| State                 | The user's state or region                                                  | No        |
+| Zip                   | The user's postal or zip code                                               | No        |
+| Country               | The user's country                                                          | No        |
+| VAT                   | The user's VAT number                                                       | No        |
+| Phone                 | The user's phone number                                                     | No        |
+| PhoneVerified         | Whether the user's phone number is verified (1 or 0)                        | No        |
+| Fax                   | The user's fax number                                                       | No        |
+| TimeZone              | The user's time zone                                                        | No        |
+| Language              | The user's preferred language                                               | No        |
+| LastActivityDateTime  | The last activity date and time for the user                                | No        |
+| ForwardToFriendHeader | Custom header for the 'Forward to Friend' emails                            | No        |
+| ForwardToFriendFooter | Custom footer for the 'Forward to Friend' emails                            | No        |
+| PreviewMyEmailAccount | The account information for PreviewMyEmail integration                      | No        |
+| PreviewMyEmailAPIKey  | The API key for PreviewMyEmail integration                                  | No        |
+| Enable2FA             | Enable two-factor authentication ('true' to enable)                        | No        |
+| Cancel2FA             | Cancel two-factor authentication ('true' to cancel)                        | No        |
+| RateLimits            | Custom rate limits for the user                                             | No        |
+| CustomEmailHeaders    | Custom email headers for the user                                           | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=User.Update' \
+  -d 'UserID=123' \
+  -d 'EmailAddress=newemail@example.com'
+```
+
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0,
@@ -171,95 +305,136 @@ If the user is not an admin and tries to update fields that are only updatable b
 }
 ```
 
-**HTTP Response and Error Codes:**
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "User ID mismatch or unauthorized access."
+}
+```
 
-| Code | Description                                                     |
-|------|-----------------------------------------------------------------|
-| 0    | Success                                                         |
-| 1    | Required fields are missing                                     |
-| 2    | User ID does not match the logged in user's ID                  |
-| 3    | Connection error occurred while checking PreviewMyEmail account |
-| 4    | Two-factor authentication code is incorrect                     |
-| 5    | User information could not be retrieved                         |
-| 6    | Email address or username is not unique                         |
+```text [Error Codes]
+1: Missing required field(s).
+2: User ID mismatch or unauthorized access.
+3: Connection error occurred with PreviewMyEmail.com API.
+4: Two-factor authentication code verification failed.
+5: User information retrieval failed.
+6: Email address or username already exists.
+```
+:::
 
-## Retrieve User List
+## Delete Users
 
-This API endpoint is used to retrieve users based on various criteria such as user group, online status, account status, and account reputation. It also supports pagination and ordering of results.
+<Badge type="info" text="POST" /> `/api.php`
 
-### <Badge type="info" text="POST" /> `/api.php`
+This endpoint is used to delete one or more users from the system. The user IDs to be deleted are passed as a comma-separated list.
 
 **Request Body Parameters:**
 
-| Parameter         | Description                                                                                                                                                 | Required |
-|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| SessionID         | The ID of the user's current session.                                                                                                                       | Yes      |
-| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                        | Yes      |
-| Command           | `Users.Get`                                                                                                                                                 | Yes      | 
-| RecordsPerRequest | The number of records to return per request. Defaults to 25 if not provided.                                                                                | No       |
-| RecordsFrom       | The starting index from which to return records. Defaults to 0 if not provided.                                                                             | No       |
-| RelUsergroupId    | The ID of the user group to filter by. Can be an array for multiple groups. Special values include 'Online', 'Enabled', 'Disabled', 'Trusted', 'Untrusted'. | No       |
-| OrderField        | The field to order the results by. Can be a pipe-separated string for multiple fields.                                                                      | No       |
-| OrderType         | The order type (ASC or DESC). Can be a pipe-separated string for multiple fields.                                                                           | No       |
-| SearchField       | The field to search by.                                                                                                                                     | No       |
-| SearchKeyword     | The keyword to search for.                                                                                                                                  | No       |
+| Parameter  | Description                                           | Required? |
+|------------|-------------------------------------------------------|-----------|
+| SessionID  | The ID of the user's current session                  | Yes       |
+| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
+| Command    | Users.Delete                                          | Yes       |
+| users      | Comma-separated list of user IDs to delete            | Yes       |
 
-**Example Successful Response:**
+::: code-group
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+```bash [Example Request]
+curl -X POST https://yourapiendpoint.com/api.php \
+-H "Content-Type: application/json" \
+-d '{"SessionID": "your-session-id", "APIKey": "your-api-key", "Command": "Users.Delete", "users": "1,2,3"}'
+```
 
-```json
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": ""
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": {
+    "users": "NOT AVAILABLE IN DEMO MODE"
+  }
+}
+```
+
+```text [Error Codes]
+NOT AVAILABLE IN DEMO MODE: The function is not available in demo mode.
+```
+:::
+
+## Retrieve User List
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint retrieves a list of users based on various criteria such as user group, account status, reputation, or a specific search term.
+
+**Request Body Parameters:**
+
+| Parameter          | Description                                                                 | Required? |
+|--------------------|-----------------------------------------------------------------------------|-----------|
+| SessionID          | The ID of the user's current session                                        | Yes       |
+| APIKey             | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
+| Command            | Users.Get                                                                   | Yes       |
+| RecordsPerRequest  | The number of records to return per request. Defaults to 25 if not provided.| No        |
+| RecordsFrom        | The starting point for records to return. Defaults to 0 if not provided.    | No        |
+| RelUserGroupID     | The ID of the user group to filter by. Can be an array for multiple groups. | No        |
+| OrderField         | The field to order the results by.                                          | No        |
+| OrderType          | The order type (e.g., ASC, DESC).                                           | No        |
+| SearchField        | The field to search within.                                                 | No        |
+| SearchKeyword      | The keyword to search for.                                                  | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "Command": "Users.Get",
+    "RecordsPerRequest": 10,
+    "RecordsFrom": 0,
+    "RelUserGroupID": "Online",
+    "OrderField": "LastName",
+    "OrderType": "ASC",
+    "SearchField": "FirstName",
+    "SearchKeyword": "John"
+}'
+```
+
+```json [Success Response]
 {
     "Success": true,
     "ErrorCode": 0,
     "Users": [
         {
             "UserID": 1,
-            "Username": "JohnDoe",
-            "Email": "johndoe@example.com",
-            "LastActivityDateTime": "2021-12-01T12:00:00Z",
-            "AccountStatus": "Enabled",
-            "ReputationLevel": "Trusted"
-        },
+            "FirstName": "John",
+            "LastName": "Doe",
+            "Email": "john.doe@example.com",
+            // Additional user fields...
+        }
         // More users...
     ],
     "TotalUsers": 100
 }
 ```
 
-**HTTP Response and Error Codes:**
-
-This API endpoint doesn't return any errors.
-
-## Delete a User
-
-This API endpoint is used to delete one or more users from the system.
-
-### <Badge type="info" text="POST" /> `/api.php`
-
-**Request Body Parameters:**
-
-| Parameter | Description                                                          | Required |
-|-----------|----------------------------------------------------------------------|----------|
-| SessionID | The ID of the user's current session.                                | Yes      | 
-| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      |
-| Command   | `Users.Delete`                                                       | Yes      | 
-| Users     | A comma-separated list of user IDs to be deleted.                    | Yes      |
-
-**Example Successful Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
+```json [Error Response]
 {
-  "Success": true,
-  "ErrorCode": 0,
-  "ErrorText": ""
+    "Success": false,
+    "ErrorCode": 1,
+    "ErrorMessage": "An error occurred while retrieving the user list."
 }
 ```
 
-**Error Codes:**
-
-| Error Code | Description                 |
-|------------|-----------------------------|
-| 1          | UserID parameter is missing |
+```text [Error Codes]
+1: An error occurred while retrieving the user list.
+```
+:::
