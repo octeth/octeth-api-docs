@@ -1,6 +1,0 @@
----
-layout: doc
----
-
-# Email Templates
-

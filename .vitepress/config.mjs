@@ -71,7 +71,6 @@ export default defineConfig({
                     {text: 'Suppression Lists', link: '/api-reference/suppression-lists'},
                     {text: 'Journeys', link: '/api-reference/journeys'},
                     {text: 'Email Gateway', link: '/api-reference/email-gateway'},
-                    {text: 'Email Templates', link: '/api-reference/email-templates'},
                     {text: 'Email Contents', link: '/api-reference/email-contents'},
                     {text: 'Email Campaigns', link: '/api-reference/email-campaigns'},
                     {text: 'System Management', link: '/api-reference/system-management'},
