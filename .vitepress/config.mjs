@@ -2,6 +2,7 @@ import {defineConfig} from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+    appearance: false,
     base: '/',
     head: [
         [
@@ -15,8 +16,8 @@ export default defineConfig({
     ],
     externalLinkIcon: false,
     land: 'en-US',
-    title: "Octeth API Docs",
-    description: "Octeth API Documentation",
+    title: "Octeth Developer",
+    description: "Octeth Developer Portal",
     themeConfig: {
         // https://vitepress.dev/reference/default-theme-config
         lastUpdated: {
@@ -31,7 +32,7 @@ export default defineConfig({
             dark: '/logo_white.png',
             alt: 'Octeth'
         },
-        siteTitle: 'API Docs',
+        siteTitle: 'Developer Portal',
         nav: [
             {text: 'Homepage', link: '/'},
             {

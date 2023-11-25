@@ -36,9 +36,9 @@ incorrect 2FA code, the API endpoint will return specific error codes to help id
 | DisableCaptcha  | Disables the captcha verification for API login. Available options: `true`, `false`                                     | Optional |
 | TFARecoveryCode | Enter the TFA recovery code to reset and disable TFA setup.                                                             | Optional |
 
-**Success Response:**
+::: code-group
 
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0,
@@ -57,14 +57,16 @@ incorrect 2FA code, the API endpoint will return specific error codes to help id
 }
 ```
 
-**Error Response:**
+```text [Error Codes]
+`1`: Missing username
+`2`: Missing password
+`3`: Invalid login credentials
+`4`: Missing catpcha
+`5`: Invalid captcha
+`6`: Invalid 2FA code
+```
 
-- `1`: Missing username
-- `2`: Missing password
-- `3`: Invalid login credentials
-- `4`: Missing catpcha
-- `5`: Invalid captcha
-- `6`: Invalid 2FA code
+:::
 
 ## Update Administrator Account
 
@@ -87,7 +89,9 @@ end-point execution.
 
 **Success Response:**
 
-```json
+::: code-group
+
+```json [Success Response]
 {
   "Command": "Admin.Update",
   "Name": "Admin Name",
@@ -98,18 +102,20 @@ end-point execution.
 }
 ```
 
-**Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": true,
   "ErrorCode": 0
 }
 ```
 
-- `1`: Missing username
-- `2`: Missing password
-- `3`: Invalid login credentials
-- `4`: Missing catpcha
-- `5`: Invalid catpcha
-- `6`: Invalid 2FA code
+```text [Error Codes]
+`1`: Missing username
+`2`: Missing password
+`3`: Invalid login credentials
+`4`: Missing catpcha
+`5`: Invalid catpcha
+`6`: Invalid 2FA code
+```
+
+:::
