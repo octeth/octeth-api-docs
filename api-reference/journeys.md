@@ -107,15 +107,17 @@ This API endpoint accepts a raw JSON body.
 | SessionID | The ID of the user's current session.                                     | Yes      | 
 | APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.      | Yes      | 
 
-**Example Successful Response:**
+::: code-group
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+```json [Example Request]
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": ""
+}
+```
 
-The successful response will return a JSON object containing an array of journeys. Each journey object includes the
-journey ID, related user ID, journey name, trigger type, trigger parameters, status, creation date, update date, and
-journey statistics.
-
-```json
+```json [Success Response]
+200 OK
 {
   "Journeys": [
     {
@@ -137,12 +139,14 @@ journey statistics.
 }
 ```
 
+```text [Error Response
+This API endpoint doesn't return any errors.
+```
+
+:::
+
 In the `JourneyStats` object, `ActiveSubscribers` represents the number of active subscribers, and `TotalSubscribers`
 represents the total number of subscribers for the journey.
-
-**HTTP Response and Error Codes:**
-
-This API endpoint doesn't return any errors.
 
 ## Delete a Journey
 
@@ -163,21 +167,25 @@ Please note that this API endpoint requires a raw body in JSON format.
 | APIKey    | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
 | JourneyID | This is the ID of the journey to be deleted.                                 | Yes      | 
 
-**Example Successful Response:**
+::: code-group
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+```json [Example Request]
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "JourneyID": 5
+}
+```
 
-```json
+```json [Success Response]
+200 OK
 {
   "JourneyID": "5"
 }
 ```
 
-**Example Error Responses:**
-
-<Badge type="danger" text="HTTP Code: 404 Not Found" /> 
-
-```json
+```json [Error Response]
+404 Not Found
 {
   "Errors": [
     {
@@ -187,6 +195,8 @@ Please note that this API endpoint requires a raw body in JSON format.
   ]
 }
 ```
+
+:::
 
 Please ensure that the `JourneyID` parameter is provided and is valid to avoid errors.
 
@@ -216,11 +226,18 @@ This API endpoint expects a request body in JSON format.
 | APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.      | Yes      | 
 | JourneyID | The ID of the journey to be retrieved.                                    | Yes      | 
 
-**Example Success Response:**
+::: code-group
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+```json [Example Request]
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "JourneyID": 6
+}
+```
 
-```json
+```json [Success Response]
+200 OK
 {
   "Journey": {
     "JourneyID": "6",
@@ -264,11 +281,8 @@ This API endpoint expects a request body in JSON format.
 }
 ```
 
-**Example Error Response:**
-
-<Badge type="danger" text="HTTP Code: 404 Not Found" /> 
-
-```json
+```json [Error Response]
+404 Not Found
 {
   "Errors": [
     {
@@ -277,7 +291,9 @@ This API endpoint expects a request body in JSON format.
     }
   ]
 }
-```
+````
+
+:::
 
 **HTTP Response and Error Codes:**
 
@@ -305,11 +321,18 @@ Please note that this API endpoint requires a raw JSON body.
 | APIKey    | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
 | JourneyID | This is the ID of the journey you wish to enable.                            | Yes      | 
 
-**Example Successful Response:**
+::: code-group
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+```json [Example Request]
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "JourneyID": 6  
+}
+```
 
-```json
+```json [Success Response]
+200 OK
 {
   "Journey": {
     "JourneyID": "6",
@@ -324,11 +347,8 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-**Example Error Response:**
-
-<Badge type="danger" text="HTTP Code: 404 Not Found" /> 
-
-```json
+```json [Error Response]
+404 Not Found
 {
   "Errors": [
     {
@@ -338,6 +358,8 @@ Please note that this API endpoint requires a raw JSON body.
   ]
 }
 ```
+
+:::
 
 **HTTP Response and Error Codes:**
 
@@ -366,11 +388,18 @@ Please note that this API endpoint requires a raw JSON body.
 | APIKey    | This is the user's API key. Either the `SessionID` or `APIKey` is needed. | Mandatory   | 
 | JourneyID | This is the ID of the journey you wish to disable.                        | Mandatory   | 
 
-**Example Successful Response:**
+::: code-group
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+```json [Example Request]
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "JourneyID": 6  
+}
+```
 
-```json
+```json [Success Response]
+200 OK
 {
   "Journey": {
     "JourneyID": "6",
@@ -385,11 +414,8 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-**Example Error Response:**
-
-<Badge type="danger" text="HTTP Code: 404 Not Found" /> 
-
-```json
+```json [Error Response]
+404 Not Found
 {
   "Errors": [
     {
@@ -399,6 +425,8 @@ Please note that this API endpoint requires a raw JSON body.
   ]
 }
 ```
+
+:::
 
 **HTTP Response and Error Codes:**
 
@@ -432,11 +460,22 @@ This endpoint expects a raw JSON body.
 | Trigger_ListID  | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (for any list) or a specific subscriber list ID. | No       | 
 | Trigger_EmailID | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (for any email) or a specific email ID.  | No       | 
 
-**Example Successful Response:**
+::: code-group
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+```json [Example Request]
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "JourneyID": 6,
+  "Name":"New Name",
+  "Notes":"",
+  "Trigger":"ListSubscription",
+  "Trigger_ListID":30
+}
+```
 
-```json
+```json [Success Response]
+200 OK
 {
   "Journey": {
     "JourneyID": "6",
@@ -452,11 +491,8 @@ This endpoint expects a raw JSON body.
 }
 ```
 
-**Example Error Response:**
-
-<Badge type="danger" text="HTTP Code: 400 Bad Request" />
-
-```json
+```json [Error Response]
+404 Not Found
 {
   "Errors": [
     {
@@ -466,6 +502,8 @@ This endpoint expects a raw JSON body.
   ]
 }
 ```
+
+:::
 
 **HTTP Response and Error Codes:**
 
@@ -501,13 +539,39 @@ Please note that any actions not included in the provided list will be removed f
 | JourneyID | The ID of the journey to be updated.                                                       | Yes      | 
 | Actions   | The list of action objects. See below for the structure of action objects.                 | Yes      | 
 
-> For the detailed usage instructions of journey actions, refer to the [Journey Actions](/api-reference/journey-actions). 
+> For the detailed usage instructions of journey actions, refer to the [Journey Actions](/api-reference/journey-actions.html)
+> .
 
-**Example Success Response:**
+::: code-group
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+```json [Example Request]
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "JourneyID": 6,
+  "Actions": [
+    {
+      "ActionID": 1,
+      "Action": "Wait",
+      "WaitUnit": "seconds",
+      "WaitAmount": 20,
+      "Notes": "Administative note"
+    },
+    {
+      "ActionID": null,
+      "Action": "Subscribe",
+      "TargetListID": 30,
+      "Notes": "Test note"
+    },
+    // ...
+    // Action objects
+    // ...
+  ],
+}
+```
 
-```json
+```json [Success Response]
+200 OK
 {
     "JourneyID": 22,
     "Actions": [
@@ -675,11 +739,8 @@ Please note that any actions not included in the provided list will be removed f
 }
 ```
 
-**Example Error Response:**
-
-<Badge type="danger" text="HTTP Code: 404 Not Found" />
-
-```json
+```json [Error Response]
+404 Not Found
 {
   "Errors": [
     {
@@ -689,6 +750,8 @@ Please note that any actions not included in the provided list will be removed f
   ]
 }
 ```
+
+:::
 
 **HTTP Response and Error Codes:**
 
@@ -720,11 +783,19 @@ Please note that this API endpoint requires a raw JSON body.
 | ListID       | List ID of the subscriber.                                                   | Yes      | 
 | SubscriberID | ID of the target subscriber.                                                 | Yes      | 
 
-**Example Successful Response:**
+::: code-group
+```json [Example Request]
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "JourneyID": 6,
+  "ListID": 30,
+  "SubscriberID": 11
+}
+```
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
+```json [Success Response]
+200 OK
 {
   "JourneyID": "18",
   "ListID": "26",
@@ -732,11 +803,8 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-**Example Error Response:**
-
-<Badge type="danger" text="HTTP Code: 404 Not Found" /> 
-
-```json
+```json [Error Response]
+404 Not Found
 {
   "Errors": [
     {
@@ -746,6 +814,7 @@ Please note that this API endpoint requires a raw JSON body.
   ]
 }
 ```
+:::
 
 **HTTP Response and Error Codes:**
 
@@ -782,11 +851,19 @@ Please note that this API endpoint requires a raw JSON body.
 | ListID       | List ID of the subscriber.                                                   | Yes      | 
 | SubscriberID | ID of the target subscriber.                                                 | Yes      | 
 
-**Example Successful Response:**
+::: code-group
+```json [Example Request]
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "JourneyID": 6,
+  "ListID": 30,
+  "SubscriberID": 11
+}
+```
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
+```json [Success Response]
+200 OK
 {
   "JourneyID": "18",
   "ListID": "26",
@@ -794,11 +871,8 @@ Please note that this API endpoint requires a raw JSON body.
 }
 ```
 
-**Example Error Response:**
-
-<Badge type="danger" text="HTTP Code: 404 Not Found" /> 
-
-```json
+```json [Error Response]
+404 Not Found
 {
   "Errors": [
     {
@@ -808,6 +882,7 @@ Please note that this API endpoint requires a raw JSON body.
   ]
 }
 ```
+:::
 
 **HTTP Response and Error Codes:**
 
@@ -842,43 +917,49 @@ Please note that this API endpoint requires a raw JSON body.
 | ListID       | List ID of the subscriber.                                                   | Yes      | 
 | SubscriberID | ID of the target subscriber.                                                 | Yes      | 
 
-**Example Successful Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
+::: code-group
+```json [Example Request]
 {
-    "ListID": "26",
-    "SubscriberID": "1",
-    "Journeys": [
-        {
-            "JourneyID": "18",
-            "RelUserID": "1",
-            "JourneyName": "Test",
-            "Trigger": "ListSubscription:0",
-            "TriggerParameters": "{\"ListID\":0}",
-            "Status": "Enabled",
-            "CreatedAt": "2023-08-23 13:26:23",
-            "UpdatedAt": "2023-08-25 10:40:02"
-        }
-    ]
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "JourneyID": 6,
+  "ListID": 30,
+  "SubscriberID": 11
 }
 ```
 
-**Example Error Response:**
-
-<Badge type="danger" text="HTTP Code: 404 Not Found" /> 
-
-```json
+```json [Success Response]
+200 OK
 {
-    "Errors": [
-        {
-            "Code": 9,
-            "Message": "Subscriber not found"
-        }
-    ]
+  "ListID": "26",
+  "SubscriberID": "1",
+  "Journeys": [
+    {
+      "JourneyID": "18",
+      "RelUserID": "1",
+      "JourneyName": "Test",
+      "Trigger": "ListSubscription:0",
+      "TriggerParameters": "{\"ListID\":0}",
+      "Status": "Enabled",
+      "CreatedAt": "2023-08-23 13:26:23",
+      "UpdatedAt": "2023-08-25 10:40:02"
+    }
+  ]
 }
 ```
+
+```json [Error Response]
+404 Not Found
+{
+  "Errors": [
+    {
+      "Code": 9,
+      "Message": "Subscriber not found"
+    }
+  ]
+}
+```
+:::
 
 **HTTP Response and Error Codes:**
 

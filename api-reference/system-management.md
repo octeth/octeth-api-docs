@@ -6,42 +6,27 @@ layout: doc
 
 ## System Health Check
 
-This API endpoint performs a health check of various system components including MySQL, Elasticsearch, RabbitMQ, Redis,
-and Session status. Authorization is required via a Bearer token admin API key.
+<Badge type="info" text="POST" /> `/api/v1/system-health-check`
 
-### <Badge type="info" text="GET" /> `/api/v1/system-health-check`
+This API end-point is used to perform a health check on various system components such as MySQL, Elasticsearch, RabbitMQ, Redis, and Session management. It requires an admin API key for authorization.
 
-**Authorization:**
+**Request Body Parameters:**
 
-- Bearer token (Admin API key) is required for authentication.
+| Parameter   | Description                                                          | Required? |
+|-------------|----------------------------------------------------------------------|-----------|
+| SessionID   | The ID of the user's current session                                 | Yes       |
+| APIKey      | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| AdminAPIKey | The admin API key for authorization                                  | Yes       |
 
-**Success Response:**
+::: code-group
 
-A successful response is given if all system components are functioning correctly.
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/system-health-check" \
+     -H "Authorization: Bearer {Admin API Key}" 
+```
 
-- HTTP Status Code: 200
-- Body: A JSON object with the status of each system component.
-
-**Error Response:**
-
-- If authentication fails:
-    - HTTP Status Code: 403
-    - Body: A JSON object with error code `1` and a message indicating authentication failure.
-- If any system check fails:
-    - HTTP Status Code: 503
-    - Body: A JSON object with the status of each system component, indicating which component(s) failed.
-
-**System Components Checked:**
-
-- **MySQL**: Checks if the MySQL database is accessible and if there's at least one admin user.
-- **Elasticsearch**: Validates the accessibility and response of the Elasticsearch service.
-- **RabbitMQ**: Tests the RabbitMQ service connection.
-- **Redis**: Verifies the Redis service is operational.
-- **Session**: Confirms if PHP sessions are active.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
+200 OK
 {
   "Checks": {
     "MySQL": "OK",
@@ -53,17 +38,51 @@ A successful response is given if all system components are functioning correctl
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
+503 Service Unavailable
 {
   "Errors": [
     {
       "Code": 1,
       "Message": "Authentication failed. Invalid admin API key."
+    },
+    {
+      "Code": 2,
+      "Message": "There is no registered admin user."
+    },
+    {
+      "Code": 3,
+      "Message": "Elasticsearch connection failed."
+    },
+    {
+      "Code": 4,
+      "Message": "RabbitMQ connection failed."
+    },
+    {
+      "Code": 5,
+      "Message": "Redis connection failed."
+    },
+    {
+      "Code": 6,
+      "Message": "Session is not active."
     }
   ]
 }
 ```
 
+```text [Error Codes]
+1: Authentication failed. Invalid admin API key.
+2: There is no registered admin user.
+3: Elasticsearch connection failed.
+4: RabbitMQ connection failed.
+5: Redis connection failed.
+6: Session is not active.
+```
+:::
 
+**HTTP Response and Error Codes:**
+
+| HTTP Response Code | Error Code | Description                      |
+|--------------------|------------|----------------------------------|
+| 403                | -          | Authentication failed            |
+| 503                | 1-6        | At least one system check failed |
