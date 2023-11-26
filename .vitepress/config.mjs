@@ -80,8 +80,7 @@ export default defineConfig({
                 text: 'PLUGIN DEVELOPMENT',
                 collapsed: false,
                 items: [
-                    {text: 'Getting Started', link: '#'},
-                    {text: 'Hook Reference', link: '#'},
+                    {text: 'Hook Reference', link: '/plugin-development/hook-reference'},
                 ]
             }
         ],
