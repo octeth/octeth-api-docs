@@ -1,13 +1,2 @@
-X Administrators
-X Users
-X Subscriber Lists
-X Custom Fields
-. Segments
-X Tags
-. Subscribers
-X Suppression Lists
-X Journeys
-. Email Gateway
-. Email Contents
-. Email Campaigns
-X System Management
+. RulesJSON documentation
+. Subscriber import POST parameters documentation

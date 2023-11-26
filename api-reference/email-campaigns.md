@@ -4,176 +4,164 @@ layout: doc
 
 # Email Campaigns
 
-## Approve Campaign
+## Campaign Approval
 
-This API endpoint allows for setting the status of a campaign to 'Ready', effectively approving it for launch.
+<Badge type="info" text="POST" /> `/api.php`
 
-### <Badge type="info" text="POST" /> `/api.php`
+This endpoint is used to approve a campaign by updating its status to 'Ready'. The campaign is identified by its unique `CampaignID`.
 
-**Request Parameters:**
+**Request Body Parameters:**
 
-| Parameter  | Description                            |          |
-|------------|----------------------------------------|----------|
-| Command    | `Campaign.Approve`                     | Required |
-| CampaignId | The ID of the campaign to be approved. | Required |
+| Parameter  | Description                                                          | Required? |
+|------------|----------------------------------------------------------------------|-----------|
+| SessionID  | The ID of the user's current session                                 | Yes       |
+| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command    | Campaign.Approve                                                     | Yes       |
+| CampaignID | The unique identifier for the campaign to approve                    | Yes       |
 
-**Success Response:**
+::: code-group
 
-A successful response indicates that the campaign status has been updated to 'Ready'.
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"SessionID": "your-session-id", "APIKey": "your-api-key", "Command": "Campaign.Approve", "CampaignID": "123"}'
+```
 
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
-
-**Error Response:**
-
-- `1`: Missing campaign ID.
-- `2`: Invalid campaign ID.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing campaign id"
+  "ErrorCode": 1
 }
 ```
 
-## Cancel Campaign
+```text [Error Codes]
+1: Missing required parameter: CampaignID
+2: Campaign not found
+```
+:::
 
-This API endpoint allows for canceling a specific campaign by setting its status to 'Ready' and 'Not Scheduled',
-effectively pausing it. The endpoint also handles split test settings associated with the campaign.
+## Cancel a Campaign
 
-### <Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api.php`
 
-**Request Parameters:**
+This endpoint is used to cancel a specific campaign. The campaign must belong to the user making the request.
 
-| Parameter  | Description                            |          |
-|------------|----------------------------------------|----------|
-| Command    | `Campaign.Cancel`                      | Required |
-| CampaignId | The ID of the campaign to be canceled. | Required |
+**Request Body Parameters:**
 
-**Success Response:**
+| Parameter     | Description                                           | Required? |
+|---------------|-------------------------------------------------------|-----------|
+| SessionID     | The ID of the user's current session                  | Yes       |
+| APIKey        | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command       | Campaign.Cancel                                       | Yes       |
+| CampaignID    | The unique identifier for the campaign to be canceled | Yes       |
 
-A successful response indicates that the campaign has been successfully canceled.
+::: code-group
 
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=Campaign.Cancel' \
+  -d 'CampaignID=123'
+```
 
-**Error Response:**
-
-- `1`: Missing campaign ID.
-- `2`: Invalid campaign ID.
-- `3`: Campaign status is not in a cancellable state.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing campaign id"
+  "ErrorCode": 1
 }
 ```
+
+```text [Error Codes]
+1: Missing required field: CampaignID
+2: Campaign does not belong to the user or does not exist
+```
+:::
 
 ## Copy Campaign
 
-This API endpoint is designed to create a copy of an existing campaign, including its recipient lists and email content.
+<Badge type="info" text="POST" /> `/api.php`
 
-### <Badge type="info" text="POST" /> `/api.php`
+This endpoint allows you to create a copy of an existing campaign. The new campaign will be created with the status 'Draft' and all the settings from the original campaign, except for the scheduled sending information.
 
-**Request Parameters:**
+**Request Body Parameters:**
 
-| Parameter  | Description                          |          |
-|------------|--------------------------------------|----------|
-| Command    | `Campaign.Copy`                      | Required |
-| CampaignId | The ID of the campaign to be copied. | Required |
+| Parameter             | Description                                                                 | Required? |
+|-----------------------|-----------------------------------------------------------------------------|-----------|
+| SessionID             | The ID of the user's current session                                        | Yes       |
+| APIKey                | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
+| Command               | Campaign.Copy                                                               | Yes       |
+| CampaignID            | The unique identifier of the campaign to be copied                          | Yes       |
 
-**Success Response:**
+::: code-group
 
-A successful response indicates that the campaign has been successfully copied.
+```bash [Example Request]
+curl -X POST https://yourdomain.com/api.php \
+  -d 'SessionID=example-session-id' \
+  -d 'APIKey=example-api-key' \
+  -d 'Command=Campaign.Copy' \
+  -d 'CampaignID=123'
+```
 
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
-- `NewCampaignID`: The ID of the newly created campaign copy.
-
-**Error Response:**
-
-- `1`: Missing source campaign ID.
-- `2`: Invalid source campaign or email content.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0,
-  "NewCampaignID": 12345
+  "NewCampaignID": "456"
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Invalid source campaign"
+  "ErrorCode": [1],
+  "ErrorText": ["Invalid source campaign"]
 }
 ```
 
-## Create Campaign
+```text [Error Codes]
+1: Invalid source campaign
+```
+:::
 
-This API endpoint facilitates the creation of a new campaign with the provided name.
+## Create a New Campaign
 
-### <Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api.php`
 
-**Request Parameters:**
+This endpoint is used to create a new campaign in the system. It requires the user to provide a unique campaign name.
 
-| Parameter     | Description                                  |          |
-|---------------|----------------------------------------------|----------|
-| Command       | `Campaign.Create`                            | Required |
-| CampaignName  | The name for the new campaign to be created. | Required |
+**Request Body Parameters:**
 
-**Success Response:**
+| Parameter      | Description                                      | Required? |
+|----------------|--------------------------------------------------|-----------|
+| SessionID      | The ID of the user's current session             | Yes       |
+| APIKey         | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
+| Command        | Campaign.Create                                  | Yes       |
+| CampaignName   | The name of the campaign to be created           | Yes       |
 
-A successful response indicates that a new campaign has been created.
+::: code-group
 
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
-- `CampaignID`: The ID of the newly created campaign.
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"SessionID": "your-session-id", "APIKey": "your-api-key", "Command": "Campaign.Create", "CampaignName": "Summer Sale Campaign"}'
+```
 
-**Error Response:**
-
-- `1`: Missing campaign name.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0,
@@ -181,326 +169,367 @@ A successful response indicates that a new campaign has been created.
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing campaign name"
+  "ErrorCode": 1
 }
 ```
 
+```text [Error Codes]
+1: "The campaign name is required."
+```
+:::
+
 ## Retrieve Campaign Details
 
-This API endpoint retrieves detailed information about a specific campaign, including statistics if requested.
+<Badge type="info" text="POST" /> `/api.php`
 
-### <Badge type="info" text="POST" /> `/api.php`
+This endpoint retrieves detailed information about a specific campaign, including statistics if requested, and calculates the campaign's email delivery throughput.
 
-**Request Parameters:**
+**Request Body Parameters:**
 
-| Parameter         | Description                                                                                |          |
-|-------------------|--------------------------------------------------------------------------------------------|----------|
-| Command           | `Campaign.Get`                                                                             | Required |
-| CampaignId        | The ID of the campaign for which details are being retrieved.                              | Required |
-| RetrieveStatistics| *(Optional)* Boolean to indicate whether to retrieve detailed statistics for the campaign. | Optional |
-| RetrieveTags      | *(Optional)* Boolean to indicate whether to retrieve tag information for the campaign.     | Optional |
+| Parameter            | Description                                                                 | Required? |
+|----------------------|-----------------------------------------------------------------------------|-----------|
+| SessionID            | The ID of the user's current session                                        | Yes       |
+| APIKey               | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
+| Command              | Campaign.Get                                                                | Yes       |
+| campaignid           | Unique identifier for the campaign to retrieve                              | Yes       |
+| retrievestatistics   | Boolean flag to indicate if campaign statistics should be retrieved         | No        |
+| retrievetags         | Boolean flag to indicate if campaign tags should be retrieved               | No        |
 
-**Success Response:**
+::: code-group
 
-A successful response includes detailed information about the specified campaign.
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=Campaign.Get' \
+  -d 'campaignid=123' \
+  -d 'retrievestatistics=true' \
+  -d 'retrievetags=true'
+```
 
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
-- `Campaign`: A JSON object containing detailed information about the campaign, including statistics if requested.
-- `CampaignThroughput`: Information about the campaign's email delivery throughput.
-
-**Error Response:**
-
-- `1`: Missing campaign ID.
-- `2`: Invalid campaign ID (e.g., non-numeric value).
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0,
   "Campaign": {
-    // Detailed campaign information
+    "CampaignID": 123,
+    "Name": "Summer Sale",
+    "Status": "Active",
+    "TotalSent": 10000,
+    "TotalHardBounces": 100,
+    "TotalSoftBounces": 50,
+    "HardBounceRatio": "1.00",
+    "SoftBounceRatio": "0.50",
+    "Statistics": {
+      "OpenStatistics": {...},
+      "ClickStatistics": {...},
+      ...
+    },
+    "Tags": ["Summer", "Sale"]
   },
   "CampaignThroughput": {
-    // Campaign throughput information
+    "EmailsPerSecond": 5
   }
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing campaign id"
+  "ErrorCode": 1,
+  "ErrorMessage": "Required parameter 'campaignid' is missing."
 }
 ```
 
-## Pause Campaign
+```text [Error Codes]
+1: Required parameter 'campaignid' is missing.
+2: The 'campaignid' parameter must be numeric.
+```
+:::
 
-This API endpoint allows for pausing an ongoing campaign that is currently in the sending process.
+## Pause a Campaign
 
-### <Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api.php`
 
-**Request Parameters:**
+This endpoint is used to pause an ongoing campaign. It ensures that the campaign belongs to the user and is currently in a 'Sending' state before pausing it.
 
-| Parameter  | Description                          |          |
-|------------|--------------------------------------|----------|
-| Command    | `Campaign.Pause`                     | Required |
-| CampaignId | The ID of the campaign to be paused. | Required |
+**Request Body Parameters:**
 
-**Success Response:**
+| Parameter     | Description                                           | Required? |
+|---------------|-------------------------------------------------------|-----------|
+| SessionID     | The ID of the user's current session                  | Yes       |
+| APIKey        | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command       | Campaign.Pause                                        | Yes       |
+| CampaignID    | The unique identifier of the campaign to be paused    | Yes       |
 
-A successful response indicates that the campaign has been paused.
+::: code-group
 
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=Campaign.Pause' \
+  -d 'CampaignID=123'
+```
 
-**Error Response:**
-
-- `1`: Missing campaign ID.
-- `2`: Invalid campaign ID.
-- `3`: Campaign status is not in a pausable state.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing campaign id"
+  "ErrorCode": 1
 }
 ```
 
-## Resume Campaign
+```text [Error Codes]
+1: Missing required parameter: CampaignID
+2: Campaign does not belong to the user
+3: Campaign is not in a 'Sending' state
+```
+:::
 
-This API endpoint facilitates the resumption of a paused campaign, updating its status to 'Ready', and handling
-associated split tests accordingly.
+## Resume a Campaign
 
-### <Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api.php`
 
-**Request Parameters:**
+This endpoint allows the user to resume a previously paused campaign. The campaign must belong to the user and must be in a 'Paused' state before it can be resumed.
 
-| Parameter  | Description                           |          |
-|------------|---------------------------------------|----------|
-| Command    | `Campaign.Resume`                     | Required |
-| CampaignId | The ID of the campaign to be resumed. | Required |
+**Request Body Parameters:**
 
-**Success Response:**
+| Parameter       | Description                                         | Required? |
+|-----------------|-----------------------------------------------------|-----------|
+| SessionID       | The ID of the user's current session                | Yes       |
+| APIKey          | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command         | Campaign.Resume                                     | Yes       |
+| CampaignID      | The unique identifier of the campaign to be resumed | Yes       |
 
-A successful response indicates that the campaign has been updated to 'Ready' status, effectively resuming it.
+::: code-group
 
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=Campaign.Resume' \
+  -d 'CampaignID=123'
+```
 
-**Error Response:**
-
-- `1`: Missing campaign ID.
-- `2`: Invalid campaign ID.
-- `3`: Campaign status is not in a resumable state.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing campaign id"
+  "ErrorCode": 1
 }
 ```
 
-## Update Campaign
+```text [Error Codes]
+1: Missing required parameter: CampaignID
+2: Campaign does not belong to the user
+3: Campaign is not in a 'Paused' state
+```
+:::
 
-This API endpoint allows for updating the details of an existing campaign, including its schedule, recipient lists, and
-other settings.
+## Update Campaign Details
 
-### <Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api.php`
 
-**Request Parameters:**
+This endpoint allows you to update the details of an existing campaign. You can modify various attributes of the campaign, including its status, schedule, recipients, and more.
 
-| Parameter                        | Description                                              | Required |
-|----------------------------------|----------------------------------------------------------|----------|
-| Command                          | `Campaign.Update`                                        | Yes      |
-| CampaignId                       | The ID of the campaign to be updated.                    | Yes      |
-| CampaignName                     | *(Optional)* The new name for the campaign.              | No       |
-| RelEmailId                       | *(Optional)* The email ID associated with the campaign.  | No       |
-| ScheduleType                     | *(Optional)* Type of scheduling ('Future', 'Recursive'). | No       |
-| SendDate                         | *(Optional)* Scheduled date for future sending.          | No       |
-| SendTime                         | *(Optional)* Scheduled time for future sending.          | No       |
-| SendTimeZone                     | *(Optional)* Time zone for scheduling.                   | No       |
-| ScheduleRecDaysOfWeek            | *(Optional)* Days of the week for recursive sending.     | No       |
-| ScheduleRecDaysOfMonth           | *(Optional)* Days of the month for recursive sending.    | No       |
-| ScheduleRecMonths                | *(Optional)* Months for recursive sending.               | No       |
-| ScheduleRecHours                 | *(Optional)* Hours for recursive sending.                | No       |
-| ScheduleRecMinutes               | *(Optional)* Minutes for recursive sending.              | No       |
-| ScheduleRecSendMaxInstance       | *(Optional)* Maximum instances for recursive sending.    | No       |
-| ApprovalUserExplanation          | *(Optional)* Explanation for campaign approval.          | No       |
-| GoogleAnalyticsDomains           | *(Optional)* Domains for Google Analytics tracking.      | No       |
-| PublishOnRss                     | *(Optional)* Enable or disable publishing on RSS.        | No       |
-| RecipientListsAndSegments        | *(Optional)* Recipient list and segment IDs.             | No       |
-| ExcludeRecipientListsAndSegments | *(Optional)* Exclude recipient list and segment IDs.     | No       |
-| Other campaign options           | *(Optional)* Additional campaign options.                | No       |
+**Request Body Parameters:**
 
-**Success Response:**
+| Parameter                         | Description                                                                 | Required? |
+|-----------------------------------|-----------------------------------------------------------------------------|-----------|
+| SessionID                         | The ID of the user's current session                                        | Yes       |
+| APIKey                            | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
+| Command                           | Campaign.Update                                                             | Yes       |
+| CampaignID                        | Unique identifier for the campaign to be updated                            | Yes       |
+| CampaignStatus                    | The new status of the campaign (e.g., Draft, Ready, Sending)                | No        |
+| CampaignName                      | The new name for the campaign                                               | No        |
+| RelEmailID                        | The ID of the email associated with the campaign                            | No        |
+| ScheduleType                      | The type of scheduling for the campaign (e.g., Immediate, Future, Recursive)| No        |
+| SendDate                          | The date when the campaign is scheduled to be sent                          | No        |
+| SendTime                          | The time when the campaign is scheduled to be sent                          | No        |
+| SendTimeZone                      | The timezone for the send date and time                                     | No        |
+| ScheduleRecDaysOfWeek             | Days of the week when the campaign is scheduled to recur                    | No        |
+| ScheduleRecDaysOfMonth            | Days of the month when the campaign is scheduled to recur                   | No        |
+| ScheduleRecMonths                 | Months when the campaign is scheduled to recur                              | No        |
+| ScheduleRecHours                  | Hours when the campaign is scheduled to recur                               | No        |
+| ScheduleRecMinutes                | Minutes when the campaign is scheduled to recur                             | No        |
+| ScheduleRecSendMaxInstance        | Maximum instances for the campaign to be sent on a recurring schedule       | No        |
+| ApprovalUserExplanation           | Explanation from the user for campaign approval                             | No        |
+| GoogleAnalyticsDomains            | Domains to be tracked with Google Analytics                                 | No        |
+| PublishOnRSS                      | Whether to publish the campaign on RSS (Enabled or Disabled)                | No        |
+| RecipientListsAndSegments         | Comma-separated list of recipient list and segment IDs                      | No        |
+| Exclude_RecipientListsAndSegments | Comma-separated list of recipient list and segment IDs to exclude           | No        |
+| S2SEnabled                        | Whether the Send-to-Send feature is enabled or not                          | No        |
 
-A successful response indicates that the campaign has been updated.
+::: code-group
 
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=example-session-id' \
+  -d 'APIKey=example-api-key' \
+  -d 'Command=Campaign.Update' \
+  -d 'CampaignID=123' \
+  -d 'CampaignStatus=Ready' \
+  -d 'CampaignName=New Campaign Name'
+```
 
-**Error Response:**
-
-- `1`: Missing campaign ID.
-- `2`: Invalid campaign ID.
-- `3`: Invalid campaign status.
-- `4`: Invalid email ID or email ID does not belong to the user.
-- `5`: Invalid schedule type, date, time, or timezone.
-
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0
 }
 ```
 
-**Example Error Response:**
-
-```json
+```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing required fields"
+  "ErrorCode": 1
 }
 ```
+
+```text [Error Codes]
+1: Campaign ID is required
+2: Campaign does not belong to the user
+3: Invalid campaign status
+4: Email ID does not belong to the user
+5: Invalid schedule type
+6: Send date is required for future scheduled campaigns
+7: Send time is required for future scheduled campaigns
+8: Either days of the week or days of the month must be specified for recursive campaigns
+9: Months are required for recursive campaigns
+10: Hours are required for recursive campaigns
+11: Minutes are required for recursive campaigns
+12: Maximum instances are required for recursive campaigns
+13: Timezone is required for scheduled campaigns
+```
+:::
 
 ## Delete Campaigns
 
-This API endpoint is used to delete one or more campaigns owned by the user.
+<Badge type="info" text="POST" /> `/api.php`
 
-### <Badge type="info" text="POST" /> `/api.php`
+This endpoint allows for the deletion of one or more campaigns associated with a user's account. The user must provide a list of campaign IDs to be deleted.
 
-**Request Parameters:**
+**Request Body Parameters:**
 
-| Parameter | Description                                                     | Required |
-|-----------|-----------------------------------------------------------------|----------|
-| Command   | `Campaigns.Delete`                                              | Yes      |
-| Campaigns | A comma-separated list of campaign IDs that need to be deleted. | Yes      |
+| Parameter  | Description                                              | Required? |
+|------------|----------------------------------------------------------|-----------|
+| SessionID  | The ID of the user's current session                     | Yes       |
+| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command    | Campaigns.Delete                                         | Yes       |
+| Campaigns  | Comma-separated list of campaign IDs to be deleted       | Yes       |
 
-**Success Response:**
+::: code-group
 
-A successful response indicates that the specified campaigns have been deleted.
-
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
-
-**Error Response:**
-
-- `1`: Missing campaign IDs.
-
-**Example Success Response:**
-
-```json
-{
-  "Success": true,
-  "ErrorCode": 0
-}
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=Campaigns.Delete' \
+  -d 'Campaigns=1,2,3'
 ```
 
-**Example Error Response:**
-
-```json
-{
-  "Success": false,
-  "ErrorCode": [
-    1
-  ],
-  "ErrorText": "Missing campaign IDs"
-}
-```
-
-## Get Campaigns
-
-This API endpoint retrieves a list of campaigns based on specified criteria, including status, search keywords, and
-optional statistics.
-
-### <Badge type="info" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter           | Description                                                | Required | Default |
-|---------------------|------------------------------------------------------------|----------|---------|
-| Command             | `Campaigns.Get`                                            | Yes      |         |
-| RecordsPerRequest   | Number of campaigns to retrieve per request.               | No       | 0       |
-| RecordsFrom         | Starting record number from where to retrieve campaigns.   | No       | 0       |
-| CampaignStatus      | *(Optional)* Filter by campaign status (e.g., 'Draft').    | No       | All     |
-| SearchKeyword       | *(Optional)* Keyword to search within campaign names.      | No       |         |
-| OrderField          | Field to order the campaigns by (e.g., 'CampaignName').    | No       |         |
-| OrderType           | Type of ordering ('ASC' or 'DESC').                        | No       |         |
-| RetrieveTags        | *(Optional)* Indicates whether to retrieve campaign tags.  | No       | false   |
-| Tags                | *(Optional)* Filter campaigns by specific tag IDs.         | No       |         |
-| RetrieveStatistics  | *(Optional)* Indicates whether to retrieve campaign stats. | No       | true    |
-
-**Success Response:**
-
-A successful response contains an array of campaigns along with their total count.
-
-- `Success`: true
-- `ErrorCode`: 0 (indicating no error)
-- `Campaigns`: Array of campaign details
-- `TotalCampaigns`: Total number of campaigns matching the criteria
-
-**Error Response:**
-
-- No specific error codes defined in the provided code.
-- 
-**Example Success Response:**
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0,
-  "Campaigns": [
-    /* Array of campaign details */
-  ],
-  "TotalCampaigns": 25
+  "ErrorText": ""
 }
 ```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": {
+    "campaigns": 1
+  }
+}
+```
+
+```text [Error Codes]
+1: The 'campaigns' parameter is missing or invalid.
+```
+:::
+
+## Retrieve Campaigns
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint retrieves a list of campaigns based on the provided criteria. It allows for filtering, ordering, and can optionally include campaign statistics.
+
+**Request Body Parameters:**
+
+| Parameter          | Description                                                                 | Required? |
+|--------------------|-----------------------------------------------------------------------------|-----------|
+| SessionID          | The ID of the user's current session                                        | Yes       |
+| APIKey             | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
+| Command            | Campaigns.Get                                                               | Yes       |
+| RecordsPerRequest  | The number of records to retrieve per request                               | No        |
+| RecordsFrom        | The starting point from which to retrieve records                           | No        |
+| CampaignStatus     | The status of the campaigns to filter by (e.g., 'Active', 'Inactive')       | No        |
+| SearchKeyword      | A keyword to search for in campaign names                                   | No        |
+| OrderField         | The field to order the results by                                           | No        |
+| OrderType          | The type of ordering to apply (e.g., 'ASC', 'DESC')                         | No        |
+| RetrieveTags       | Whether to retrieve tags associated with the campaigns (true/false)         | No        |
+| Tags               | A comma-separated list of tag IDs to filter campaigns by                    | No        |
+| RetrieveStatistics | Whether to retrieve statistics for the campaigns (true/false)               | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=exampleSessionId' \
+  -d 'APIKey=exampleApiKey' \
+  -d 'Command=Campaigns.Get' \
+  -d 'RecordsPerRequest=10' \
+  -d 'RecordsFrom=0' \
+  -d 'CampaignStatus=Active' \
+  -d 'SearchKeyword=Summer' \
+  -d 'OrderField=CampaignName' \
+  -d 'OrderType=ASC' \
+  -d 'RetrieveTags=true' \
+  -d 'Tags=1,2,3' \
+  -d 'RetrieveStatistics=true'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Campaigns": [
+    {
+      "CampaignID": "123",
+      "CampaignName": "Summer Sale",
+      "CampaignStatus": "Active",
+      // Additional campaign details...
+    }
+    // More campaigns...
+  ],
+  "TotalCampaigns": 50
+}
+```
+
+```text [Error Response]
+There are no error codes for this API end-point.
+```
+
+```text [Error Codes]
+There are no error codes for this API end-point.
+```
+:::

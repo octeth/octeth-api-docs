@@ -2,520 +2,507 @@
 layout: doc
 ---
 
-# Email Contents
+## Create New Email
 
-::: warning
-Each API end-point on this article may have a different authentication method. Please make sure you use the correct authentication method.
-:::
+<Badge type="info" text="POST" /> `/api.php`
 
-## Create Email Content
+This endpoint is used to create a new email record associated with the user's account.
 
-This API end-point will create a new email content record and it will return the `EmailID`.
+**Request Body Parameters:**
 
-### <Badge type="tip" text="POST" /> `/api.php`
+| Parameter  | Description                                           | Required? |
+|------------|-------------------------------------------------------|-----------|
+| SessionID  | The ID of the user's current session                  | Yes       |
+| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command    | Email.Create                                          | Yes       |
+| RelUserID  | The ID of the user related to the email               | Yes       |
 
-**Request Parameters:**
+::: code-group
 
-| Parameter | Description                                                          | Required |
-|-----------|----------------------------------------------------------------------|----------|
-| Command   | `Email.Create`                                                       | Yes      | 
-| SessionID | The user's session ID.                                               | Yes      | 
-| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "Command": "Email.Create",
+    "RelUserID": "12345"
+}'
+```
 
-**Example Success Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
+```json [Success Response]
 {
     "Success": true,
     "ErrorCode": 0,
-    "EmailID": 127
+    "EmailID": "new-email-id"
 }
 ```
 
-**Example Error Response:**
-
-There's no error case for this API end-point.
-
-## Update Email Content
-
-This API end-point will update the email content record.
-
-### <Badge type="tip" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter                | Description                                                                                               | Required |
-|--------------------------|-----------------------------------------------------------------------------------------------------------|----------|
-| Command                  | `Email.Update`                                                                                            | Yes      | 
-| SessionID                | The user's session ID.                                                                                    | Yes      | 
-| APIKey                   | The user's API key. Either `SessionID` or `APIKey` must be provided.                                      | Yes      | 
-| EmailId                  | The unique identifier of the email.                                                                       | Yes      |
-| EmailName                | The name of the email.                                                                                    | No       |
-| ValidateScope            | The scope of validation. It can be `OptIn`, `Campaign`, or `AutoResponder`.                               | Yes      |
-| Mode                     | The mode of the email. It can be `Template`, `Editor`, `Stripo`, `Unlayer`, `Empty`, or `Import`.         | Yes      |
-| RelTemplateId            | The unique identifier of the related template. This parameter is required only if the mode is 'Template'. | No       |
-| SenderDomain             | The domain of the sender. Ex: `abc.com`                                                                   | No       |
-| FromName                 | The name of the sender.                                                                                   | No       |
-| FromEmail                | The email address of the sender.                                                                          | No       |
-| ReplyToName              | The name for replies.                                                                                     | No       |
-| ReplyToEmail             | The email address for replies.                                                                            | No       |
-| PreHeaderText            | The pre-header text of the email.                                                                         | No       |
-| Subject                  | The subject of the email.                                                                                 | Yes      |
-| HtmlContent              | The HTML content of the email.                                                                            | Yes      |
-| PlainContent             | The plain text content of the email.                                                                      | Yes      |
-| ExtraContent1            | Extra content for the email. Required only if `Mode` is set to `Stripo`                                   | No       |
-| ExtraContent2            | Additional extra content for the email. Required only if `Mode` is set to `Stripo`                        | No       |
-| FetchUrl                 | The URL to fetch the email content from. Leave empty to disable this feature.                             | No       |
-| FetchPlainUrl            | The URL to fetch the plain text email content from. Leave empty to disable this feature.                  | No       |
-| ImageEmbedding           | The image embedding option for the email. It can be set as `Enabled` or `Disabled`                        | No       |
-| PlainContentAutoConvert  | The option to automatically convert plain content. It can be set as `1` or `0`                            | No       |
-| SubjectSetToTitleElement | The option to set the subject to the title element. It can be set as `1` or `0`                           | No       |
-
-**Example Success Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
-{
-    "Success": true,
-    "ErrorCode": 0
-}
+```text [Error Response]
+No error code is returned for this API end-point
 ```
 
-**Example Error Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
-{
-    "Success": false,
-    "ErrorCode": [
-        1,
-        9
-    ]
-}
+```text [Error Codes]
+No error code is returned for this API end-point
 ```
 
-**HTTP Response and Error Codes:**
+:::
 
-| HTTP Response Code | Error Code | Description                                                                                          |
-|--------------------|------------|------------------------------------------------------------------------------------------------------|
-| 200                | 1          | Missing required field: `EmailID`                                                                    |
-| 200                | 3          | Auto responder does not exist                                                                        |
-| 200                | 4          | Invalid mode                                                                                         |
-| 200                | 5          | Missing required field: `RelTemplateID` when mode is `Template`                                      |
-| 200                | 8          | Invalid content type                                                                                 |
-| 200                | 9          | Missing required field: `ValidateScope`                                                              |
-| 200                | 10         | Invalid validation scope                                                                             |
-| 200                | 11         | Missing `%Link:Unsubscribe%` tag in HTML content for `Campaign` or `AutoResponder` validation scope  |
-| 200                | 12         | Missing `%Link:Unsubscribe%` tag in Plain content for `Campaign` or `AutoResponder` validation scope |
-| 200                | 13         | Missing `%Link:Confirm%` tag in HTML content for `OptIn` validation scope                            |
-| 200                | 14         | Missing `%Link:Confirm%` tag in Plain content for `OptIn` validation scope                           |
-| 200                | 15         | Missing `%Link:Reject%` tag in HTML content for `OptIn` validation scope                             |
-| 200                | 16         | Missing `%Link:Reject%` tag in Plain content for `OptIn` validation scope                            |
-| 200                | 17         | Sender domain does not exist                                                                         |
+## Delete Email
 
-## List of Email Contents
+<Badge type="info" text="POST" /> `/api.php`
 
-This API end-point will return the list of emails created.
+This endpoint allows for the deletion of an email associated with a user's account. The user must provide the unique
+identifier of the email they wish to delete.
 
-### <Badge type="tip" text="POST" /> `/api.php`
+**Request Body Parameters:**
 
-**Request Parameters:**
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | The API command parameter, in this case, `Email.Delete`              | Yes       |
+| EmailID   | The unique identifier of the email to be deleted                     | Yes       |
 
-| Parameter | Description                                                          | Required |
-|-----------|----------------------------------------------------------------------|----------|
-| Command   | `Emails.Get`                                                         | Yes      | 
-| SessionID | The user's session ID.                                               | Yes      | 
-| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
+::: code-group
 
-**Example Success Response:**
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+-H "Content-Type: application/json" \
+-d '{"SessionID": "your-session-id", "APIKey": "your-api-key", "Command": "Email.Delete", "EmailID": "123"}'
+```
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
+```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0,
-  "ErrorText": "",
-  "TotalEmailCount": 109,
-  "Emails": [
-    {
-      "EmailID": "127",
-      "RelUserID": "1",
-      "EmailName": "Email name for administrative purposes",
-      "FromName": "From Name",
-      "FromEmail": "test@from.com",
-      "ReplyToName": "Reply-To Name",
-      "ReplyToEmail": "test@replyto.com",
-      "ContentType": "Both",
-      "Mode": "Editor",
-      "FetchURL": "",
-      "FetchPlainURL": "",
-      "Subject": "Subject of the email",
-      "PlainContent": "Plain contetn",
-      "HTMLContent": "<p><strong>HTML content</strong></p>",
-      "ExtraContent1": "",
-      "ExtraContent2": "",
-      "ImageEmbedding": "Disabled",
-      "RelTemplateID": "0",
-      "PreHeaderText": "This is pre-header text",
-      "Options": "[]"
-    }
-  ]
+  "ErrorText": ""
 }
 ```
 
-**Example Error Response:**
-
-There's no error case for this API end-point.
-
-## Delete Email Content
-
-This API end-point will delete the email record that matches `EmailID`.
-
-### <Badge type="tip" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter | Description                                                          | Required |
-|-----------|----------------------------------------------------------------------|----------|
-| Command   | `Email.Delete`                                                       | Yes      | 
-| SessionID | The user's session ID.                                               | Yes      | 
-| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
-| EmailId   | The unique identifier for the email to be deleted.                   | Yes      |
-
-**Example Success Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
+```json [Error Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "ErrorText": ""
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Required field missing: EmailID"
 }
 ```
 
-**Example Error Response:**
+```text [Error Codes]
+1: Required field missing: EmailID
+```
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+:::
 
-```json
+## Duplicate an Email
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint duplicates an existing email by its unique identifier and associates the duplicate with the current user's
+account.
+
+**Request Body Parameters:**
+
+| Parameter | Description | Required? |
+|-------------|---------------|--------------|
+| SessionID | The ID of the user's current session | Yes |
+| APIKey | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
+| Command | Email.Duplicate | Yes |
+| EmailID | The unique identifier of the email to duplicate | Yes |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://yourdomain.com/api.php \
+-H "Content-Type: application/json" \
+-d '{"SessionID": "your-session-id", "APIKey": "your-api-key", "Command": "Email.Duplicate", "EmailID": "123"}'
+```
+
+```json [Success Response]
 {
-    "Success": false,
-    "ErrorCode": [
-        1
-    ]
+  "Success": true,
+  "ErrorCode": 0,
+  "EmailID": "124",
+  "EmailName": "Copy of Original Email Name"
 }
 ```
 
-**HTTP Response and Error Codes:**
-
-| HTTP Response Code | Error Code | Description     |
-|--------------------|------------|-----------------|
-| 200                | 1          | Missing EmailID |
-
-## Duplicate Email Content
-
-This API end-point will clone an email content matching `EmailID`.
-
-### <Badge type="tip" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter | Description                                                          | Required |
-|-----------|----------------------------------------------------------------------|----------|
-| Command   | `Email.Duplicate`                                                    | Yes      | 
-| SessionID | The user's session ID.                                               | Yes      | 
-| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
-| EmailId   | The unique identifier for the email to be duplicated.                | Yes      |
-
-**Example Success Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
+```json [Error Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "EmailID": 128,
-    "EmailName": "Copy of Campaign email: 106"
+  "Success": false,
+  "ErrorCode": [1]
 }
 ```
 
-**Example Error Response:**
+```text [Error Codes]
+1: The 'EmailID' parameter is missing or invalid.
+2: The specified email does not exist or you do not have permission to access it.
+```
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+:::
 
-```json
+## Preview an Email
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint allows you to preview an email by sending it to a specified email address. It is useful for testing the
+appearance and content of an email before sending it out to the actual recipients.
+
+**Request Body Parameters:**
+
+| Parameter                   | Description                                                                 | Required? |
+|-----------------------------|-----------------------------------------------------------------------------|-----------|
+| SessionID                   | The ID of the user's current session                                        | Yes       |
+| APIKey                      | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
+| Command                     | Email.EmailPreview                                                          | Yes       |
+| EmailID                     | The unique identifier for the email to be previewed                         | Yes       |
+| EmailAddress                | The email address where the preview will be sent                            | Yes       |
+| CampaignID                  | The ID of the campaign associated with the email (optional)                 | No        |
+| ListID                      | The ID of the list associated with the email (optional)                     | No        |
+| AddUserGroupHeaderFooter    | Boolean to decide if user group header and footer should be added (optional)| No        |
+| EmailType                   | Type of the email, e.g., 'optinconfirmation' (optional)                     | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "Command": "Email.EmailPreview",
+    "EmailID": "123",
+    "EmailAddress": "test@example.com",
+    "CampaignID": "456",
+    "ListID": "789",
+    "AddUserGroupHeaderFooter": true,
+    "EmailType": "optinconfirmation"
+}'
+```
+
+```json [Success Response]
 {
-    "Success": false,
-    "ErrorCode": [
-        1
-    ]
+  "Success": true,
+  "ErrorCode": 0
 }
 ```
 
-**HTTP Response and Error Codes:**
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1
+}
+```
 
-| HTTP Response Code | Error Code | Description                    |
-|--------------------|------------|--------------------------------|
-| 200                | 1          | `EmailID` parameter is missing |
-| 200                | 2          | Email does not exist           |
+```text [Error Codes]
+1: Email ID is required.
+2: Email address is required.
+3: Email not found.
+4: Invalid email address format.
+6: List not found.
+7: Campaign not found.
+8: Sender domain not found or not associated with the user.
+```
 
-## Retrieve Email Content
+:::
 
-This API end-point will return the email content record that matches the `EmailID`.
+## Retrieve Email Information
 
-### <Badge type="tip" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api.php`
 
-**Request Parameters:**
+This endpoint retrieves detailed information about a specific email by its unique identifier.
 
-| Parameter | Description                                                          | Required |
-|-----------|----------------------------------------------------------------------|----------|
-| Command   | `Email.Gate`                                                         | Yes      | 
-| SessionID | The user's session ID.                                               | Yes      | 
-| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
-| EmailId   | The unique identifier for the email to be retrieve.                  | Yes      |
+**Request Body Parameters:**
 
-**Example Success Response:**
+| Parameter | Description | Required? |
+|-------------|---------------|--------------|
+| SessionID | The ID of the user's current session | Yes |
+| APIKey | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
+| Command | Email.Get | Yes |
+| EmailID | The unique identifier of the email to retrieve | Yes |
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+::: code-group
 
-```json
+```bash [Example Request]
+curl -X POST https://yourdomain.com/api.php \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "Command": "Email.Get",
+    "EmailID": "12345"
+}'
+```
+
+```json [Success Response]
 {
     "Success": true,
     "ErrorCode": 0,
     "EmailInformation": {
-        "EmailID": "129",
-        "RelUserID": "1",
-        "EmailName": "Email name for administrative purposes",
-        "FromName": "",
-        "FromEmail": "",
-        "ReplyToName": "",
-        "ReplyToEmail": "",
-        "ContentType": "Both",
-        "Mode": "Editor",
-        "FetchURL": "",
-        "FetchPlainURL": "",
-        "Subject": "Subject of the email",
-        "PlainContent": "Plain contetn",
-        "HTMLContent": "<p><strong>HTML content</strong></p>",
-        "ExtraContent1": "",
-        "ExtraContent2": "",
-        "ImageEmbedding": "Disabled",
-        "RelTemplateID": "0",
-        "PreHeaderText": "",
-        "Options": [],
-        "Attachments": false
+        "EmailID": "12345",
+        "Subject": "Your Email Subject",
+        "Body": "The content of the email...",
+        // ... other email details
     }
 }
 ```
 
-**Example Error Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
+```json [Error Response]
 {
     "Success": false,
-    "ErrorCode": [
-        2
-    ]
+    "ErrorCode": [1]
 }
 ```
 
-**HTTP Response and Error Codes:**
+```text [Error Codes]
+1: The required parameter 'EmailID' is missing.
+2: Email not found or you do not have permission to view it.
+```
 
-| HTTP Response Code | Error Code | Description                                                                 |
-|--------------------|------------|-----------------------------------------------------------------------------|
-| 200                | 1          | Required field `EmailID` is missing                                         |
-| 200                | 2          | Email with provided 'emailid' does not exist or does not belong to the user |
+:::
 
-## Email Personalization Tags
+## Retrieve Personalization Tags
 
-This API end-point will return the list of personalization tags for a specific scope (and list).
+<Badge type="info" text="POST" /> `/api.php`
 
-### <Badge type="tip" text="POST" /> `/api.php`
+This endpoint allows the retrieval of various personalization tags based on the specified scope. Personalization tags
+can include subscriber information, campaign links, opt-in links, list links, and user information.
 
-**Request Parameters:**
+**Request Body Parameters:**
 
-| Parameter | Description                                                                                                                                                                            | Required |
-|-----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| Command   | `Email.PersonalizationTags`                                                                                                                                                            | Yes      | 
-| SessionID | The user's session ID.                                                                                                                                                                 | Yes      | 
-| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                                   | Yes      | 
-| Scope[]   | Defines the scope of the API request. It must be provided as an `Array`. It can have the following values: `Subscriber`, `CampaignLinks`, `OptLinks`, `ListLinks`, `AllLinks`, `User`. | Yes      |
-| ListId    | This parameter is required if `Subscriber` is included in the `Scope`. It represents the ID of the list.                                                                               | No       |
+| Parameter | Description | Required? |
+|-------------|---------------|--------------|
+| SessionID | The ID of the user's current session | Yes |
+| APIKey | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
+| Command | Email.PersonalizationTags | Yes |
+| Scope | A list of scopes to retrieve personalization tags for. Possible values are 'Subscriber', 'CampaignLinks', 'OptLinks', 'ListLinks', 'AllLinks', 'User'. | Yes |
+| ListID | The ID of the list to retrieve subscriber tags for. Required if 'Subscriber' is included in the scope. | Conditional |
 
-**Example Success Response:**
+::: code-group
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "Command": "Email.PersonalizationTags",
+    "Scope": ["Subscriber", "User"],
+    "ListID": "123"
+}'
+```
 
-```json
+```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "PersonalizationTags": {
-        "%Date=...%": "Email delivery date",
-        "%Random:Letters|Numbers|Alpha:Length%": null,
-        "%Random:FirstName%": null,
-        "%Random:LastName%": null,
-        "%MFROMDomain%": null,
-        "%RemoteContentBeforeSend=http://...%": "Pre-Send Remote Content Personalization",
-        "{{{var1|var2|var3|varn}}}": null
-    }
+  "Success": true,
+  "ErrorCode": 0,
+  "PersonalizationTags": [
+    // ... list of personalization tags ...
+  ]
 }
 ```
 
-**Example Error Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
+```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": [
-        1
-    ]
+  "Success": false,
+  "ErrorCode": {
+    "scope": 1,
+    "listid": 2
+  }
 }
 ```
 
-**HTTP Response and Error Codes:**
-
-| HTTP Response Code | Error Code | Description                                                               |
-|--------------------|------------|---------------------------------------------------------------------------|
-| 200                | 1          | Missing `Scope` field in the request                                      |
-| 200                | 2          | Missing `ListID` field in the request when `Subscriber` is in the `Scope` |
-
-## Email Preview
-
-This API end-point will let you preview an email by sending a test version of it.
-
-### <Badge type="tip" text="POST" /> `/api.php`
-
-**Request Parameters:**
-
-| Parameter                | Description                                                             | Required |
-|--------------------------|-------------------------------------------------------------------------|----------|
-| Command                  | `Email.EmailPreview`                                                    | Yes      | 
-| SessionID                | The user's session ID.                                                  | Yes      | 
-| APIKey                   | The user's API key. Either `SessionID` or `APIKey` must be provided.    | Yes      | 
-| EmailId                  | The unique identifier of the email.                                     | Yes      |
-| EmailAddress             | The email address where the email will be sent.                         | Yes      |
-| CampaignId               | The unique identifier of the campaign.                                  | No       |
-| ListId                   | The unique identifier of the list.                                      | No       |
-| AddUserGroupHeaderFooter | A boolean value indicating whether to add user group header and footer. | No       |
-| EmailType                | The type of the email. It can be `OptInConfirmation` or `Regular`.      | No       |
-
-**Example Success Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
-{
-    "Success": true,
-    "ErrorCode": 0
-}
+```text [Error Codes]
+1: Scope parameter is missing or invalid.
+2: ListID is required when 'Subscriber' is included in the scope.
 ```
 
-**Example Error Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
-{
-    "Success": false,
-    "ErrorCode": [
-        2
-    ]
-}
-```
-
-**HTTP Response and Error Codes:**
-
-| HTTP Response Code | Error Code | Description                            |
-|--------------------|------------|----------------------------------------|
-| 200                | 1          | Missing required field: `EmailID`      |
-| 200                | 2          | Missing required field: `EmailAddress` |
-| 200                | 3          | Email information not found            |
-| 200                | 4          | Invalid email address format           |
-| 200                | 6          | List information not found             |
-| 200                | 7          | Campaign information not found         |
-| 200                | 8          | Sender domain not found                |
+:::
 
 ## Email Spam Test
 
-This API end-point will test the email content matching `EmailID` via SpamAssassin filter.
+<Badge type="info" text="POST" /> `/api.php`
 
-### <Badge type="tip" text="POST" /> `/api.php`
+This endpoint performs a spam test on an email by passing its content through a spam filter and returning the results.
 
-**Request Parameters:**
+**Request Body Parameters:**
 
-| Parameter | Description                                                          | Required |
-|-----------|----------------------------------------------------------------------|----------|
-| Command   | `Email.SpamTest`                                                     | Yes      | 
-| SessionID | The user's session ID.                                               | Yes      | 
-| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
-| EmailId   | The unique identifier of the email.                                  | Yes      |
+| Parameter | Description | Required? |
+|-------------|---------------|--------------|
+| SessionID | The ID of the user's current session | Yes |
+| APIKey | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
+| Command | Email.SpamTest | Yes |
+| EmailID | The unique identifier of the email to be tested | Yes |
 
-**Example Success Response:**
+::: code-group
 
-<Badge type="info" text="HTTP Code: 200 OK" /> 
+```bash [Example Request]
+curl -X POST https://yourdomain.com/api.php \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "Command": "Email.SpamTest",
+    "EmailID": "12345"
+}'
+```
 
-```json
+```json [Success Response]
 {
     "Success": true,
     "ErrorCode": 0,
     "TestResults": {
-        "score": 2.2,
-        "scoreLimit": 5,
-        "results": [
-            {
-                "score": "-0.0",
-                "reason": "NO_RELAYS",
-                "description": "Informational: message was not relayed via SMTP"
-            },
-            {
-                "score": "0.0",
-                "reason": "HTML_MESSAGE",
-                "description": "BODY: HTML included in message"
-            },
-            {
-                "score": "2.2",
-                "reason": "MPART_ALT_DIFF",
-                "description": "BODY: HTML and text parts are different"
-            },
-            {
-                "score": "-0.0",
-                "reason": "NO_RECEIVED",
-                "description": "Informational: message has no Received headers"
-            }
-        ]
+        "SpamStatus": "No",
+        "Score": 1.5,
+        "Details": "Details of the spam test results..."
     }
 }
 ```
 
-**Example Error Response:**
-
-<Badge type="info" text="HTTP Code: 200 OK" /> 
-
-```json
+```json [Error Response]
 {
     "Success": false,
-    "ErrorCode": 2
+    "ErrorCode": 1,
+    "ErrorMessage": "Email ID is required."
 }
 ```
 
-**HTTP Response and Error Codes:**
+```text [Error Codes]
+1: Email ID is required.
+2: Email not found.
+3: Error processing spam test.
+```
 
-| HTTP Response Code | Error Code | Description                                                         |
-|--------------------|------------|---------------------------------------------------------------------|
-| 200                | 1          | `EmailID` parameter is missing                                      |
-| 200                | 2          | Email information could not be retrieved                            |
-| 200                | 3          | Error occurred during SpamAssassin filter check using Octeth method |
+:::
 
+## Update Email Content
 
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint allows updating the content and settings of an existing email by providing the necessary parameters.
+
+**Request Body Parameters:**
+
+| Parameter         | Description                                                                 | Required? |
+|-------------------|-----------------------------------------------------------------------------|-----------|
+| SessionID         | The ID of the user's current session                                        | Yes       |
+| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
+| Command           | Email.Update                                                                | Yes       |
+| EmailID           | Unique identifier for the email to be updated                               | Yes       |
+| ValidateScope     | Scope of validation for the email content (OptIn, Campaign, AutoResponder)  | Yes       |
+| Mode              | The mode of the email content (Editor, Stripo, Unlayer, etc.)               | No        |
+| RelTemplateID     | The ID of the related template, if applicable                               | No        |
+| SenderDomain      | The sender's domain to be used for the email                                | No        |
+| FromEmail         | The email address that appears in the "from" field                           | No        |
+| FromName          | The name that appears in the "from" field                                   | No        |
+| ReplyToEmail      | The email address that appears in the "reply-to" field                      | No        |
+| ReplyToName       | The name that appears in the "reply-to" field                               | No        |
+| Subject           | The subject line of the email                                               | No        |
+| HTMLContent       | The HTML content of the email                                               | No        |
+| PlainContent      | The plain text content of the email                                         | No        |
+| FetchURL          | URL to fetch HTML content from, if mode is 'Import'                          | No        |
+| FetchPlainURL     | URL to fetch plain text content from, if mode is 'Import'                    | No        |
+| ImageEmbedding    | Indicates if images should be embedded in the email content                 | No        |
+| PreHeaderText     | Pre-header text to be included in the email                                 | No        |
+| ExtraContent1     | Additional content field 1                                                  | No        |
+| ExtraContent2     | Additional content field 2                                                  | No        |
+| PlainContentAutoConvert | Indicates if plain content should be auto-converted from HTML content | No        |
+| SubjectSetToTitleElement | Indicates if the subject should be set to the title element of HTML content | No |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'SessionID=example-session-id' \
+  -d 'APIKey=example-api-key' \
+  -d 'Command=Email.Update' \
+  -d 'EmailID=123' \
+  -d 'ValidateScope=OptIn' \
+  -d 'Mode=Editor' \
+  -d 'HTMLContent=<p>Your updated email content here</p>' \
+  -d 'Subject=Updated Subject Line'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [1]
+}
+```
+
+```text [Error Codes]
+1: Email ID is required
+3: Email does not exist
+4: Invalid mode specified
+5: Template ID is required when mode is 'Template'
+6: Invalid FromEmail format
+7: Invalid ReplyToEmail format
+8: Content type cannot be empty
+9: ValidateScope is required
+10: Invalid ValidateScope value
+11: Unsubscribe link is required in HTML content
+12: Unsubscribe link is required in Plain content
+13: Confirm link is required in HTML content
+14: Confirm link is required in Plain content
+15: Reject link is required in HTML content
+16: Reject link is required in Plain content
+17: Sender domain does not exist
+```
+
+:::
+
+## Retrieve List of Emails
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This API call returns the list of email contents associated with the user's account.
+
+**Request Body Parameters:**
+
+| Parameter   | Description                                         | Required? |
+|-------------|-----------------------------------------------------|-----------|
+| SessionID   | The ID of the user's current session                | Yes       |
+| APIKey      | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command     | Emails.Get                                          | Yes       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://yourdomain.com/api.php \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "Command": "Emails.Get"
+}'
+```
+
+```json [Success Response]
+{
+    "Success": true,
+    "ErrorCode": 0,
+    "ErrorText": "",
+    "TotalEmailCount": 5,
+    "Emails": [
+        // ...
+        // Email records
+        // ...
+    ]
+}
+```
+
+```text [Error Response]
+No error code is returned for this API end-point
+```
+
+```text [Error Codes]
+No error code is returned for this API end-point
+```
+:::
