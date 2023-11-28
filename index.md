@@ -9,18 +9,15 @@ hero:
 features:
   - icon: 📍
     title: GETTING STARTED
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
     link: /getting-started
-    linkText: Read
+    linkText: Learn
   - icon: 🔒
     title: AUTHORIZATION
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
     link: /authorization
     linkText: Learn
   - icon: 🤖
     title: API REFERENCE
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
     link: /api-reference/administrators
-    linkText: Discover
+    linkText: Learn
 ---
 
