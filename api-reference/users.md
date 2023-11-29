@@ -174,8 +174,6 @@ This endpoint is used for authenticating a user with a username and password or 
 
 | Parameter         | Description                                                                 | Required? |
 |-------------------|-----------------------------------------------------------------------------|-----------|
-| SessionID         | The ID of the user's current session                                        | Yes       |
-| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
 | Command           | User.Login                                                                  | Yes       |
 | Username          | The username of the user trying to log in                                   | No*       |
 | Password          | The password of the user in plain text                                      | No*       |
@@ -193,8 +191,6 @@ This endpoint is used for authenticating a user with a username and password or 
 
 ```bash [Example Request]
 curl -X POST https://example.com/api.php \
-  -d 'SessionID=exampleSessionId' \
-  -d 'APIKey=exampleApiKey' \
   -d 'Command=User.Login' \
   -d 'username=johndoe' \
   -d 'password=examplePassword'

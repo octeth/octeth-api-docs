@@ -14,8 +14,6 @@ This endpoint is used for administrator authentication. It validates the provide
 
 | Parameter      | Description                                                          | Required?   |
 |----------------|----------------------------------------------------------------------|-------------|
-| SessionID      | The ID of the user's current session                                 | Yes         |
-| APIKey         | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes         |
 | Command        | Admin.Login                                                          | Yes         |
 | Username       | The username of the admin attempting to log in                       | Yes         |
 | Password       | The password for the admin account                                   | Yes         |
@@ -29,8 +27,6 @@ This endpoint is used for administrator authentication. It validates the provide
 
 ```bash [Example Request]
 curl -X POST https://example.com/api.php \
-  -d 'SessionID=exampleSessionId' \
-  -d 'APIKey=exampleApiKey' \
   -d 'Command=Admin.Login' \
   -d 'Username=admin' \
   -d 'Password=123456'
