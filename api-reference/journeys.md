@@ -833,7 +833,7 @@ Please note that this API endpoint requires a raw JSON body.
 
 ## Remove Subscriber From A Journey
 
-<Badge type="info" text="GET" /> `/api/v1/subscriber.journey.remove`
+<Badge type="info" text="POST" /> `/api/v1/subscriber.journey.remove`
 
 This API call will remove a subscriber from an enrolled journey.
 
