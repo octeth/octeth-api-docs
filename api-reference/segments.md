@@ -55,7 +55,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing subscriber list id
 2: Missing segment name
 3: Missing segment operator
@@ -117,7 +117,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing segment id
 2: Missing segment name
 3: Missing segment operator
@@ -169,7 +169,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Required field missing: SourceListID
 2: Required field missing: TargetListID
 4: Invalid subscriber list ID
@@ -219,7 +219,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Segment ids are missing
 ```
 :::
@@ -294,7 +294,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing subscriber list id
 ```
 :::

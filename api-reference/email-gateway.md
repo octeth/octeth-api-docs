@@ -55,7 +55,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing or invalid 'Description' parameter
 2: Missing or invalid 'DomainID' parameter
 3: Unable to retrieve sender domain with provided 'DomainID'
@@ -113,7 +113,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter: DomainName
 2: Invalid domain name provided
 3: User has reached the maximum number of sender domains allowed
@@ -179,7 +179,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Required field 'DomainID' is missing.
 2: Unable to retrieve the sender domain.
 ```
@@ -232,7 +232,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter DomainID
 2: Missing required parameter Event
 3: Invalid event type specified
@@ -288,7 +288,7 @@ curl -X POST "https://example.com/api/v1/webhooks" \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 2: "Event is missing"
 3: "Invalid Event value"
 5: "WebhookURL is missing"
@@ -359,7 +359,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Required parameter missing: DomainID
 2: Failed to retrieve sender domain
 ```
@@ -402,7 +402,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter: DomainID
 2: Unable to retrieve sender domain
 ```
@@ -446,7 +446,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter: ApiKeyId
 2: Invalid API key or API key not found
 ```
@@ -495,7 +495,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter: DomainID
 2: Domain not found or user does not have permission to delete the domain
 ```
@@ -538,7 +538,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Required field is missing
 2: SMTP configuration not found or user does not have permission
 ```
@@ -585,7 +585,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter: WebhookID or DomainID
 2: Invalid DomainID or DomainID not found
 3: Domain validation failed
@@ -630,7 +630,7 @@ curl -X DELETE "https://example.com/api/v1/webhooks" \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: "WebhookID is missing"
 2: "Invalid user account"
 4: "Invalid WebhookID"
@@ -695,7 +695,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Required parameter missing: DomainID
 2: Unable to retrieve domain information
 ```
@@ -750,7 +750,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter: DomainID
 2: Unable to retrieve sender domain
 ```
@@ -800,7 +800,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Required parameter missing: DomainID
 2: Unable to retrieve domain information
 ```
@@ -849,11 +849,11 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Response]
+```txt [Error Response]
 This API end-point doesn't return an error code.
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 This API end-point doesn't return an error code.
 ```
 :::
@@ -927,7 +927,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Required parameter missing: DomainID
 4: Required parameter missing: StartFrom
 5: Required parameter missing: RetrieveCount
@@ -1006,7 +1006,7 @@ curl -X GET "https://api.example.com/api/v1/events" \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing SenderAPIKey
 2: Invalid user account
 4: Missing StartFrom
@@ -1067,7 +1067,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter 'DomainID'.
 2: Unable to retrieve sender domain details.
 ```
@@ -1128,7 +1128,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter DomainID
 2: Invalid domain or domain does not belong to the user
 ```
@@ -1192,7 +1192,7 @@ curl -X GET "https://example.com/api/v1/webhooks" \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 2: Invalid user account
 13: Invalid SenderAPIKey
 429: Too many requests. Rate limit exceeded.
@@ -1248,7 +1248,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter 'smtpid'
 2: SMTP configuration not found or access denied
 ```
@@ -1315,7 +1315,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Required field 'DomainID' is missing.
 5: Unable to retrieve sender domain information.
 ```
@@ -1372,7 +1372,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Required field 'DomainID' is missing.
 2: Unable to retrieve the sender domain information.
 ```
@@ -1447,7 +1447,7 @@ curl -X POST "http://example.com/api/v1/email" \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing SenderAPIKey
 2: Invalid DomainID
 3: From parameter is either missing or invalid. Make sure you pass both name and email address for the from field

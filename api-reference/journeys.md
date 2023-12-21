@@ -139,7 +139,7 @@ This API endpoint accepts a raw JSON body.
 }
 ```
 
-```text [Error Response
+```txt [Error Response]
 This API endpoint doesn't return any errors.
 ```
 
@@ -553,6 +553,7 @@ Please note that any actions not included in the provided list will be removed f
     {
       "ActionID": 1,
       "Action": "Wait",
+      "Published": "true",
       "WaitUnit": "seconds",
       "WaitAmount": 20,
       "Notes": "Administative note"
@@ -560,6 +561,7 @@ Please note that any actions not included in the provided list will be removed f
     {
       "ActionID": null,
       "Action": "Subscribe",
+      "Published": "true",
       "TargetListID": 30,
       "Notes": "Test note"
     },
@@ -762,6 +764,70 @@ Please note that any actions not included in the provided list will be removed f
 | 422                | 3          | Invalid JourneyID parameter |
 | 422                | 4          | Invalid Actions parameter   |
 | 404                | 5          | Journey not found           |
+
+## Update Journey Actions Publication Status
+
+<Badge type="info" text="PATCH" /> `api/v1/journey.actions.published`
+
+This endpoint is used to update the publication status of actions within a specified journey. It requires a journey ID and a list of actions with their desired publication statuses.
+
+**Request Body Parameters:**
+
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| journeyid | The unique identifier of the journey                                 | Yes       |
+| actions   | An array of actions with their IDs and publication statuses          | Yes       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X PATCH 'https://example.com/api/v1/journey.actions.published' \
+-H 'Content-Type: application/json' \
+-d '{
+    "SessionID": "your_session_id",
+    "APIKey": "your_api_key",
+    "JourneyID": 123,
+    "Actions": [
+        {"ActionID": 1, "Published": "true"},
+        {"ActionID": 2, "Published": "false"}
+    ]
+}'
+```
+
+```json [Success Response]
+{
+    "JourneyID": 123,
+    "Actions": [
+        {"ActionID": 1, "Published": true},
+        {"ActionID": 2, "Published": false}
+    ]
+}
+```
+
+```json [Error Response]
+{
+    "Errors": [
+        {"Code": 1, "Message": "Missing JourneyID parameter"},
+        {"Code": 2, "Message": "Missing Actions parameter"},
+        {"Code": 3, "Message": "Invalid JourneyID parameter"},
+        // ... more error messages based on the code
+    ]
+}
+```
+:::
+
+**HTTP Response and Error Codes:**
+
+| HTTP Response Code | Error Code | Description                 |
+|--------------------|------------|-----------------------------|
+| n/a                | 1          | Missing JourneyID parameter |
+| 422                | 2          | Missing Actions parameter   |
+| 422                | 3          | Invalid JourneyID parameter |
+| 422                | 4          | Invalid Actions parameter   |
+| 404                | 5          | Journey not found           |
+| 404                | 6          | Action not found            |
 
 ## Trigger a Journey For A Subscriber
 
@@ -972,4 +1038,3 @@ Please note that this API endpoint requires a raw JSON body.
 | 422                | 6          | Invalid SubscriberID parameter |
 | 404                | 8          | List not found                 |
 | 404                | 9          | Subscriber not found           |
-

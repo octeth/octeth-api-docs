@@ -65,7 +65,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Required field 'ListID' is missing.
 ```
 :::
@@ -115,7 +115,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Required field missing: subscriberlistname
 2: Duplicate list name (Note: This check is currently disabled)
 3: User has exceeded the maximum number of subscriber lists
@@ -167,7 +167,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: The 'ListID' parameter is missing or invalid.
 ```
 :::
@@ -255,7 +255,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Subscriber list id is missing
 2: Invalid subscriber list id
 3: Invalid opt in mode
@@ -310,7 +310,7 @@ curl -X POST https://yourapi.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Subscriber list ids are missing
 ```
 :::
@@ -379,7 +379,7 @@ curl -X POST https://yourdomain.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 101: "Invalid SessionID or APIKey."
 ```
 :::

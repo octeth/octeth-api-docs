@@ -41,7 +41,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter: CampaignID
 2: Campaign not found
 ```
@@ -86,7 +86,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required field: CampaignID
 2: Campaign does not belong to the user or does not exist
 ```
@@ -133,7 +133,7 @@ curl -X POST https://yourdomain.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Invalid source campaign
 ```
 :::
@@ -176,7 +176,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: "The campaign name is required."
 ```
 :::
@@ -244,7 +244,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Required parameter 'campaignid' is missing.
 2: The 'campaignid' parameter must be numeric.
 ```
@@ -289,7 +289,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter: CampaignID
 2: Campaign does not belong to the user
 3: Campaign is not in a 'Sending' state
@@ -335,7 +335,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter: CampaignID
 2: Campaign does not belong to the user
 3: Campaign is not in a 'Paused' state
@@ -402,7 +402,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Campaign ID is required
 2: Campaign does not belong to the user
 3: Invalid campaign status
@@ -461,7 +461,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: The 'campaigns' parameter is missing or invalid.
 ```
 :::
@@ -525,11 +525,11 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Response]
+```txt [Error Response]
 There are no error codes for this API end-point.
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 There are no error codes for this API end-point.
 ```
 :::

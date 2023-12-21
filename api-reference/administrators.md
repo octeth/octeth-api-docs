@@ -52,7 +52,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing username
 2: Missing password
 3: Invalid username or password
@@ -109,7 +109,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing name
 2: Missing username
 4: Missing email address

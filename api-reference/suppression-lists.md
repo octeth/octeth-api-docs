@@ -45,11 +45,11 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Response]
+```txt [Error Response]
 This API call does not return any error codes.
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 This API call does not return any error codes.
 ```
 :::
@@ -96,7 +96,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required parameter: EmailAddress
 2: Invalid email address format
 ```
@@ -150,7 +150,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Email addresses not provided in either 'EmailAddresses' or 'EmailAddressesBulk'.
 2: Invalid email address format.
 ```

@@ -3,7 +3,6 @@ layout: doc
 prev:
     text: 'Return Back'
     link: 'javascript:history.back()'
-next: false
 ---
 
 # Criteria Syntax

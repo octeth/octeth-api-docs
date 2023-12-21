@@ -98,7 +98,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Invalid SessionID or APIKey
 2: User not found
 3: Access denied
@@ -157,7 +157,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: "EmailAddress is required when UserID is not provided."
 2: "UserID is required when EmailAddress is not provided."
 3: "User not found with the provided information."
@@ -221,7 +221,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing username
 2: Missing password
 3: Invalid login information
@@ -309,7 +309,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing required field(s).
 2: User ID mismatch or unauthorized access.
 3: Connection error occurred with PreviewMyEmail.com API.
@@ -359,7 +359,7 @@ curl -X POST https://yourapiendpoint.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 NOT AVAILABLE IN DEMO MODE: The function is not available in demo mode.
 ```
 :::
@@ -430,7 +430,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: An error occurred while retrieving the user list.
 ```
 :::

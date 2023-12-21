@@ -70,7 +70,7 @@ curl -X GET "https://example.com/api/v1/system-health-check" \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Authentication failed. Invalid admin API key.
 2: There is no registered admin user.
 3: Elasticsearch connection failed.

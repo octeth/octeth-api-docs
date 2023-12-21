@@ -58,7 +58,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: List ID is required.
 2: IP address is required.
 3: Either email address or subscriber ID must be provided.
@@ -127,7 +127,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Email address is required.
 2: List ID is required.
 3: Subscriber not found.
@@ -184,7 +184,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing subscribers parameter
 2: Missing subscriber list id
 3: Missing RulesJSON parameter
@@ -265,7 +265,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: SubscriberListID is a required field.
 2: SubscriberSegment is a required field.
 3: The list does not belong to the authenticated user.
@@ -336,7 +336,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: "ListID is a required field."
 2: "Operator is a required field."
 3: "The list does not belong to the authenticated user."
@@ -404,7 +404,7 @@ curl -X POST 'https://example.com/api/v1/subscriber.export' \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing ListID parameter
 2: Missing RulesJSON parameter
 3: Missing RulesOperator parameter
@@ -496,7 +496,7 @@ curl -X GET 'https://api.example.com/api/v1/subscriber.export' \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing ListID parameter
 2: Invalid ListID parameter
 3: Invalid ExportID parameter
@@ -599,7 +599,7 @@ curl -X POST "https://example.com/api/v1/subscriber.import" \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing ListID parameter
 4: Missing AddToGlobalSuppressionList parameter
 5: Missing AddToSuppressionList parameter
@@ -682,7 +682,7 @@ curl -X GET "https://example.com/api/v1/subscriber.import" \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing ListID parameter
 2: Missing ImportID parameter
 3: Invalid ListID parameter

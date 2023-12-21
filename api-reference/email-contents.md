@@ -38,11 +38,11 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Response]
+```txt [Error Response]
 No error code is returned for this API end-point
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 No error code is returned for this API end-point
 ```
 
@@ -88,7 +88,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Required field missing: EmailID
 ```
 
@@ -134,7 +134,7 @@ curl -X POST https://yourdomain.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: The 'EmailID' parameter is missing or invalid.
 2: The specified email does not exist or you do not have permission to access it.
 ```
@@ -194,7 +194,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Email ID is required.
 2: Email address is required.
 3: Email not found.
@@ -254,7 +254,7 @@ curl -X POST https://yourdomain.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: The required parameter 'EmailID' is missing.
 2: Email not found or you do not have permission to view it.
 ```
@@ -312,7 +312,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Scope parameter is missing or invalid.
 2: ListID is required when 'Subscriber' is included in the scope.
 ```
@@ -367,7 +367,7 @@ curl -X POST https://yourdomain.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Email ID is required.
 2: Email not found.
 3: Error processing spam test.
@@ -437,7 +437,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Email ID is required
 3: Email does not exist
 4: Invalid mode specified
@@ -498,11 +498,11 @@ curl -X POST https://yourdomain.com/api.php \
 }
 ```
 
-```text [Error Response]
+```txt [Error Response]
 No error code is returned for this API end-point
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 No error code is returned for this API end-point
 ```
 :::

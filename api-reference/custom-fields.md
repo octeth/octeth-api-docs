@@ -71,7 +71,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing subscriber list id
 2: Missing field name
 3: Missing field type
@@ -142,7 +142,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing custom field id
 2: Missing field name
 3: Missing field type
@@ -204,7 +204,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Custom field ids are missing
 ```
 :::
@@ -269,6 +269,6 @@ curl -X POST https://yourdomain.com/api.php \
 }
 ```
 
-```text [Error Codes]
+```txt [Error Codes]
 1: Missing subscriber list id
 ```
