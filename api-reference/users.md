@@ -434,3 +434,176 @@ curl -X POST https://example.com/api.php \
 1: An error occurred while retrieving the user list.
 ```
 :::
+
+
+
+
+## Create User API Key
+
+<Badge type="info" text="POST" /> `api/v1/user.apikey`
+
+This endpoint is used to create a new API key for a user. It requires an administrative note and optionally allows binding to an IP address.
+
+**Request Body Parameters:**
+
+| Parameter      | Description                                                          | Required? |
+|----------------|----------------------------------------------------------------------|-----------|
+| SessionID      | The ID of the user's current session                                 | Yes       |
+| APIKey         | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Note           | An administrative note for the API key                               | Yes       |
+| BoundIpAddress | IP address to bind the API key to (optional)                         | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST 'https://example.com/api/v1/user.apikey' \
+-H 'Content-Type: application/json' \
+-d '{
+    "SessionID": "your_session_id",
+    "APIKey": "your_api_key",
+    "note": "Administrative note for API key",
+    "boundipaddress": "192.168.1.1"
+}'
+```
+
+```json [Success Response]
+{
+    "APIKeyID": "generated_api_key_id",
+    "APIKey": {
+        "Key": "generated_api_key",
+        "Note": "Administrative note for API key",
+        "BoundIPAddress": "192.168.1.1"
+    }
+}
+```
+
+```json [Error Response]
+{
+    "Errors": [
+        {"Code": 1, "Message": "Missing administrative note parameter"},
+        {"Code": 3, "Message": "API key create process failed"},
+        {"Code": 4, "Message": "New API key create process has failed"}
+        // ... other possible error messages
+    ]
+}
+```
+:::
+
+**HTTP Response and Error Codes:**
+
+| HTTP Response Code | Error Code | Description                                                       |
+|--------------------|------------|-------------------------------------------------------------------|
+| 422                | 1          | Missing administrative note parameter                             |
+| 422                | 2          | Missing administrative bound IP address parameter (if applicable) |
+| 400                | 3          | API key create process failed                                     |
+| 404                | 4          | New API key create process has failed                             |
+
+## Delete User API Key
+
+<Badge type="info" text="POST" /> `api/v1/user.apikey.delete`
+
+This endpoint allows for the deletion of a specific API key associated with a user. It requires the unique identifier of the API key to be deleted.
+
+**Request Body Parameters:**
+
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| apikeyid  | The unique identifier of the API key to delete                       | Yes       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST 'https://example.com/api/v1/user.apikey.delete' \
+-H 'Content-Type: application/json' \
+-d '{
+    "SessionID": "your_session_id",
+    "APIKey": "your_api_key",
+    "apikeyid": "api_key_id_to_delete"
+}'
+```
+
+```json [Success Response]
+{
+    "Success": true
+}
+```
+
+```json [Error Response]
+{
+    "Errors": [
+        {"Code": 1, "Message": "Missing APIKeyID parameter"},
+        {"Code": 2, "Message": "API key not found"}
+        // ... other possible error messages
+    ]
+}
+```
+
+```text [Error Codes]
+1: Missing APIKeyID parameter
+2: API key not found
+```
+:::
+
+**HTTP Response and Error Codes:**
+
+| HTTP Response Code | Error Code | Description                |
+|--------------------|------------|----------------------------|
+| 422                | 1          | Missing APIKeyID parameter |
+| 404                | 2          | API key not found          |
+
+Based on the PHP code for the "GET api/v1/user.apikeys" endpoint, I will create an API documentation template. This endpoint is used for retrieving all API keys associated with a user.
+
+---
+
+## Retrieve User API Keys
+
+<Badge type="info" text="GET" /> `api/v1/user.apikeys`
+
+This endpoint provides a list of all API keys associated with the current user. It does not require any additional parameters apart from the user's session and API key.
+
+**Request Parameters:**
+
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+
+::: code-group
+
+```bash [Example Request]
+curl 'https://example.com/api/v1/user.apikeys' \
+-H 'Content-Type: application/json' \
+-d '{
+    "SessionID": "your_session_id",
+    "APIKey": "your_api_key"
+}'
+```
+
+```json [Success Response]
+{
+    "Success": true,
+    "APIKeys": [
+        {
+            "APIKeyID": "api_key_id_1",
+            "APIKey": "api_key_value_1",
+            "Note": "Administrative note for API key 1",
+            "BoundIPAddress": "192.168.1.1"
+        },
+        // ... more API keys
+    ]
+}
+```
+
+```json [Error Response]
+{
+    "Errors": [
+    ]
+}
+```
+:::
+
+**HTTP Response and Error Codes:**
+
+This endpoint does not have specific error codes defined.
