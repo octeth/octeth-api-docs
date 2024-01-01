@@ -259,6 +259,8 @@ This API endpoint expects a request body in JSON format.
         "WaitUnit": "seconds",
         "WaitAmount": 20
       },
+      "CompletedRuns": 0,
+      "Published": true,
       "Stats": {
         "ActiveSubscribers": "0",
         "TotalSubscribers": "0"
@@ -272,6 +274,8 @@ This API endpoint expects a request body in JSON format.
         "WaitUnit": "minutes",
         "WaitAmount": 10
       },
+      "CompletedRuns": 0,
+      "Published": true,
       "Stats": {
         "ActiveSubscribers": "0",
         "TotalSubscribers": "0"
