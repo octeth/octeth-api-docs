@@ -120,6 +120,10 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+::: warning NOTICE
+Available `SubscriptionStatus` values are `Opt-In Pending`, `Subscribed`, `Opt-Out Pending`, `Unsubscribed`
+:::
+
 ```json [Error Response]
 {
   "Success": false,
@@ -692,3 +696,285 @@ curl -X GET "https://example.com/api/v1/subscriber.import" \
 7: Import job not found
 ```
 :::
+
+## Create a New Subscriber
+
+<Badge type="info" text="POST" /> `api/v1/subscriber.create`
+
+This endpoint is used to create a new subscriber in the system. It requires an admin API key for authorization and accepts various subscriber details.
+
+**Request Body Parameters:**
+
+| Parameter            | Description                                                                                | Required? |
+|----------------------|--------------------------------------------------------------------------------------------|-----------|
+| SessionID            | The ID of the user's current session                                                       | Yes       |
+| APIKey               | The user's API key. Either `SessionID` or `APIKey` must be provided.                       | Yes       |
+| ListID               | The unique identifier for the mailing list                                                 | Yes       |
+| EmailAddress         | The email address of the new subscriber                                                    | Yes       |
+| Status               | The subscription status ('Opt-In Pending', 'Subscribed', 'Opt-Out Pending', 'Unsubscribed') | No        |
+| OptInDate            | The date the user opted in                                                                 | Conditional |
+| SubscriptionDate     | The date the user subscribed                                                               | Conditional |
+| SubscriptionIP       | The IP address from which the subscription was made                                        | Conditional |
+| UnsubscriptionDate   | The date the user unsubscribed                                                             | Conditional |
+| UnsubscriptionIP     | The IP address from which the unsubscription was made                                      | Conditional |
+| BounceType           | The type of email bounce (e.g., 'Not Bounced', 'Hard', 'Soft')                             | No        |
+| CustomFields         | An array of custom field IDs and their values                                              | No        |
+| UpdateIfDuplicate    | Flag to update subscriber if email address is duplicate                                    | No        |
+| UpdateIfUnsubscribed | Flag to update subscriber if previously unsubscribed                                       | No        |
+| ApplyBehaviors       | Flag to apply behaviors associated with the subscription                                   | No        |
+| SendConfirmationEmail| Flag to send a confirmation email to the subscriber                                        | No        |
+| UpdateStatistics     | Flag to update statistics upon subscription                                                | No        |
+| TriggerWebServices   | Flag to trigger web services upon subscription                                             | No        |
+| TriggerAutoResponders| Flag to trigger autoresponders upon subscription                                           | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST 'https://example.com/api/v1/subscriber.create' \
+-H 'Authorization: Bearer {AdminApiKey}' \
+-H 'Content-Type: application/json' \
+-d '{
+  "SessionID": "session_id_here",
+  "APIKey": "api_key_here",
+  "ListID": "list_id_here",
+  "EmailAddress": "email@example.com",
+  "Status": "Subscribed",
+  "OptInDate": "2023-01-01",
+  "SubscriptionDate": "2023-01-01",
+  "SubscriptionIP": "192.168.1.1",
+  "CustomFields": {
+    "100":"First Name Value",
+    "103":"Last Name Value"
+  }
+}'
+```
+
+```json [Success Response]
+{
+  "ErrorCode": 0,
+  "SubscriberInformation": {
+    "SubscriberID": "subscriber_id_here",
+    "EmailAddress": "email@example.com",
+    "Status": "Subscribed",
+    // Additional subscriber details...
+  },
+  "SubscriberTags": [],
+  "SubscriberSegments": [],
+  "SubscriberJourneys": []
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    {
+      "Code": 2,
+      "Message": "Missing EmailAddress parameter"
+    },
+    // Additional errors...
+  ]
+}
+```
+
+```text [Error Codes]
+1: Missing ListID parameter
+2: Missing EmailAddress parameter
+3: Invalid EmailAddress. Make sure email address is valid.
+4: Invalid ListID.
+5: Invalid BounceType value.
+6: Invalid Status value.
+7: Invalid SubscriptionDate value.
+8: Missing SubscriptionDate parameter
+9: Missing SubscriptionIP parameter
+10: Invalid SubscriptionIP value. It must be an IP address.
+11: Missing UnsubscriptionDate parameter
+12: Missing UnsubscriptionIP parameter
+13: Invalid UnsubscriptionDate value.
+14: Invalid UnsubscriptionIP value. It must be an IP address.
+15: Missing OptInDate parameter
+16: Invalid OptInDate value.
+17: Invalid Custom Field value.
+18: Subscriber create limit is exceeded
+19: Invalid EmailAddress
+20: Duplicate EmailAddress
+21: Previously unsubscribed EmailAddress
+22: Invalid user information
+23: Invalid list information
+```
+:::
+
+**HTTP Response and Error Codes:**
+
+| HTTP Code | Error Code | Description                                  |
+|-----------|------------|----------------------------------------------|
+| 200       | 0          | Success                                      |
+| 422       | 1-23       | Various errors related to input validation   |
+
+## Update Subscriber Information
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint is used to update the information of a subscriber in a mailing list. It allows for updating various subscriber details, including email address, subscription status, bounce type, and custom fields.
+
+**Request Body Parameters:**
+
+| Parameter                                 | Description                                                                                               | Required? |
+|-------------------------------------------|-----------------------------------------------------------------------------------------------------------|-----------|
+| SessionID                                 | The ID of the user's current session                                                                      | Yes       |
+| APIKey                                    | The user's API key. Either `SessionID` or `APIKey` must be provided.                                      | Yes       |
+| Command                                   | The API command to execute: `Subscriber.Update`                                                            | Yes       |
+| SubscriberID                              | The unique identifier of the subscriber                                                                   | Yes       |
+| SubscriberListID                          | The unique identifier of the subscriber list                                                              | Yes       |
+| EmailAddress                              | The new email address of the subscriber (if applicable)                                                   | No        |
+| SubscriptionStatus                        | The new subscription status of the subscriber (Opt-In Pending, Subscribed, Opt-Out Pending, Unsubscribed) | No        |
+| BounceType                                | The new bounce type of the subscriber (Not Bounced, Soft, Hard)                                           | No        |
+| Fields                                    | An array of custom field values to update                                                                 | No        |
+| AuthenticationType                        | The type of authentication used                                                                           | No        |
+| IgnoreAllOtherCustomFieldsExceptGivenOnes | Flag to ignore unspecified custom fields                                                                  | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl --location 'https://example.com/api.php' \
+--form 'ResponseFormat="JSON"' \
+--form 'Command="Subscriber.Update"' \
+--form 'SessionID="exampleSessionId"' \
+--form 'SubscriberListID="26"' \
+--form 'SubscriberID="1008"' \
+--form 'EmailAddress="test@gmail.com"' \
+--form 'AuthenticationType="user"' \
+--form 'IgnoreAllOtherCustomFieldsExceptGivenOnes="true"' \
+--form 'Fields[CustomField59]="100"' \
+--form 'SubscriptionStatus="Subscribed"' \
+--form 'BounceType="Not Bounced"' \
+--form 'Fields[CustomField59]="102"'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": ""
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Required field 'subscriberid' is missing."
+}
+```
+
+```text [Error Codes]
+1: Required field 'subscriberid' is missing.
+2: Required field 'subscriberlistid' is missing.
+3: Email address is empty.
+4: Email address is invalid.
+5: Subscriber list does not exist or does not belong to the user.
+6: Subscriber does not exist.
+7: Email address is a duplicate.
+8: Required custom field is missing.
+9: Custom field value is not unique.
+10: Custom field value failed validation.
+```
+:::
+
+**HTTP Response and Error Codes:**
+
+| HTTP Code | Error Code | Description                                      |
+|-----------|------------|--------------------------------------------------|
+| 200       | 0          | Success                                          |
+| 400       | 1          | Missing required 'subscriberid' parameter        |
+| 400       | 2          | Missing required 'subscriberlistid' parameter    |
+| 400       | 3          | Email address is empty                           |
+| 400       | 4          | Email address is invalid                         |
+| 400       | 5          | Subscriber list does not exist or not owned      |
+| 400       | 6          | Subscriber does not exist                        |
+| 400       | 7          | Email address is a duplicate                     |
+| 400       | 8          | Required custom field is missing                 |
+| 400       | 9          | Custom field value is not unique                 |
+| 400       | 10         | Custom field value failed validation             |
+
+## Search Subscribers
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint retrieves a list of subscribers based on the provided criteria, such as list ID and operator. It supports pagination and ordering of the subscriber list.
+
+**Request Body Parameters:**
+
+| Parameter         | Description                                                          | Required? |
+|-------------------|----------------------------------------------------------------------|-----------|
+| SessionID         | The ID of the user's current session                                 | Yes       |
+| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command           | `Subscribers.Search`                                                 | Yes       |
+| ListID            | Unique identifier for the list                                       | Yes       |
+| Operator          | Operator to apply on the list retrieval (and, or)                    | Yes       |
+| RecordsPerRequest | Number of records to retrieve per request                            | No        |
+| RecordsFrom       | Starting point for record retrieval                                  | No        |
+| OrderField        | Field to order the records by                                        | No        |
+| OrderType         | Type of ordering to apply (ASC or DESC)                              | No        |
+| Rules             | Filtering rules for the query                                        | No        |
+| RulesJson         | JSON representation of the filtering rules                           | No        |
+| DebugQueryBuilder | If set to true, returns the prepared SQL query                       | No        |
+
+::: code-group
+
+::: warning NOTICE
+Please refer to [this help article](/api-reference/criteria-syntax) for `RulesJSON` parameter syntax.
+:::
+
+```bash [Example Request]
+curl --location 'https://example/api.php' \
+--form 'ResponseFormat="JSON"' \
+--form 'Command="Subscribers.Search"' \
+--form 'SessionID="{SessionID}"' \
+--form 'ListID="26"' \
+--form 'Operator="and"' \
+--form 'RulesJSON="[[{\"type\":\"fields\",\"field_id\":\"EmailAddress\",\"operator\":\"contains\",\"value\":\"cem\"}]]"' \
+--form 'RecordsFrom="0"' \
+--form 'RecordsPerRequest="3"' \
+--form 'OrderField="EmailAddress"' \
+--form 'OrderType="ASC"'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Subscribers": [
+    {
+      "EmailAddress": "example@example.com",
+      "SubscriberID": "123",
+      "SubscriberTags": ["Tag1", "Tag2"]
+    }
+  ],
+  "TotalSubscribers": 100
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "List ID is required."
+}
+```
+
+```text [Error Codes]
+1: List ID is required.
+2: Operator is required.
+3: Unauthorized access to the list.
+```
+:::
+
+**HTTP Response and Error Codes:**
+
+| HTTP Code | Error Code | Description                        |
+|-----------|------------|------------------------------------|
+| 200       | 0          | Success                            |
+| 400       | 1          | List ID is required.               |
+| 400       | 2          | Operator is required.              |
+| 403       | 3          | Unauthorized access to the list.   |
