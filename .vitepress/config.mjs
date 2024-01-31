@@ -2,8 +2,19 @@ import {defineConfig} from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+    lang: 'en-US',
+    title: "Octeth Developer Portal",
+    description: "Octeth Developer Portal",
+
     appearance: false,
-    base: '/',
+
+    sitemap: {
+        hostname: 'https://dev.octeth.com',
+        lastmodDateOnly: false
+    },
+
+    lastUpdated: true,
+
     head: [
         [
             'link',
@@ -16,10 +27,11 @@ export default defineConfig({
         //     { defer: '', 'data-domain':'apidocs.octeth.com', src:'https://analytics.metricshq.com/js/script.js'},
         // ]
     ],
-    externalLinkIcon: false,
-    land: 'en-US',
-    title: "Octeth Developer",
-    description: "Octeth Developer Portal",
+
+    base: '/',
+    externalLinkIcon: true,
+    lang: 'en-US',
+
     themeConfig: {
         // https://vitepress.dev/reference/default-theme-config
         lastUpdated: {
@@ -33,6 +45,9 @@ export default defineConfig({
             light: '/logo_black.png',
             dark: '/logo_white.png',
             alt: 'Octeth'
+        },
+        search: {
+            provider: 'local'
         },
         siteTitle: 'Developer Portal',
         nav: [
