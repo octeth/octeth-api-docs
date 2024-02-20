@@ -106,6 +106,7 @@ curl -X POST https://example.com/api.php \
   "SubscriberInformation": {
     "SubscriberID": "456",
     "EmailAddress": "subscriber@example.com",
+    "Suppressed": false,
     // Additional subscriber details...
   },
   "SubscriberTags": [
@@ -116,6 +117,9 @@ curl -X POST https://example.com/api.php \
   ],
   "SubscriberJourneys": [
     // List of journeys the subscriber is part of...
+  ],
+  "SubscriberWebsiteEvents": [
+    // List of website events the subscriber is part of...
   ]
 }
 ```
@@ -209,7 +213,7 @@ curl -X POST https://example.com/api.php \
   deleted.
   :::
 
-## Retrieve Subscriber Information
+## Retrieve Subscribers of a List
 
 <Badge type="info" text="POST" /> `/api.php`
 
@@ -324,6 +328,7 @@ curl -X POST https://example.com/api.php \
     {
       "SubscriberID": 1,
       "EmailAddress": "example@example.com",
+      "Suppressed": false,
       // More subscriber fields...
     }
     // More subscribers...
@@ -705,27 +710,27 @@ This endpoint is used to create a new subscriber in the system. It requires an a
 
 **Request Body Parameters:**
 
-| Parameter            | Description                                                                                | Required? |
-|----------------------|--------------------------------------------------------------------------------------------|-----------|
-| SessionID            | The ID of the user's current session                                                       | Yes       |
-| APIKey               | The user's API key. Either `SessionID` or `APIKey` must be provided.                       | Yes       |
-| ListID               | The unique identifier for the mailing list                                                 | Yes       |
-| EmailAddress         | The email address of the new subscriber                                                    | Yes       |
-| Status               | The subscription status ('Opt-In Pending', 'Subscribed', 'Opt-Out Pending', 'Unsubscribed') | No        |
-| OptInDate            | The date the user opted in                                                                 | Conditional |
-| SubscriptionDate     | The date the user subscribed                                                               | Conditional |
-| SubscriptionIP       | The IP address from which the subscription was made                                        | Conditional |
-| UnsubscriptionDate   | The date the user unsubscribed                                                             | Conditional |
-| UnsubscriptionIP     | The IP address from which the unsubscription was made                                      | Conditional |
-| BounceType           | The type of email bounce (e.g., 'Not Bounced', 'Hard', 'Soft')                             | No        |
-| CustomFields         | An array of custom field IDs and their values                                              | No        |
-| UpdateIfDuplicate    | Flag to update subscriber if email address is duplicate                                    | No        |
-| UpdateIfUnsubscribed | Flag to update subscriber if previously unsubscribed                                       | No        |
-| ApplyBehaviors       | Flag to apply behaviors associated with the subscription                                   | No        |
-| SendConfirmationEmail| Flag to send a confirmation email to the subscriber                                        | No        |
-| UpdateStatistics     | Flag to update statistics upon subscription                                                | No        |
-| TriggerWebServices   | Flag to trigger web services upon subscription                                             | No        |
-| TriggerAutoResponders| Flag to trigger autoresponders upon subscription                                           | No        |
+| Parameter             | Description                                                                                 | Required?   |
+|-----------------------|---------------------------------------------------------------------------------------------|-------------|
+| SessionID             | The ID of the user's current session                                                        | Yes         |
+| APIKey                | The user's API key. Either `SessionID` or `APIKey` must be provided.                        | Yes         |
+| ListID                | The unique identifier for the mailing list                                                  | Yes         |
+| EmailAddress          | The email address of the new subscriber                                                     | Yes         |
+| Status                | The subscription status ('Opt-In Pending', 'Subscribed', 'Opt-Out Pending', 'Unsubscribed') | No          |
+| OptInDate             | The date the user opted in                                                                  | Conditional |
+| SubscriptionDate      | The date the user subscribed                                                                | Conditional |
+| SubscriptionIP        | The IP address from which the subscription was made                                         | Conditional |
+| UnsubscriptionDate    | The date the user unsubscribed                                                              | Conditional |
+| UnsubscriptionIP      | The IP address from which the unsubscription was made                                       | Conditional |
+| BounceType            | The type of email bounce (e.g., 'Not Bounced', 'Hard', 'Soft')                              | No          |
+| CustomFields          | An array of custom field IDs and their values                                               | No          |
+| UpdateIfDuplicate     | Flag to update subscriber if email address is duplicate                                     | No          |
+| UpdateIfUnsubscribed  | Flag to update subscriber if previously unsubscribed                                        | No          |
+| ApplyBehaviors        | Flag to apply behaviors associated with the subscription                                    | No          |
+| SendConfirmationEmail | Flag to send a confirmation email to the subscriber                                         | No          |
+| UpdateStatistics      | Flag to update statistics upon subscription                                                 | No          |
+| TriggerWebServices    | Flag to trigger web services upon subscription                                              | No          |
+| TriggerAutoResponders | Flag to trigger autoresponders upon subscription                                            | No          |
 
 ::: code-group
 

@@ -30,10 +30,12 @@ curl -X GET "https://example.com/api/v1/system-health-check" \
 {
   "Checks": {
     "MySQL": "OK",
+    "ClickHouse": "OK",
     "Elasticsearch": "OK",
     "RabbitMQ": "OK",
     "Redis": "OK",
-    "Session": "OK"
+    "Session": "OK",
+    "SystemContainer": "OK"
   }
 }
 ```
