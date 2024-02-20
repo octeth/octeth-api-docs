@@ -152,7 +152,11 @@ curl -X POST https://example.com/api.php \
   "List": {
     "ListID": "123",
     "ListName": "My Subscriber List",
-    "SubscriberCount": 250
+    "SubscriberCount": 250,
+    "EventListTrackerID": "abc",
+    "EventUserTrackerID": "abc",
+    "EventTrackerJS": "...",
+    "EventTrackerProperties": []
     // Other list details...
   }
 }
