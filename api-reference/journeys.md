@@ -133,7 +133,9 @@ This API endpoint accepts a raw JSON body.
       "UpdatedAt": "2023-08-11 17:19:34",
       "JourneyStats": {
         "ActiveSubscribers": "0",
-        "TotalSubscribers": "0"
+        "TotalSubscribers": "0",
+        "AggregatedEmailActions": [],
+        "AggregatedLast30DaysEmailActions": []
       }
     }
   ]
@@ -249,7 +251,9 @@ This API endpoint expects a request body in JSON format.
     "Status": "Disabled",
     "Notes": "This is an administrative note for the journey",
     "CreatedAt": "2023-08-11 18:13:17",
-    "UpdatedAt": "2023-08-11 18:13:17"
+    "UpdatedAt": "2023-08-11 18:13:17",
+    "AggregatedEmailActionStats": [],
+    "AggregatedLast30DaysEmailActions": []
   },
   "Actions": [
     {
@@ -969,6 +973,136 @@ Please note that this API endpoint requires a raw JSON body.
 | 404                | 7          | Journey not found              |
 | 404                | 8          | List not found                 |
 | 404                | 9          | Subscriber not found           |
+
+## Journey Action Subscribers
+
+<Badge type="info" text="POST" /> `/api/v1/journey.action.subscribers`
+
+This API call will return the list of subscribers for a specific journey action.
+
+::: warning NOTICE
+Please note that this API endpoint requires a raw JSON body.
+:::
+
+**Request Body Parameters:**
+
+| Parameter  | Description                                                                  | Required |
+|------------|------------------------------------------------------------------------------|----------|
+| SessionID  | This is the user's session ID.                                               | Yes      | 
+| APIKey     | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
+| JourneyID  | Target journey ID.                                                           | Yes      | 
+| ActionID   | ID of the target journey action.                                             | Yes      | 
+| FilterJson | The filter to apply in JSON syntax.                                          | Yes      | 
+| Operator   | How to apply filters. Either `and` or `or`                                   | Yes      | 
+
+::: code-group
+```json [Example Request]
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "JourneyID": 6,
+  "ActionID": 30,
+  "FilterJson": [
+    "opened",
+    "clicked"
+  ],
+  "Operator": "or"
+}
+```
+
+```json [Success Response]
+200 OK
+{
+  "JourneyID":15,
+  "ActionID":126,
+  "ListID":1,
+  "Subscribers":[
+    {
+      "SubscriberID":"42",
+      "EmailAddress":"email15@example.com",
+      "BounceType":"Hard",
+      "SubscriptionStatus":"Subscribed",
+      "SubscriptionDate":"2023-01-01",
+      "SubscriptionIP":"192.168.1.1",
+      "UnsubscriptionDate":"0000-00-00",
+      "UnsubscriptionIP":"0.0.0.0",
+      "OptInDate":"2023-01-01"
+    },
+    {
+      "SubscriberID":"8",
+      "EmailAddress":"email3@test1.com",
+      "BounceType":"Not Bounced",
+      "SubscriptionStatus":"Subscribed",
+      "SubscriptionDate":"2023-11-09",
+      "SubscriptionIP":" - Manual Import",
+      "UnsubscriptionDate":"0000-00-00",
+      "UnsubscriptionIP":"0.0.0.0",
+      "OptInDate":"0000-00-00"
+    },
+    {
+      "SubscriberID":"5",
+      "EmailAddress":"email5@test.com",
+      "BounceType":"Not Bounced",
+      "SubscriptionStatus":"Subscribed",
+      "SubscriptionDate":"2023-11-07",
+      "SubscriptionIP":" - Manual Import",
+      "UnsubscriptionDate":"2023-11-13",
+      "UnsubscriptionIP":"192.168.65.1",
+      "OptInDate":"0000-00-00"
+    },
+    {
+      "SubscriberID":"21",
+      "EmailAddress":"email51@test1.com",
+      "BounceType":"Not Bounced",
+      "SubscriptionStatus":"Subscribed",
+      "SubscriptionDate":"2023-12-18",
+      "SubscriptionIP":" - Manual Import",
+      "UnsubscriptionDate":"0000-00-00",
+      "UnsubscriptionIP":"0.0.0.0",
+      "OptInDate":"0000-00-00"
+    },
+    {
+      "SubscriberID":"34",
+      "EmailAddress":"email7@example.com",
+      "BounceType":"Hard",
+      "SubscriptionStatus":"Unsubscribed",
+      "SubscriptionDate":"0000-00-00",
+      "SubscriptionIP":"",
+      "UnsubscriptionDate":"2023-01-02",
+      "UnsubscriptionIP":"192.168.1.2",
+      "OptInDate":"0000-00-00"
+    }
+  ]
+}
+```
+
+```json [Error Response]
+404 Not Found
+{
+  "Errors": [
+    {
+      "Code": 1,
+      "Message": "Missing journey ID"
+    }
+  ]
+}
+```
+:::
+
+**HTTP Response and Error Codes:**
+
+| HTTP Response Code | Error Code | Description                  |
+|--------------------|------------|------------------------------|
+| 422                | 1          | Missing JourneyID parameter  |
+| 422                | 2          | Missing ActionID parameter   |
+| 422                | 3          | Invalid JourneyID parameter  |
+| 422                | 4          | Invalid ActionID parameter   |
+| 422                | 5          | Invalid FilterJson parameter |
+| 422                | 6          | Invalid FilterJson value     |
+| 422                | 7          | Invalid Operator value       |
+| 404                | 5          | Journey not found            |
+| 404                | 6          | Action not found             |
+| 404                | 7          | No subscribers found         |
 
 ## Enrolled Journeys
 

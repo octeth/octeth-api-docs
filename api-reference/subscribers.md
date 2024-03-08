@@ -765,7 +765,8 @@ curl -X POST 'https://example.com/api/v1/subscriber.create' \
   },
   "SubscriberTags": [],
   "SubscriberSegments": [],
-  "SubscriberJourneys": []
+  "SubscriberJourneys": [],
+  "SubscriberWebsiteEvents": []
 }
 ```
 

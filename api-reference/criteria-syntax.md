@@ -112,6 +112,19 @@ Filter people based on custom field values.
 * `operator` - one of `is`, `is not`, `contains`, `does not contain`, `ends with`, `begins with`, `is less than`, `is less than or equal to`, `is greater than`, `is greater than or equal to`, `is set`, `is not set`
 * `value` - the value to compare against
 
+### Suppressions
+
+Filter people based on their suppression status.
+
+```json
+{
+  "type": "suppressions",
+  "operator": "..."
+}
+```
+
+* `operator` - one of `exist`, `not exist`
+
 ## Example Rules and Rendered Queries
 
 **A**

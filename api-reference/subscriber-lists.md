@@ -156,7 +156,8 @@ curl -X POST https://example.com/api.php \
     "EventListTrackerID": "abc",
     "EventUserTrackerID": "abc",
     "EventTrackerJS": "...",
-    "EventTrackerProperties": []
+    "EventTrackerProperties": [],
+    "LastEventTrackedAt": "2024-02-21 08:33:47"
     // Other list details...
   }
 }

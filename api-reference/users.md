@@ -62,6 +62,14 @@ curl -X POST https://example.com/api.php \
       "UserGroupID": "1",
       "GroupName": "Standard",
       "GroupPlanName": "Basic Plan"
+      // Other user group details
+      "Options": {
+        // Other user group options
+        "DefaultSenderDomain":"m.mydomainone.com",
+        "DefaultSenderDomainMonthlyLimit":"35",
+        "DefaultSenderDomainRemainingMonthlyQuota":35
+      }
+
     },
     "MFA_QRCode": "https://example.com/mfa-qr-code",
     "MFA_SecretKey": "MFA123SECRET",
@@ -146,6 +154,17 @@ curl -X POST https://example.com/api.php \
         "LastName": "Doe",
         "EmailAddress": "user@example.com",
         // Other user details
+        "GroupInformation": {
+          "UserGroupID":"2",
+          "GroupName":"Test User Group",
+          // Other user group details
+          "Options": {
+            // Other user group options
+            "DefaultSenderDomain":"m.mydomainone.com",
+            "DefaultSenderDomainMonthlyLimit":"35",
+            "DefaultSenderDomainRemainingMonthlyQuota":35
+          }
+        }
     }
 }
 ```
