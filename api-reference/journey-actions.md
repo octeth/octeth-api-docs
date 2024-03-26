@@ -25,10 +25,11 @@ This action pauses the journey for a specified period.
 |------------|------------------------------------------------------------------------------------------------------------------|
 | ActionID   | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action     | Set this parameter to `Wait`.                                                                                    |
-| Published  | Set this parameter to `true` to activate it. Default is `false`.                                                 |
+| Published  | Set this parameter to `true` to activate it. Default: `false`.                                                   |
 | WaitUnit   | Set to one of `seconds`, `minutes`, `hours`, `days`.                                                             |
 | WaitAmount | Set to an integer value based on the `WaitUnit` parameter.                                                       |
 | Notes      | The administrative note for the journey action.                                                                  |
+| Published  | If this is set to `true`, the action will be enabled. Values: `true`, `false`                                    |
 
 ## `UpdateCustomFieldValue`
 
@@ -48,9 +49,10 @@ This action updates a subscriber's custom field.
 |---------------------|------------------------------------------------------------------------------------------------------------------|
 | ActionID            | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action              | Set this parameter to `UpdateCustomFieldValue`.                                                                  |
-| Published           | Set this parameter to `true` to activate it. Default is `false`.                                                 |
+| Published           | Set this parameter to `true` to activate it. Default: `false`.                                                   |
 | TargetCustomFieldID | The ID of the subscriber's custom field.                                                                         |
 | NewCustomFieldValue | The new value for the custom field.                                                                              |
+| Published           | If this is set to `true`, the action will be enabled. Values: `true`, `false`                                    |
 
 ## `Unsubscribe`
 
@@ -69,8 +71,9 @@ This action unsubscribes the subscriber from the target list.
 |--------------|------------------------------------------------------------------------------------------------------------------|
 | ActionID     | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action       | Set this parameter to `Unsubscribe`.                                                                             |
-| Published    | Set this parameter to `true` to activate it. Default is `false`.                                                 |
+| Published    | Set this parameter to `true` to activate it. Default: `false`.                                                   |
 | TargetListID | The ID of the target list from which to unsubscribe.                                                             |
+| Published    | If this is set to `true`, the action will be enabled. Values: `true`, `false`                                    |
 
 ## `ExitJourney`
 
@@ -104,8 +107,9 @@ or an array of journey ID numbers can be passed as shown below:
 |-----------------|------------------------------------------------------------------------------------------------------------------|
 | ActionID        | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action          | Set this parameter to `ExitJourney`.                                                                             |
-| Published       | Set this parameter to `true` to activate it. Default is `false`.                                                 |
+| Published       | Set this parameter to `true` to activate it. Default: `false`.                                                   |
 | TargetJourneyID | The ID of the journey to stop for the subscriber. Alternatively, it can be an array of Journey ID numbers.       |
+| Published       | If this is set to `true`, the action will be enabled. Values: `true`, `false`                                    |
 
 ## `ExitThisJourney`
 
@@ -123,7 +127,7 @@ This action stops the current journey for the subscriber.
 |-----------|------------------------------------------------------------------------------------------------------------------|
 | ActionID  | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action    | Set this parameter to `ExitThisJourney`.                                                                         |
-| Published | Set this parameter to `true` to activate it. Default is `false`.                                                 |
+| Published | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                  |
 
 ## `ExitAllOtherJourneys`
 
@@ -141,7 +145,7 @@ This action stops all journeys except the current one for the subscriber.
 |-----------|------------------------------------------------------------------------------------------------------------------|
 | ActionID  | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action    | Set this parameter to `ExitAllOtherJourneys`.                                                                    |
-| Published | Set this parameter to `true` to activate it. Default is `false`.                                                 |
+| Published | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                  |
 
 ## `ExitAllJourneys`
 
@@ -159,7 +163,7 @@ This action stops all active journeys of the subscriber.
 |-----------|------------------------------------------------------------------------------------------------------------------|
 | ActionID  | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action    | Set this parameter to `ExitAllJourneys`.                                                                         |
-| Published | Set this parameter to `true` to activate it. Default is `false`.                                                 |
+| Published | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                  |
 
 ## `Webhook`
 
@@ -178,7 +182,7 @@ This action triggers a webhook.
 |------------|------------------------------------------------------------------------------------------------------------------|
 | ActionID   | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action     | Set this parameter to `Webhook`.                                                                                 |
-| Published  | Set this parameter to `true` to activate it. Default is `false`.                                                 |
+| Published  | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                  |
 | WebhookURL | The URL of the webhook to trigger.                                                                               |
 
 ## `StartJourney`
@@ -198,7 +202,7 @@ This action starts a journey for the subscriber.
 |-----------------|------------------------------------------------------------------------------------------------------------------|
 | ActionID        | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action          | Set this parameter to `StartJourney`.                                                                            |
-| Published       | Set this parameter to `true` to activate it. Default is `false`.                                                 |
+| Published       | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                  |
 | TargetJourneyID | The ID of the journey to start for the subscriber.                                                               |
 
 ## `Subscribe`
@@ -218,7 +222,7 @@ This action subscribes the subscriber to a list.
 |--------------|------------------------------------------------------------------------------------------------------------------|
 | ActionID     | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action       | Set this parameter to `Subscribe`.                                                                               |
-| Published    | Set this parameter to `true` to activate it. Default is `false`.                                                 |
+| Published    | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                  |
 | TargetListID | The ID of the list to which to subscribe.                                                                        |
 
 ## `AddTag`
@@ -238,7 +242,7 @@ This action adds a tag to the subscriber.
 |-------------|------------------------------------------------------------------------------------------------------------------|
 | ActionID    | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action      | Set this parameter to `AddTag`.                                                                                  |
-| Published   | Set this parameter to `true` to activate it. Default is `false`.                                                 |
+| Published   | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                  |
 | TargetTagID | The ID of the tag to add.                                                                                        |
 
 ## `RemoveTag`
@@ -258,7 +262,7 @@ This action will halt all journeys except the current one for the subscriber.
 |-------------|-------------------------------------------------------------------------------------------------------|
 | ActionID    | Provide an ActionID to update a specific action. Set this parameter to `null` to create a new action. |
 | Action      | Set this parameter to `RemoveTag`.                                                                    |
-| Published   | Set this parameter to `true` to activate it. Default is `false`.                                      |
+| Published   | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`       |
 | TargetTagID | The ID of the tag.                                                                                    |
 
 ## YesNo
@@ -291,7 +295,7 @@ instead.
 |------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | ActionID         | Provide an ActionID to update a specific action. Set this parameter to `null` to create a new action.                                                                                                                                                                            |
 | Action           | Set this parameter to `YesNo`.                                                                                                                                                                                                                                                   |
-| Published        | Set this parameter to `true` to activate it. Default is `false`.                                                                                                                                                                                                                 |
+| Published        | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                                                                                                                                                                                  |
 | CriteriaLeft     | The left side of the criteria. It can be `SubscriberID`, `EmailAddress`, `BounceType`, `SubscriptionStatus`, `SubscriptionDate`, `SubscriptionIP`, `OptInDate`, `CustomField:XX` (XX represents the custom field ID), `Opens`, `Clicks`                                          |
 | CriteriaOperator | Set the operator to compare left to the right. It can be `Contains`, `Does not contain`, `Begins with`, `Ends with`, `Equals to`, `Is greater than`, `Is smaller than`, `Is before`, `Is after`, `Is set`, `Is not set`, `Is`, `Is not`, `At most`, `At least`, `Only`           |
 | CriteriaRight    | It can be any value or an array of campaign or autoresponder ID numbers. If you are going to provide campaign ID numbers, ID numbers should have a prefix `c`. For autoresponders, prefix `a`. Example: `['c100', 'c101']` for campaigns, `['a100', 'a101']` for autoresponders. |
@@ -321,7 +325,7 @@ This action will implement a decision with a criteria and set of actions for bot
 |------------------|-------------------------------------------------------------------------------------------------------|
 | ActionID         | Provide an ActionID to update a specific action. Set this parameter to `null` to create a new action. |
 | Action           | Set this parameter to `Decision`.                                                                     |
-| Published        | Set this parameter to `true` to activate it. Default is `false`.                                      |
+| Published        | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`       |
 | CriteriaOperator | It can be set as `and`, `or`. Default value is `and`                                                  |
 | Criteria         | The array of criteria. [Please refer to the criteria object below](/api-reference/criteria-syntax).   |
 | Actions          | The array of action objects in case `True` and `False` cases.                                         |
@@ -364,7 +368,7 @@ This action sends the email to the subscriber.
 |----------------|------------------------------------------------------------------------------------------------------------------|
 | ActionID       | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action         | Set this parameter to `AddTag`.                                                                                  |
-| Published      | Set this parameter to `true` to activate it. Default is `false`.                                                 |
+| Published      | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                  |
 | EmailID        | The ID of the target email content.                                                                              |
 | SenderDomainID | The ID of the email gateway sender domain to use when sending the email.                                         |
 | From           | `From.Name` and `From.Email` parameters to set as `From` header of the email.                                    |

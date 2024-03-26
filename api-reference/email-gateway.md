@@ -18,13 +18,17 @@ and the ID of the domain for which the API key will be created.
 
 **Request Body Parameters:**
 
-| Parameter    | Description                                           | Required? |
-|--------------|-------------------------------------------------------|-----------|
-| SessionID    | The ID of the user's current session                 | Yes       |
+| Parameter    | Description                                                          | Required? |
+|--------------|----------------------------------------------------------------------|-----------|
+| SessionID    | The ID of the user's current session                                 | Yes       |
 | APIKey       | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command      | EmailGateway.AddAPI                                   | Yes       |
-| Description  | A brief description of the API key's intended use    | Yes       |
-| DomainID     | The unique identifier for the domain                 | Yes       |
+| Command      | EmailGateway.AddAPI                                                  | Yes       |
+| Description  | A brief description of the API key's intended use                    | Yes       |
+| DomainID     | The unique identifier for the domain                                 | Yes       |
+| ListID       | The list ID of the target subscriber                                 | No        |
+| SubscriberID | The subscriber ID of the subscriber this email belongs to            | No        |
+| JourneyID    | The journey ID this email is sent by                                 | No        |
+| ActionID     | The action ID of the journey this email is sent by                   | No        |
 
 ::: code-group
 
