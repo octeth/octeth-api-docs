@@ -46,7 +46,7 @@ This API endpoint accepts raw body in JSON format.
 ```
 
 ```json [Success Response]
-200 OK 
+# 200 OK 
 {
   "JourneyID": 5,
   "Journey": {
@@ -64,7 +64,7 @@ This API endpoint accepts raw body in JSON format.
 ```
 
 ```json [Error Response]
-422 Unprocessable Entity
+# 422 Unprocessable Entity
 {
   "Errors": [
     {
@@ -118,7 +118,7 @@ This API endpoint accepts a raw JSON body.
 ```
 
 ```json [Success Response]
-200 OK
+# 200 OK
 {
   "Journeys": [
     {
@@ -181,14 +181,14 @@ Please note that this API endpoint requires a raw body in JSON format.
 ```
 
 ```json [Success Response]
-200 OK
+# 200 OK
 {
   "JourneyID": "5"
 }
 ```
 
 ```json [Error Response]
-404 Not Found
+# 404 Not Found
 {
   "Errors": [
     {
@@ -240,7 +240,7 @@ This API endpoint expects a request body in JSON format.
 ```
 
 ```json [Success Response]
-200 OK
+# 200 OK
 {
   "Journey": {
     "JourneyID": "6",
@@ -252,8 +252,47 @@ This API endpoint expects a request body in JSON format.
     "Notes": "This is an administrative note for the journey",
     "CreatedAt": "2023-08-11 18:13:17",
     "UpdatedAt": "2023-08-11 18:13:17",
-    "AggregatedEmailActionStats": [],
-    "AggregatedLast30DaysEmailActions": []
+    "JourneyStats": {
+      "ActiveSubscribers": 100,
+      "TotalSubscribers": 200,
+      "AggregatedEmailActionStats": {
+        "SendCount": 0,
+        "OpenCount": 0,
+        "ClickCount": 0,
+        "ConversionCount": 0,
+        "BrowserViewCount": 0,
+        "ForwardCount": 0,
+        "UnsubscribeCount": 0,
+        "BounceCount": 0,
+        "SpamComplaintCount": 0
+      },
+      "AggregatedLast30DaysEmailActions": [
+        {
+          "2024-03-26": [
+            "SendCount": 0,
+            "OpenCount": 0,
+            "ClickCount": 0,
+            "ConversionCount": 0,
+            "BrowserViewCount": 0,
+            "ForwardCount": 0,
+            "UnsubscribeCount": 0,
+            "BounceCount": 0,
+            "SpamComplaintCount": 0
+          ],
+          "2024-03-25": [
+            "SendCount": 0,
+            "OpenCount": 0,
+            "ClickCount": 0,
+            "ConversionCount": 0,
+            "BrowserViewCount": 0,
+            "ForwardCount": 0,
+            "UnsubscribeCount": 0,
+            "BounceCount": 0,
+            "SpamComplaintCount": 0
+          ]
+        }
+      ]
+    },
   },
   "Actions": [
     {
@@ -291,7 +330,7 @@ This API endpoint expects a request body in JSON format.
 ```
 
 ```json [Error Response]
-404 Not Found
+# 404 Not Found
 {
   "Errors": [
     {
@@ -341,7 +380,7 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Success Response]
-200 OK
+# 200 OK
 {
   "Journey": {
     "JourneyID": "6",
@@ -357,7 +396,7 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Error Response]
-404 Not Found
+# 404 Not Found
 {
   "Errors": [
     {
@@ -408,7 +447,7 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Success Response]
-200 OK
+# 200 OK
 {
   "Journey": {
     "JourneyID": "6",
@@ -424,7 +463,7 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Error Response]
-404 Not Found
+# 404 Not Found
 {
   "Errors": [
     {
@@ -485,7 +524,7 @@ This endpoint expects a raw JSON body.
 ```
 
 ```json [Success Response]
-200 OK
+# 200 OK
 {
   "Journey": {
     "JourneyID": "6",
@@ -502,7 +541,7 @@ This endpoint expects a raw JSON body.
 ```
 
 ```json [Error Response]
-404 Not Found
+# 404 Not Found
 {
   "Errors": [
     {
@@ -583,7 +622,7 @@ Please note that any actions not included in the provided list will be removed f
 ```
 
 ```json [Success Response]
-200 OK
+# 200 OK
 {
     "JourneyID": 22,
     "Actions": [
@@ -752,7 +791,7 @@ Please note that any actions not included in the provided list will be removed f
 ```
 
 ```json [Error Response]
-404 Not Found
+# 404 Not Found
 {
   "Errors": [
     {
@@ -871,7 +910,7 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Success Response]
-200 OK
+# 200 OK
 {
   "JourneyID": "18",
   "ListID": "26",
@@ -880,7 +919,7 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Error Response]
-404 Not Found
+# 404 Not Found
 {
   "Errors": [
     {
@@ -939,7 +978,7 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Success Response]
-200 OK
+# 200 OK
 {
   "JourneyID": "18",
   "ListID": "26",
@@ -948,7 +987,7 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Error Response]
-404 Not Found
+# 404 Not Found
 {
   "Errors": [
     {
@@ -986,14 +1025,18 @@ Please note that this API endpoint requires a raw JSON body.
 
 **Request Body Parameters:**
 
-| Parameter  | Description                                                                  | Required |
-|------------|------------------------------------------------------------------------------|----------|
-| SessionID  | This is the user's session ID.                                               | Yes      | 
-| APIKey     | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
-| JourneyID  | Target journey ID.                                                           | Yes      | 
-| ActionID   | ID of the target journey action.                                             | Yes      | 
-| FilterJson | The filter to apply in JSON syntax.                                          | Yes      | 
-| Operator   | How to apply filters. Either `and` or `or`                                   | Yes      | 
+| Parameter         | Description                                                                  | Required |
+|-------------------|------------------------------------------------------------------------------|----------|
+| SessionID         | This is the user's session ID.                                               | Yes      | 
+| APIKey            | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
+| JourneyID         | Target journey ID.                                                           | Yes      | 
+| ActionID          | ID of the target journey action.                                             | Yes      | 
+| FilterJson        | The filter to apply in JSON syntax.                                          | Yes      | 
+| Operator          | How to apply filters. Either `and` or `or`                                   | Yes      | 
+| RecordsPerRequest | Pagination. Number of records to return. Default: `25`                       | No       | 
+| RecordsFrom       | Pagination. The result retrieve start index. Default: `0`                    | No       | 
+| OrderField        | Order results by this field. Default: `EmailAddress`                         | No       | 
+| OrderType         | Sort results ascending or descending. Default: `ASC`. Values: `ASC`, `DESC`  | No       | 
 
 ::: code-group
 ```json [Example Request]
@@ -1011,11 +1054,12 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Success Response]
-200 OK
+# 200 OK
 {
-  "JourneyID":15,
-  "ActionID":126,
-  "ListID":1,
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalSubscribers": 5,
   "Subscribers":[
     {
       "SubscriberID":"42",
@@ -1077,7 +1121,7 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Error Response]
-404 Not Found
+# 404 Not Found
 {
   "Errors": [
     {
@@ -1135,7 +1179,7 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Success Response]
-200 OK
+# 200 OK
 {
   "ListID": "26",
   "SubscriberID": "1",
@@ -1155,7 +1199,7 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Error Response]
-404 Not Found
+# 404 Not Found
 {
   "Errors": [
     {
