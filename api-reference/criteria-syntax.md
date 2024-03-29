@@ -5,7 +5,7 @@ prev:
     link: 'javascript:history.back()'
 ---
 
-# Criteria Syntax
+# RulesJson Criteria Syntax
 
 The criteria is being used on a few different API end-points including [journey action update](/api-reference/journeys#modifying-journey-actions) and [subscribers](/api-reference/subscribers).
 
@@ -124,6 +124,40 @@ Filter people based on their suppression status.
 ```
 
 * `operator` - one of `exist`, `not exist`
+
+### Website Events
+
+Filter people based on their website events.
+
+```json
+{
+  "type": "website-events",
+  "event": "...",
+  "event_parameter": "...",
+  "operator": "...",
+  "value": "..."
+}
+```
+
+* `event` - `PageView`, `Identify`, `Conversion`, or any custom event.
+* `event_parameter` - Website event parameter 
+* `operator` - one of `happened`, `did not happen`, `happened in the last X days`, `did not happen in the last X days`, `equals`, `does not equal`, `contains`, `does not contain`, `matches regex`, `does not match regex`, `greater than`, `less than`, `is set`, `is not set`
+* `value` - any value based on the `operator`
+
+### Campaign Events
+
+Filter people based on campaign events.
+
+```json
+{
+  "type": "campaign-events",
+  "operator": "...",
+  "value": "..."
+}
+```
+
+* `operator` - one of `opened`, `not opened`, `clicked`, `not clicked`, `unsubscribed`, `complained`, `not complained`, `bounced`, `not bounced`, `delivered`, `not delivered`, `queued-recipients`
+* `value` - any value based on the `operator`
 
 ## Example Rules and Rendered Queries
 
