@@ -498,7 +498,7 @@ curl -X POST https://example.com/api.php \
   -d 'Command=Campaigns.Get' \
   -d 'RecordsPerRequest=10' \
   -d 'RecordsFrom=0' \
-  -d 'CampaignStatus=Active' \
+  -d 'CampaignStatus=Scheduled' \
   -d 'SearchKeyword=Summer' \
   -d 'OrderField=CampaignName' \
   -d 'OrderType=ASC' \
