@@ -474,20 +474,20 @@ This endpoint retrieves a list of campaigns based on the provided criteria. It a
 
 **Request Body Parameters:**
 
-| Parameter          | Description                                                                 | Required? |
-|--------------------|-----------------------------------------------------------------------------|-----------|
-| SessionID          | The ID of the user's current session                                        | Yes       |
-| APIKey             | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
-| Command            | Campaigns.Get                                                               | Yes       |
-| RecordsPerRequest  | The number of records to retrieve per request                               | No        |
-| RecordsFrom        | The starting point from which to retrieve records                           | No        |
-| CampaignStatus     | The status of the campaigns to filter by (e.g., 'Active', 'Inactive')       | No        |
-| SearchKeyword      | A keyword to search for in campaign names                                   | No        |
-| OrderField         | The field to order the results by                                           | No        |
-| OrderType          | The type of ordering to apply (e.g., 'ASC', 'DESC')                         | No        |
-| RetrieveTags       | Whether to retrieve tags associated with the campaigns (true/false)         | No        |
-| Tags               | A comma-separated list of tag IDs to filter campaigns by                    | No        |
-| RetrieveStatistics | Whether to retrieve statistics for the campaigns (true/false)               | No        |
+| Parameter          | Description                                                                                                                   | Required? |
+|--------------------|-------------------------------------------------------------------------------------------------------------------------------|-----------|
+| SessionID          | The ID of the user's current session                                                                                          | Yes       |
+| APIKey             | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                          | Yes       |
+| Command            | Campaigns.Get                                                                                                                 | Yes       |
+| RecordsPerRequest  | The number of records to retrieve per request                                                                                 | No        |
+| RecordsFrom        | The starting point from which to retrieve records                                                                             | No        |
+| CampaignStatus     | The status of the campaigns to filter by `All`, `Sent`, `Draft`, `Ready`, `Sending`, `Pending`, `Sent`, `Failed`, `Scheduled` | No        |
+| SearchKeyword      | A keyword to search for in campaign names                                                                                     | No        |
+| OrderField         | The field to order the results by                                                                                             | No        |
+| OrderType          | The type of ordering to apply (e.g., 'ASC', 'DESC')                                                                           | No        |
+| RetrieveTags       | Whether to retrieve tags associated with the campaigns (true/false)                                                           | No        |
+| Tags               | A comma-separated list of tag IDs to filter campaigns by                                                                      | No        |
+| RetrieveStatistics | Whether to retrieve statistics for the campaigns (true/false)                                                                 | No        |
 
 ::: code-group
 
