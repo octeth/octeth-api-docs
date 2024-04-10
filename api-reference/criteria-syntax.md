@@ -140,9 +140,9 @@ Filter people based on their website events.
 ```
 
 * `event` - `PageView`, `Identify`, `Conversion`, or any custom event.
-* `event_parameter` - Website event parameter 
 * `operator` - one of `happened`, `did not happen`, `happened in the last X days`, `did not happen in the last X days`, `equals`, `does not equal`, `contains`, `does not contain`, `matches regex`, `does not match regex`, `greater than`, `less than`, `is set`, `is not set`
-* `value` - any value based on the `operator`
+* `event_parameter` - Website event parameter
+* `value` - any value based on the `event_parameter`
 
 ### Campaign Events
 
