@@ -159,6 +159,23 @@ Filter people based on campaign events.
 * `operator` - one of `opened`, `not opened`, `clicked`, `not clicked`, `unsubscribed`, `complained`, `not complained`, `bounced`, `not bounced`, `delivered`, `not delivered`, `queued-recipients`
 * `value` - any value based on the `operator`
 
+### Journey Email Action Events
+
+Filter people based on journey email action activities.
+
+```json
+{
+  "type": "journey-email-action",
+  "operator": "opened",
+  "journey-id": "...",
+  "value": "..."
+}
+```
+
+* `operator` - one of `opened`, `not opened`, `clicked`, `not clicked`, `unsubscribed`, `complained`, `not complained`, `bounced`, `not bounced`
+* `journey-id` - Target journey ID.
+* `value` - must be `ActionID` of the journey.
+
 ## Example Rules and Rendered Queries
 
 **A**

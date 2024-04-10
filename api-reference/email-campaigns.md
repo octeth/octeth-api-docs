@@ -350,31 +350,32 @@ This endpoint allows you to update the details of an existing campaign. You can 
 
 **Request Body Parameters:**
 
-| Parameter                         | Description                                                                 | Required? |
-|-----------------------------------|-----------------------------------------------------------------------------|-----------|
-| SessionID                         | The ID of the user's current session                                        | Yes       |
-| APIKey                            | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
-| Command                           | Campaign.Update                                                             | Yes       |
-| CampaignID                        | Unique identifier for the campaign to be updated                            | Yes       |
-| CampaignStatus                    | The new status of the campaign (e.g., Draft, Ready, Sending)                | No        |
-| CampaignName                      | The new name for the campaign                                               | No        |
-| RelEmailID                        | The ID of the email associated with the campaign                            | No        |
-| ScheduleType                      | The type of scheduling for the campaign (e.g., Immediate, Future, Recursive)| No        |
-| SendDate                          | The date when the campaign is scheduled to be sent                          | No        |
-| SendTime                          | The time when the campaign is scheduled to be sent                          | No        |
-| SendTimeZone                      | The timezone for the send date and time                                     | No        |
-| ScheduleRecDaysOfWeek             | Days of the week when the campaign is scheduled to recur                    | No        |
-| ScheduleRecDaysOfMonth            | Days of the month when the campaign is scheduled to recur                   | No        |
-| ScheduleRecMonths                 | Months when the campaign is scheduled to recur                              | No        |
-| ScheduleRecHours                  | Hours when the campaign is scheduled to recur                               | No        |
-| ScheduleRecMinutes                | Minutes when the campaign is scheduled to recur                             | No        |
-| ScheduleRecSendMaxInstance        | Maximum instances for the campaign to be sent on a recurring schedule       | No        |
-| ApprovalUserExplanation           | Explanation from the user for campaign approval                             | No        |
-| GoogleAnalyticsDomains            | Domains to be tracked with Google Analytics                                 | No        |
-| PublishOnRSS                      | Whether to publish the campaign on RSS (Enabled or Disabled)                | No        |
-| RecipientListsAndSegments         | Comma-separated list of recipient list and segment IDs                      | No        |
-| Exclude_RecipientListsAndSegments | Comma-separated list of recipient list and segment IDs to exclude           | No        |
-| S2SEnabled                        | Whether the Send-to-Send feature is enabled or not                          | No        |
+| Parameter                         | Description                                                                                                                                                                     | Required? |
+|-----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
+| SessionID                         | The ID of the user's current session                                                                                                                                            | Yes       |
+| APIKey                            | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                            | Yes       |
+| Command                           | Campaign.Update                                                                                                                                                                 | Yes       |
+| CampaignID                        | Unique identifier for the campaign to be updated                                                                                                                                | Yes       |
+| CampaignStatus                    | The new status of the campaign (e.g., Draft, Ready, Sending)                                                                                                                    | No        |
+| CampaignName                      | The new name for the campaign                                                                                                                                                   | No        |
+| RelEmailID                        | The ID of the email associated with the campaign                                                                                                                                | No        |
+| ScheduleType                      | The type of scheduling for the campaign (e.g., Immediate, Future, Recursive)                                                                                                    | No        |
+| SendDate                          | The date when the campaign is scheduled to be sent                                                                                                                              | No        |
+| SendTime                          | The time when the campaign is scheduled to be sent                                                                                                                              | No        |
+| SendTimeZone                      | The timezone for the send date and time                                                                                                                                         | No        |
+| ScheduleRecDaysOfWeek             | Days of the week when the campaign is scheduled to recur                                                                                                                        | No        |
+| ScheduleRecDaysOfMonth            | Days of the month when the campaign is scheduled to recur                                                                                                                       | No        |
+| ScheduleRecMonths                 | Months when the campaign is scheduled to recur                                                                                                                                  | No        |
+| ScheduleRecHours                  | Hours when the campaign is scheduled to recur                                                                                                                                   | No        |
+| ScheduleRecMinutes                | Minutes when the campaign is scheduled to recur                                                                                                                                 | No        |
+| ScheduleRecSendMaxInstance        | Maximum instances for the campaign to be sent on a recurring schedule                                                                                                           | No        |
+| ApprovalUserExplanation           | Explanation from the user for campaign approval                                                                                                                                 | No        |
+| GoogleAnalyticsDomains            | Domains to be tracked with Google Analytics                                                                                                                                     | No        |
+| PublishOnRSS                      | Whether to publish the campaign on RSS (Enabled or Disabled)                                                                                                                    | No        |
+| RulesJsonBundle                   | Target audience in RulesJson syntax ([see instructions](#rulesjsonbundle-instructions)). If this parameter is provided, `RecipientListsAndSegments` and `Exclude_RecipientListsAndSegments` will be ignored. | No        |
+| RecipientListsAndSegments         | Comma-separated list of recipient list and segment IDs                                                                                                                          | No        |
+| Exclude_RecipientListsAndSegments | Comma-separated list of recipient list and segment IDs to exclude                                                                                                               | No        |
+| S2SEnabled                        | Whether the Send-to-Send feature is enabled or not                                                                                                                              | No        |
 
 ::: code-group
 
@@ -418,6 +419,56 @@ curl -X POST https://example.com/api.php \
 13: Timezone is required for scheduled campaigns
 ```
 :::
+
+### `RulesJsonBundle` Instructions
+
+This parameter is based on [`RulesJson` criteria syntax](/api-reference/criteria-syntax.html). You can set a detailed target audience for your email campaigns using `RulesJsonbundle` parameter.
+
+Here's an example:
+
+```json
+{
+   "operator": "or", // The operator value should always be "or" for now
+   "criteria": [
+     { // For each list_id, define your RulesJson criteria
+       "list_id":1,
+       "operator": "and",
+       "rules": [
+         {
+           "type": "fields",
+           "field_id": "EmailAddress",
+           "operator": "contains",
+           "value": "user1"
+         },
+         {
+           "type": "fields",
+           "field_id": "EmailAddress",
+           "operator": "contains",
+           "value": ".net"
+         }
+       ]
+     },
+     {
+       "list_id":2,
+       "operator": "or",
+       "rules": [
+         {
+           "type": "fields",
+           "field_id": "EmailAddress",
+           "operator": "contains",
+           "value": "@test"
+         },
+         {
+           "type": "fields",
+           "field_id": "EmailAddress",
+           "operator": "contains",
+           "value": "@gmail"
+         }
+       ]
+     }
+   ]
+}
+```
 
 ## Delete Campaigns
 
