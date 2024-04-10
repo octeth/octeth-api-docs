@@ -429,10 +429,6 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-::: warning NOTICE
-Available `SubscriptionStatus` values are `Opt-In Pending`, `Subscribed`, `Opt-Out Pending`, `Unsubscribed`
-:::
-
 ```json [Error Response]
 {
   "Success": false,
@@ -447,6 +443,10 @@ Available `SubscriptionStatus` values are `Opt-In Pending`, `Subscribed`, `Opt-O
 4: List not found.
 ```
 
+:::
+
+::: warning NOTICE
+Available `SubscriptionStatus` values are `Opt-In Pending`, `Subscribed`, `Opt-Out Pending`, `Unsubscribed`
 :::
 
 ## Delete Subscribers
