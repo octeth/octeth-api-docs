@@ -157,7 +157,7 @@ Filter people based on campaign events.
 ```
 
 * `operator` - one of `opened`, `not opened`, `clicked`, `not clicked`, `unsubscribed`, `complained`, `not complained`, `bounced`, `not bounced`, `delivered`, `not delivered`, `queued-recipients`
-* `value` - any value based on the `operator`
+* `value` - target campaign ID
 
 ### Journey Email Action Events
 
