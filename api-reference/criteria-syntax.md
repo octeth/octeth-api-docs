@@ -48,9 +48,7 @@ The criteria is being used on a few different API end-points including [journey 
 
 ("Belongs to S1 segment" AND "Has T1 tag") OR ("Email ends with @hotmail.com")
 
-## Filter Types
-
-### Segments
+## Filtering By Segments
 
 Filter people based on segment membership.
 
@@ -65,7 +63,7 @@ Filter people based on segment membership.
 * `operator` - one of `belongs to`, `does not belong to`
 * `value` - the segment id
 
-### Tags
+## Filtering By Tags
 
 Filter people based on tag membership.
 
@@ -80,7 +78,7 @@ Filter people based on tag membership.
 * `operator` - one of `has this tag`, `does not have this tag`, `has any of these tags`, `has all of these tags`, `has no tags`
 * `value` - comma separated list of tag ids
 
-### Journeys
+## Filtering By Journeys
 
 Filter people based on their journey enrollments.
 
@@ -95,7 +93,7 @@ Filter people based on their journey enrollments.
 * `operator` - one of `in journey`, `completed journey`, `not in journey`
 * `value` - the ID number of the target journey
 
-### Custom Fields
+## Filtering By Custom Fields
 
 Filter people based on custom field values.
 
@@ -112,7 +110,7 @@ Filter people based on custom field values.
 * `operator` - one of `is`, `is not`, `contains`, `does not contain`, `ends with`, `begins with`, `is less than`, `is less than or equal to`, `is greater than`, `is greater than or equal to`, `is set`, `is not set`
 * `value` - the value to compare against
 
-### Suppressions
+## Filtering By Suppressions
 
 Filter people based on their suppression status.
 
@@ -125,7 +123,7 @@ Filter people based on their suppression status.
 
 * `operator` - one of `exist`, `not exist`
 
-### Website Events
+## Filtering By Website Events
 
 Filter people based on their website events.
 
@@ -133,18 +131,133 @@ Filter people based on their website events.
 {
   "type": "website-events",
   "event": "...",
-  "event_parameter": "...",
   "operator": "...",
+  "event_parameter": "...",
   "value": "..."
 }
 ```
 
-* `event` - `PageView`, `Identify`, `Conversion`, or any custom event.
+* `event` - `pageView`, `identify`, `conversion`, or any custom event.
 * `operator` - one of `happened`, `did not happen`, `happened in the last X days`, `did not happen in the last X days`, `equals`, `does not equal`, `contains`, `does not contain`, `matches regex`, `does not match regex`, `greater than`, `less than`, `is set`, `is not set`
 * `event_parameter` - Website event parameter
 * `value` - any value based on the `event_parameter`
 
-### Campaign Events
+**Common Event Parameters**
+
+All events include common parameters that capture details about the user's environment and the context of the event:
+
+- `$browser`, `$browser_language`, `$browser_version` - Information about the browser used.
+- `$current_url` - The URL where the event occurred.
+- `$device`, `$device_type` - Details about the device used.
+- `$os` - Operating system information.
+- `$pageTitle`, `$pathname` - Document title and path.
+- `$referrer`, `$referring_domain` - Referral data.
+- `$screen_height`, `$screen_width`, `$viewport_height`, `$viewport_width` - Screen and viewport dimensions.
+- `$sent_at` - Timestamp when the event was sent.
+- `$uuid` - Unique identifier for the session.
+- Additional identifiers like `$dsn`, `$host`, `$lib`, and `$lib_version`.
+
+**Event Specific Parameters**
+
+Each event type may have additional parameters:
+
+- `identify` includes emailAddress and `name` for user identification
+- `conversion` tracks conversions with `conversionId`, `conversionName`, `conversionValue`
+- `customEvent` may include arbitrary parameters like `eventName`, `key1`, `key2`, `key3` for custom tracking.
+
+**Event Query Operators**
+
+Operations are used to query events based on certain conditions. Here are the available operations:
+
+- `did happen` and `happened` - Check if an event occurred, without parameters.
+- Temporal operations like `happened in the last X days` or `did not happen in the last X days` require a day count as `value`.
+- Comparison and match operations such as `equals`, `does not equal`, `contains`, `does not contain`, `matches regex`, `does not match regex`, `greater than`, `less than`, `is set`, `is not set` utilize event_parameter and a `value`.
+
+**Example: Subscribers who haven't visited the homepage**
+
+```json
+{
+  "type": "website-events",
+  "event": "pageView",
+  "operator": "does not equal",
+  "event_parameter": "$pageTitle",
+  "value": "Homepage"
+}
+```
+
+**Example: Page views in the last 30 days**
+
+```json
+{
+  "type": "website-events",
+  "event": "pageView",
+  "operator": "did not happen in the last X days",
+  "event_parameter": "",
+  "value": "30"
+}
+```
+
+**Example: Identifications with a specific email address**
+
+```json
+{
+  "type": "website-events",
+  "event": "identify",
+  "operator": "contains",
+  "event_parameter": "emailAddress",
+  "value": "@gmail.com"
+}
+```
+
+**Example: Specific conversion events made by visitors**
+
+```json
+{
+  "type": "website-events",
+  "event": "conversion",
+  "operator": "greater than",
+  "event_parameter": "conversionValue",
+  "value": "50"
+}
+```
+
+**Example: Custom event based filtering**
+
+```json
+{
+  "type": "website-events",
+  "event": "customEvent",
+  "operator": "matches regex",
+  "event_parameter": "key1",
+  "value": "^abc.*"
+}
+```
+
+**Example: Filtering PageViews with a property**
+
+```json
+{
+  "type": "website-events",
+  "event": "pageView",
+  "operator": "happened",
+  "event_parameter": "name",
+  "value": "test name"
+}
+```
+
+**Example: Filtering PageViews**
+
+```json
+{
+  "type": "website-events",
+  "event": "pageView",
+  "operator": "happened",
+  "event_parameter": "",
+  "value": ""
+}
+```
+
+## Filtering By Campaign Events
 
 Filter people based on campaign events.
 
@@ -159,7 +272,7 @@ Filter people based on campaign events.
 * `operator` - one of `opened`, `not opened`, `clicked`, `not clicked`, `unsubscribed`, `complained`, `not complained`, `bounced`, `not bounced`, `delivered`, `not delivered`, `queued-recipients`
 * `value` - target campaign ID
 
-### Journey Email Action Events
+## Filtering By Journey Email Action Events
 
 Filter people based on journey email action activities.
 
