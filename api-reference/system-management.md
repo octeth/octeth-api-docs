@@ -26,22 +26,22 @@ curl -X GET "https://example.com/api/v1/system-health-check" \
 ```
 
 ```json [Success Response]
-200 OK
+# 200 OK
 {
-  "Checks": {
-    "MySQL": "OK",
-    "ClickHouse": "OK",
-    "Elasticsearch": "OK",
-    "RabbitMQ": "OK",
-    "Redis": "OK",
-    "Session": "OK",
-    "SystemContainer": "OK"
-  }
+"Checks": {
+"MySQL": "OK",
+"Elasticsearch": "OK",
+"RabbitMQ": "OK",
+"Redis": "OK",
+"Session": "OK",
+"SystemContainer": "OK",
+"AdminFrontend": "OK",
+"UserFrontend": "OK"
 }
 ```
 
 ```json [Error Response]
-503 Service Unavailable
+# 503 Service Unavailable
 {
   "Errors": [
     {
