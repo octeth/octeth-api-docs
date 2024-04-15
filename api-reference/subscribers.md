@@ -12,23 +12,23 @@ This API call allows you to unsubscribe a subscriber from a mailing list.
 
 **Request Body Parameters:**
 
-| Parameter         | Description                                                                 | Required? |
-|-------------------|-----------------------------------------------------------------------------|-----------|
-| SessionID         | The ID of the user's current session                                        | Yes       |
-| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
-| Command           | Subscriber.Unsubscribe                                                      | Yes       |
-| ListID            | The unique identifier for the mailing list                                  | Yes       |
-| IPAddress         | The IP address of the user making the request                               | Yes       |
-| EmailAddress      | The email address of the subscriber to unsubscribe (if known)               | No        |
-| SubscriberID      | The unique identifier for the subscriber to unsubscribe (if known)          | No        |
-| CampaignID        | The unique identifier for the campaign associated with the unsubscription   | No        |
-| AutoResponderID   | The unique identifier for the autoresponder associated with the unsubscription | No      |
-| EmailID           | The unique identifier for the email associated with the unsubscription      | No        |
-| Channel           | The channel through which the unsubscription is made                        | No        |
-| Preview           | A flag to indicate if the unsubscription should be simulated (1) or not (0) | No        |
-| AddToGlobalSuppression | A flag to indicate if the email should be added to the global suppression list | No    |
-| RulesJSON         | A JSON string containing the rules for bulk unsubscription                  | No        |
-| RulesOperator     | The operator to be used with the rules ('and' or 'or')                      | No        |
+| Parameter              | Description                                                                    | Required? |
+|------------------------|--------------------------------------------------------------------------------|-----------|
+| SessionID              | The ID of the user's current session                                           | Yes       |
+| APIKey                 | The user's API key. Either `SessionID` or `APIKey` must be provided.           | Yes       |
+| Command                | Subscriber.Unsubscribe                                                         | Yes       |
+| ListID                 | The unique identifier for the mailing list                                     | Yes       |
+| IPAddress              | The IP address of the user making the request                                  | Yes       |
+| EmailAddress           | The email address of the subscriber to unsubscribe (if known)                  | No        |
+| SubscriberID           | The unique identifier for the subscriber to unsubscribe (if known)             | No        |
+| CampaignID             | The unique identifier for the campaign associated with the unsubscription      | No        |
+| AutoResponderID        | The unique identifier for the autoresponder associated with the unsubscription | No        |
+| EmailID                | The unique identifier for the email associated with the unsubscription         | No        |
+| Channel                | The channel through which the unsubscription is made                           | No        |
+| Preview                | A flag to indicate if the unsubscription should be simulated (1) or not (0)    | No        |
+| AddToGlobalSuppression | A flag to indicate if the email should be added to the global suppression list | No        |
+| RulesJSON              | A JSON string containing the rules for bulk unsubscription                     | No        |
+| RulesOperator          | The operator to be used with the rules ('and' or 'or')                         | No        |
 
 ::: code-group
 
@@ -83,13 +83,13 @@ associated with them.
 
 **Request Body Parameters:**
 
-| Parameter       | Description                                           | Required? |
-|-----------------|-------------------------------------------------------|-----------|
-| SessionID       | The ID of the user's current session                  | Yes       |
-| APIKey          | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command         | Subscriber.Get                                        | Yes       |
-| EmailAddress    | The email address of the subscriber to retrieve       | Yes       |
-| ListID          | The ID of the list the subscriber belongs to          | Yes       |
+| Parameter    | Description                                                          | Required? |
+|--------------|----------------------------------------------------------------------|-----------|
+| SessionID    | The ID of the user's current session                                 | Yes       |
+| APIKey       | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command      | Subscriber.Get                                                       | Yes       |
+| EmailAddress | The email address of the subscriber to retrieve                      | Yes       |
+| ListID       | The ID of the list the subscriber belongs to                         | Yes       |
 
 ::: code-group
 
@@ -106,7 +106,7 @@ curl -X POST https://example.com/api.php \
   "SubscriberInformation": {
     "SubscriberID": "456",
     "EmailAddress": "subscriber@example.com",
-    "Suppressed": false,
+    "Suppressed": false
     // Additional subscriber details...
   },
   "SubscriberTags": [
@@ -115,8 +115,65 @@ curl -X POST https://example.com/api.php \
   "SubscriberSegments": [
     // List of segments the subscriber is part of...
   ],
-  "SubscriberJourneys": [
-    // List of journeys the subscriber is part of...
+  "SubscriberJourneys": {
+    "Completed": [
+      {
+        "JourneyID": "5",
+        "RelUserID": "1",
+        "JourneyName": "Test remove",
+        "Trigger": "Manual",
+        "TriggerParameters": "[]",
+        "Status": "Disabled",
+        "Notes": null,
+        "CreatedAt": "2023-12-18 14:10:12",
+        "UpdatedAt": "2023-12-18 14:10:12"
+      },
+      {
+        "JourneyID": "3",
+        "RelUserID": "1",
+        "JourneyName": "Test Journey Three",
+        "Trigger": "Manual",
+        "TriggerParameters": "[]",
+        "Status": "Enabled",
+        "Notes": "This is a note for a journey",
+        "CreatedAt": "2023-12-18 09:54:38",
+        "UpdatedAt": "2023-12-18 12:46:41"
+      }
+    ]
+  },
+  "SubscriberActivity": [
+    {
+      "ActivityDate": "2024-04-10 15:05:21",
+      "UserID": "1",
+      "ListID": "1",
+      "SubscriberID": "16",
+      "ActivityType": "journey start",
+      "Parameters": {
+        "journey_id": "3",
+        "action_id": "55"
+      }
+    },
+    {
+      "ActivityDate": "2024-04-10 15:05:21",
+      "UserID": "1",
+      "ListID": "1",
+      "SubscriberID": "16",
+      "ActivityType": "tagged",
+      "Parameters": {
+        "TagID": "2"
+      }
+    },
+    {
+      "ActivityDate": "2024-04-10 15:05:21",
+      "UserID": "1",
+      "ListID": "1",
+      "SubscriberID": "16",
+      "ActivityType": "journey end",
+      "Parameters": {
+        "journey_id": "3",
+        "action_id": "55"
+      }
+    }
   ],
   "SubscriberWebsiteEvents": [
     {
@@ -432,7 +489,9 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [1]
+  "ErrorCode": [
+    1
+  ]
 }
 ```
 
@@ -446,7 +505,105 @@ curl -X POST https://example.com/api.php \
 :::
 
 ::: warning NOTICE
-Available `SubscriptionStatus` values are `Opt-In Pending`, `Subscribed`, `Opt-Out Pending`, `Unsubscribed`
+
+- Available `SubscriptionStatus` values are `Opt-In Pending`, `Subscribed`, `Opt-Out Pending`, `Unsubscribed`
+- `SubscriberActivity` parameter returns subscriber activities for the last 10 days only. For a detailed subscriber
+  activity list, use [`Subscriber.Get.Activity`](#retrieve-subscriber-activities) API end-point.
+  :::
+
+## Retrieve Subscriber Activities
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This endpoint returns the list of subscriber activities.
+
+**Request Body Parameters:**
+
+| Parameter         | Description                                                                                                                                                                                                                                                                                                                                           | Required? |
+|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
+| SessionID         | The ID of the user's current session                                                                                                                                                                                                                                                                                                                  | Yes       |
+| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                                                                                                                                                                                                  | Yes       |
+| Command           | `Subscriber.Get.Activity`                                                                                                                                                                                                                                                                                                                             | Yes       |
+| SubscriberID      | The unique identifier of the subscriber                                                                                                                                                                                                                                                                                                               | Yes       |
+| SubscriberListID  | The unique identifier of the subscriber list                                                                                                                                                                                                                                                                                                          | Yes       |
+| FilterJson        | The filtering criteria in JSON syntax. Ex: `["tagged", "subscription"]`. Criteria can be combination of `subscription`, `unsubscription`, `email campaign delivery`, `transactional email delivery`, `auto responder delivery`, `email open`, `email link click`, `hard bounce`, `journey start`, `journey end`, `journey exit`, `tagged`, `untagged` | Yes       |
+| Operator          | Currently only `OR` operator is available. This filters the subscriber activity history based on crtieria set in `FilterJson` with "any of" filtering.                                                                                                                                                                                                | Yes       |
+| RecordsPerRequest | Number of records to return in each API request.                                                                                                                                                                                                                                                                                                      | Yes       |
+| RecordsFrom       | Pagination start record number.                                                                                                                                                                                                                                                                                                                       | Yes       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "SessionID=exampleSessionId" \
+  -d "Command=Subscriber.Get.Activity" \
+  -d "SubscriberID=3" \
+  -d "ListID=1" \
+  -d "filterjson=[\"tagged\",\"subscription\"]" \
+  -d "operator=OR" \
+  -d "RecordsPerRequest=3" \
+  -d "RecordsFrom=0"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "SubscriberActivity": [
+    {
+      "ActivityDate": "2024-04-09 13:39:14",
+      "UserID": "1",
+      "ListID": "1",
+      "SubscriberID": "3",
+      "ActivityType": "subscription",
+      "Parameters": []
+    },
+    {
+      "ActivityDate": "2024-04-09 12:46:08",
+      "UserID": "1",
+      "ListID": "1",
+      "SubscriberID": "3",
+      "ActivityType": "subscription",
+      "Parameters": []
+    },
+    {
+      "ActivityDate": "2024-04-09 08:23:27",
+      "UserID": "1",
+      "ListID": "1",
+      "SubscriberID": "3",
+      "ActivityType": "tagged",
+      "Parameters": {
+        "TagID": "2"
+      }
+    }
+  ],
+  "TotalSubscriberActivity": "17"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [
+    2
+  ],
+  "ErrorText": [
+    "Missing subscriber id"
+  ]
+}
+```
+
+```txt [Error Codes]
+1: Missing subscriber list id parameter
+2: Missing subscriber id parameter
+3: Invalid or missing FilterJson parameter
+4: Invalid FilterJson criteria
+5: Invalid criteria operator
+6: Invalid subscriber list
+7: Invalid subscriber
+```
+
 :::
 
 ## Delete Subscribers
@@ -458,16 +615,16 @@ JSON rule set to define a group of subscribers to be deleted.
 
 **Request Body Parameters:**
 
-| Parameter         | Description                                                                 | Required? |
-|-------------------|-----------------------------------------------------------------------------|-----------|
-| SessionID         | The ID of the user's current session                                        | Yes       |
-| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
-| Command           | Subscribers.Delete                                                          | Yes       |
-| SubscriberListID  | The unique identifier of the subscriber list                                | Yes       |
-| Subscribers       | A comma-separated list of subscriber IDs to delete                          | No        |
-| RulesJSON         | A JSON string defining the rules to select subscribers to delete            | Conditional |
-| RulesOperator     | Operator to be used with rules ('and'/'or'). Defaults to 'or' if not valid. | No        |
-| Suppressed        | A boolean to indicate if subscribers should be removed from suppression list| No        |
+| Parameter        | Description                                                                  | Required?   |
+|------------------|------------------------------------------------------------------------------|-------------|
+| SessionID        | The ID of the user's current session                                         | Yes         |
+| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided.         | Yes         |
+| Command          | `Subscribers.Delete`                                                         | Yes         |
+| SubscriberListID | The unique identifier of the subscriber list                                 | Yes         |
+| Subscribers      | A comma-separated list of subscriber IDs to delete                           | No          |
+| RulesJSON        | A JSON string defining the rules to select subscribers to delete             | Conditional |
+| RulesOperator    | Operator to be used with rules ('and'/'or'). Defaults to 'or' if not valid.  | No          |
+| Suppressed       | A boolean to indicate if subscribers should be removed from suppression list | No          |
 
 ::: code-group
 
@@ -492,8 +649,12 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [2],
-  "ErrorText": ["Missing subscriber list id"]
+  "ErrorCode": [
+    2
+  ],
+  "ErrorText": [
+    "Missing subscriber list id"
+  ]
 }
 ```
 
@@ -526,19 +687,19 @@ This endpoint retrieves subscriber information based on various segments and cri
 
 **Request Body Parameters:**
 
-| Parameter           | Description                                                                 | Required? |
-|---------------------|-----------------------------------------------------------------------------|-----------|
-| SessionID           | The ID of the user's current session                                        | Yes       |
-| APIKey              | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
-| Command             | Subscribers.Get                                                             | Yes       |
-| SubscriberListID    | The unique identifier for the subscriber list                               | Yes       |
-| SubscriberSegment   | The segment of subscribers to retrieve (e.g., 'Active', 'Unsubscribed')     | Yes       |
-| RecordsPerRequest   | The number of records to return per request                                 | No        |
-| RecordsFrom         | The starting point from which to return records                             | No        |
-| SearchField         | The field to search within (e.g., 'Email', 'Name')                          | No        |
-| SearchKeyword       | The keyword to search for within the specified field                        | No        |
-| OrderField          | The field to order the results by (e.g., 'DateAdded', 'Email')              | No        |
-| OrderType           | The type of ordering to apply (e.g., 'ASC', 'DESC')                         | No        |
+| Parameter         | Description                                                             | Required? |
+|-------------------|-------------------------------------------------------------------------|-----------|
+| SessionID         | The ID of the user's current session                                    | Yes       |
+| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided.    | Yes       |
+| Command           | Subscribers.Get                                                         | Yes       |
+| SubscriberListID  | The unique identifier for the subscriber list                           | Yes       |
+| SubscriberSegment | The segment of subscribers to retrieve (e.g., 'Active', 'Unsubscribed') | Yes       |
+| RecordsPerRequest | The number of records to return per request                             | No        |
+| RecordsFrom       | The starting point from which to return records                         | No        |
+| SearchField       | The field to search within (e.g., 'Email', 'Name')                      | No        |
+| SearchKeyword     | The keyword to search for within the specified field                    | No        |
+| OrderField        | The field to order the results by (e.g., 'DateAdded', 'Email')          | No        |
+| OrderType         | The type of ordering to apply (e.g., 'ASC', 'DESC')                     | No        |
 
 ::: code-group
 
@@ -561,7 +722,7 @@ curl -X POST https://example.com/api.php \
   "Subscribers": [
     {
       "SubscriberID": "1",
-      "EmailAddress": "subscriber@example.com",
+      "EmailAddress": "subscriber@example.com"
       // More subscriber fields...
     }
     // More subscribers...
@@ -594,20 +755,20 @@ This endpoint retrieves a list of subscribers based on various criteria such as 
 
 **Request Body Parameters:**
 
-| Parameter            | Description                                                                 | Required? |
-|----------------------|-----------------------------------------------------------------------------|-----------|
-| SessionID            | The ID of the user's current session                                        | Yes       |
-| APIKey               | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
-| Command              | `Subscribers.Search`                                                        | Yes       |
-| ListID               | The unique identifier for the subscriber list                               | Yes       |
-| Operator             | The operator to apply on the search (e.g., AND, OR)                         | Yes       |
-| RecordsPerRequest    | The number of records to return per request                                 | No        |
-| RecordsFrom          | The starting record number from which to return results                     | No        |
-| OrderField           | The field by which to order the results                                     | No        |
-| OrderType            | The order type (e.g., ASC, DESC)                                            | No        |
-| Rules                | The search rules in JSON format                                             | No        |
-| RulesJson            | The search rules in a JSON string                                           | No        |
-| DebugQueryBuilder    | A flag to return the prepared SQL query for debugging purposes              | No        |
+| Parameter         | Description                                                          | Required? |
+|-------------------|----------------------------------------------------------------------|-----------|
+| SessionID         | The ID of the user's current session                                 | Yes       |
+| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command           | `Subscribers.Search`                                                 | Yes       |
+| ListID            | The unique identifier for the subscriber list                        | Yes       |
+| Operator          | The operator to apply on the search (e.g., AND, OR)                  | Yes       |
+| RecordsPerRequest | The number of records to return per request                          | No        |
+| RecordsFrom       | The starting record number from which to return results              | No        |
+| OrderField        | The field by which to order the results                              | No        |
+| OrderType         | The order type (e.g., ASC, DESC)                                     | No        |
+| Rules             | The search rules in JSON format                                      | No        |
+| RulesJson         | The search rules in a JSON string                                    | No        |
+| DebugQueryBuilder | A flag to return the prepared SQL query for debugging purposes       | No        |
 
 ::: code-group
 
@@ -633,7 +794,7 @@ curl -X POST https://example.com/api.php \
     {
       "SubscriberID": 1,
       "EmailAddress": "example@example.com",
-      "Suppressed": false,
+      "Suppressed": false
       // More subscriber fields...
     }
     // More subscribers...
@@ -667,16 +828,16 @@ exporting in different formats.
 
 **Request Body Parameters:**
 
-| Parameter       | Description                                                                 | Required? |
-|-----------------|-----------------------------------------------------------------------------|-----------|
-| SessionID       | The ID of the user's current session                                        | Yes       |
-| APIKey          | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
-| ListID          | The unique identifier for the list to export from                           | Yes       |
-| RulesJSON       | JSON string containing the rules for filtering subscribers                  | Yes       |
-| RulesOperator   | Operator to apply between rules ("and" or "or")                             | Yes       |
-| ExportFormat    | The format for the export file ("csv" or "json")                            | Yes       |
-| FieldsToExport  | Array of field names to include in the export                               | Yes       |
-| Target          | The target subscribers to export ("", "Active", "Suppressed", etc. or ID)   | No        |
+| Parameter      | Description                                                               | Required? |
+|----------------|---------------------------------------------------------------------------|-----------|
+| SessionID      | The ID of the user's current session                                      | Yes       |
+| APIKey         | The user's API key. Either `SessionID` or `APIKey` must be provided.      | Yes       |
+| ListID         | The unique identifier for the list to export from                         | Yes       |
+| RulesJSON      | JSON string containing the rules for filtering subscribers                | Yes       |
+| RulesOperator  | Operator to apply between rules ("and" or "or")                           | Yes       |
+| ExportFormat   | The format for the export file ("csv" or "json")                          | Yes       |
+| FieldsToExport | Array of field names to include in the export                             | Yes       |
+| Target         | The target subscribers to export ("", "Active", "Suppressed", etc. or ID) | No        |
 
 ::: code-group
 
@@ -698,23 +859,23 @@ curl -X POST 'https://example.com/api/v1/subscriber.export' \
 
 ```json [Success Response]
 {
-    "ExportID": 456
+  "ExportID": 456
 }
 ```
 
 ```json [Error Response]
 {
-    "Errors": [
-        {
-            "Code": 1,
-            "Message": "Missing ListID parameter"
-        },
-        {
-            "Code": 2,
-            "Message": "Missing RulesJSON parameter"
-        }
-        // Additional errors based on the validation
-    ]
+  "Errors": [
+    {
+      "Code": 1,
+      "Message": "Missing ListID parameter"
+    },
+    {
+      "Code": 2,
+      "Message": "Missing RulesJSON parameter"
+    }
+    // Additional errors based on the validation
+  ]
 }
 ```
 
@@ -744,13 +905,13 @@ export job or download the exported data if the job is completed.
 
 **Request Body Parameters:**
 
-| Parameter  | Description                                              | Required? |
-|------------|----------------------------------------------------------|-----------|
-| SessionID  | The ID of the user's current session                     | Yes       |
-| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
-| ListID     | The unique identifier for the list to export from        | Yes       |
-| ExportID   | The unique identifier for a specific export job          | No        |
-| Download   | A flag to indicate if the exported data should be downloaded (set to true to download) | No |
+| Parameter | Description                                                                            | Required? |
+|-----------|----------------------------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                                   | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.                   | Yes       |
+| ListID    | The unique identifier for the list to export from                                      | Yes       |
+| ExportID  | The unique identifier for a specific export job                                        | No        |
+| Download  | A flag to indicate if the exported data should be downloaded (set to true to download) | No        |
 
 ::: code-group
 
@@ -769,44 +930,46 @@ curl -X GET 'https://api.example.com/api/v1/subscriber.export' \
 
 ```json [Success Response]
 {
-    "ExportJob": {
-        "ExportID": "456",
-        "Status": "Completed",
-        "SubmittedAt": "2023-01-01T00:00:00Z",
-        "ExportOptions": {...},
-        "DownloadSize": 1024
-    }
+  "ExportJob": {
+    "ExportID": "456",
+    "Status": "Completed",
+    "SubmittedAt": "2023-01-01T00:00:00Z",
+    "ExportOptions": {
+      ...
+    },
+    "DownloadSize": 1024
+  }
 }
 ```
 
 ```json [Error Response]
 {
-    "Errors": [
-        {
-            "Code": 1,
-            "Message": "Missing ListID parameter"
-        },
-        {
-            "Code": 2,
-            "Message": "Invalid ListID parameter"
-        },
-        {
-            "Code": 3,
-            "Message": "Invalid ExportID parameter"
-        },
-        {
-            "Code": 4,
-            "Message": "List not found"
-        },
-        {
-            "Code": 5,
-            "Message": "Invalid ExportID parameter"
-        },
-        {
-            "Code": 6,
-            "Message": "Export job not found"
-        }
-    ]
+  "Errors": [
+    {
+      "Code": 1,
+      "Message": "Missing ListID parameter"
+    },
+    {
+      "Code": 2,
+      "Message": "Invalid ListID parameter"
+    },
+    {
+      "Code": 3,
+      "Message": "Invalid ExportID parameter"
+    },
+    {
+      "Code": 4,
+      "Message": "List not found"
+    },
+    {
+      "Code": 5,
+      "Message": "Invalid ExportID parameter"
+    },
+    {
+      "Code": 6,
+      "Message": "Export job not found"
+    }
+  ]
 }
 ```
 
@@ -833,33 +996,35 @@ curl -X GET 'https://api.example.com/api/v1/subscriber.export' \
 
 <Badge type="info" text="POST" /> `/api/v1/subscriber.import`
 
-This API end-point allows for importing subscribers into a specified list. It supports importing from CSV data, Mailchimp, or ActiveCampaign. The import process can be customized with various options such as updating duplicates, triggering actions, and adding to suppression lists.
+This API end-point allows for importing subscribers into a specified list. It supports importing from CSV data,
+Mailchimp, or ActiveCampaign. The import process can be customized with various options such as updating duplicates,
+triggering actions, and adding to suppression lists.
 
 **Request Body Parameters:**
 
-| Parameter | Description | Required? |
-|-------------|---------------|--------------|
-| SessionID | The ID of the user's current session | Yes |
-| APIKey | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
-| ListID | The unique identifier for the list to import subscribers into | Yes |
-| AddToGlobalSuppressionList | Whether to add the imported subscribers to the global suppression list | Yes |
-| AddToSuppressionList | Whether to add the imported subscribers to the list's suppression list | Yes |
-| UpdateDuplicates | Whether to update existing subscribers if duplicates are found | Yes |
-| TriggerActions | Whether to trigger actions for the imported subscribers | Yes |
-| Tags | An array of tags to assign to the imported subscribers | Yes |
-| ImportFrom.CSV.URL | The URL to fetch CSV data from (optional if CSV data is provided) | No |
-| ImportFrom.CSV.Data | The CSV data to import (optional if a URL is provided) | No |
-| ImportFrom.CSV.FieldTerminator | The character used to terminate fields in the CSV data | No |
-| ImportFrom.CSV.FieldEncloser | The character used to enclose fields in the CSV data | No |
-| ImportFrom.CSV.EscapedBy | The character used to escape special characters in the CSV data | No |
-| ImportFrom.CSV.MappedFields | An array mapping CSV fields to subscriber attributes | Yes |
-| ImportFrom.Mailchimp.APIKey | The Mailchimp API key for importing subscribers | No |
-| ImportFrom.Mailchimp.Server | The Mailchimp server prefix for importing subscribers | No |
-| ImportFrom.Mailchimp.MailchimpListID | The Mailchimp list ID to import subscribers from | No |
-| ImportFrom.ActiveCampaign.APIKey | The ActiveCampaign API key for importing subscribers | No |
-| ImportFrom.ActiveCampaign.AccountName | The ActiveCampaign account name for importing subscribers | No |
-| ImportFrom.ActiveCampaign.ActiveCampaignListID | The ActiveCampaign list ID to import subscribers from | No |
-| ImportStatusUpdateWebhookURL | A webhook URL to receive updates about the import status | No |
+| Parameter                                      | Description                                                            | Required? |
+|------------------------------------------------|------------------------------------------------------------------------|-----------|
+| SessionID                                      | The ID of the user's current session                                   | Yes       |
+| APIKey                                         | The user's API key. Either `SessionID` or `APIKey` must be provided.   | Yes       |
+| ListID                                         | The unique identifier for the list to import subscribers into          | Yes       |
+| AddToGlobalSuppressionList                     | Whether to add the imported subscribers to the global suppression list | Yes       |
+| AddToSuppressionList                           | Whether to add the imported subscribers to the list's suppression list | Yes       |
+| UpdateDuplicates                               | Whether to update existing subscribers if duplicates are found         | Yes       |
+| TriggerActions                                 | Whether to trigger actions for the imported subscribers                | Yes       |
+| Tags                                           | An array of tags to assign to the imported subscribers                 | Yes       |
+| ImportFrom.CSV.URL                             | The URL to fetch CSV data from (optional if CSV data is provided)      | No        |
+| ImportFrom.CSV.Data                            | The CSV data to import (optional if a URL is provided)                 | No        |
+| ImportFrom.CSV.FieldTerminator                 | The character used to terminate fields in the CSV data                 | No        |
+| ImportFrom.CSV.FieldEncloser                   | The character used to enclose fields in the CSV data                   | No        |
+| ImportFrom.CSV.EscapedBy                       | The character used to escape special characters in the CSV data        | No        |
+| ImportFrom.CSV.MappedFields                    | An array mapping CSV fields to subscriber attributes                   | Yes       |
+| ImportFrom.Mailchimp.APIKey                    | The Mailchimp API key for importing subscribers                        | No        |
+| ImportFrom.Mailchimp.Server                    | The Mailchimp server prefix for importing subscribers                  | No        |
+| ImportFrom.Mailchimp.MailchimpListID           | The Mailchimp list ID to import subscribers from                       | No        |
+| ImportFrom.ActiveCampaign.APIKey               | The ActiveCampaign API key for importing subscribers                   | No        |
+| ImportFrom.ActiveCampaign.AccountName          | The ActiveCampaign account name for importing subscribers              | No        |
+| ImportFrom.ActiveCampaign.ActiveCampaignListID | The ActiveCampaign list ID to import subscribers from                  | No        |
+| ImportStatusUpdateWebhookURL                   | A webhook URL to receive updates about the import status               | No        |
 
 ::: code-group
 
@@ -941,22 +1106,25 @@ curl -X POST "https://example.com/api/v1/subscriber.import" \
 27: ActiveCampaign Error: {error status} - {error title}: {error detail}
 28: ActiveCampaign Error: {error status} - {error title}: {error detail}
 ```
+
 :::
 
 ## Retrieve Import Job Details
 
 <Badge type="info" text="GET" /> `/api/v1/subscriber.import`
 
-This API end-point is used to retrieve details of a specific import job for a subscriber list. It requires an admin-level authorization and provides comprehensive information about the import process, including status and statistics.
+This API end-point is used to retrieve details of a specific import job for a subscriber list. It requires an
+admin-level authorization and provides comprehensive information about the import process, including status and
+statistics.
 
 **Request Body Parameters:**
 
-| Parameter   | Description                                           | Required? |
-|-------------|-------------------------------------------------------|-----------|
-| SessionID   | The ID of the user's current session                  | Yes       |
-| APIKey      | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| ListID      | The unique identifier for the subscriber list         | Yes       |
-| ImportID    | The unique identifier for the import job              | Yes       |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| ListID    | The unique identifier for the subscriber list                        | Yes       |
+| ImportID  | The unique identifier for the import job                             | Yes       |
 
 ::: code-group
 
@@ -1005,13 +1173,15 @@ curl -X GET "https://example.com/api/v1/subscriber.import" \
 6: Invalid ImportID parameter
 7: Import job not found
 ```
+
 :::
 
 ## Create a New Subscriber
 
 <Badge type="info" text="POST" /> `api/v1/subscriber.create`
 
-This endpoint is used to create a new subscriber in the system. It requires an admin API key for authorization and accepts various subscriber details.
+This endpoint is used to create a new subscriber in the system. It requires an admin API key for authorization and
+accepts various subscriber details.
 
 **Request Body Parameters:**
 
@@ -1065,7 +1235,7 @@ curl -X POST 'https://example.com/api/v1/subscriber.create' \
   "SubscriberInformation": {
     "SubscriberID": "subscriber_id_here",
     "EmailAddress": "email@example.com",
-    "Status": "Subscribed",
+    "Status": "Subscribed"
     // Additional subscriber details...
   },
   "SubscriberTags": [],
@@ -1081,7 +1251,7 @@ curl -X POST 'https://example.com/api/v1/subscriber.create' \
     {
       "Code": 2,
       "Message": "Missing EmailAddress parameter"
-    },
+    }
     // Additional errors...
   ]
 }
@@ -1112,20 +1282,22 @@ curl -X POST 'https://example.com/api/v1/subscriber.create' \
 22: Invalid user information
 23: Invalid list information
 ```
+
 :::
 
 **HTTP Response and Error Codes:**
 
-| HTTP Code | Error Code | Description                                  |
-|-----------|------------|----------------------------------------------|
-| 200       | 0          | Success                                      |
-| 422       | 1-23       | Various errors related to input validation   |
+| HTTP Code | Error Code | Description                                |
+|-----------|------------|--------------------------------------------|
+| 200       | 0          | Success                                    |
+| 422       | 1-23       | Various errors related to input validation |
 
 ## Update Subscriber Information
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to update the information of a subscriber in a mailing list. It allows for updating various subscriber details, including email address, subscription status, bounce type, and custom fields.
+This endpoint is used to update the information of a subscriber in a mailing list. It allows for updating various
+subscriber details, including email address, subscription status, bounce type, and custom fields.
 
 **Request Body Parameters:**
 
@@ -1133,7 +1305,7 @@ This endpoint is used to update the information of a subscriber in a mailing lis
 |-------------------------------------------|-----------------------------------------------------------------------------------------------------------|-----------|
 | SessionID                                 | The ID of the user's current session                                                                      | Yes       |
 | APIKey                                    | The user's API key. Either `SessionID` or `APIKey` must be provided.                                      | Yes       |
-| Command                                   | The API command to execute: `Subscriber.Update`                                                            | Yes       |
+| Command                                   | The API command to execute: `Subscriber.Update`                                                           | Yes       |
 | SubscriberID                              | The unique identifier of the subscriber                                                                   | Yes       |
 | SubscriberListID                          | The unique identifier of the subscriber list                                                              | Yes       |
 | EmailAddress                              | The new email address of the subscriber (if applicable)                                                   | No        |
@@ -1189,29 +1361,31 @@ curl --location 'https://example.com/api.php' \
 9: Custom field value is not unique.
 10: Custom field value failed validation.
 ```
+
 :::
 
 **HTTP Response and Error Codes:**
 
-| HTTP Code | Error Code | Description                                      |
-|-----------|------------|--------------------------------------------------|
-| 200       | 0          | Success                                          |
-| 400       | 1          | Missing required 'subscriberid' parameter        |
-| 400       | 2          | Missing required 'subscriberlistid' parameter    |
-| 400       | 3          | Email address is empty                           |
-| 400       | 4          | Email address is invalid                         |
-| 400       | 5          | Subscriber list does not exist or not owned      |
-| 400       | 6          | Subscriber does not exist                        |
-| 400       | 7          | Email address is a duplicate                     |
-| 400       | 8          | Required custom field is missing                 |
-| 400       | 9          | Custom field value is not unique                 |
-| 400       | 10         | Custom field value failed validation             |
+| HTTP Code | Error Code | Description                                   |
+|-----------|------------|-----------------------------------------------|
+| 200       | 0          | Success                                       |
+| 400       | 1          | Missing required 'subscriberid' parameter     |
+| 400       | 2          | Missing required 'subscriberlistid' parameter |
+| 400       | 3          | Email address is empty                        |
+| 400       | 4          | Email address is invalid                      |
+| 400       | 5          | Subscriber list does not exist or not owned   |
+| 400       | 6          | Subscriber does not exist                     |
+| 400       | 7          | Email address is a duplicate                  |
+| 400       | 8          | Required custom field is missing              |
+| 400       | 9          | Custom field value is not unique              |
+| 400       | 10         | Custom field value failed validation          |
 
 ## Search Subscribers
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint retrieves a list of subscribers based on the provided criteria, such as list ID and operator. It supports pagination and ordering of the subscriber list.
+This endpoint retrieves a list of subscribers based on the provided criteria, such as list ID and operator. It supports
+pagination and ordering of the subscriber list.
 
 **Request Body Parameters:**
 
@@ -1259,7 +1433,10 @@ curl --location 'https://example/api.php' \
     {
       "EmailAddress": "example@example.com",
       "SubscriberID": "123",
-      "SubscriberTags": ["Tag1", "Tag2"]
+      "SubscriberTags": [
+        "Tag1",
+        "Tag2"
+      ]
     }
   ],
   "TotalSubscribers": 100
@@ -1279,13 +1456,14 @@ curl --location 'https://example/api.php' \
 2: Operator is required.
 3: Unauthorized access to the list.
 ```
+
 :::
 
 **HTTP Response and Error Codes:**
 
-| HTTP Code | Error Code | Description                        |
-|-----------|------------|------------------------------------|
-| 200       | 0          | Success                            |
-| 400       | 1          | List ID is required.               |
-| 400       | 2          | Operator is required.              |
-| 403       | 3          | Unauthorized access to the list.   |
+| HTTP Code | Error Code | Description                      |
+|-----------|------------|----------------------------------|
+| 200       | 0          | Success                          |
+| 400       | 1          | List ID is required.             |
+| 400       | 2          | Operator is required.            |
+| 403       | 3          | Unauthorized access to the list. |

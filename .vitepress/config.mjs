@@ -53,10 +53,16 @@ export default defineConfig({
         nav: [
             {text: 'Homepage', link: '/'},
             {
+                text: "v5.5.0",
+                items: [
+                    {text: 'Changelog', link: 'https://help.octeth.com/whats-new', target: '_blank', rel: 'dofollow'},
+                ]
+            },
+            {
                 text: "Resources",
                 items: [
-                    {text: 'Client Area', link: 'https://my.octeth.com/', target: '_blank', rel: 'nofollow'},
-                    {text: 'Help Portal', link: 'https://help.octeth.com/', target: '_blank', rel: 'nofollow'},
+                    {text: 'Client Area', link: 'https://my.octeth.com/', target: '_blank', rel: 'dofollow'},
+                    {text: 'Help Portal', link: 'https://help.octeth.com/', target: '_blank', rel: 'dofollow'},
                     {text: 'Contact Us', link: 'mailto:support@octeth.com'}
                 ]
             }
