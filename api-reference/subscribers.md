@@ -606,6 +606,130 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+### Event Response Examples
+
+`tagged`:
+
+```json
+{
+  "ActivityDate": "2024-04-10 15:05:21",
+  "UserID": "1",
+  "ListID": "1",
+  "SubscriberID": "16",
+  "ActivityType": "tagged",
+  {
+    "TagID": "2",
+    "TagName": "TEST-TAG-TWO",
+    "RulesJSON": "\"[[{\\\"type\\\":\\\"fields\\\",\\\"field_id\\\":\\\"SubscriptionStatus\\\",\\\"operator\\\":\\\"contains\\\",\\\"value\\\":\\\"Subscribed\\\"}],[{\\\"type\\\":\\\"suppressions\\\",\\\"operator\\\":\\\"not exist\\\"}]]\"",
+    "RulesOperator": "or"
+  }
+}
+```
+
+`untagged`:
+
+```json
+{
+  "ActivityDate": "2024-04-10 15:05:21",
+  "UserID": "1",
+  "ListID": "1",
+  "SubscriberID": "16",
+  "ActivityType": "untagged",
+  "Parameters": {
+    "TagID": "2",
+    "TagName": "TEST-TAG-TWO"
+  }
+}
+```
+
+`hard bounce`:
+
+```json
+{
+  "ActivityDate": "2024-04-10 15:05:21",
+  "UserID": "1",
+  "ListID": "1",
+  "SubscriberID": "16",
+  "ActivityType": "hard bounce",
+  "Parameters": {
+    "campaignid": "2"
+  }
+}
+```
+
+`email link click`:
+
+```json
+{
+  "ActivityDate": "2024-04-10 15:05:21",
+  "UserID": "1",
+  "ListID": "1",
+  "SubscriberID": "16",
+  "ActivityType": "email link click",
+  "Parameters": {
+    "campaign_id": "2",
+    "autoresponder_id": "0",
+    "email_id": "2",
+    "link_url": "index.html",
+    "link_title": "index"
+  }
+}
+```
+
+`email open`:
+
+```json
+{
+  "ActivityDate": "2024-04-10 15:05:21",
+  "UserID": "1",
+  "ListID": "1",
+  "SubscriberID": "16",
+  "ActivityType": "email open",
+  "Parameters": {
+    "campaign_id": "2",
+    "autoresponder_id": "0",
+    "email_id": "2",
+    "ip_address": "192.168.0.8"
+  }
+}
+```
+
+`transactional email delivery`:
+
+```json
+{
+  "ActivityDate": "2024-04-10 15:05:21",
+  "UserID": "1",
+  "ListID": "1",
+  "SubscriberID": "16",
+  "ActivityType": "transactional email delivery",
+  "Parameters": {
+    "QueueID": "2",
+    "UserID": "1",
+    "DomainID": "2",
+    "APIKeyID": "",
+    "SMTPID": ""
+    // and other parameters
+  }
+}
+```
+
+`journey exit`:
+
+```json
+{
+  "ActivityDate": "2024-04-10 15:05:21",
+  "UserID": "1",
+  "ListID": "1",
+  "SubscriberID": "16",
+  "ActivityType": "journey exit",
+  "Parameters": {
+    "journey_id": "3",
+    "action_id": "57"
+  }
+}
+```
+
 ## Delete Subscribers
 
 <Badge type="info" text="POST" /> `/api.php`
