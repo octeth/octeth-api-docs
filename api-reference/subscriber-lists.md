@@ -8,7 +8,8 @@ layout: doc
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint retrieves detailed information about a specific list, including segments, custom fields, subscriber tags, and autoresponders associated with the list.
+This endpoint retrieves detailed information about a specific list, including segments, custom fields, subscriber tags,
+and autoresponders associated with the list.
 
 **Request Body Parameters:**
 
@@ -68,13 +69,15 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 1: Required field 'ListID' is missing.
 ```
+
 :::
 
 ## Create a New Subscriber List
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to create a new subscriber list for the user. The list will be associated with the user's account based on their `UserID`.
+This endpoint is used to create a new subscriber list for the user. The list will be associated with the user's account
+based on their `UserID`.
 
 **Request Body Parameters:**
 
@@ -100,18 +103,20 @@ curl -X POST https://example.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "ErrorText": "",
-    "ListID": 12345
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ListID": 12345
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": [1],
-    "ErrorText": "Required field missing: subscriberlistname"
+  "Success": false,
+  "ErrorCode": [
+    1
+  ],
+  "ErrorText": "Required field missing: subscriberlistname"
 }
 ```
 
@@ -120,6 +125,7 @@ curl -X POST https://example.com/api.php \
 2: Duplicate list name (Note: This check is currently disabled)
 3: User has exceeded the maximum number of subscriber lists
 ```
+
 :::
 
 ## Retrieve Subscriber List
@@ -175,6 +181,7 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 1: The 'ListID' parameter is missing or invalid.
 ```
+
 :::
 
 ## Update Subscriber List
@@ -246,7 +253,7 @@ curl -X POST https://example.com/api.php \
   "ErrorText": "",
   "List": {
     "ListID": "123",
-    "Name": "Updated List Name",
+    "Name": "Updated List Name"
     // Other updated list details...
   }
 }
@@ -255,8 +262,12 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [1],
-  "ErrorText": ["Subscriber list id is missing"]
+  "ErrorCode": [
+    1
+  ],
+  "ErrorText": [
+    "Subscriber list id is missing"
+  ]
 }
 ```
 
@@ -272,13 +283,15 @@ curl -X POST https://example.com/api.php \
 10: Invalid opt out suppression list option
 11: Nothing to update
 ```
+
 :::
 
 ## Delete Subscriber Lists
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint allows for the deletion of one or more subscriber lists associated with a user's account. The user must provide the list IDs to be deleted.
+This endpoint allows for the deletion of one or more subscriber lists associated with a user's account. The user must
+provide the list IDs to be deleted.
 
 **Request Body Parameters:**
 
@@ -318,13 +331,15 @@ curl -X POST https://yourapi.com/api.php \
 ```txt [Error Codes]
 1: Subscriber list ids are missing
 ```
+
 :::
 
 ## Retrieve Subscriber Lists
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint retrieves a list of subscriber lists for the authenticated user, with options to specify the number of records, starting point, order, and additional statistics.
+This endpoint retrieves a list of subscriber lists for the authenticated user, with options to specify the number of
+records, starting point, order, and additional statistics.
 
 **Request Body Parameters:**
 
@@ -356,35 +371,195 @@ curl -X POST https://yourdomain.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "ErrorText": "",
-    "TotalListCount": 25,
-    "Lists": [
-        {
-            "ListID": "1",
-            "EncryptedSaltedListID": "e4d909c290d0fb1ca068ffaddf22cbd0",
-            "SyncLastDateTime": "2023-01-01 12:00:00"
-        },
-        {
-            "ListID": "2",
-            "EncryptedSaltedListID": "ab56b4d92b40713acc5af89985d4b786",
-            "SyncLastDateTime": "2023-01-02 12:00:00"
-        }
-        // ... more lists
-    ]
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalListCount": 25,
+  "Lists": [
+    {
+      "ListID": "1",
+      "EncryptedSaltedListID": "e4d909c290d0fb1ca068ffaddf22cbd0",
+      "SyncLastDateTime": "2023-01-01 12:00:00"
+    },
+    {
+      "ListID": "2",
+      "EncryptedSaltedListID": "ab56b4d92b40713acc5af89985d4b786",
+      "SyncLastDateTime": "2023-01-02 12:00:00"
+    }
+    // ... more lists
+  ]
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": 101,
-    "ErrorText": "Invalid SessionID or APIKey"
+  "Success": false,
+  "ErrorCode": 101,
+  "ErrorText": "Invalid SessionID or APIKey"
 }
 ```
 
 ```txt [Error Codes]
 101: "Invalid SessionID or APIKey."
 ```
+
+:::
+
+## Website Event Property List
+
+<Badge type="info" text="POST" /> `/api.php`
+
+This API call will return the list of website event properties for a specific subscriber list ID.
+
+**Request Body Parameters:**
+
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | `Website_Events.Properties`                                          | Yes       |
+| ListID    | The subscriber list ID.                                              | Yes       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST http://yourdomain.com/api.php \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "SessionID=your-session-id" \
+  -d "Command=website_events.properties" \
+  -d "ListID=1"
+```
+
+```json [Success Response]
+{
+  "ListID": "1",
+  "Properties": {
+    "conversion": [
+      "$browser",
+      "$browser_language",
+      "$browser_version",
+      "$current_url",
+      "$device",
+      "$device_type",
+      "$dsn",
+      "$host",
+      "$lib",
+      "$lib_version",
+      "$list_id",
+      "$os",
+      "$pageTitle",
+      "$pathname",
+      "$referrer",
+      "$referring_domain",
+      "$screen_height",
+      "$screen_width",
+      "$sent_at",
+      "$server",
+      "$uuid",
+      "$viewport_height",
+      "$viewport_width",
+      "conversionId",
+      "conversionName",
+      "conversionValue"
+    ],
+    "customEvent": [
+      "$browser",
+      "$browser_language",
+      "$browser_version",
+      "$current_url",
+      "$device",
+      "$device_type",
+      "$dsn",
+      "$host",
+      "$lib",
+      "$lib_version",
+      "$list_id",
+      "$os",
+      "$pageTitle",
+      "$pathname",
+      "$referrer",
+      "$referring_domain",
+      "$screen_height",
+      "$screen_width",
+      "$sent_at",
+      "$server",
+      "$uuid",
+      "$viewport_height",
+      "$viewport_width",
+      "eventName",
+      "key1",
+      "key2",
+      "key3"
+    ],
+    "identify": [
+      "$browser",
+      "$browser_language",
+      "$browser_version",
+      "$current_url",
+      "$device",
+      "$device_type",
+      "$dsn",
+      "$host",
+      "$lib",
+      "$lib_version",
+      "$list_id",
+      "$os",
+      "$pageTitle",
+      "$pathname",
+      "$referrer",
+      "$referring_domain",
+      "$screen_height",
+      "$screen_width",
+      "$sent_at",
+      "$server",
+      "$uuid",
+      "$viewport_height",
+      "$viewport_width",
+      "emailAddress",
+      "name"
+    ],
+    "pageView": [
+      "$browser",
+      "$browser_language",
+      "$browser_version",
+      "$current_url",
+      "$device",
+      "$device_type",
+      "$dsn",
+      "$host",
+      "$lib",
+      "$lib_version",
+      "$list_id",
+      "$os",
+      "$pageTitle",
+      "$pathname",
+      "$referrer",
+      "$referring_domain",
+      "$screen_height",
+      "$screen_width",
+      "$sent_at",
+      "$server",
+      "$uuid",
+      "$viewport_height",
+      "$viewport_width",
+      "url"
+    ]
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Missing ListID parameter"
+}
+```
+
+```txt [Error Codes]
+1: Missing ListID parameter (HTTP 422)
+2: Invalid ListID parameter (HTTP 422)
+3: List not found (HTTP 404) 
+```
+
 :::
