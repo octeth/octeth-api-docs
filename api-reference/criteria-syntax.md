@@ -239,7 +239,7 @@ Operations are used to query events based on certain conditions. Here are the av
 {
   "type": "website-events",
   "event": "pageView",
-  "operator": "equal",
+  "operator": "equals",
   "event_parameter": "name",
   "value": "test name"
 }
