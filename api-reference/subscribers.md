@@ -637,7 +637,9 @@ curl -X POST https://example.com/api.php \
   "ActivityType": "untagged",
   "Parameters": {
     "TagID": "2",
-    "TagName": "TEST-TAG-TWO"
+    "TagName": "TEST-TAG-TWO",
+    "RulesJSON": "\"[[{\\\"type\\\":\\\"fields\\\",\\\"field_id\\\":\\\"SubscriptionStatus\\\",\\\"operator\\\":\\\"contains\\\",\\\"value\\\":\\\"Subscribed\\\"}],[{\\\"type\\\":\\\"suppressions\\\",\\\"operator\\\":\\\"not exist\\\"}]]\"",
+    "RulesOperator": "or"
   }
 }
 ```
@@ -652,7 +654,11 @@ curl -X POST https://example.com/api.php \
   "SubscriberID": "16",
   "ActivityType": "hard bounce",
   "Parameters": {
-    "campaignid": "2"
+    "CampaignID": "2",
+    "CampaignName": "abc",
+    "AutoResponderID": "3",
+    "AutoResponderName": "abc",
+    "SoftToHardThreshold": 2
   }
 }
 ```
@@ -668,8 +674,11 @@ curl -X POST https://example.com/api.php \
   "ActivityType": "email link click",
   "Parameters": {
     "campaign_id": "2",
+    "campaign_name": "Abc",
     "autoresponder_id": "0",
+    "autoresponder_name": "Abc",
     "email_id": "2",
+    "email_subject": "Abc",
     "link_url": "index.html",
     "link_title": "index"
   }
@@ -687,8 +696,11 @@ curl -X POST https://example.com/api.php \
   "ActivityType": "email open",
   "Parameters": {
     "campaign_id": "2",
+    "campaign_name": "Abc",
     "autoresponder_id": "0",
+    "autoresponder_name": "Abc",
     "email_id": "2",
+    "email_subject": "Abc",
     "ip_address": "192.168.0.8"
   }
 }
@@ -725,7 +737,27 @@ curl -X POST https://example.com/api.php \
   "ActivityType": "journey exit",
   "Parameters": {
     "journey_id": "3",
-    "action_id": "57"
+    "journey_name": "Abc",
+    "action_id": "57",
+    "action_name": "Abc"
+  }
+}
+```
+
+`journey start`:
+
+```json
+{
+  "ActivityDate": "2024-04-10 15:05:21",
+  "UserID": "1",
+  "ListID": "1",
+  "SubscriberID": "16",
+  "ActivityType": "journey start",
+  "Parameters": {
+    "journey_id": "3",
+    "journey_name": "Abc",
+    "action_id": "57",
+    "action_name": "Abc"
   }
 }
 ```
