@@ -22,14 +22,14 @@ the trigger mode will be set to 'Manual'.
 This API endpoint accepts raw body in JSON format.
 :::
 
-| Parameter       | Description                                                                                                                                                                                                                                      | Required |
-|-----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| SessionID       | The user's session ID.                                                                                                                                                                                                                           | Yes      | 
-| APIKey          | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                                                                                             | Yes      | 
-| Name            | The name of the journey.                                                                                                                                                                                                                         | Yes      | 
-| Trigger         | The trigger type. Options include: `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Manual`, `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, `WebsiteEvent_conversion` | Yes      | 
-| Trigger_ListID  | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (any list) or a specific subscriber list ID.                                                                                                          | No       | 
-| Trigger_EmailID | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (any email) or a specific email ID.                                                                                                           | No       | 
+| Parameter        | Description                                                                                                                                                                                                                                      | Required |
+|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| SessionID        | The user's session ID.                                                                                                                                                                                                                           | Yes      | 
+| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                                                                                             | Yes      | 
+| Name             | The name of the journey.                                                                                                                                                                                                                         | Yes      | 
+| Trigger          | The trigger type. Options include: `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Manual`, `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, `WebsiteEvent_conversion` | Yes      | 
+| Trigger_ListID   | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (any list) or a specific subscriber list ID.                                                                                                          | No       | 
+| Trigger_EmailID  | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (any email) or a specific email ID.                                                                                                           | No       | 
 | Trigger_Criteria | If the trigger is `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, or `WebsiteEvent_conversion`, this parameter should be an array.                                                                                 | No       | 
 
 ::: code-group
@@ -46,7 +46,7 @@ This API endpoint accepts raw body in JSON format.
 ```
 
 ```json [Success Response]
-# 200 OK 
+// 200 OK
 {
   "JourneyID": 5,
   "Journey": {
@@ -64,7 +64,7 @@ This API endpoint accepts raw body in JSON format.
 ```
 
 ```json [Error Response]
-# 422 Unprocessable Entity
+// 422 Unprocessable Entity
 {
   "Errors": [
     {
@@ -103,10 +103,10 @@ This API endpoint accepts a raw JSON body.
 
 **Request Body Parameters:**
 
-| Parameter | Description                                                               | Required |
-|-----------|---------------------------------------------------------------------------|----------|
-| SessionID | The ID of the user's current session.                                     | Yes      | 
-| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.      | Yes      | 
+| Parameter | Description                                                          | Required |
+|-----------|----------------------------------------------------------------------|----------|
+| SessionID | The ID of the user's current session.                                | Yes      | 
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
 
 ::: code-group
 
@@ -118,7 +118,7 @@ This API endpoint accepts a raw JSON body.
 ```
 
 ```json [Success Response]
-# 200 OK
+// 200 OK
 {
   "Journeys": [
     {
@@ -181,14 +181,14 @@ Please note that this API endpoint requires a raw body in JSON format.
 ```
 
 ```json [Success Response]
-# 200 OK
+// 200 OK
 {
-  "JourneyID": "5"
+"JourneyID": "5"
 }
 ```
 
 ```json [Error Response]
-# 404 Not Found
+// 404 Not Found
 {
   "Errors": [
     {
@@ -223,11 +223,11 @@ This API endpoint expects a request body in JSON format.
 
 **Request Body:**
 
-| Parameter | Description                                                               | Required |
-|-----------|---------------------------------------------------------------------------|----------|
-| SessionID | The ID of the user's current session.                                     | Yes      | 
-| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.      | Yes      | 
-| JourneyID | The ID of the journey to be retrieved.                                    | Yes      | 
+| Parameter | Description                                                          | Required |
+|-----------|----------------------------------------------------------------------|----------|
+| SessionID | The ID of the user's current session.                                | Yes      | 
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
+| JourneyID | The ID of the journey to be retrieved.                               | Yes      | 
 
 ::: code-group
 
@@ -240,104 +240,104 @@ This API endpoint expects a request body in JSON format.
 ```
 
 ```json [Success Response]
-# 200 OK
+// 200 OK
 {
-  "Journey": {
-    "JourneyID": "6",
-    "RelUserID": "1",
-    "JourneyName": "Test",
-    "Trigger": "Manual",
-    "TriggerParameters": [],
-    "Status": "Disabled",
-    "Notes": "This is an administrative note for the journey",
-    "CreatedAt": "2023-08-11 18:13:17",
-    "UpdatedAt": "2023-08-11 18:13:17",
-    "JourneyStats": {
-      "ActiveSubscribers": 100,
-      "TotalSubscribers": 200,
-      "AggregatedEmailActionStats": {
-        "SendCount": 0,
-        "OpenCount": 0,
-        "ClickCount": 0,
-        "ConversionCount": 0,
-        "BrowserViewCount": 0,
-        "ForwardCount": 0,
-        "UnsubscribeCount": 0,
-        "BounceCount": 0,
-        "SpamComplaintCount": 0
-      },
-      "AggregatedLast30DaysEmailActions": [
-        {
-          "2024-03-26": [
-            "SendCount": 0,
-            "OpenCount": 0,
-            "ClickCount": 0,
-            "ConversionCount": 0,
-            "BrowserViewCount": 0,
-            "ForwardCount": 0,
-            "UnsubscribeCount": 0,
-            "BounceCount": 0,
-            "SpamComplaintCount": 0
-          ],
-          "2024-03-25": [
-            "SendCount": 0,
-            "OpenCount": 0,
-            "ClickCount": 0,
-            "ConversionCount": 0,
-            "BrowserViewCount": 0,
-            "ForwardCount": 0,
-            "UnsubscribeCount": 0,
-            "BounceCount": 0,
-            "SpamComplaintCount": 0
-          ]
-        }
-      ]
-    },
-  },
-  "Actions": [
-    {
-      "ActionID": 1,
-      "OrderNo": 1,
-      "Action": "Wait",
-      "ActionParameters": {
-        "WaitUnit": "seconds",
-        "WaitAmount": 20
-      },
-      "CompletedRuns": 0,
-      "Published": true,
-      "Stats": {
-        "ActiveSubscribers": "0",
-        "TotalSubscribers": "0"
-      }
-    },
-    {
-      "ActionID": 11,
-      "OrderNo": 2,
-      "Action": "Wait",
-      "ActionParameters": {
-        "WaitUnit": "minutes",
-        "WaitAmount": 10
-      },
-      "CompletedRuns": 0,
-      "Published": true,
-      "Stats": {
-        "ActiveSubscribers": "0",
-        "TotalSubscribers": "0"
-      }
-    }
-  ]
+"Journey": {
+"JourneyID": "6",
+"RelUserID": "1",
+"JourneyName": "Test",
+"Trigger": "Manual",
+"TriggerParameters": [],
+"Status": "Disabled",
+"Notes": "This is an administrative note for the journey",
+"CreatedAt": "2023-08-11 18:13:17",
+"UpdatedAt": "2023-08-11 18:13:17",
+"JourneyStats": {
+"ActiveSubscribers": 100,
+"TotalSubscribers": 200,
+"AggregatedEmailActionStats": {
+"SendCount": 0,
+"OpenCount": 0,
+"ClickCount": 0,
+"ConversionCount": 0,
+"BrowserViewCount": 0,
+"ForwardCount": 0,
+"UnsubscribeCount": 0,
+"BounceCount": 0,
+"SpamComplaintCount": 0
+},
+"AggregatedLast30DaysEmailActions": [
+{
+"2024-03-26": [
+"SendCount": 0,
+"OpenCount": 0,
+"ClickCount": 0,
+"ConversionCount": 0,
+"BrowserViewCount": 0,
+"ForwardCount": 0,
+"UnsubscribeCount": 0,
+"BounceCount": 0,
+"SpamComplaintCount": 0
+],
+"2024-03-25": [
+"SendCount": 0,
+"OpenCount": 0,
+"ClickCount": 0,
+"ConversionCount": 0,
+"BrowserViewCount": 0,
+"ForwardCount": 0,
+"UnsubscribeCount": 0,
+"BounceCount": 0,
+"SpamComplaintCount": 0
+]
+}
+]
+},
+},
+"Actions": [
+{
+"ActionID": 1,
+"OrderNo": 1,
+"Action": "Wait",
+"ActionParameters": {
+"WaitUnit": "seconds",
+"WaitAmount": 20
+},
+"CompletedRuns": 0,
+"Published": true,
+"Stats": {
+"ActiveSubscribers": "0",
+"TotalSubscribers": "0"
+}
+},
+{
+"ActionID": 11,
+"OrderNo": 2,
+"Action": "Wait",
+"ActionParameters": {
+"WaitUnit": "minutes",
+"WaitAmount": 10
+},
+"CompletedRuns": 0,
+"Published": true,
+"Stats": {
+"ActiveSubscribers": "0",
+"TotalSubscribers": "0"
+}
+}
+]
 }
 ```
 
 ```json [Error Response]
-# 404 Not Found
+// 404 Not Found
 {
-  "Errors": [
-    {
-      "Code": 3,
-      "Message": "Journey not found"
-    }
-  ]
+"Errors": [
+{
+"Code": 3,
+"Message": "Journey not found"
+}
+]
 }
 ````
 
@@ -375,35 +375,35 @@ Please note that this API endpoint requires a raw JSON body.
 {
   "SessionID": "<user_session_id>",
   "APIKey": "",
-  "JourneyID": 6  
+  "JourneyID": 6
 }
 ```
 
 ```json [Success Response]
-# 200 OK
+// 200 OK
 {
-  "Journey": {
-    "JourneyID": "6",
-    "RelUserID": "1",
-    "JourneyName": "Test",
-    "Trigger": "Manual",
-    "TriggerParameters": [],
-    "Status": "Enabled",
-    "CreatedAt": "2023-08-11 18:13:17",
-    "UpdatedAt": "2023-08-11 18:13:17"
-  }
+"Journey": {
+"JourneyID": "6",
+"RelUserID": "1",
+"JourneyName": "Test",
+"Trigger": "Manual",
+"TriggerParameters": [],
+"Status": "Enabled",
+"CreatedAt": "2023-08-11 18:13:17",
+"UpdatedAt": "2023-08-11 18:13:17"
+}
 }
 ```
 
 ```json [Error Response]
-# 404 Not Found
+// 404 Not Found
 {
-  "Errors": [
-    {
-      "Code": 3,
-      "Message": "Journey not found"
-    }
-  ]
+"Errors": [
+{
+"Code": 3,
+"Message": "Journey not found"
+}
+]
 }
 ```
 
@@ -442,35 +442,35 @@ Please note that this API endpoint requires a raw JSON body.
 {
   "SessionID": "<user_session_id>",
   "APIKey": "",
-  "JourneyID": 6  
+  "JourneyID": 6
 }
 ```
 
 ```json [Success Response]
-# 200 OK
+// 200 OK
 {
-  "Journey": {
-    "JourneyID": "6",
-    "RelUserID": "1",
-    "JourneyName": "Test",
-    "Trigger": "Manual",
-    "TriggerParameters": [],
-    "Status": "Disabled",
-    "CreatedAt": "2023-08-11 18:13:17",
-    "UpdatedAt": "2023-08-11 18:13:17"
-  }
+"Journey": {
+"JourneyID": "6",
+"RelUserID": "1",
+"JourneyName": "Test",
+"Trigger": "Manual",
+"TriggerParameters": [],
+"Status": "Disabled",
+"CreatedAt": "2023-08-11 18:13:17",
+"UpdatedAt": "2023-08-11 18:13:17"
+}
 }
 ```
 
 ```json [Error Response]
-# 404 Not Found
+// 404 Not Found
 {
-  "Errors": [
-    {
-      "Code": 3,
-      "Message": "Journey not found"
-    }
-  ]
+"Errors": [
+{
+"Code": 3,
+"Message": "Journey not found"
+}
+]
 }
 ```
 
@@ -497,17 +497,17 @@ This endpoint expects a raw JSON body.
 
 **Request Body Parameters:**
 
-| Parameter       | Description                                                                                                                                   | Required |
-|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| SessionID       | The ID of the user's current session.                                                                                                         | Yes      | 
-| APIKey          | The user's API key. You must provide either the `SessionID` or `APIKey`.                                                                      | Yes      | 
-| JourneyID       | The ID of the journey you want to update.                                                                                                     | Yes      | 
-| Name            | The new name for the journey.                                                                                                                 | No       | 
-| Notes           | The administrative note for the journey.                                                                                                      | No       | 
-| Trigger         | The type of trigger. Options include: `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Manual`, , `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, `WebsiteEvent_conversion`. | No       | 
-| Trigger_ListID  | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (for any list) or a specific subscriber list ID.   | No       | 
-| Trigger_EmailID | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (for any email) or a specific email ID.    | No       | 
-| Trigger_Criteria | If the trigger is `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, or `WebsiteEvent_conversion`, this parameter should be an array.                                                                                 | No       | 
+| Parameter        | Description                                                                                                                                                                                                                                            | Required |
+|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| SessionID        | The ID of the user's current session.                                                                                                                                                                                                                  | Yes      | 
+| APIKey           | The user's API key. You must provide either the `SessionID` or `APIKey`.                                                                                                                                                                               | Yes      | 
+| JourneyID        | The ID of the journey you want to update.                                                                                                                                                                                                              | Yes      | 
+| Name             | The new name for the journey.                                                                                                                                                                                                                          | No       | 
+| Notes            | The administrative note for the journey.                                                                                                                                                                                                               | No       | 
+| Trigger          | The type of trigger. Options include: `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Manual`, , `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, `WebsiteEvent_conversion`. | No       | 
+| Trigger_ListID   | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (for any list) or a specific subscriber list ID.                                                                                                            | No       | 
+| Trigger_EmailID  | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (for any email) or a specific email ID.                                                                                                             | No       | 
+| Trigger_Criteria | If the trigger is `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, or `WebsiteEvent_conversion`, this parameter should be an array.                                                                                       | No       | 
 
 ::: code-group
 
@@ -516,39 +516,39 @@ This endpoint expects a raw JSON body.
   "SessionID": "<user_session_id>",
   "APIKey": "",
   "JourneyID": 6,
-  "Name":"New Name",
-  "Notes":"",
-  "Trigger":"ListSubscription",
-  "Trigger_ListID":30
+  "Name": "New Name",
+  "Notes": "",
+  "Trigger": "ListSubscription",
+  "Trigger_ListID": 30
 }
 ```
 
 ```json [Success Response]
-# 200 OK
+// 200 OK
 {
-  "Journey": {
-    "JourneyID": "6",
-    "RelUserID": "1",
-    "JourneyName": "Test",
-    "Trigger": "Manual",
-    "TriggerParameters": [],
-    "Status": "Disabled",
-    "Notes": "This is an administrative note for the journey",
-    "CreatedAt": "2023-08-11 18:13:17",
-    "UpdatedAt": "2023-08-11 18:13:17"
-  }
+"Journey": {
+"JourneyID": "6",
+"RelUserID": "1",
+"JourneyName": "Test",
+"Trigger": "Manual",
+"TriggerParameters": [],
+"Status": "Disabled",
+"Notes": "This is an administrative note for the journey",
+"CreatedAt": "2023-08-11 18:13:17",
+"UpdatedAt": "2023-08-11 18:13:17"
+}
 }
 ```
 
 ```json [Error Response]
-# 404 Not Found
+// 404 Not Found
 {
-  "Errors": [
-    {
-      "Code": 3,
-      "Message": "Invalid trigger"
-    }
-  ]
+"Errors": [
+{
+"Code": 3,
+"Message": "Invalid trigger"
+}
+]
 }
 ```
 
@@ -581,14 +581,15 @@ Please note that any actions not included in the provided list will be removed f
 
 **Request Body:**
 
-| Parameter | Description                                                                                | Required |
-|-----------|--------------------------------------------------------------------------------------------|----------|
-| SessionID | The user's session ID.                                                                     | Yes      | 
-| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.                        | Yes      | 
-| JourneyID | The ID of the journey to be updated.                                                       | Yes      | 
-| Actions   | The list of action objects. See below for the structure of action objects.                 | Yes      | 
+| Parameter | Description                                                                | Required |
+|-----------|----------------------------------------------------------------------------|----------|
+| SessionID | The user's session ID.                                                     | Yes      | 
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.       | Yes      | 
+| JourneyID | The ID of the journey to be updated.                                       | Yes      | 
+| Actions   | The list of action objects. See below for the structure of action objects. | Yes      | 
 
-> For the detailed usage instructions of journey actions, refer to the [Journey Actions](/api-reference/journey-actions.html)
+> For the detailed usage instructions of journey actions, refer to
+> the [Journey Actions](/api-reference/journey-actions.html)
 > .
 
 ::: code-group
@@ -613,192 +614,192 @@ Please note that any actions not included in the provided list will be removed f
       "Published": "true",
       "TargetListID": 30,
       "Notes": "Test note"
-    },
+    }
     // ...
     // Action objects
     // ...
-  ],
+  ]
 }
 ```
 
 ```json [Success Response]
-# 200 OK
+// 200 OK
 {
-    "JourneyID": 22,
-    "Actions": [
-        {
-            "ActionID": 401,
-            "OrderNo": 1,
-            "Action": "Wait",
-            "ActionParameters": {
-                "WaitUnit": "seconds",
-                "WaitAmount": 3
-            },
-            "Notes": "note-1",
-            "CompletedRuns": "0",
-            "Stats": {
-                "ActiveSubscribers": "0",
-                "TotalSubscribers": "0"
-            }
-        },
-        {
-            "ActionID": 402,
-            "OrderNo": 2,
-            "Action": "SendEmail",
-            "ActionParameters": {
-                "EmailID": 129,
-                "SenderDomainID": 101,
-                "From": {
-                    "Name": "From Name",
-                    "Email": "from@email.com"
-                },
-                "ReplyTo": {
-                    "Name": "Reply-To Name",
-                    "Email": "replyto@email.com"
-                },
-                "CC": [
-                    {
-                        "Name": "CC Name 1",
-                        "Email": "cc1@email.com"
-                    },
-                    {
-                        "Name": "CC Name 2",
-                        "Email": "cc2@email.com"
-                    }
-                ],
-                "BCC": [
-                    {
-                        "Name": "BCC Name 1",
-                        "Email": "bcc1@email.com"
-                    },
-                    {
-                        "Name": "BCC Name 2",
-                        "Email": "bcc2@email.com"
-                    }
-                ],
-                "Email": {
-                    "EmailName": "Email name for administrative purposes",
-                    "ContentType": "Both",
-                    "Mode": "Editor",
-                    "FetchURL": "",
-                    "FetchPlainURL": "",
-                    "Subject": "{{{Hey|Hi|Hello}}}! Subject of the email",
-                    "PlainContent": "Plain contetn",
-                    "HTMLContent": "<p><strong>HTML content</strong></p>",
-                    "ExtraContent1": "",
-                    "ExtraContent2": "",
-                    "ImageEmbedding": "Disabled",
-                    "PreHeaderText": "",
-                    "Options": []
-                }
-            },
-            "Notes": "note-2",
-            "CompletedRuns": "0",
-            "Stats": {
-                "ActiveSubscribers": "0",
-                "TotalSubscribers": "0",
-                "EmailSent": 0,
-                "EmailOpened": 0,
-                "EmailClicked": 0,
-                "EmailConverted": 0,
-                "EmailUnsubscribed": 0,
-                "EmailBounced": 0,
-                "EmailSpamComplaint": 0
-            }
-        },
-        {
-            "ActionID": 403,
-            "OrderNo": 3,
-            "Action": "Wait",
-            "ActionParameters": {
-                "WaitUnit": "seconds",
-                "WaitAmount": 3
-            },
-            "Notes": "",
-            "CompletedRuns": "0",
-            "Stats": {
-                "ActiveSubscribers": "0",
-                "TotalSubscribers": "0"
-            }
-        },
-        {
-            "ActionID": 404,
-            "OrderNo": 4,
-            "Action": "SendEmail",
-            "ActionParameters": {
-                "EmailID": 129,
-                "SenderDomainID": 101,
-                "From": {
-                    "Name": "From Name",
-                    "Email": "from@email.com"
-                },
-                "ReplyTo": {
-                    "Name": "Reply-To Name",
-                    "Email": "replyto@email.com"
-                },
-                "CC": [
-                    {
-                        "Name": "CC Name 1",
-                        "Email": "cc1@email.com"
-                    },
-                    {
-                        "Name": "CC Name 2",
-                        "Email": "cc2@email.com"
-                    }
-                ],
-                "BCC": [
-                    {
-                        "Name": "BCC Name 1",
-                        "Email": "bcc1@email.com"
-                    },
-                    {
-                        "Name": "BCC Name 2",
-                        "Email": "bcc2@email.com"
-                    }
-                ],
-                "Email": {
-                    "EmailName": "Email name for administrative purposes",
-                    "ContentType": "Both",
-                    "Mode": "Editor",
-                    "FetchURL": "",
-                    "FetchPlainURL": "",
-                    "Subject": "{{{Hey|Hi|Hello}}}! Subject of the email",
-                    "PlainContent": "Plain contetn",
-                    "HTMLContent": "<p><strong>HTML content</strong></p>",
-                    "ExtraContent1": "",
-                    "ExtraContent2": "",
-                    "ImageEmbedding": "Disabled",
-                    "PreHeaderText": "",
-                    "Options": []
-                }
-            },
-            "Notes": "note-3",
-            "CompletedRuns": "0",
-            "Stats": {
-                "ActiveSubscribers": "0",
-                "TotalSubscribers": "0",
-                "EmailSent": 0,
-                "EmailOpened": 0,
-                "EmailClicked": 0,
-                "EmailConverted": 0,
-                "EmailUnsubscribed": 0,
-                "EmailBounced": 0,
-                "EmailSpamComplaint": 0
-            }
-        }
-    ]
+"JourneyID": 22,
+"Actions": [
+{
+"ActionID": 401,
+"OrderNo": 1,
+"Action": "Wait",
+"ActionParameters": {
+"WaitUnit": "seconds",
+"WaitAmount": 3
+},
+"Notes": "note-1",
+"CompletedRuns": "0",
+"Stats": {
+"ActiveSubscribers": "0",
+"TotalSubscribers": "0"
+}
+},
+{
+"ActionID": 402,
+"OrderNo": 2,
+"Action": "SendEmail",
+"ActionParameters": {
+"EmailID": 129,
+"SenderDomainID": 101,
+"From": {
+"Name": "From Name",
+"Email": "from@email.com"
+},
+"ReplyTo": {
+"Name": "Reply-To Name",
+"Email": "replyto@email.com"
+},
+"CC": [
+{
+"Name": "CC Name 1",
+"Email": "cc1@email.com"
+},
+{
+"Name": "CC Name 2",
+"Email": "cc2@email.com"
+}
+],
+"BCC": [
+{
+"Name": "BCC Name 1",
+"Email": "bcc1@email.com"
+},
+{
+"Name": "BCC Name 2",
+"Email": "bcc2@email.com"
+}
+],
+"Email": {
+"EmailName": "Email name for administrative purposes",
+"ContentType": "Both",
+"Mode": "Editor",
+"FetchURL": "",
+"FetchPlainURL": "",
+"Subject": "{{{Hey|Hi|Hello}}}! Subject of the email",
+"PlainContent": "Plain contetn",
+"HTMLContent": "<p><strong>HTML content</strong></p>",
+"ExtraContent1": "",
+"ExtraContent2": "",
+"ImageEmbedding": "Disabled",
+"PreHeaderText": "",
+"Options": []
+}
+},
+"Notes": "note-2",
+"CompletedRuns": "0",
+"Stats": {
+"ActiveSubscribers": "0",
+"TotalSubscribers": "0",
+"EmailSent": 0,
+"EmailOpened": 0,
+"EmailClicked": 0,
+"EmailConverted": 0,
+"EmailUnsubscribed": 0,
+"EmailBounced": 0,
+"EmailSpamComplaint": 0
+}
+},
+{
+"ActionID": 403,
+"OrderNo": 3,
+"Action": "Wait",
+"ActionParameters": {
+"WaitUnit": "seconds",
+"WaitAmount": 3
+},
+"Notes": "",
+"CompletedRuns": "0",
+"Stats": {
+"ActiveSubscribers": "0",
+"TotalSubscribers": "0"
+}
+},
+{
+"ActionID": 404,
+"OrderNo": 4,
+"Action": "SendEmail",
+"ActionParameters": {
+"EmailID": 129,
+"SenderDomainID": 101,
+"From": {
+"Name": "From Name",
+"Email": "from@email.com"
+},
+"ReplyTo": {
+"Name": "Reply-To Name",
+"Email": "replyto@email.com"
+},
+"CC": [
+{
+"Name": "CC Name 1",
+"Email": "cc1@email.com"
+},
+{
+"Name": "CC Name 2",
+"Email": "cc2@email.com"
+}
+],
+"BCC": [
+{
+"Name": "BCC Name 1",
+"Email": "bcc1@email.com"
+},
+{
+"Name": "BCC Name 2",
+"Email": "bcc2@email.com"
+}
+],
+"Email": {
+"EmailName": "Email name for administrative purposes",
+"ContentType": "Both",
+"Mode": "Editor",
+"FetchURL": "",
+"FetchPlainURL": "",
+"Subject": "{{{Hey|Hi|Hello}}}! Subject of the email",
+"PlainContent": "Plain contetn",
+"HTMLContent": "<p><strong>HTML content</strong></p>",
+"ExtraContent1": "",
+"ExtraContent2": "",
+"ImageEmbedding": "Disabled",
+"PreHeaderText": "",
+"Options": []
+}
+},
+"Notes": "note-3",
+"CompletedRuns": "0",
+"Stats": {
+"ActiveSubscribers": "0",
+"TotalSubscribers": "0",
+"EmailSent": 0,
+"EmailOpened": 0,
+"EmailClicked": 0,
+"EmailConverted": 0,
+"EmailUnsubscribed": 0,
+"EmailBounced": 0,
+"EmailSpamComplaint": 0
+}
+}
+]
 }
 ```
 
 ```json [Error Response]
-# 404 Not Found
+// 404 Not Found
 {
-  "Errors": [
-    {
-      "Code": 10,
-      "Message": "Journey not found"
-    }
-  ]
+"Errors": [
+{
+"Code": 10,
+"Message": "Journey not found"
+}
+]
 }
 ```
 
@@ -818,7 +819,8 @@ Please note that any actions not included in the provided list will be removed f
 
 <Badge type="info" text="PATCH" /> `api/v1/journey.actions.published`
 
-This endpoint is used to update the publication status of actions within a specified journey. It requires a journey ID and a list of actions with their desired publication statuses.
+This endpoint is used to update the publication status of actions within a specified journey. It requires a journey ID
+and a list of actions with their desired publication statuses.
 
 **Request Body Parameters:**
 
@@ -847,24 +849,40 @@ curl -X PATCH 'https://example.com/api/v1/journey.actions.published' \
 
 ```json [Success Response]
 {
-    "JourneyID": 123,
-    "Actions": [
-        {"ActionID": 1, "Published": true},
-        {"ActionID": 2, "Published": false}
-    ]
+  "JourneyID": 123,
+  "Actions": [
+    {
+      "ActionID": 1,
+      "Published": true
+    },
+    {
+      "ActionID": 2,
+      "Published": false
+    }
+  ]
 }
 ```
 
 ```json [Error Response]
 {
-    "Errors": [
-        {"Code": 1, "Message": "Missing JourneyID parameter"},
-        {"Code": 2, "Message": "Missing Actions parameter"},
-        {"Code": 3, "Message": "Invalid JourneyID parameter"},
-        // ... more error messages based on the code
-    ]
+  "Errors": [
+    {
+      "Code": 1,
+      "Message": "Missing JourneyID parameter"
+    },
+    {
+      "Code": 2,
+      "Message": "Missing Actions parameter"
+    },
+    {
+      "Code": 3,
+      "Message": "Invalid JourneyID parameter"
+    }
+    // ... more error messages based on the code
+  ]
 }
 ```
+
 :::
 
 **HTTP Response and Error Codes:**
@@ -899,6 +917,7 @@ Please note that this API endpoint requires a raw JSON body.
 | SubscriberID | ID of the target subscriber.                                                 | Yes      | 
 
 ::: code-group
+
 ```json [Example Request]
 {
   "SessionID": "<user_session_id>",
@@ -910,25 +929,26 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Success Response]
-# 200 OK
+// 200 OK
 {
-  "JourneyID": "18",
-  "ListID": "26",
-  "SubscriberID": "1"
+"JourneyID": "18",
+"ListID": "26",
+"SubscriberID": "1"
 }
 ```
 
 ```json [Error Response]
-# 404 Not Found
+// 404 Not Found
 {
-  "Errors": [
-    {
-      "Code": 7,
-      "Message": "Journey not found"
-    }
-  ]
+"Errors": [
+{
+"Code": 7,
+"Message": "Journey not found"
+}
+]
 }
 ```
+
 :::
 
 **HTTP Response and Error Codes:**
@@ -967,6 +987,7 @@ Please note that this API endpoint requires a raw JSON body.
 | SubscriberID | ID of the target subscriber.                                                 | Yes      | 
 
 ::: code-group
+
 ```json [Example Request]
 {
   "SessionID": "<user_session_id>",
@@ -978,25 +999,26 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Success Response]
-# 200 OK
+// 200 OK
 {
-  "JourneyID": "18",
-  "ListID": "26",
-  "SubscriberID": "1"
+"JourneyID": "18",
+"ListID": "26",
+"SubscriberID": "1"
 }
 ```
 
 ```json [Error Response]
-# 404 Not Found
+// 404 Not Found
 {
-  "Errors": [
-    {
-      "Code": 7,
-      "Message": "Journey not found"
-    }
-  ]
+"Errors": [
+{
+"Code": 7,
+"Message": "Journey not found"
+}
+]
 }
 ```
+
 :::
 
 **HTTP Response and Error Codes:**
@@ -1039,6 +1061,7 @@ Please note that this API endpoint requires a raw JSON body.
 | OrderType         | Sort results ascending or descending. Default: `ASC`. Values: `ASC`, `DESC`  | No       | 
 
 ::: code-group
+
 ```json [Example Request]
 {
   "SessionID": "<user_session_id>",
@@ -1054,83 +1077,84 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Success Response]
-# 200 OK
+// 200 OK
 {
-  "Success": true,
-  "ErrorCode": 0,
-  "ErrorText": "",
-  "TotalSubscribers": 5,
-  "Subscribers":[
-    {
-      "SubscriberID":"42",
-      "EmailAddress":"email15@example.com",
-      "BounceType":"Hard",
-      "SubscriptionStatus":"Subscribed",
-      "SubscriptionDate":"2023-01-01",
-      "SubscriptionIP":"192.168.1.1",
-      "UnsubscriptionDate":"0000-00-00",
-      "UnsubscriptionIP":"0.0.0.0",
-      "OptInDate":"2023-01-01"
-    },
-    {
-      "SubscriberID":"8",
-      "EmailAddress":"email3@test1.com",
-      "BounceType":"Not Bounced",
-      "SubscriptionStatus":"Subscribed",
-      "SubscriptionDate":"2023-11-09",
-      "SubscriptionIP":" - Manual Import",
-      "UnsubscriptionDate":"0000-00-00",
-      "UnsubscriptionIP":"0.0.0.0",
-      "OptInDate":"0000-00-00"
-    },
-    {
-      "SubscriberID":"5",
-      "EmailAddress":"email5@test.com",
-      "BounceType":"Not Bounced",
-      "SubscriptionStatus":"Subscribed",
-      "SubscriptionDate":"2023-11-07",
-      "SubscriptionIP":" - Manual Import",
-      "UnsubscriptionDate":"2023-11-13",
-      "UnsubscriptionIP":"192.168.65.1",
-      "OptInDate":"0000-00-00"
-    },
-    {
-      "SubscriberID":"21",
-      "EmailAddress":"email51@test1.com",
-      "BounceType":"Not Bounced",
-      "SubscriptionStatus":"Subscribed",
-      "SubscriptionDate":"2023-12-18",
-      "SubscriptionIP":" - Manual Import",
-      "UnsubscriptionDate":"0000-00-00",
-      "UnsubscriptionIP":"0.0.0.0",
-      "OptInDate":"0000-00-00"
-    },
-    {
-      "SubscriberID":"34",
-      "EmailAddress":"email7@example.com",
-      "BounceType":"Hard",
-      "SubscriptionStatus":"Unsubscribed",
-      "SubscriptionDate":"0000-00-00",
-      "SubscriptionIP":"",
-      "UnsubscriptionDate":"2023-01-02",
-      "UnsubscriptionIP":"192.168.1.2",
-      "OptInDate":"0000-00-00"
-    }
-  ]
+"Success": true,
+"ErrorCode": 0,
+"ErrorText": "",
+"TotalSubscribers": 5,
+"Subscribers":[
+{
+"SubscriberID": "42",
+"EmailAddress": "email15@example.com",
+"BounceType": "Hard",
+"SubscriptionStatus": "Subscribed",
+"SubscriptionDate": "2023-01-01",
+"SubscriptionIP": "192.168.1.1",
+"UnsubscriptionDate": "0000-00-00",
+"UnsubscriptionIP": "0.0.0.0",
+"OptInDate": "2023-01-01"
+},
+{
+"SubscriberID": "8",
+"EmailAddress": "email3@test1.com",
+"BounceType": "Not Bounced",
+"SubscriptionStatus": "Subscribed",
+"SubscriptionDate": "2023-11-09",
+"SubscriptionIP": " - Manual Import",
+"UnsubscriptionDate": "0000-00-00",
+"UnsubscriptionIP": "0.0.0.0",
+"OptInDate": "0000-00-00"
+},
+{
+"SubscriberID": "5",
+"EmailAddress": "email5@test.com",
+"BounceType": "Not Bounced",
+"SubscriptionStatus": "Subscribed",
+"SubscriptionDate": "2023-11-07",
+"SubscriptionIP": " - Manual Import",
+"UnsubscriptionDate": "2023-11-13",
+"UnsubscriptionIP": "192.168.65.1",
+"OptInDate": "0000-00-00"
+},
+{
+"SubscriberID": "21",
+"EmailAddress": "email51@test1.com",
+"BounceType": "Not Bounced",
+"SubscriptionStatus": "Subscribed",
+"SubscriptionDate": "2023-12-18",
+"SubscriptionIP": " - Manual Import",
+"UnsubscriptionDate": "0000-00-00",
+"UnsubscriptionIP": "0.0.0.0",
+"OptInDate": "0000-00-00"
+},
+{
+"SubscriberID": "34",
+"EmailAddress": "email7@example.com",
+"BounceType": "Hard",
+"SubscriptionStatus": "Unsubscribed",
+"SubscriptionDate": "0000-00-00",
+"SubscriptionIP": "",
+"UnsubscriptionDate": "2023-01-02",
+"UnsubscriptionIP": "192.168.1.2",
+"OptInDate": "0000-00-00"
+}
+]
 }
 ```
 
 ```json [Error Response]
-# 404 Not Found
+// 404 Not Found
 {
-  "Errors": [
-    {
-      "Code": 1,
-      "Message": "Missing journey ID"
-    }
-  ]
+"Errors": [
+{
+"Code": 1,
+"Message": "Missing journey ID"
+}
+]
 }
 ```
+
 :::
 
 **HTTP Response and Error Codes:**
@@ -1168,6 +1192,7 @@ Please note that this API endpoint requires a raw JSON body.
 | SubscriberID | ID of the target subscriber.                                                 | Yes      | 
 
 ::: code-group
+
 ```json [Example Request]
 {
   "SessionID": "<user_session_id>",
@@ -1179,7 +1204,7 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Success Response]
-# 200 OK
+// 200 OK
 {
   "ListID": "26",
   "SubscriberID": "1",
@@ -1199,16 +1224,17 @@ Please note that this API endpoint requires a raw JSON body.
 ```
 
 ```json [Error Response]
-# 404 Not Found
+// 404 Not Found
 {
-  "Errors": [
-    {
-      "Code": 9,
-      "Message": "Subscriber not found"
-    }
-  ]
+"Errors": [
+{
+"Code": 9,
+"Message": "Subscriber not found"
+}
+]
 }
 ```
+
 :::
 
 **HTTP Response and Error Codes:**
@@ -1223,17 +1249,167 @@ Please note that this API endpoint requires a raw JSON body.
 | 404                | 8          | List not found                 |
 | 404                | 9          | Subscriber not found           |
 
+## Clone Journey
+
+<Badge type="info" text="POST" /> `/api/v1/journey.clone`
+
+Clone an existing journey and create a new one.
+
+::: warning NOTICE
+Please note that this API endpoint requires a raw JSON body.
+:::
+
+**Request Body Parameters:**
+
+| Parameter      | Description                                                                  | Required |
+|----------------|------------------------------------------------------------------------------|----------|
+| SessionID      | This is the user's session ID.                                               | Yes      | 
+| APIKey         | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      | 
+| JourneyID      | The ID of the journey to clone.                                              | Yes      | 
+| NewJourneyName | The name of the new journey.                                                 | Yes      | 
+
+::: code-group
+
+```json [Example Request]
+{
+    "SessionID":"<user_session_id>",
+    // "APIKey":""
+    "JourneyID": 2, 
+    "NewJourneyName": "Test Journey"
+}
+```
+
+```json [Success Response]
+// 200 OK
+{
+  "Journey": {
+    "JourneyID": "3",
+    "RelUserID": "1",
+    "JourneyName": "Test Journey",
+    "Trigger": "Manual",
+    "TriggerParameters": [],
+    "Status": "Disabled",
+    "Notes": "Copy of journey Test Journey",
+    "CreatedAt": "2024-04-27 19:52:06",
+    "UpdatedAt": "2024-04-27 19:52:06",
+    "JourneyStats": {
+      "ActiveSubscribers": "0",
+      "TotalSubscribers": "0",
+      "AggregatedEmailActions": {
+        "SendCount": 0,
+        "OpenCount": 0,
+        "ClickCount": 0,
+        "ConversionCount": 0,
+        "BrowserViewCount": 0,
+        "ForwardCount": 0,
+        "UnsubscribeCount": 0,
+        "BounceCount": 0,
+        "SpamComplaintCount": 0
+      },
+      "AggregatedLast30DaysEmailActions": []
+    }
+  },
+  "Actions": [
+    {
+      "ActionID": 6,
+      "OrderNo": 1,
+      "Action": "",
+      "ActionParameters": {
+        "EmailID": 4,
+        "SenderDomainID": 1,
+        "From": {
+          "Name": "Sender",
+          "Email": "from@test.com"
+        },
+        "ReplyTo": {
+          "Name": "Sender",
+          "Email": "from@test.com"
+        },
+        "CC": [],
+        "BCC": [],
+        "Email": {
+          "EmailName": "",
+          "ContentType": "Both",
+          "Mode": "Editor",
+          "FetchURL": "",
+          "FetchPlainURL": "",
+          "Subject": "Test email subject",
+          "PlainContent": "Test email plain body",
+          "HTMLContent": "<html><body>Test email HTML body</body></html>",
+          "ExtraContent1": "",
+          "ExtraContent2": "",
+          "ImageEmbedding": "Disabled",
+          "PreHeaderText": "This is pre-header text for HTML emails",
+          "Options": {
+            "SenderDomain": "test.com"
+          }
+        }
+      },
+      "Notes": "",
+      "CompletedRuns": "0",
+      "Published": true,
+      "Stats": {
+        "ActiveSubscribers": "0",
+        "TotalSubscribers": "0"
+      }
+    },
+    {
+      "ActionID": 7,
+      "OrderNo": 2,
+      "Action": "",
+      "ActionParameters": {
+        "WaitUnit": "seconds",
+        "WaitAmount": 20
+      },
+      "Notes": "",
+      "CompletedRuns": "0",
+      "Published": true,
+      "Stats": {
+        "ActiveSubscribers": "0",
+        "TotalSubscribers": "0"
+      }
+    }
+  ]
+}
+```
+
+```json [Error Response]
+// 404 Not Found
+{
+  "Errors": [
+    {
+      "Code": 3,
+      "Message": "Journey not found"
+    }
+  ]
+}
+```
+
+:::
+
+**HTTP Response and Error Codes:**
+
+| HTTP Response Code | Error Code | Description                      |
+|--------------------|------------|----------------------------------|
+| 422                | 1          | Missing NewJourneyName parameter |
+| 422                | 2          | Missing JourneyID parameter      |
+| 404                | 3          | Journey not found                |
+| 404                | 4          | Journey not cloned successfully  |
+
 ## Journey Trigger Criteria
 
-When creating or updating a journey, if you set the trigger to `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, or `WebsiteEvent_conversion`, you need to provide `Trigger_Criteria` API parameter.
+When creating or updating a journey, if you set the trigger
+to `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, or `WebsiteEvent_conversion`, you need
+to provide `Trigger_Criteria` API parameter.
 
-The `Trigger_Criteria` parameter must be an array with at least one criteria inside. Here's an example `Trigger_Criteria` structure:
+The `Trigger_Criteria` parameter must be an array with at least one criteria inside. Here's an
+example `Trigger_Criteria` structure:
 
 ```json
-    "Trigger_Criteria": [
-        {"Property":"conversionName","Operator":"equals","Value":"Purchase"},
-        {"Property":"conversionValue","Operator":"greater than","Value":"300"}
-    ]
+"Trigger_Criteria": [
+  {"Property": "conversionName", "Operator": "equals", "Value": "Purchase"},
+  {"Property": "conversionValue", "Operator": "greater than", "Value": "300"}
+]
 ```
 
 The filtering works as "match all". Multiple criteria rules as shown above will be filtered together.
@@ -1251,4 +1427,5 @@ The filtering works as "match all". Multiple criteria rules as shown above will 
 - `is set`
 - `is not set`
 
-The `Property` can be any of properties for a specific website event. You can get the list of website event properties using [`List.Get` API end-point](/api-reference/subscriber-lists.html#retrieve-subscriber-list).
+The `Property` can be any of properties for a specific website event. You can get the list of website event properties
+using [`List.Get` API end-point](/api-reference/subscriber-lists.html#retrieve-subscriber-list).
