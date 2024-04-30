@@ -8,7 +8,8 @@ layout: doc
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint allows you to tag subscribers within a list. You can either tag specific subscribers by providing their IDs or tag all subscribers that match certain criteria defined by a JSON ruleset.
+This endpoint allows you to tag subscribers within a list. You can either tag specific subscribers by providing their
+IDs or tag all subscribers that match certain criteria defined by a JSON ruleset.
 
 **Request Body Parameters:**
 
@@ -46,8 +47,12 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [1],
-  "ErrorText": ["Missing tag id"]
+  "ErrorCode": [
+    1
+  ],
+  "ErrorText": [
+    "Missing tag id"
+  ]
 }
 ```
 
@@ -61,20 +66,23 @@ curl -X POST https://example.com/api.php \
 7: Missing RulesOperator parameter
 8: Invalid query builder response
 ```
+
 :::
 
 ::: warning NOTICE
-- Please note that if `SubscriberID` is not provided, then `RulesJSON` and `RulesOperator` are required. 
-- The `RulesOperator` will default to 'or' if not provided as 'and'. 
+
+- Please note that if `SubscriberID` is not provided, then `RulesJSON` and `RulesOperator` are required.
+- The `RulesOperator` will default to 'or' if not provided as 'and'.
 - When tagging by criteria, the system will process a batch tagging based on the rules defined in `RulesJSON`.
 - If `TriggerEvents` is set to 1, any events associated with tagging will be triggered.
-:::
+  :::
 
 ## Untag a Subscriber
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint allows you to remove a tag from a subscriber or a list of subscribers. You can specify a single subscriber by their ID or use a JSON rule set to untag multiple subscribers that match certain criteria.
+This endpoint allows you to remove a tag from a subscriber or a list of subscribers. You can specify a single subscriber
+by their ID or use a JSON rule set to untag multiple subscribers that match certain criteria.
 
 **Request Body Parameters:**
 
@@ -108,15 +116,19 @@ curl -X POST https://example.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true
+  "Success": true
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": [1],
-    "ErrorText": ["Missing tag id"]
+  "Success": false,
+  "ErrorCode": [
+    1
+  ],
+  "ErrorText": [
+    "Missing tag id"
+  ]
 }
 ```
 
@@ -130,13 +142,15 @@ curl -X POST https://example.com/api.php \
 7: Missing RulesOperator parameter
 8: Invalid query builder response
 ```
+
 :::
 
 ## Create a New Subscriber Tag
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to create a new tag for a subscriber in a specific list. A tag is a label that can be used to categorize subscribers based on certain criteria or actions.
+This endpoint is used to create a new tag for a subscriber in a specific list. A tag is a label that can be used to
+categorize subscribers based on certain criteria or actions.
 
 **Request Body Parameters:**
 
@@ -164,16 +178,22 @@ curl -X POST https://yourdomain.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "TagID": 456
+  "Success": true,
+  "TagID": 456
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": [1, 2],
-    "ErrorText": ["Missing subscriber list id", "Missing tag name"]
+  "Success": false,
+  "ErrorCode": [
+    1,
+    2
+  ],
+  "ErrorText": [
+    "Missing subscriber list id",
+    "Missing tag name"
+  ]
 }
 ```
 
@@ -183,13 +203,15 @@ curl -X POST https://yourdomain.com/api.php \
 4: The specified list does not exist or does not belong to the user
 5: There is another tag with the same name
 ```
+
 :::
 
 ## Delete Subscriber Tags
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint allows for the deletion of tags from a subscriber list. The user must provide the ID of the subscriber list and can optionally specify tag IDs to delete.
+This endpoint allows for the deletion of tags from a subscriber list. The user must provide the ID of the subscriber
+list and can optionally specify tag IDs to delete.
 
 **Request Body Parameters:**
 
@@ -221,8 +243,12 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [2],
-  "ErrorText": ["Tag ids are missing"]
+  "ErrorCode": [
+    2
+  ],
+  "ErrorText": [
+    "Tag ids are missing"
+  ]
 }
 ```
 
@@ -230,13 +256,15 @@ curl -X POST https://example.com/api.php \
 2: Subscriber list ID is missing.
 4: The specified list does not exist or does not belong to the user.
 ```
+
 :::
 
 ## Retrieve Subscriber Tags
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint retrieves a list of subscriber tags associated with a specific subscriber list. It allows for optional sorting and can include a count of subscribers for each tag.
+This endpoint retrieves a list of subscriber tags associated with a specific subscriber list. It allows for optional
+sorting and can include a count of subscribers for each tag.
 
 **Request Body Parameters:**
 
@@ -278,7 +306,6 @@ curl -X POST https://example.com/api.php \
       "TagName": "Purchased",
       "SubscriberCount": 75
     }
-    // ... other tags
   ]
 }
 ```
@@ -295,24 +322,26 @@ curl -X POST https://example.com/api.php \
 1: Missing subscriber list id
 4: The specified list does not exist or does not belong to the user
 ```
+
 :::
 
 ## Update Subscriber Tag
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint updates the tag information for a subscriber in a specified list. It requires the tag ID, subscriber list ID, and the new tag name to be provided.
+This endpoint updates the tag information for a subscriber in a specified list. It requires the tag ID, subscriber list
+ID, and the new tag name to be provided.
 
 **Request Body Parameters:**
 
-| Parameter         | Description                                      | Required? |
-|-------------------|--------------------------------------------------|-----------|
-| SessionID         | The ID of the user's current session             | Yes       |
-| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command           | Subscriber.Tags.Update                           | Yes       |
-| TagID             | The unique identifier for the tag to be updated  | Yes       |
-| SubscriberListID  | The ID of the subscriber list                    | Yes       |
-| Tag               | The new name for the tag                         | Yes       |
+| Parameter        | Description                                                          | Required? |
+|------------------|----------------------------------------------------------------------|-----------|
+| SessionID        | The ID of the user's current session                                 | Yes       |
+| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command          | Subscriber.Tags.Update                                               | Yes       |
+| TagID            | The unique identifier for the tag to be updated                      | Yes       |
+| SubscriberListID | The ID of the subscriber list                                        | Yes       |
+| Tag              | The new name for the tag                                             | Yes       |
 
 ::: code-group
 
@@ -335,8 +364,12 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [1],
-  "ErrorText": ["Missing tag id"]
+  "ErrorCode": [
+    1
+  ],
+  "ErrorText": [
+    "Missing tag id"
+  ]
 }
 ```
 
@@ -346,4 +379,5 @@ curl -X POST https://example.com/api.php \
 3: Missing tag name
 4: Invalid tag id or subscriber list id
 ```
+
 :::

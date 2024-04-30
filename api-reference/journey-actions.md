@@ -1,8 +1,8 @@
 ---
 layout: doc
 prev:
-    text: 'Return Back'
-    link: 'javascript:history.back()'
+  text: 'Return Back'
+  link: 'javascript:history.back()'
 ---
 
 # Journey Actions

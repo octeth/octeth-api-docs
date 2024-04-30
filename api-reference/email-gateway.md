@@ -76,12 +76,12 @@ and will validate it before adding it to the system.
 
 **Request Body Parameters:**
 
-| Parameter    | Description                                           | Required? |
-|--------------|-------------------------------------------------------|-----------|
-| SessionID    | The ID of the user's current session                  | Yes       |
-| APIKey       | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command      | EmailGateway.AddDomain                                | Yes       |
-| DomainName   | The domain name to be added as a sender domain        | Yes       |
+| Parameter  | Description                                                          | Required? |
+|------------|----------------------------------------------------------------------|-----------|
+| SessionID  | The ID of the user's current session                                 | Yes       |
+| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command    | EmailGateway.AddDomain                                               | Yes       |
+| DomainName | The domain name to be added as a sender domain                       | Yes       |
 
 ::: code-group
 
@@ -98,22 +98,22 @@ curl -X POST https://example.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "NewSenderDomainID": 12345,
-    "Domain": {
-        "DomainName": "example.com",
-        "VerificationStatus": "Pending",
-        "DKIMStatus": "Pending",
-        "SPFStatus": "Pending"
-    }
+  "Success": true,
+  "ErrorCode": 0,
+  "NewSenderDomainID": 12345,
+  "Domain": {
+    "DomainName": "example.com",
+    "VerificationStatus": "Pending",
+    "DKIMStatus": "Pending",
+    "SPFStatus": "Pending"
+  }
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": 1
+  "Success": false,
+  "ErrorCode": 1
 }
 ```
 
@@ -143,16 +143,17 @@ domains according to their group's limitations.
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to add a new SMTP configuration for sending emails. The user must provide the domain ID associated with their account to create the SMTP configuration.
+This endpoint is used to add a new SMTP configuration for sending emails. The user must provide the domain ID associated
+with their account to create the SMTP configuration.
 
 **Request Body Parameters:**
 
-| Parameter   | Description                                           | Required? |
-|-------------|-------------------------------------------------------|-----------|
-| SessionID   | The ID of the user's current session                  | Yes       |
-| APIKey      | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command     | EmailGateway.AddSMTP                                  | Yes       |
-| DomainID    | The unique identifier for the domain                  | Yes       |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.AddSMTP                                                 | Yes       |
+| DomainID  | The unique identifier for the domain                                 | Yes       |
 
 ::: code-group
 
@@ -169,7 +170,11 @@ curl -X POST https://example.com/api.php \
   "NewSMTPID": "new-smtp-id",
   "SMTP": {
     "SMTPHost": "smtp.example.com",
-    "SMTPPorts": ["25", "587", "465"],
+    "SMTPPorts": [
+      "25",
+      "587",
+      "465"
+    ],
     "OtherSMTPInfo": "..."
   }
 }
@@ -187,24 +192,26 @@ curl -X POST https://example.com/api.php \
 1: Required field 'DomainID' is missing.
 2: Unable to retrieve the sender domain.
 ```
+
 :::
 
 ## Add a New Webhook for Email Events
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint allows the user to create a new webhook for tracking specific email events related to a domain. The webhook will be triggered by events such as email delivery, bounces, opens, clicks, unsubscribes, and complaints.
+This endpoint allows the user to create a new webhook for tracking specific email events related to a domain. The
+webhook will be triggered by events such as email delivery, bounces, opens, clicks, unsubscribes, and complaints.
 
 **Request Body Parameters:**
 
-| Parameter   | Description                                              | Required? |
-|-------------|----------------------------------------------------------|-----------|
-| SessionID   | The ID of the user's current session                     | Yes       |
-| APIKey      | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command     | EmailGateway.AddWebhook                                  | Yes       |
-| DomainID    | The unique identifier for the domain                     | Yes       |
-| Event       | The type of email event to track (delivery, bounce, open, click, unsubscribe, complaint) | Yes       |
-| WebhookURL  | The URL to which the webhook will send event notifications | Yes       |
+| Parameter  | Description                                                                              | Required? |
+|------------|------------------------------------------------------------------------------------------|-----------|
+| SessionID  | The ID of the user's current session                                                     | Yes       |
+| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided.                     | Yes       |
+| Command    | EmailGateway.AddWebhook                                                                  | Yes       |
+| DomainID   | The unique identifier for the domain                                                     | Yes       |
+| Event      | The type of email event to track (delivery, bounce, open, click, unsubscribe, complaint) | Yes       |
+| WebhookURL | The URL to which the webhook will send event notifications                               | Yes       |
 
 ::: code-group
 
@@ -223,16 +230,18 @@ curl -X POST https://example.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "NewWebhookID": "456"
+  "Success": true,
+  "ErrorCode": 0,
+  "NewWebhookID": "456"
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": [1]
+  "Success": false,
+  "ErrorCode": [
+    1
+  ]
 }
 ```
 
@@ -243,25 +252,28 @@ curl -X POST https://example.com/api.php \
 4: Domain not found or access denied
 5: Missing required parameter WebhookURL
 ```
+
 :::
 
 ::: warning NOTICE
-Please note that the `DomainID` must correspond to a domain that the user has access to, and the `Event` must be one of the specified types.
+Please note that the `DomainID` must correspond to a domain that the user has access to, and the `Event` must be one of
+the specified types.
 :::
 
 ## Add a New Webhook for Email Events (End User Friendly)
 
 <Badge type="info" text="POST" /> `/api/v1/webhooks`
 
-This API end-point is used to register a new webhook for a specific event type. The webhook URL will be called when the specified event occurs.
+This API end-point is used to register a new webhook for a specific event type. The webhook URL will be called when the
+specified event occurs.
 
 **Request Body Parameters:**
 
-| Parameter    | Description                                                  | Required? |
-|--------------|--------------------------------------------------------------|-----------|
-| Event        | The type of event to register the webhook for                | Yes       |
-| WebhookURL   | The URL to which the webhook should send the event data      | Yes       |
-| SenderAPIKey | The API key associated with the sender domain                | Yes       |
+| Parameter    | Description                                             | Required? |
+|--------------|---------------------------------------------------------|-----------|
+| Event        | The type of event to register the webhook for           | Yes       |
+| WebhookURL   | The URL to which the webhook should send the event data | Yes       |
+| SenderAPIKey | The API key associated with the sender domain           | Yes       |
 
 ::: code-group
 
@@ -299,34 +311,39 @@ curl -X POST "https://example.com/api/v1/webhooks" \
 13: "Invalid SenderAPIKey"
 429: "Too many requests. Wait for {seconds} seconds for another {attempts} attempts."
 ```
+
 :::
 
 ::: warning NOTICE
-- Please note that the error codes are associated with specific error messages that provide more context about the error. 
-- Ensure that the `Event` parameter is one of the following: `delivery`, `bounce`, `open`, `click`, `unsubscribe`, `complaint`. 
-- The `WebhookURL` must be a valid URL format. 
-- The `SenderAPIKey` must be valid and associated with an active user account and sender domain. 
+
+- Please note that the error codes are associated with specific error messages that provide more context about the
+  error.
+- Ensure that the `Event` parameter is one of the
+  following: `delivery`, `bounce`, `open`, `click`, `unsubscribe`, `complaint`.
+- The `WebhookURL` must be a valid URL format.
+- The `SenderAPIKey` must be valid and associated with an active user account and sender domain.
 - If you exceed the rate limit, you will need to wait before sending more requests.
-:::
+  :::
 
 ## Retrieve Aggregated Email Events
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint retrieves aggregated email event data for a specified sender domain within a given date range. It allows for the aggregation of events based on a specified field and size limit.
+This endpoint retrieves aggregated email event data for a specified sender domain within a given date range. It allows
+for the aggregation of events based on a specified field and size limit.
 
 **Request Body Parameters:**
 
-| Parameter         | Description                                                                 | Required? |
-|-------------------|-----------------------------------------------------------------------------|-----------|
-| SessionID         | The ID of the user's current session                                        | Yes       |
-| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
-| Command           | EmailGateway.AggrEvents                                                     | Yes       |
-| DomainID          | The unique identifier for the sender's domain                               | Yes       |
-| StartDate         | The start date for the event data retrieval (format: YYYY-MM-DD)            | No        |
-| EndDate           | The end date for the event data retrieval (format: YYYY-MM-DD)              | No        |
-| AggregatedField   | The field to aggregate the event data by                                    | No        |
-| AggregateSize     | The maximum number of aggregation buckets to return                         | No        |
+| Parameter       | Description                                                          | Required? |
+|-----------------|----------------------------------------------------------------------|-----------|
+| SessionID       | The ID of the user's current session                                 | Yes       |
+| APIKey          | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command         | EmailGateway.AggrEvents                                              | Yes       |
+| DomainID        | The unique identifier for the sender's domain                        | Yes       |
+| StartDate       | The start date for the event data retrieval (format: YYYY-MM-DD)     | No        |
+| EndDate         | The end date for the event data retrieval (format: YYYY-MM-DD)       | No        |
+| AggregatedField | The field to aggregate the event data by                             | No        |
+| AggregateSize   | The maximum number of aggregation buckets to return                  | No        |
 
 ::: code-group
 
@@ -347,19 +364,18 @@ curl -X POST https://example.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "AggBuckets": [
-        // Aggregated event data buckets will be shown here
-    ]
+  "Success": true,
+  "ErrorCode": 0,
+  "AggBuckets": [
+  ]
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": 1,
-    "ErrorMessage": "Required parameter missing: DomainID"
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorMessage": "Required parameter missing: DomainID"
 }
 ```
 
@@ -367,22 +383,24 @@ curl -X POST https://example.com/api.php \
 1: Required parameter missing: DomainID
 2: Failed to retrieve sender domain
 ```
+
 :::
 
 ## Clear Domain Email Queue
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to clear the email queue for a specific domain. It updates the status of pending emails to "Failed" for the given domain associated with the user's account.
+This endpoint is used to clear the email queue for a specific domain. It updates the status of pending emails to "
+Failed" for the given domain associated with the user's account.
 
 **Request Body Parameters:**
 
-| Parameter  | Description                                           | Required? |
-|------------|-------------------------------------------------------|-----------|
-| SessionID  | The ID of the user's current session                  | Yes       |
-| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command    | EmailGateway.ClearDomainQueue                         | Yes       |
-| DomainID   | The unique identifier for the domain to clear the queue | Yes       |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.ClearDomainQueue                                        | Yes       |
+| DomainID  | The unique identifier for the domain to clear the queue              | Yes       |
 
 ::: code-group
 
@@ -410,22 +428,24 @@ curl -X POST https://example.com/api.php \
 1: Missing required parameter: DomainID
 2: Unable to retrieve sender domain
 ```
+
 :::
 
 ## Delete an Email Gateway API Key
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint allows a user to delete an existing API key associated with their email gateway. The user must provide the unique identifier for the API key they wish to delete.
+This endpoint allows a user to delete an existing API key associated with their email gateway. The user must provide the
+unique identifier for the API key they wish to delete.
 
 **Request Body Parameters:**
 
-| Parameter  | Description                                           | Required? |
-|------------|-------------------------------------------------------|-----------|
-| SessionID  | The ID of the user's current session                  | Yes       |
-| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command    | EmailGateway.DeleteAPI                                | Yes       |
-| ApiKeyId   | The unique identifier for the API key to be deleted   | Yes       |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.DeleteAPI                                               | Yes       |
+| ApiKeyId  | The unique identifier for the API key to be deleted                  | Yes       |
 
 ::: code-group
 
@@ -454,22 +474,24 @@ curl -X POST https://example.com/api.php \
 1: Missing required parameter: ApiKeyId
 2: Invalid API key or API key not found
 ```
+
 :::
 
 ## Delete Email Gateway Domain
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to delete a domain from the email gateway system. It requires the user to provide the unique identifier for the domain they wish to delete.
+This endpoint is used to delete a domain from the email gateway system. It requires the user to provide the unique
+identifier for the domain they wish to delete.
 
 **Request Body Parameters:**
 
-| Parameter | Description | Required? |
-|-------------|---------------|--------------|
-| SessionID | The ID of the user's current session | Yes |
-| APIKey | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
-| Command | EmailGateway.DeleteDomain | Yes |
-| DomainID | The unique identifier for the domain to be deleted | Yes |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.DeleteDomain                                            | Yes       |
+| DomainID  | The unique identifier for the domain to be deleted                   | Yes       |
 
 ::: code-group
 
@@ -486,16 +508,16 @@ curl -X POST https://example.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0
+  "Success": true,
+  "ErrorCode": 0
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": 1,
-    "ErrorMessage": "Missing required parameter: DomainID"
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorMessage": "Missing required parameter: DomainID"
 }
 ```
 
@@ -503,22 +525,24 @@ curl -X POST https://example.com/api.php \
 1: Missing required parameter: DomainID
 2: Domain not found or user does not have permission to delete the domain
 ```
+
 :::
 
 ## Delete SMTP Configuration
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to delete an SMTP configuration associated with a user's account. The SMTP configuration is identified by its unique ID.
+This endpoint is used to delete an SMTP configuration associated with a user's account. The SMTP configuration is
+identified by its unique ID.
 
 **Request Body Parameters:**
 
-| Parameter  | Description                                      | Required? |
-|------------|--------------------------------------------------|-----------|
-| SessionID  | The ID of the user's current session             | Yes       |
-| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command    | EmailGateway.DeleteSMTP                          | Yes       |
-| smtpid     | The unique identifier for the SMTP configuration | Yes       |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.DeleteSMTP                                              | Yes       |
+| smtpid    | The unique identifier for the SMTP configuration                     | Yes       |
 
 ::: code-group
 
@@ -546,23 +570,25 @@ curl -X POST https://example.com/api.php \
 1: Required field is missing
 2: SMTP configuration not found or user does not have permission
 ```
+
 :::
 
 ## Delete an Email Webhook
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint allows the user to delete a specific email webhook associated with their account. The user must provide the unique identifiers for the webhook and the domain it is associated with.
+This endpoint allows the user to delete a specific email webhook associated with their account. The user must provide
+the unique identifiers for the webhook and the domain it is associated with.
 
 **Request Body Parameters:**
 
-| Parameter  | Description                                      | Required? |
-|------------|--------------------------------------------------|-----------|
-| SessionID  | The ID of the user's current session             | Yes       |
-| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command    | EmailGateway.DeleteWebhook                       | Yes       |
-| WebhookID  | The unique identifier for the webhook to delete  | Yes       |
-| DomainID   | The unique identifier for the domain associated with the webhook | Yes       |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.DeleteWebhook                                           | Yes       |
+| WebhookID | The unique identifier for the webhook to delete                      | Yes       |
+| DomainID  | The unique identifier for the domain associated with the webhook     | Yes       |
 
 ::: code-group
 
@@ -595,19 +621,21 @@ curl -X POST https://example.com/api.php \
 3: Domain validation failed
 4: Webhook not found or user does not have permission to access it
 ```
+
 :::
 
 ## Delete an Email Webhook (End User Friendly)
 
 <Badge type="info" text="DELETE" /> `/api/v1/webhooks`
 
-This endpoint allows you to delete a specific webhook by providing its unique identifier. The request must be authenticated using a bearer token, which should be the sender domain API key.
+This endpoint allows you to delete a specific webhook by providing its unique identifier. The request must be
+authenticated using a bearer token, which should be the sender domain API key.
 
 **Request Body Parameters:**
 
-| Parameter | Description                                                          | Required? |
-|-----------|----------------------------------------------------------------------|-----------|
-| WebhookID | The unique identifier of the webhook to be deleted                   | Yes       |
+| Parameter | Description                                        | Required? |
+|-----------|----------------------------------------------------|-----------|
+| WebhookID | The unique identifier of the webhook to be deleted | Yes       |
 
 ::: code-group
 
@@ -641,24 +669,26 @@ curl -X DELETE "https://example.com/api/v1/webhooks" \
 13: "Invalid SenderAPIKey"
 429: "Too many requests. Wait for {seconds} seconds for another {attempts} attempts."
 ```
+
 :::
 
 ## Retrieve Domain Statistics
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to retrieve statistical data for a specific domain within the email gateway system. It provides overall statistics, comparison statistics, and tag-based statistics for the domain.
+This endpoint is used to retrieve statistical data for a specific domain within the email gateway system. It provides
+overall statistics, comparison statistics, and tag-based statistics for the domain.
 
 **Request Body Parameters:**
 
-| Parameter   | Description                                                  | Required? |
-|-------------|--------------------------------------------------------------|-----------|
-| SessionID   | The ID of the user's current session                         | Yes       |
-| APIKey      | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command     | EmailGateway.DomainStats                                     | Yes       |
-| DomainID    | The unique identifier for the domain                         | Yes       |
-| StartDate   | The start date for the statistics period (format: YYYY-MM-DD) | No        |
-| EndDate     | The end date for the statistics period (format: YYYY-MM-DD)   | No        |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.DomainStats                                             | Yes       |
+| DomainID  | The unique identifier for the domain                                 | Yes       |
+| StartDate | The start date for the statistics period (format: YYYY-MM-DD)        | No        |
+| EndDate   | The end date for the statistics period (format: YYYY-MM-DD)          | No        |
 
 ::: code-group
 
@@ -677,25 +707,22 @@ curl -X POST https://example.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "Stats": {
-        // Overall statistics for the domain
-    },
-    "ComparisonStats": {
-        // Comparison statistics for the domain
-    },
-    "TagStats": {
-        // Tag-based statistics for the domain
-    }
+  "Success": true,
+  "ErrorCode": 0,
+  "Stats": {
+  },
+  "ComparisonStats": {
+  },
+  "TagStats": {
+  }
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": 1,
-    "ErrorMessage": "Required parameter missing: DomainID"
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorMessage": "Required parameter missing: DomainID"
 }
 ```
 
@@ -703,6 +730,7 @@ curl -X POST https://example.com/api.php \
 1: Required parameter missing: DomainID
 2: Unable to retrieve domain information
 ```
+
 :::
 
 ## Retrieve Sender Domain API Keys
@@ -713,12 +741,12 @@ This endpoint is used to retrieve the API keys associated with a specific sender
 
 **Request Body Parameters:**
 
-| Parameter  | Description                                           | Required? |
-|------------|-------------------------------------------------------|-----------|
-| SessionID  | The ID of the user's current session                  | Yes       |
-| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command    | EmailGateway.GetAPIs                                  | Yes       |
-| DomainID   | The unique identifier for the domain                  | Yes       |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.GetAPIs                                                 | Yes       |
+| DomainID  | The unique identifier for the domain                                 | Yes       |
 
 ::: code-group
 
@@ -742,7 +770,6 @@ curl -X POST https://example.com/api.php \
       "CreationDate": "creation-date",
       "LastUsedDate": "last-used-date"
     }
-    // ... other API keys
   ]
 }
 ```
@@ -758,6 +785,7 @@ curl -X POST https://example.com/api.php \
 1: Missing required parameter: DomainID
 2: Unable to retrieve sender domain
 ```
+
 :::
 
 ## Retrieve Sender Domain Information
@@ -768,12 +796,12 @@ This endpoint retrieves the public information of a sender domain associated wit
 
 **Request Body Parameters:**
 
-| Parameter  | Description                                           | Required? |
-|------------|-------------------------------------------------------|-----------|
-| SessionID  | The ID of the user's current session                  | Yes       |
-| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command    | EmailGateway.GetDomain                                | Yes       |
-| DomainID   | The unique identifier for the domain to retrieve      | Yes       |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.GetDomain                                               | Yes       |
+| DomainID  | The unique identifier for the domain to retrieve                     | Yes       |
 
 ::: code-group
 
@@ -790,8 +818,7 @@ curl -X POST https://example.com/api.php \
   "Domain": {
     "DomainID": 123,
     "DomainName": "example.com",
-    "IsActive": true,
-    // Other domain details
+    "IsActive": true
   }
 }
 ```
@@ -808,6 +835,7 @@ curl -X POST https://example.com/api.php \
 1: Required parameter missing: DomainID
 2: Unable to retrieve domain information
 ```
+
 :::
 
 ## Retrieve Sender Domains
@@ -818,11 +846,11 @@ This endpoint retrieves a list of sender domains associated with the user's acco
 
 **Request Body Parameters:**
 
-| Parameter  | Description                                         | Required? |
-|------------|-----------------------------------------------------|-----------|
-| SessionID  | The ID of the user's current session                | Yes       |
-| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command    | EmailGateway.GetDomains                             | Yes       |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.GetDomains                                              | Yes       |
 
 ::: code-group
 
@@ -860,28 +888,30 @@ This API end-point doesn't return an error code.
 ```txt [Error Codes]
 This API end-point doesn't return an error code.
 ```
+
 :::
 
 ## Retrieve Email Events
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint retrieves a list of email events for a specified sender domain. It allows filtering by event type, query string, and date range.
+This endpoint retrieves a list of email events for a specified sender domain. It allows filtering by event type, query
+string, and date range.
 
 **Request Body Parameters:**
 
-| Parameter      | Description                                                  | Required? |
-|----------------|--------------------------------------------------------------|-----------|
-| SessionID      | The ID of the user's current session                         | Yes       |
-| APIKey         | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command        | EmailGateway.GetEvents                                       | Yes       |
-| DomainID       | Unique identifier for the sender domain                      | Yes       |
-| StartFrom      | The starting point for records retrieval                     | Yes       |
-| RetrieveCount  | The number of records to retrieve (max 100)                  | Yes       |
-| StartDate      | The start date for filtering events (format: YYYY-MM-DD)     | No        |
-| EndDate        | The end date for filtering events (format: YYYY-MM-DD)       | No        |
-| Event          | The type of event to filter by                               | No        |
-| Query          | A query string to filter events                              | No        |
+| Parameter     | Description                                                          | Required? |
+|---------------|----------------------------------------------------------------------|-----------|
+| SessionID     | The ID of the user's current session                                 | Yes       |
+| APIKey        | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command       | EmailGateway.GetEvents                                               | Yes       |
+| DomainID      | Unique identifier for the sender domain                              | Yes       |
+| StartFrom     | The starting point for records retrieval                             | Yes       |
+| RetrieveCount | The number of records to retrieve (max 100)                          | Yes       |
+| StartDate     | The start date for filtering events (format: YYYY-MM-DD)             | No        |
+| EndDate       | The end date for filtering events (format: YYYY-MM-DD)               | No        |
+| Event         | The type of event to filter by                                       | No        |
+| Query         | A query string to filter events                                      | No        |
 
 ::: code-group
 
@@ -904,30 +934,28 @@ curl -X POST https://example.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "TotalRecords": 150,
-    "Events": [
-        {
-            "event_type": "open",
-            "timestamp": "2023-01-01T12:00:00Z",
-            "message": {
-                "headers": {
-                    "subject": "Welcome to our service!"
-                }
-            }
-            // More event details...
+  "Success": true,
+  "ErrorCode": 0,
+  "TotalRecords": 150,
+  "Events": [
+    {
+      "event_type": "open",
+      "timestamp": "2023-01-01T12:00:00Z",
+      "message": {
+        "headers": {
+          "subject": "Welcome to our service!"
         }
-        // More events...
-    ]
+      }
+    }
+  ]
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": 1,
-    "ErrorMessage": "Required parameter missing: DomainID"
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorMessage": "Required parameter missing: DomainID"
 }
 ```
 
@@ -937,24 +965,26 @@ curl -X POST https://example.com/api.php \
 5: Required parameter missing: RetrieveCount
 2: Failed to retrieve sender domain
 ```
+
 :::
 
 ## Retrieve Email Events (End User Friendly)
 
 <Badge type="info" text="GET" /> `/api/v1/events`
 
-This API end-point allows you to retrieve a list of events for a given sender domain. The events can be filtered by date range, event type, and message ID.
+This API end-point allows you to retrieve a list of events for a given sender domain. The events can be filtered by date
+range, event type, and message ID.
 
 **Request Body Parameters:**
 
-| Parameter      | Description                                                                 | Required? |
-|----------------|-----------------------------------------------------------------------------|-----------|
-| StartFrom      | The starting index for the events to retrieve                               | No        |
-| RetrieveCount  | The number of events to retrieve (default is 5, max is 100)                 | No        |
-| StartDate      | The start date for filtering events (timestamp or `YYYY-MM-DD HH:MM:SS`)    | No        |
-| EndDate        | The end date for filtering events (timestamp or `YYYY-MM-DD HH:MM:SS`)      | No        |
-| Event          | The type of event to filter (e.g., `open`, `click`, etc.)                   | No        |
-| MessageID      | The ID of the message to filter events                                      | No        |
+| Parameter     | Description                                                              | Required? |
+|---------------|--------------------------------------------------------------------------|-----------|
+| StartFrom     | The starting index for the events to retrieve                            | No        |
+| RetrieveCount | The number of events to retrieve (default is 5, max is 100)              | No        |
+| StartDate     | The start date for filtering events (timestamp or `YYYY-MM-DD HH:MM:SS`) | No        |
+| EndDate       | The end date for filtering events (timestamp or `YYYY-MM-DD HH:MM:SS`)   | No        |
+| Event         | The type of event to filter (e.g., `open`, `click`, etc.)                | No        |
+| MessageID     | The ID of the message to filter events                                   | No        |
 
 ::: code-group
 
@@ -984,8 +1014,7 @@ curl -X GET "https://api.example.com/api/v1/events" \
         "UserAgent": "Mozilla/5.0...",
         "IpAddress": "192.0.2.1"
       }
-    },
-    // More events...
+    }
   ]
 }
 ```
@@ -1004,8 +1033,7 @@ curl -X GET "https://api.example.com/api/v1/events" \
     {
       "Code": 5,
       "Message": "Missing RetrieveCount"
-    },
-    // More error messages...
+    }
   ]
 }
 ```
@@ -1018,6 +1046,7 @@ curl -X GET "https://api.example.com/api/v1/events" \
 13: Invalid SenderAPIKey
 429: Too many requests. Please wait for {seconds} seconds before trying again.
 ```
+
 :::
 
 ## Retrieve SMTP Server Details
@@ -1028,12 +1057,12 @@ This endpoint retrieves the SMTP server details associated with a given domain I
 
 **Request Body Parameters:**
 
-| Parameter  | Description                                         | Required? |
-|------------|-----------------------------------------------------|-----------|
-| SessionID  | The ID of the user's current session                | Yes       |
-| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command    | EmailGateway.GetSMTPs                               | Yes       |
-| DomainID   | The unique identifier for the domain                | Yes       |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.GetSMTPs                                                | Yes       |
+| DomainID  | The unique identifier for the domain                                 | Yes       |
 
 ::: code-group
 
@@ -1051,7 +1080,11 @@ curl -X POST https://example.com/api.php \
     {
       "SMTPID": "smtp-id",
       "SMTPHost": "smtp.example.com",
-      "SMTPPorts": ["25", "587", "465"],
+      "SMTPPorts": [
+        "25",
+        "587",
+        "465"
+      ],
       "Username": "user@example.com",
       "Password": "encrypted-password",
       "FromEmail": "from@example.com",
@@ -1075,6 +1108,7 @@ curl -X POST https://example.com/api.php \
 1: Missing required parameter 'DomainID'.
 2: Unable to retrieve sender domain details.
 ```
+
 :::
 
 ## Retrieve Domain Webhooks
@@ -1085,12 +1119,12 @@ This endpoint retrieves a list of webhooks associated with a specific domain own
 
 **Request Body Parameters:**
 
-| Parameter | Description | Required? |
-|-------------|---------------|--------------|
-| SessionID | The ID of the user's current session | Yes |
-| APIKey | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
-| Command | EmailGateway.GetWebhooks | Yes |
-| DomainID | The unique identifier for the domain | Yes |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.GetWebhooks                                             | Yes       |
+| DomainID  | The unique identifier for the domain                                 | Yes       |
 
 ::: code-group
 
@@ -1107,28 +1141,35 @@ curl -X POST https://example.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "SigningKey": "webhook-signing-key",
-    "Webhooks": [
-        {
-            "WebhookID": "webhook-id-1",
-            "URL": "https://yourdomain.com/webhook1",
-            "Events": ["send", "open", "click"]
-        },
-        {
-            "WebhookID": "webhook-id-2",
-            "URL": "https://yourdomain.com/webhook2",
-            "Events": ["bounce", "complaint"]
-        }
-    ]
+  "Success": true,
+  "ErrorCode": 0,
+  "SigningKey": "webhook-signing-key",
+  "Webhooks": [
+    {
+      "WebhookID": "webhook-id-1",
+      "URL": "https://yourdomain.com/webhook1",
+      "Events": [
+        "send",
+        "open",
+        "click"
+      ]
+    },
+    {
+      "WebhookID": "webhook-id-2",
+      "URL": "https://yourdomain.com/webhook2",
+      "Events": [
+        "bounce",
+        "complaint"
+      ]
+    }
+  ]
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": 1
+  "Success": false,
+  "ErrorCode": 1
 }
 ```
 
@@ -1136,19 +1177,21 @@ curl -X POST https://example.com/api.php \
 1: Missing required parameter DomainID
 2: Invalid domain or domain does not belong to the user
 ```
+
 :::
 
 ## Retrieve Domain Webhooks (End User Friendly)
 
 <Badge type="info" text="GET" /> `/api/v1/webhooks`
 
-This endpoint retrieves a list of webhooks associated with a sender domain. The sender domain API key must be provided as a bearer token for authorization.
+This endpoint retrieves a list of webhooks associated with a sender domain. The sender domain API key must be provided
+as a bearer token for authorization.
 
 **Request Body Parameters:**
 
-| Parameter    | Description                                           | Required? |
-|--------------|-------------------------------------------------------|-----------|
-| SenderAPIKey | The API key associated with the sender domain         | Yes       |
+| Parameter    | Description                                   | Required? |
+|--------------|-----------------------------------------------|-----------|
+| SenderAPIKey | The API key associated with the sender domain | Yes       |
 
 ::: code-group
 
@@ -1171,7 +1214,6 @@ curl -X GET "https://example.com/api/v1/webhooks" \
       "URL": "https://example.com/webhook/bounce",
       "Status": "Active"
     }
-    // ... other webhooks
   ]
 }
 ```
@@ -1191,7 +1233,6 @@ curl -X GET "https://example.com/api/v1/webhooks" \
       "Code": 429,
       "Message": "Too many requests. Wait for {seconds} seconds for another {attempts} attempts."
     }
-    // ... other possible errors
   ]
 }
 ```
@@ -1201,6 +1242,7 @@ curl -X GET "https://example.com/api/v1/webhooks" \
 13: Invalid SenderAPIKey
 429: Too many requests. Rate limit exceeded.
 ```
+
 :::
 
 ## Reset SMTP Password
@@ -1211,12 +1253,12 @@ This endpoint allows a user to reset the password for a specific SMTP configurat
 
 **Request Body Parameters:**
 
-| Parameter | Description | Required? |
-|-------------|---------------|--------------|
-| SessionID | The ID of the user's current session | Yes |
-| APIKey | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
-| Command | EmailGateway.ResetSMTPPassword | Yes |
-| smtpid | The unique identifier for the SMTP configuration | Yes |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.ResetSMTPPassword                                       | Yes       |
+| smtpid    | The unique identifier for the SMTP configuration                     | Yes       |
 
 ::: code-group
 
@@ -1233,22 +1275,21 @@ curl -X POST https://example.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "SMTP": {
-        "SMTPID": "your-smtp-id",
-        "Server": "smtp.example.com",
-        "Port": 587,
-        "Username": "user@example.com",
-        // Other SMTP details
-    }
+  "Success": true,
+  "ErrorCode": 0,
+  "SMTP": {
+    "SMTPID": "your-smtp-id",
+    "Server": "smtp.example.com",
+    "Port": 587,
+    "Username": "user@example.com"
+  }
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": 1
+  "Success": false,
+  "ErrorCode": 1
 }
 ```
 
@@ -1256,27 +1297,29 @@ curl -X POST https://example.com/api.php \
 1: Missing required parameter 'smtpid'
 2: SMTP configuration not found or access denied
 ```
+
 :::
 
 ## Update Email Sender Domain
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to update the settings of an email sender domain. It allows the user to modify tracking options, hosting provider, and subdomain information associated with a sender domain.
+This endpoint is used to update the settings of an email sender domain. It allows the user to modify tracking options,
+hosting provider, and subdomain information associated with a sender domain.
 
 **Request Body Parameters:**
 
-| Parameter        | Description                                              | Required? |
-|------------------|----------------------------------------------------------|-----------|
-| SessionID        | The ID of the user's current session                     | Yes       |
-| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command          | EmailGateway.UpdateDomain                                | Yes       |
-| DomainID         | The unique identifier for the domain to be updated       | Yes       |
-| LinkTracking     | Enable or disable link tracking (1 for enable, 0 for disable) | No        |
-| OpenTracking     | Enable or disable open tracking (1 for enable, 0 for disable) | No        |
-| UnsubscribeLink  | Enable or disable unsubscribe link (1 for enable, 0 for disable) | No        |
-| HostingProvider  | The name of the hosting provider                         | No        |
-| Subdomain        | The subdomain to be associated with the sender domain    | No        |
+| Parameter       | Description                                                          | Required? |
+|-----------------|----------------------------------------------------------------------|-----------|
+| SessionID       | The ID of the user's current session                                 | Yes       |
+| APIKey          | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command         | EmailGateway.UpdateDomain                                            | Yes       |
+| DomainID        | The unique identifier for the domain to be updated                   | Yes       |
+| LinkTracking    | Enable or disable link tracking (1 for enable, 0 for disable)        | No        |
+| OpenTracking    | Enable or disable open tracking (1 for enable, 0 for disable)        | No        |
+| UnsubscribeLink | Enable or disable unsubscribe link (1 for enable, 0 for disable)     | No        |
+| HostingProvider | The name of the hosting provider                                     | No        |
+| Subdomain       | The subdomain to be associated with the sender domain                | No        |
 
 ::: code-group
 
@@ -1298,24 +1341,24 @@ curl -X POST https://example.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "Domain": {
-        "DomainID": "123",
-        "LinkTracking": "1",
-        "OpenTracking": "1",
-        "UnsubscribeLink": "1",
-        "HostingProvider": "YourHostingProvider",
-        "Subdomain": "mail"
-    }
+  "Success": true,
+  "ErrorCode": 0,
+  "Domain": {
+    "DomainID": "123",
+    "LinkTracking": "1",
+    "OpenTracking": "1",
+    "UnsubscribeLink": "1",
+    "HostingProvider": "YourHostingProvider",
+    "Subdomain": "mail"
+  }
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": 1,
-    "ErrorMessage": "Required field 'DomainID' is missing."
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorMessage": "Required field 'DomainID' is missing."
 }
 ```
 
@@ -1323,22 +1366,24 @@ curl -X POST https://example.com/api.php \
 1: Required field 'DomainID' is missing.
 5: Unable to retrieve sender domain information.
 ```
+
 :::
 
 ## Verify Domain Ownership
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to verify the ownership of a domain by checking its DNS records. It ensures that the domain is properly configured with the necessary DNS records for email sending services.
+This endpoint is used to verify the ownership of a domain by checking its DNS records. It ensures that the domain is
+properly configured with the necessary DNS records for email sending services.
 
 **Request Body Parameters:**
 
-| Parameter    | Description                                                  | Required? |
-|--------------|--------------------------------------------------------------|-----------|
-| SessionID    | The ID of the user's current session                         | Yes       |
-| APIKey       | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command      | EmailGateway.VerifyDomain                                    | Yes       |
-| DomainID     | The unique identifier for the domain to be verified          | Yes       |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | EmailGateway.VerifyDomain                                            | Yes       |
+| DomainID  | The unique identifier for the domain to be verified                  | Yes       |
 
 ::: code-group
 
@@ -1380,35 +1425,37 @@ curl -X POST https://example.com/api.php \
 1: Required field 'DomainID' is missing.
 2: Unable to retrieve the sender domain information.
 ```
+
 :::
 
 ## Send Email
 
 <Badge type="info" text="POST" /> `/api/v1/email`
 
-This API end-point allows you to send an email with various options such as HTML content, plain text content, attachments, and more. It requires a sender domain API key for authorization.
+This API end-point allows you to send an email with various options such as HTML content, plain text content,
+attachments, and more. It requires a sender domain API key for authorization.
 
 **Request Body Parameters:**
 
-| Parameter      | Description                                                                 | Required? |
-|----------------|-----------------------------------------------------------------------------|-----------|
-| SenderAPIKey   | The API key associated with the sender's domain                             | Yes       |
-| Subject        | The subject of the email                                                    | Yes       |
-| ContentType    | The type of content being sent (e.g., 'html' or 'plain')                    | Yes       |
-| HtmlContent    | The HTML content of the email (required if ContentType is 'html')           | No        |
-| PlainContent   | The plain text content of the email (required if ContentType is 'plain')    | No        |
-| From           | The sender's email address and name                                         | Yes       |
-| To             | The recipient's email address and name                                      | Yes       |
-| CC             | The CC'd recipients' email addresses and names                              | No        |
-| BCC            | The BCC'd recipients' email addresses and names                             | No        |
-| ReplyTo        | The Reply-To email address and name                                         | No        |
-| Attachments    | An array of attachments to include in the email                             | No        |
-| Headers        | Custom headers to include in the email                                      | No        |
-| Tags           | Tags associated with the email for tracking purposes                        | No        |
-| TrackLinks     | Whether to track links in the email                                         | No        |
-| TrackOpens     | Whether to track opens of the email                                         | No        |
-| SendAt         | The planned delivery time of the email                                      | No        |
-| TargetListID   | The ID of the target subscriber list (if sending to a list)                 | No        |
+| Parameter    | Description                                                              | Required? |
+|--------------|--------------------------------------------------------------------------|-----------|
+| SenderAPIKey | The API key associated with the sender's domain                          | Yes       |
+| Subject      | The subject of the email                                                 | Yes       |
+| ContentType  | The type of content being sent (e.g., 'html' or 'plain')                 | Yes       |
+| HtmlContent  | The HTML content of the email (required if ContentType is 'html')        | No        |
+| PlainContent | The plain text content of the email (required if ContentType is 'plain') | No        |
+| From         | The sender's email address and name                                      | Yes       |
+| To           | The recipient's email address and name                                   | Yes       |
+| CC           | The CC'd recipients' email addresses and names                           | No        |
+| BCC          | The BCC'd recipients' email addresses and names                          | No        |
+| ReplyTo      | The Reply-To email address and name                                      | No        |
+| Attachments  | An array of attachments to include in the email                          | No        |
+| Headers      | Custom headers to include in the email                                   | No        |
+| Tags         | Tags associated with the email for tracking purposes                     | No        |
+| TrackLinks   | Whether to track links in the email                                      | No        |
+| TrackOpens   | Whether to track opens of the email                                      | No        |
+| SendAt       | The planned delivery time of the email                                   | No        |
+| TargetListID | The ID of the target subscriber list (if sending to a list)              | No        |
 
 ::: code-group
 
@@ -1484,4 +1531,5 @@ curl -X POST "http://example.com/api/v1/email" \
 429: Too many requests. Wait for X seconds for another Y attempts.
 429: You have exceeded your send rate limits. Please wait before sending another email.
 ```
+
 :::

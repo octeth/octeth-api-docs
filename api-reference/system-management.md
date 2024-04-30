@@ -8,7 +8,8 @@ layout: doc
 
 <Badge type="info" text="POST" /> `/api/v1/system-health-check`
 
-This API end-point is used to perform a health check on various system components such as MySQL, Elasticsearch, RabbitMQ, Redis, and Session management. It requires an admin API key for authorization.
+This API end-point is used to perform a health check on various system components such as MySQL, Elasticsearch,
+RabbitMQ, Redis, and Session management. It requires an admin API key for authorization.
 
 **Request Body Parameters:**
 
@@ -43,32 +44,32 @@ curl -X GET "https://example.com/api/v1/system-health-check" \
 ```json [Error Response]
 # 503 Service Unavailable
 {
-  "Errors": [
-    {
-      "Code": 1,
-      "Message": "Authentication failed. Invalid admin API key."
-    },
-    {
-      "Code": 2,
-      "Message": "There is no registered admin user."
-    },
-    {
-      "Code": 3,
-      "Message": "Elasticsearch connection failed."
-    },
-    {
-      "Code": 4,
-      "Message": "RabbitMQ connection failed."
-    },
-    {
-      "Code": 5,
-      "Message": "Redis connection failed."
-    },
-    {
-      "Code": 6,
-      "Message": "Session is not active."
-    }
-  ]
+"Errors": [
+{
+"Code": 1,
+"Message": "Authentication failed. Invalid admin API key."
+},
+{
+"Code": 2,
+"Message": "There is no registered admin user."
+},
+{
+"Code": 3,
+"Message": "Elasticsearch connection failed."
+},
+{
+"Code": 4,
+"Message": "RabbitMQ connection failed."
+},
+{
+"Code": 5,
+"Message": "Redis connection failed."
+},
+{
+"Code": 6,
+"Message": "Session is not active."
+}
+]
 }
 ```
 
@@ -80,6 +81,7 @@ curl -X GET "https://example.com/api/v1/system-health-check" \
 5: Redis connection failed.
 6: Session is not active.
 ```
+
 :::
 
 **HTTP Response and Error Codes:**

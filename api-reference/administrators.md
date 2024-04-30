@@ -8,20 +8,21 @@ layout: doc
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used for administrator authentication. It validates the provided credentials and, if successful, initiates a new admin session.
+This endpoint is used for administrator authentication. It validates the provided credentials and, if successful,
+initiates a new admin session.
 
 **Request Body Parameters:**
 
-| Parameter      | Description                                                          | Required?   |
-|----------------|----------------------------------------------------------------------|-------------|
-| Command        | Admin.Login                                                          | Yes         |
-| Username       | The username of the admin attempting to log in                       | Yes         |
-| Password       | The password for the admin account                                   | Yes         |
-| Captcha        | The captcha code to verify if captcha is enabled                     | Conditional |
-| DisableCaptcha | Set to true to disable captcha verification                          | No          |
-| AdminApiKey    | The API key for admin verification                                   | No          |
-| Disable2FA     | Set to true to disable two-factor authentication                     | No          |
-| TfaCode        | The two-factor authentication code                                   | Conditional |
+| Parameter      | Description                                      | Required?   |
+|----------------|--------------------------------------------------|-------------|
+| Command        | Admin.Login                                      | Yes         |
+| Username       | The username of the admin attempting to log in   | Yes         |
+| Password       | The password for the admin account               | Yes         |
+| Captcha        | The captcha code to verify if captcha is enabled | Conditional |
+| DisableCaptcha | Set to true to disable captcha verification      | No          |
+| AdminApiKey    | The API key for admin verification               | No          |
+| Disable2FA     | Set to true to disable two-factor authentication | No          |
+| TfaCode        | The two-factor authentication code               | Conditional |
 
 ::: code-group
 
@@ -39,8 +40,7 @@ curl -X POST https://example.com/api.php \
   "SessionID": "newSessionId",
   "AdminInfo": {
     "AdminID": "1",
-    "Username": "admin",
-    // Other admin info fields
+    "Username": "admin"
   }
 }
 ```
@@ -48,7 +48,9 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [3]
+  "ErrorCode": [
+    3
+  ]
 }
 ```
 
@@ -60,13 +62,15 @@ curl -X POST https://example.com/api.php \
 5: Invalid captcha
 101: Invalid two-factor authentication code
 ```
+
 :::
 
 ## Update Administrator Details
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint allows for updating the details of an existing administrator account. It requires the admin to be authenticated and to own the account that is being updated.
+This endpoint allows for updating the details of an existing administrator account. It requires the admin to be
+authenticated and to own the account that is being updated.
 
 **Request Body Parameters:**
 
@@ -105,7 +109,9 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [7]
+  "ErrorCode": [
+    7
+  ]
 }
 ```
 
@@ -117,4 +123,5 @@ curl -X POST https://example.com/api.php \
 7: Invalid email address format
 8: Admin account not owned by the logged-in admin
 ```
+
 :::

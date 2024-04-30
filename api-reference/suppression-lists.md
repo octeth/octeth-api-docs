@@ -52,13 +52,15 @@ This API call does not return any error codes.
 ```txt [Error Codes]
 This API call does not return any error codes.
 ```
+
 :::
 
 ## Remove Email from Suppression List
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to remove an email address from a user's suppression list. The suppression list is a list of email addresses that a user has chosen not to receive communications from.
+This endpoint is used to remove an email address from a user's suppression list. The suppression list is a list of email
+addresses that a user has chosen not to receive communications from.
 
 **Request Body Parameters:**
 
@@ -92,7 +94,9 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [1]
+  "ErrorCode": [
+    1
+  ]
 }
 ```
 
@@ -100,23 +104,26 @@ curl -X POST https://example.com/api.php \
 1: Missing required parameter: EmailAddress
 2: Invalid email address format
 ```
+
 :::
 
 ## Import Email Addresses to Suppression List
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to import email addresses into the suppression list. The suppression list is a list of email addresses that are excluded from receiving emails. This can be done by providing a JSON array of email addresses or a bulk string with email addresses separated by new lines.
+This endpoint is used to import email addresses into the suppression list. The suppression list is a list of email
+addresses that are excluded from receiving emails. This can be done by providing a JSON array of email addresses or a
+bulk string with email addresses separated by new lines.
 
 **Request Body Parameters:**
 
-| Parameter          | Description                                                                 | Required? |
-|--------------------|-----------------------------------------------------------------------------|-----------|
-| SessionID          | The ID of the user's current session                                        | Yes       |
-| APIKey             | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
-| Command            | Suppression.Import                                                          | Yes       |
-| EmailAddresses     | JSON array of email addresses to be added to the suppression list           | No        |
-| EmailAddressesBulk | Bulk string of email addresses separated by new lines                       | No        |
+| Parameter          | Description                                                          | Required? |
+|--------------------|----------------------------------------------------------------------|-----------|
+| SessionID          | The ID of the user's current session                                 | Yes       |
+| APIKey             | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command            | Suppression.Import                                                   | Yes       |
+| EmailAddresses     | JSON array of email addresses to be added to the suppression list    | No        |
+| EmailAddressesBulk | Bulk string of email addresses separated by new lines                | No        |
 
 ::: code-group
 
@@ -145,7 +152,10 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [1, 2],
+  "ErrorCode": [
+    1,
+    2
+  ],
   "ErrorMessage": "Invalid email address format or missing email addresses."
 }
 ```
@@ -154,12 +164,15 @@ curl -X POST https://example.com/api.php \
 1: Email addresses not provided in either 'EmailAddresses' or 'EmailAddressesBulk'.
 2: Invalid email address format.
 ```
+
 :::
 
- 
 ::: warning NOTICE
-- Please note that at least one of the parameters `EmailAddresses` or `EmailAddressesBulk` must be provided. 
-- If both are provided, they will be processed together. 
-- The `EmailAddresses` parameter must be a valid JSON array of email addresses, and `EmailAddressesBulk` must be a string with email addresses separated by new lines. 
-- If an email address is invalid, it will be counted as failed and returned in the `FailedEmailAddresses` array in the response.
-:::
+
+- Please note that at least one of the parameters `EmailAddresses` or `EmailAddressesBulk` must be provided.
+- If both are provided, they will be processed together.
+- The `EmailAddresses` parameter must be a valid JSON array of email addresses, and `EmailAddressesBulk` must be a
+  string with email addresses separated by new lines.
+- If an email address is invalid, it will be counted as failed and returned in the `FailedEmailAddresses` array in the
+  response.
+  :::

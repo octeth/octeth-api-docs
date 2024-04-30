@@ -10,12 +10,12 @@ This endpoint is used to create a new email record associated with the user's ac
 
 **Request Body Parameters:**
 
-| Parameter  | Description                                           | Required? |
-|------------|-------------------------------------------------------|-----------|
-| SessionID  | The ID of the user's current session                  | Yes       |
-| APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command    | Email.Create                                          | Yes       |
-| RelUserID  | The ID of the user related to the email               | Yes       |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | Email.Create                                                         | Yes       |
+| RelUserID | The ID of the user related to the email                              | Yes       |
 
 ::: code-group
 
@@ -32,9 +32,9 @@ curl -X POST https://example.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "EmailID": "new-email-id"
+  "Success": true,
+  "ErrorCode": 0,
+  "EmailID": "new-email-id"
 }
 ```
 
@@ -103,12 +103,12 @@ account.
 
 **Request Body Parameters:**
 
-| Parameter | Description | Required? |
-|-------------|---------------|--------------|
-| SessionID | The ID of the user's current session | Yes |
-| APIKey | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
-| Command | Email.Duplicate | Yes |
-| EmailID | The unique identifier of the email to duplicate | Yes |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | Email.Duplicate                                                      | Yes       |
+| EmailID   | The unique identifier of the email to duplicate                      | Yes       |
 
 ::: code-group
 
@@ -130,7 +130,9 @@ curl -X POST https://yourdomain.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [1]
+  "ErrorCode": [
+    1
+  ]
 }
 ```
 
@@ -150,17 +152,17 @@ appearance and content of an email before sending it out to the actual recipient
 
 **Request Body Parameters:**
 
-| Parameter                   | Description                                                                 | Required? |
-|-----------------------------|-----------------------------------------------------------------------------|-----------|
-| SessionID                   | The ID of the user's current session                                        | Yes       |
-| APIKey                      | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
-| Command                     | Email.EmailPreview                                                          | Yes       |
-| EmailID                     | The unique identifier for the email to be previewed                         | Yes       |
-| EmailAddress                | The email address where the preview will be sent                            | Yes       |
-| CampaignID                  | The ID of the campaign associated with the email (optional)                 | No        |
-| ListID                      | The ID of the list associated with the email (optional)                     | No        |
-| AddUserGroupHeaderFooter    | Boolean to decide if user group header and footer should be added (optional)| No        |
-| EmailType                   | Type of the email, e.g., 'optinconfirmation' (optional)                     | No        |
+| Parameter                | Description                                                                  | Required? |
+|--------------------------|------------------------------------------------------------------------------|-----------|
+| SessionID                | The ID of the user's current session                                         | Yes       |
+| APIKey                   | The user's API key. Either `SessionID` or `APIKey` must be provided.         | Yes       |
+| Command                  | Email.EmailPreview                                                           | Yes       |
+| EmailID                  | The unique identifier for the email to be previewed                          | Yes       |
+| EmailAddress             | The email address where the preview will be sent                             | Yes       |
+| CampaignID               | The ID of the campaign associated with the email (optional)                  | No        |
+| ListID                   | The ID of the list associated with the email (optional)                      | No        |
+| AddUserGroupHeaderFooter | Boolean to decide if user group header and footer should be added (optional) | No        |
+| EmailType                | Type of the email, e.g., 'optinconfirmation' (optional)                      | No        |
 
 ::: code-group
 
@@ -214,12 +216,12 @@ This endpoint retrieves detailed information about a specific email by its uniqu
 
 **Request Body Parameters:**
 
-| Parameter | Description | Required? |
-|-------------|---------------|--------------|
-| SessionID | The ID of the user's current session | Yes |
-| APIKey | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
-| Command | Email.Get | Yes |
-| EmailID | The unique identifier of the email to retrieve | Yes |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | Email.Get                                                            | Yes       |
+| EmailID   | The unique identifier of the email to retrieve                       | Yes       |
 
 ::: code-group
 
@@ -236,21 +238,22 @@ curl -X POST https://yourdomain.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "EmailInformation": {
-        "EmailID": "12345",
-        "Subject": "Your Email Subject",
-        "Body": "The content of the email...",
-        // ... other email details
-    }
+  "Success": true,
+  "ErrorCode": 0,
+  "EmailInformation": {
+    "EmailID": "12345",
+    "Subject": "Your Email Subject",
+    "Body": "The content of the email..."
+  }
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": [1]
+  "Success": false,
+  "ErrorCode": [
+    1
+  ]
 }
 ```
 
@@ -270,13 +273,13 @@ can include subscriber information, campaign links, opt-in links, list links, an
 
 **Request Body Parameters:**
 
-| Parameter | Description | Required? |
-|-------------|---------------|--------------|
-| SessionID | The ID of the user's current session | Yes |
-| APIKey | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
-| Command | Email.PersonalizationTags | Yes |
-| Scope | A list of scopes to retrieve personalization tags for. Possible values are 'Subscriber', 'CampaignLinks', 'OptLinks', 'ListLinks', 'AllLinks', 'User'. | Yes |
-| ListID | The ID of the list to retrieve subscriber tags for. Required if 'Subscriber' is included in the scope. | Conditional |
+| Parameter | Description                                                                                                                                            | Required?   |
+|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
+| SessionID | The ID of the user's current session                                                                                                                   | Yes         |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                   | Yes         |
+| Command   | Email.PersonalizationTags                                                                                                                              | Yes         |
+| Scope     | A list of scopes to retrieve personalization tags for. Possible values are 'Subscriber', 'CampaignLinks', 'OptLinks', 'ListLinks', 'AllLinks', 'User'. | Yes         |
+| ListID    | The ID of the list to retrieve subscriber tags for. Required if 'Subscriber' is included in the scope.                                                 | Conditional |
 
 ::: code-group
 
@@ -297,7 +300,6 @@ curl -X POST https://example.com/api.php \
   "Success": true,
   "ErrorCode": 0,
   "PersonalizationTags": [
-    // ... list of personalization tags ...
   ]
 }
 ```
@@ -327,12 +329,12 @@ This endpoint performs a spam test on an email by passing its content through a 
 
 **Request Body Parameters:**
 
-| Parameter | Description | Required? |
-|-------------|---------------|--------------|
-| SessionID | The ID of the user's current session | Yes |
-| APIKey | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes |
-| Command | Email.SpamTest | Yes |
-| EmailID | The unique identifier of the email to be tested | Yes |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | Email.SpamTest                                                       | Yes       |
+| EmailID   | The unique identifier of the email to be tested                      | Yes       |
 
 ::: code-group
 
@@ -349,21 +351,21 @@ curl -X POST https://yourdomain.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "TestResults": {
-        "SpamStatus": "No",
-        "Score": 1.5,
-        "Details": "Details of the spam test results..."
-    }
+  "Success": true,
+  "ErrorCode": 0,
+  "TestResults": {
+    "SpamStatus": "No",
+    "Score": 1.5,
+    "Details": "Details of the spam test results..."
+  }
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": 1,
-    "ErrorMessage": "Email ID is required."
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorMessage": "Email ID is required."
 }
 ```
 
@@ -383,31 +385,31 @@ This endpoint allows updating the content and settings of an existing email by p
 
 **Request Body Parameters:**
 
-| Parameter         | Description                                                                 | Required? |
-|-------------------|-----------------------------------------------------------------------------|-----------|
-| SessionID         | The ID of the user's current session                                        | Yes       |
-| APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
-| Command           | Email.Update                                                                | Yes       |
-| EmailID           | Unique identifier for the email to be updated                               | Yes       |
-| ValidateScope     | Scope of validation for the email content (OptIn, Campaign, AutoResponder)  | Yes       |
-| Mode              | The mode of the email content (Editor, Stripo, Unlayer, etc.)               | No        |
-| RelTemplateID     | The ID of the related template, if applicable                               | No        |
-| SenderDomain      | The sender's domain to be used for the email                                | No        |
-| FromEmail         | The email address that appears in the "from" field                           | No        |
-| FromName          | The name that appears in the "from" field                                   | No        |
-| ReplyToEmail      | The email address that appears in the "reply-to" field                      | No        |
-| ReplyToName       | The name that appears in the "reply-to" field                               | No        |
-| Subject           | The subject line of the email                                               | No        |
-| HTMLContent       | The HTML content of the email                                               | No        |
-| PlainContent      | The plain text content of the email                                         | No        |
-| FetchURL          | URL to fetch HTML content from, if mode is 'Import'                          | No        |
-| FetchPlainURL     | URL to fetch plain text content from, if mode is 'Import'                    | No        |
-| ImageEmbedding    | Indicates if images should be embedded in the email content                 | No        |
-| PreHeaderText     | Pre-header text to be included in the email                                 | No        |
-| ExtraContent1     | Additional content field 1                                                  | No        |
-| ExtraContent2     | Additional content field 2                                                  | No        |
-| PlainContentAutoConvert | Indicates if plain content should be auto-converted from HTML content | No        |
-| SubjectSetToTitleElement | Indicates if the subject should be set to the title element of HTML content | No |
+| Parameter                | Description                                                                 | Required? |
+|--------------------------|-----------------------------------------------------------------------------|-----------|
+| SessionID                | The ID of the user's current session                                        | Yes       |
+| APIKey                   | The user's API key. Either `SessionID` or `APIKey` must be provided.        | Yes       |
+| Command                  | Email.Update                                                                | Yes       |
+| EmailID                  | Unique identifier for the email to be updated                               | Yes       |
+| ValidateScope            | Scope of validation for the email content (OptIn, Campaign, AutoResponder)  | Yes       |
+| Mode                     | The mode of the email content (Editor, Stripo, Unlayer, etc.)               | No        |
+| RelTemplateID            | The ID of the related template, if applicable                               | No        |
+| SenderDomain             | The sender's domain to be used for the email                                | No        |
+| FromEmail                | The email address that appears in the "from" field                          | No        |
+| FromName                 | The name that appears in the "from" field                                   | No        |
+| ReplyToEmail             | The email address that appears in the "reply-to" field                      | No        |
+| ReplyToName              | The name that appears in the "reply-to" field                               | No        |
+| Subject                  | The subject line of the email                                               | No        |
+| HTMLContent              | The HTML content of the email                                               | No        |
+| PlainContent             | The plain text content of the email                                         | No        |
+| FetchURL                 | URL to fetch HTML content from, if mode is 'Import'                         | No        |
+| FetchPlainURL            | URL to fetch plain text content from, if mode is 'Import'                   | No        |
+| ImageEmbedding           | Indicates if images should be embedded in the email content                 | No        |
+| PreHeaderText            | Pre-header text to be included in the email                                 | No        |
+| ExtraContent1            | Additional content field 1                                                  | No        |
+| ExtraContent2            | Additional content field 2                                                  | No        |
+| PlainContentAutoConvert  | Indicates if plain content should be auto-converted from HTML content       | No        |
+| SubjectSetToTitleElement | Indicates if the subject should be set to the title element of HTML content | No        |
 
 ::: code-group
 
@@ -433,7 +435,9 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [1]
+  "ErrorCode": [
+    1
+  ]
 }
 ```
 
@@ -466,11 +470,11 @@ This API call returns the list of email contents associated with the user's acco
 
 **Request Body Parameters:**
 
-| Parameter   | Description                                         | Required? |
-|-------------|-----------------------------------------------------|-----------|
-| SessionID   | The ID of the user's current session                | Yes       |
-| APIKey      | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command     | Emails.Get                                          | Yes       |
+| Parameter | Description                                                          | Required? |
+|-----------|----------------------------------------------------------------------|-----------|
+| SessionID | The ID of the user's current session                                 | Yes       |
+| APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command   | Emails.Get                                                           | Yes       |
 
 ::: code-group
 
@@ -486,15 +490,12 @@ curl -X POST https://yourdomain.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "ErrorText": "",
-    "TotalEmailCount": 5,
-    "Emails": [
-        // ...
-        // Email records
-        // ...
-    ]
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalEmailCount": 5,
+  "Emails": [
+  ]
 }
 ```
 
@@ -505,4 +506,5 @@ No error code is returned for this API end-point
 ```txt [Error Codes]
 No error code is returned for this API end-point
 ```
+
 :::

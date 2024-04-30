@@ -245,19 +245,17 @@ curl -X POST https://yourdomain.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "ErrorText": "",
-    "TotalFieldCount": 5,
-    "CustomFields": [
-        {
-            "FieldID": "1",
-            "FieldName": "CustomField1",
-            "FieldType": "text",
-            // Additional custom field details...
-        },
-        // Additional custom fields...
-    ]
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalFieldCount": 5,
+  "CustomFields": [
+    {
+      "FieldID": "1",
+      "FieldName": "CustomField1",
+      "FieldType": "text"
+    }
+  ]
 }
 ```
 

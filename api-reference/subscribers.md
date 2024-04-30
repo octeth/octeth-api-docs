@@ -107,13 +107,10 @@ curl -X POST https://example.com/api.php \
     "SubscriberID": "456",
     "EmailAddress": "subscriber@example.com",
     "Suppressed": false
-    // Additional subscriber details...
   },
   "SubscriberTags": [
-    // List of tags associated with the subscriber...
   ],
   "SubscriberSegments": [
-    // List of segments the subscriber is part of...
   ],
   "SubscriberJourneys": {
     "Completed": [
@@ -617,12 +614,12 @@ curl -X POST https://example.com/api.php \
   "ListID": "1",
   "SubscriberID": "16",
   "ActivityType": "tagged",
-  {
-    "TagID": "2",
-    "TagName": "TEST-TAG-TWO",
-    "RulesJSON": "\"[[{\\\"type\\\":\\\"fields\\\",\\\"field_id\\\":\\\"SubscriptionStatus\\\",\\\"operator\\\":\\\"contains\\\",\\\"value\\\":\\\"Subscribed\\\"}],[{\\\"type\\\":\\\"suppressions\\\",\\\"operator\\\":\\\"not exist\\\"}]]\"",
-    "RulesOperator": "or"
-  }
+{
+  "TagID": "2",
+  "TagName": "TEST-TAG-TWO",
+  "RulesJSON": "\"[[{\\\"type\\\":\\\"fields\\\",\\\"field_id\\\":\\\"SubscriptionStatus\\\",\\\"operator\\\":\\\"contains\\\",\\\"value\\\":\\\"Subscribed\\\"}],[{\\\"type\\\":\\\"suppressions\\\",\\\"operator\\\":\\\"not exist\\\"}]]\"",
+  "RulesOperator": "or"
+}
 }
 ```
 
@@ -721,7 +718,6 @@ curl -X POST https://example.com/api.php \
     "DomainID": "2",
     "APIKeyID": "",
     "SMTPID": ""
-    // and other parameters
   }
 }
 ```
@@ -879,9 +875,7 @@ curl -X POST https://example.com/api.php \
     {
       "SubscriberID": "1",
       "EmailAddress": "subscriber@example.com"
-      // More subscriber fields...
     }
-    // More subscribers...
   ],
   "TotalSubscribers": 100
 }
@@ -951,9 +945,7 @@ curl -X POST https://example.com/api.php \
       "SubscriberID": 1,
       "EmailAddress": "example@example.com",
       "Suppressed": false
-      // More subscriber fields...
     }
-    // More subscribers...
   ],
   "TotalSubscribers": 150
 }
@@ -1030,7 +1022,6 @@ curl -X POST 'https://example.com/api/v1/subscriber.export' \
       "Code": 2,
       "Message": "Missing RulesJSON parameter"
     }
-    // Additional errors based on the validation
   ]
 }
 ```
@@ -1229,7 +1220,6 @@ curl -X POST "https://example.com/api/v1/subscriber.import" \
       "Code": 4,
       "Message": "Missing AddToGlobalSuppressionList parameter"
     }
-    // Additional errors may be included
   ]
 }
 ```
@@ -1392,7 +1382,6 @@ curl -X POST 'https://example.com/api/v1/subscriber.create' \
     "SubscriberID": "subscriber_id_here",
     "EmailAddress": "email@example.com",
     "Status": "Subscribed"
-    // Additional subscriber details...
   },
   "SubscriberTags": [],
   "SubscriberSegments": [],
@@ -1408,7 +1397,6 @@ curl -X POST 'https://example.com/api/v1/subscriber.create' \
       "Code": 2,
       "Message": "Missing EmailAddress parameter"
     }
-    // Additional errors...
   ]
 }
 ```

@@ -41,19 +41,14 @@ curl -X POST https://example.com/api.php \
     "ListID": "123",
     "ListName": "Sample List",
     "RelOwnerUserID": "456"
-    // ... other list details
   },
   "Segments": [
-    // ... list of segments
   ],
   "CustomFields": [
-    // ... list of custom fields
   ],
   "SubscriberTags": [
-    // ... list of subscriber tags
   ],
   "AutoResponders": [
-    // ... list of autoresponders
   ]
 }
 ```
@@ -164,7 +159,6 @@ curl -X POST https://example.com/api.php \
     "EventTrackerJS": "...",
     "EventTrackerProperties": [],
     "LastEventTrackedAt": "2024-02-21 08:33:47"
-    // Other list details...
   }
 }
 ```
@@ -386,7 +380,6 @@ curl -X POST https://yourdomain.com/api.php \
       "EncryptedSaltedListID": "ab56b4d92b40713acc5af89985d4b786",
       "SyncLastDateTime": "2023-01-02 12:00:00"
     }
-    // ... more lists
   ]
 }
 ```
