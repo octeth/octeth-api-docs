@@ -152,17 +152,23 @@ appearance and content of an email before sending it out to the actual recipient
 
 **Request Body Parameters:**
 
-| Parameter                | Description                                                                  | Required? |
-|--------------------------|------------------------------------------------------------------------------|-----------|
-| SessionID                | The ID of the user's current session                                         | Yes       |
-| APIKey                   | The user's API key. Either `SessionID` or `APIKey` must be provided.         | Yes       |
-| Command                  | Email.EmailPreview                                                           | Yes       |
-| EmailID                  | The unique identifier for the email to be previewed                          | Yes       |
-| EmailAddress             | The email address where the preview will be sent                             | Yes       |
-| CampaignID               | The ID of the campaign associated with the email (optional)                  | No        |
-| ListID                   | The ID of the list associated with the email (optional)                      | No        |
-| AddUserGroupHeaderFooter | Boolean to decide if user group header and footer should be added (optional) | No        |
-| EmailType                | Type of the email, e.g., 'optinconfirmation' (optional)                      | No        |
+Here are the rephrased descriptions:
+
+| Parameter                | Description                                                                                                                              | Required? |
+|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------|-----------|
+| SessionID                | The ID of the user's current session.                                                                                                    | Yes       |
+| APIKey                   | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                     | Yes       |
+| Command                  | The command for email preview, set as `Email.EmailPreview`.                                                                              | Yes       |
+| EmailID                  | The unique identifier of the email to be previewed.                                                                                      | Yes       |
+| EmailAddress             | The email address where the preview will be sent.                                                                                        | Yes       |
+| CampaignID               | The ID of the campaign associated with the email (optional).                                                                             | No        |
+| ListID                   | The ID of the list associated with the email (optional).                                                                                 | No        |
+| AddUserGroupHeaderFooter | Indicates if the user group header and footer should be added (optional).                                                                | No        |
+| EmailType                | The type of the email, e.g., 'optinconfirmation' (optional).                                                                             | No        |
+| HTMLContent              | The HTML content of the preview email (if `EmailID` is not provided).                                                                    | No        |
+| PlainTextContent         | The plain text content of the preview email (if `EmailID` is not provided).                                                              | No        |
+| FromName                 | The "from name" email header of the preview email (if `EmailID` is not provided). If not provided, `Preview Email` will be set.          | No        |
+| FromEmailAddress         | The "from email address" header of the preview email (if `EmailID` is not provided). If not provided, `preview@preview.com` will be set. | No        |
 
 ::: code-group
 

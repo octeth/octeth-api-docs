@@ -1149,29 +1149,33 @@ triggering actions, and adding to suppression lists.
 
 **Request Body Parameters:**
 
-| Parameter                                      | Description                                                            | Required? |
-|------------------------------------------------|------------------------------------------------------------------------|-----------|
-| SessionID                                      | The ID of the user's current session                                   | Yes       |
-| APIKey                                         | The user's API key. Either `SessionID` or `APIKey` must be provided.   | Yes       |
-| ListID                                         | The unique identifier for the list to import subscribers into          | Yes       |
-| AddToGlobalSuppressionList                     | Whether to add the imported subscribers to the global suppression list | Yes       |
-| AddToSuppressionList                           | Whether to add the imported subscribers to the list's suppression list | Yes       |
-| UpdateDuplicates                               | Whether to update existing subscribers if duplicates are found         | Yes       |
-| TriggerActions                                 | Whether to trigger actions for the imported subscribers                | Yes       |
-| Tags                                           | An array of tags to assign to the imported subscribers                 | Yes       |
-| ImportFrom.CSV.URL                             | The URL to fetch CSV data from (optional if CSV data is provided)      | No        |
-| ImportFrom.CSV.Data                            | The CSV data to import (optional if a URL is provided)                 | No        |
-| ImportFrom.CSV.FieldTerminator                 | The character used to terminate fields in the CSV data                 | No        |
-| ImportFrom.CSV.FieldEncloser                   | The character used to enclose fields in the CSV data                   | No        |
-| ImportFrom.CSV.EscapedBy                       | The character used to escape special characters in the CSV data        | No        |
-| ImportFrom.CSV.MappedFields                    | An array mapping CSV fields to subscriber attributes                   | Yes       |
-| ImportFrom.Mailchimp.APIKey                    | The Mailchimp API key for importing subscribers                        | No        |
-| ImportFrom.Mailchimp.Server                    | The Mailchimp server prefix for importing subscribers                  | No        |
-| ImportFrom.Mailchimp.MailchimpListID           | The Mailchimp list ID to import subscribers from                       | No        |
-| ImportFrom.ActiveCampaign.APIKey               | The ActiveCampaign API key for importing subscribers                   | No        |
-| ImportFrom.ActiveCampaign.AccountName          | The ActiveCampaign account name for importing subscribers              | No        |
-| ImportFrom.ActiveCampaign.ActiveCampaignListID | The ActiveCampaign list ID to import subscribers from                  | No        |
-| ImportStatusUpdateWebhookURL                   | A webhook URL to receive updates about the import status               | No        |
+Sure, here are the rephrased descriptions:
+
+| Parameter                                      | Description                                                                           | Required? |
+|------------------------------------------------|---------------------------------------------------------------------------------------|-----------|
+| SessionID                                      | The ID of the user's current session.                                                 | Yes       |
+| APIKey                                         | The user's API key. Either `SessionID` or `APIKey` must be provided.                  | Yes       |
+| ListID                                         | The unique identifier of the list to import subscribers into.                         | Yes       |
+| AddToGlobalSuppressionList                     | Indicates if the imported subscribers should be added to the global suppression list. | Yes       |
+| AddToSuppressionList                           | Indicates if the imported subscribers should be added to the list's suppression list. | Yes       |
+| UpdateDuplicates                               | Indicates if existing subscribers should be updated when duplicates are found.        | Yes       |
+| TriggerActions                                 | Indicates if actions should be triggered for the imported subscribers.                | Yes       |
+| Tags                                           | An array of tags to assign to the imported subscribers.                               | Yes       |
+| ImportFrom.CSV.URL                             | The URL to fetch CSV data from (optional if CSV data is provided).                    | No        |
+| ImportFrom.CSV.Data                            | The CSV data to import (optional if a URL is provided).                               | No        |
+| ImportFrom.CSV.FieldTerminator                 | The character used to terminate fields in the CSV data.                               | No        |
+| ImportFrom.CSV.FieldEncloser                   | The character used to enclose fields in the CSV data.                                 | No        |
+| ImportFrom.CSV.EscapedBy                       | The character used to escape special characters in the CSV data.                      | No        |
+| ImportFrom.CSV.MappedFields                    | An array mapping CSV fields to subscriber attributes.                                 | Yes       |
+| ImportFrom.Mailchimp.APIKey                    | The Mailchimp API key for importing subscribers.                                      | No        |
+| ImportFrom.Mailchimp.Server                    | The Mailchimp server prefix for importing subscribers.                                | No        |
+| ImportFrom.Mailchimp.MailchimpListID           | The Mailchimp list ID to import subscribers from.                                     | No        |
+| ImportFrom.ActiveCampaign.APIKey               | The ActiveCampaign API key for importing subscribers.                                 | No        |
+| ImportFrom.ActiveCampaign.AccountName          | The ActiveCampaign account name for importing subscribers.                            | No        |
+| ImportFrom.ActiveCampaign.ActiveCampaignListID | The ActiveCampaign list ID to import subscribers from.                                | No        |
+| ImportFrom.Drip.APIKey                         | The Drip API key to import subscribers.                                               | No        |
+| ImportFrom.Drip.AccountID                      | The Drip account ID to import subscribers.                                            | No        |
+| ImportStatusUpdateWebhookURL                   | A webhook URL to receive updates about the import status.                             | No        |
 
 ::: code-group
 
