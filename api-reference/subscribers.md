@@ -1141,7 +1141,7 @@ curl -X GET 'https://api.example.com/api/v1/subscriber.export' \
 
 ## Import Subscribers
 
-<Badge type="info" text="POST" /> `/api/v1/subscriber.import`
+<Badge type="info" text="POST" /> `/api/v1/subscribers.import`
 
 This API end-point allows for importing subscribers into a specified list. It supports importing from CSV data,
 Mailchimp, or ActiveCampaign. The import process can be customized with various options such as updating duplicates,
