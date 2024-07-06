@@ -264,48 +264,49 @@ username, personal information, and account settings. Some parameters can only b
 
 **Request Body Parameters:**
 
-| Parameter             | Description                                                                    | Required? |
-|-----------------------|--------------------------------------------------------------------------------|-----------|
-| SessionID             | The ID of the user's current session                                           | Yes       |
-| APIKey                | The user's API key. Either `SessionID` or `APIKey` must be provided.           | Yes       |
-| Command               | User.Update                                                                    | Yes       |
-| UserID                | The unique identifier of the user to update                                    | Yes       |
-| AccountStatus         | The new status of the user's account (admin only)                              | No        |
-| AvailableCredits      | The number of available credits for the user (admin only)                      | No        |
-| SignUpIPAddress       | The IP address from which the user signed up (admin only)                      | No        |
-| APIKey                | The new API key for the user (admin only)                                      | No        |
-| RelUserGroupID        | The ID of the user group to which the user belongs (admin only)                | No        |
-| ReputationLevel       | The reputation level of the user, either 'Trusted' or 'Untrusted' (admin only) | No        |
-| UserSince             | The date since the user has been a member (admin only)                         | No        |
-| EmailAddress          | The new email address for the user                                             | No        |
-| Username              | The new username for the user                                                  | No        |
-| Password              | The new password for the user                                                  | No        |
-| FirstName             | The user's first name                                                          | No        |
-| LastName              | The user's last name                                                           | No        |
-| CompanyName           | The name of the user's company                                                 | No        |
-| Website               | The user's website URL                                                         | No        |
-| OtherEmailAddresses   | Other email addresses associated with the user                                 | No        |
-| Street                | The user's street address                                                      | No        |
-| Street2               | Additional street address information for the user                             | No        |
-| City                  | The user's city                                                                | No        |
-| State                 | The user's state or region                                                     | No        |
-| Zip                   | The user's postal or zip code                                                  | No        |
-| Country               | The user's country                                                             | No        |
-| VAT                   | The user's VAT number                                                          | No        |
-| Phone                 | The user's phone number                                                        | No        |
-| PhoneVerified         | Whether the user's phone number is verified (1 or 0)                           | No        |
-| Fax                   | The user's fax number                                                          | No        |
-| TimeZone              | The user's time zone                                                           | No        |
-| Language              | The user's preferred language                                                  | No        |
-| LastActivityDateTime  | The last activity date and time for the user                                   | No        |
-| ForwardToFriendHeader | Custom header for the 'Forward to Friend' emails                               | No        |
-| ForwardToFriendFooter | Custom footer for the 'Forward to Friend' emails                               | No        |
-| PreviewMyEmailAccount | The account information for PreviewMyEmail integration                         | No        |
-| PreviewMyEmailAPIKey  | The API key for PreviewMyEmail integration                                     | No        |
-| Enable2FA             | Enable two-factor authentication ('true' to enable)                            | No        |
-| Cancel2FA             | Cancel two-factor authentication ('true' to cancel)                            | No        |
-| RateLimits            | Custom rate limits for the user                                                | No        |
-| CustomEmailHeaders    | Custom email headers for the user                                              | No        |
+| Parameter                 | Description                                                                                                                                                                               | Required? |
+|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
+| SessionID                 | The ID of the user's current session                                                                                                                                                      | Yes       |
+| APIKey                    | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                                      | Yes       |
+| Command                   | User.Update                                                                                                                                                                               | Yes       |
+| UserID                    | The unique identifier of the user to update                                                                                                                                               | Yes       |
+| AccountStatus             | The new status of the user's account (admin only)                                                                                                                                         | No        |
+| AvailableCredits          | The number of available credits for the user (admin only)                                                                                                                                 | No        |
+| SignUpIPAddress           | The IP address from which the user signed up (admin only)                                                                                                                                 | No        |
+| APIKey                    | The new API key for the user (admin only)                                                                                                                                                 | No        |
+| RelUserGroupID            | The ID of the user group to which the user belongs (admin only)                                                                                                                           | No        |
+| ReputationLevel           | The reputation level of the user, either 'Trusted' or 'Untrusted' (admin only)                                                                                                            | No        |
+| UserSince                 | The date since the user has been a member (admin only)                                                                                                                                    | No        |
+| EmailAddress              | The new email address for the user                                                                                                                                                        | No        |
+| Username                  | The new username for the user                                                                                                                                                             | No        |
+| Password                  | The new password for the user                                                                                                                                                             | No        |
+| FirstName                 | The user's first name                                                                                                                                                                     | No        |
+| LastName                  | The user's last name                                                                                                                                                                      | No        |
+| CompanyName               | The name of the user's company                                                                                                                                                            | No        |
+| Website                   | The user's website URL                                                                                                                                                                    | No        |
+| OtherEmailAddresses       | Other email addresses associated with the user                                                                                                                                            | No        |
+| Street                    | The user's street address                                                                                                                                                                 | No        |
+| Street2                   | Additional street address information for the user                                                                                                                                        | No        |
+| City                      | The user's city                                                                                                                                                                           | No        |
+| State                     | The user's state or region                                                                                                                                                                | No        |
+| Zip                       | The user's postal or zip code                                                                                                                                                             | No        |
+| Country                   | The user's country                                                                                                                                                                        | No        |
+| VAT                       | The user's VAT number                                                                                                                                                                     | No        |
+| Phone                     | The user's phone number                                                                                                                                                                   | No        |
+| PhoneVerified             | Whether the user's phone number is verified (1 or 0)                                                                                                                                      | No        |
+| Fax                       | The user's fax number                                                                                                                                                                     | No        |
+| TimeZone                  | The user's time zone                                                                                                                                                                      | No        |
+| Language                  | The user's preferred language                                                                                                                                                             | No        |
+| LastActivityDateTime      | The last activity date and time for the user                                                                                                                                              | No        |
+| ForwardToFriendHeader     | Custom header for the 'Forward to Friend' emails                                                                                                                                          | No        |
+| ForwardToFriendFooter     | Custom footer for the 'Forward to Friend' emails                                                                                                                                          | No        |
+| PreviewMyEmailAccount     | The account information for PreviewMyEmail integration                                                                                                                                    | No        |
+| PreviewMyEmailAPIKey      | The API key for PreviewMyEmail integration                                                                                                                                                | No        |
+| Enable2FA                 | Enable two-factor authentication ('true' to enable)                                                                                                                                       | No        |
+| Cancel2FA                 | Cancel two-factor authentication ('true' to cancel)                                                                                                                                       | No        |
+| RateLimits                | Custom rate limits for the user                                                                                                                                                           | No        |
+| CustomEmailHeaders        | Custom email headers for the user                                                                                                                                                         | No        |
+| WhiteListedEmailAddresses | Email addresses to whitelist. Each address should be on a separate line. Emails listed here will not be added to the suppression list, even in case of an opt-out request or hard bounce. | No        |
 
 ::: code-group
 
