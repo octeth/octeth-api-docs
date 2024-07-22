@@ -22,19 +22,21 @@ the trigger mode will be set to 'Manual'.
 This API endpoint accepts raw body in JSON format.
 :::
 
-| Parameter        | Description                                                                                                                                                                                                                                      | Required |
-|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| SessionID        | The user's session ID.                                                                                                                                                                                                                           | Yes      | 
-| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                                                                                             | Yes      | 
-| Name             | The name of the journey.                                                                                                                                                                                                                         | Yes      | 
-| Trigger          | The trigger type. Options include: `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Manual`, `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, `WebsiteEvent_conversion` | Yes      | 
-| Trigger_ListID   | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (any list) or a specific subscriber list ID.                                                                                                          | No       | 
-| Trigger_EmailID  | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (any email) or a specific email ID.                                                                                                           | No       | 
-| Trigger_Criteria | If the trigger is `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, or `WebsiteEvent_conversion`, this parameter should be an array.                                                                                 | No       | 
+| Parameter        | Description                                                                                                                                                                                                                                                                                                                        | Required |
+|------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| SessionID        | The user's session ID.                                                                                                                                                                                                                                                                                                             | Yes      | 
+| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                                                                                                                                                                               | Yes      | 
+| Name             | The name of the journey.                                                                                                                                                                                                                                                                                                           | Yes      | 
+| Trigger          | The trigger type. Options include: `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Manual`, `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, `WebsiteEvent_conversion`, `Tag`, `UnTag`, `CustomFieldValueChanged`, `RevenueHit`, `WebsiteEvent_pageView` | Yes      | 
+| Trigger_ListID   | If the trigger is `ListSubscription` or `ListUnsubscription`, this parameter should be `0` (any list) or a specific subscriber list ID.                                                                                                                                                                                            | No       | 
+| Trigger_EmailID  | If the trigger is `EmailOpen`, `EmailConversion` or `EmailLinkClick`, this parameter should be `0` (any email) or a specific email ID.                                                                                                                                                                                             | No       | 
+| Trigger_Criteria | If the trigger is `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, or `WebsiteEvent_conversion`, this parameter should be an array.                                                                                                                                                                   | No       | 
+| Trigger_Value    | Specifying the actions of the trigger. This number can be the `ID` of the tag or `CustomField` that will trigger or the `RevenueHit` value (ex: 200.50)                                                                                                                                                                            | No       | 
 
 ::: code-group
 
 ```json [Example Request]
+// Trigger when a subscription occurs
 {
   "SessionID": "<user_session_id>",
   "APIKey": "",
@@ -43,6 +45,93 @@ This API endpoint accepts raw body in JSON format.
   "Trigger": "ListSubscription",
   "Trigger_ListID": 10
 }
+
+// Trigger when a subscriber is tagged
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "Name": "Contact Form Journey",
+  "Notes": "This is an administrative note for the journey",
+  "Trigger": "Tag",
+  "Trigger_Value": 1
+}
+
+// Trigger when a subscriber is un-tagged
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "Name": "Contact Form Journey",
+  "Notes": "This is an administrative note for the journey",
+  "Trigger": "UnTag",
+  "Trigger_Value": 1
+}
+
+// Trigger when any custom field value is changed
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "Name": "Contact Form Journey",
+  "Notes": "This is an administrative note for the journey",
+  "Trigger": "CustomFieldValueChanged"
+}
+
+// Trigger when a specific custom field is changed to any value
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "Name": "Contact Form Journey",
+  "Notes": "This is an administrative note for the journey",
+  "Trigger": "CustomFieldValueChanged",
+  "Trigger_ListID": "1",
+  "Trigger_Value": "2" // Target custom field ID
+}
+
+// Trigger when a specific custom field value partially matches a value
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "Name": "Contact Form Journey",
+  "Notes": "This is an administrative note for the journey",
+  "Trigger": "CustomFieldValueChanged",
+  "Trigger_ListID": "1",
+  "Trigger_Value": "2", // Target custom field ID
+  "Trigger_Criteria": [
+    {
+      "property": "",
+      "operator": "contains",
+      "value": "Hard"
+    }
+  ]
+}
+
+// Trigger when a revenue hit is made
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "Name": "Contact Form Journey",
+  "Notes": "This is an administrative note for the journey",
+  "Trigger": "RevenueHit",
+  "Trigger_Value": "20.01"
+}
+
+// Trigger on a page view website event
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "Name": "Contact Form Journey",
+  "Notes": "This is an administrative note for the journey",
+  "Trigger": "WebsiteEvent_pageView",
+  "Trigger_ListID": "3",
+  "Trigger_Criteria": [
+    {
+      "property": "pageView.url",
+      "operator": "contains",
+      "value": "/tracker/example/index"
+    }
+  ]
+}
+
+
 ```
 
 ```json [Success Response]
