@@ -111,7 +111,7 @@ This API endpoint accepts raw body in JSON format.
   "Name": "Contact Form Journey",
   "Notes": "This is an administrative note for the journey",
   "Trigger": "RevenueHit",
-  "Trigger_Value": "2001" // in cents
+  "Trigger_Value": "20.01" // in cents
 }
 
 // Trigger on a page view website event
@@ -664,7 +664,7 @@ This endpoint expects a raw JSON body.
   "Name": "Contact Form Journey",
   "Notes": "This is an administrative note for the journey",
   "Trigger": "RevenueHit",
-  "Trigger_Value": "2001" // in cents
+  "Trigger_Value": "20.01" // in cents
 }
 
 // Trigger on a page view website event
