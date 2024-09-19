@@ -91,6 +91,7 @@ export default defineConfig({
                     {text: 'Custom Fields', link: '/api-reference/custom-fields'},
                     {text: 'Segments', link: '/api-reference/segments'},
                     {text: 'Tags', link: '/api-reference/tags'},
+                    {text: 'Sender Domains', link: '/api-reference/sender-domains'},
                     {text: 'Subscribers', link: '/api-reference/subscribers'},
                     {text: 'Suppression Lists', link: '/api-reference/suppression-lists'},
                     {text: 'Journeys', link: '/api-reference/journeys'},
