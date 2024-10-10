@@ -652,3 +652,126 @@ curl 'https://example.com/api/v1/user.apikeys' \
 **HTTP Response and Error Codes:**
 
 This endpoint does not have specific error codes defined.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## User Stats
+
+<Badge type="info" text="GET" /> `api/v1/user.stats`
+
+This API endpoint allows users to retrieve their statistics for a specified period with optional aggregation by hours, days, weeks, months, or years. The response returns aggregated data over the specified period, along with overall statistics like the number of lists and active subscribers.
+
+**Request Parameters:**
+
+| Parameter   | Description                                                                                                 | Required? |
+|-------------|-------------------------------------------------------------------------------------------------------------|-----------|
+| SessionID   | The ID of the user's current session                                                                        | Yes       |
+| APIKey      | The user's API key. Either `SessionID` or `APIKey` must be provided.                                        | Yes       |
+| StartDate   | The start date of the period from which statistics should be retrieved. Format `YYYY-MM-DD H:i:s`.          | Yes       |
+| EndDate     | The end date of the period up to which statistics should be retrieved. Format `YYYY-MM-DD H:i:s`.           | Yes       |
+| Aggregation | The type of aggregation for the data. Possible values are: `hourly`, `daily`, `weekly`, `monthly`, `yearly` | Yes       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/user.stats \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your_session_id",
+    "StartDate": "2024-10-03 04:00:00",
+    "EndDate": "2024-10-03 06:00:00",
+    "Aggregation": "hourly"
+}'
+```
+
+```json [Success Response]
+{
+  "NumberOfLists": 16,
+  "TotalActiveSubscribers": 49,
+  "New Subscribers": {
+    "2024-10-03 04:00:00": 69,
+    "2024-10-03 05:00:00": 87,
+    "2024-10-03 06:00:00": 26
+  },
+  "Lost Subscribers": {
+    "2024-10-03 04:00:00": 4,
+    "2024-10-03 05:00:00": 0,
+    "2024-10-03 06:00:00": 93
+  },
+  "Sent Campaigns": {
+    "2024-10-03 04:00:00": 53,
+    "2024-10-03 05:00:00": 55,
+    "2024-10-03 06:00:00": 31
+  },
+  "Sent Emails": {
+    "2024-10-03 04:00:00": 73,
+    "2024-10-03 05:00:00": 59,
+    "2024-10-03 06:00:00": 91
+  },
+  "Opens": {
+    "2024-10-03 04:00:00": 4,
+    "2024-10-03 05:00:00": 77,
+    "2024-10-03 06:00:00": 4
+  },
+  "Clicks": {
+    "2024-10-03 04:00:00": 93,
+    "2024-10-03 05:00:00": 95,
+    "2024-10-03 06:00:00": 82
+  },
+  "Revenue": {
+    "2024-10-03 04:00:00": 342525,
+    "2024-10-03 05:00:00": 0,
+    "2024-10-03 06:00:00": 20035
+},
+  "Hard Bounces": {
+    "2024-10-03 04:00:00": 0,
+    "2024-10-03 05:00:00": 0,
+    "2024-10-03 06:00:00": 0
+  },
+  "Spam Complaints": {
+    "2024-10-03 04:00:00": 0,
+    "2024-10-03 05:00:00": 0,
+    "2024-10-03 06:00:00": 0
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    {
+      "Code": 6,
+      "Message": "DateTime::__construct(): Failed to parse time string (2024-10-03 04:) at position 11 (0): Unexpected character"
+    }
+  ]
+}
+```
+
+```txt [Error Codes]
+1: Missing StartDate parameter. StartDate not provided in request.
+2: Missing EndDate parameter. EndDate not provided in request.
+3: Missing Aggregation parameter. Aggregation not provided in request.
+4: Invalid Aggregation value. Aggregation has an invalid value, should be one of predefined types.
+5: Unexpected error occurred. General error, can be customized for specific cases.
+6: Exception message. Any internal server or logic error, such as invalid date format.
+```
+
+:::
