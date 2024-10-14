@@ -1209,7 +1209,8 @@ curl -X POST "https://example.com/api/v1/subscriber.import" \
 
 ```json [Success Response]
 {
-  "ImportID": 456
+  "ImportID": 456,
+  "ImportType": "sync" // or "async"
 }
 ```
 
