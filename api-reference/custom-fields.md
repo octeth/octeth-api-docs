@@ -31,7 +31,7 @@ This endpoint is used to create a new custom field for a subscriber list. It all
 | OptionSelected   | The selected options of the field                                     | Conditional |
 | IsRequired       | Whether the field is required ('Yes' or 'No')                         | No          |
 | IsUnique         | Whether the field must have a unique value ('Yes' or 'No')            | No          |
-| Visibility       | The visibility of the field ('Public' or 'User Only')                 | No          |
+| Visibility       | The visibility of the field (`Public`, `User Only`, `Hidden`)         | No          |
 | IsGlobal         | Whether the field is global ('Yes' or 'No')                           | No          |
 
 ::: code-group
@@ -89,27 +89,27 @@ This endpoint is used to update the details of an existing custom field in the s
 
 **Request Body Parameters:**
 
-| Parameter        | Description                                                           | Required? |
-|------------------|-----------------------------------------------------------------------|-----------|
-| SessionID        | The ID of the user's current session                                  | Yes       |
-| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided.  | Yes       |
-| Command          | CustomField.Update                                                    | Yes       |
-| CustomFieldID    | The unique identifier for the custom field to be updated              | Yes       |
-| FieldName        | The name of the custom field                                          | Yes       |
-| FieldType        | The type of the custom field (e.g., 'Single line', 'Paragraph text')  | Yes       |
-| SubscriberListID | The ID of the subscriber list associated with the custom field        | No        |
-| DefaultValue     | The default value for the custom field                                | No        |
-| MergeTagAlias    | The merge tag alias for the custom field                              | No        |
-| ValidationMethod | The method used to validate the custom field's value                  | No        |
-| ValidationRule   | The rule applied for validating the custom field's value              | No        |
-| OptionLabel      | The label for the field option                                        | No        |
-| OptionValue      | The value for the field option                                        | No        |
-| OptionSelected   | The selected option for the field                                     | No        |
-| Visibility       | The visibility setting for the custom field ('Public' or 'User Only') | No        |
-| IsGlobal         | Whether the custom field is global ('Yes' or 'No')                    | No        |
-| IsRequired       | Whether the custom field is required ('Yes' or 'No')                  | No        |
-| IsUnique         | Whether the custom field is unique ('Yes' or 'No')                    | No        |
-| Years            | The years option for a date field                                     | No        |
+| Parameter        | Description                                                          | Required? |
+|------------------|----------------------------------------------------------------------|-----------|
+| SessionID        | The ID of the user's current session                                 | Yes       |
+| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| Command          | CustomField.Update                                                   | Yes       |
+| CustomFieldID    | The unique identifier for the custom field to be updated             | Yes       |
+| FieldName        | The name of the custom field                                         | Yes       |
+| FieldType        | The type of the custom field (e.g., 'Single line', 'Paragraph text') | Yes       |
+| SubscriberListID | The ID of the subscriber list associated with the custom field       | No        |
+| DefaultValue     | The default value for the custom field                               | No        |
+| MergeTagAlias    | The merge tag alias for the custom field                             | No        |
+| ValidationMethod | The method used to validate the custom field's value                 | No        |
+| ValidationRule   | The rule applied for validating the custom field's value             | No        |
+| OptionLabel      | The label for the field option                                       | No        |
+| OptionValue      | The value for the field option                                       | No        |
+| OptionSelected   | The selected option for the field                                    | No        |
+| Visibility       | The visibility of the field (`Public`, `User Only`, `Hidden`)        | No        |
+| IsGlobal         | Whether the custom field is global ('Yes' or 'No')                   | No        |
+| IsRequired       | Whether the custom field is required ('Yes' or 'No')                 | No        |
+| IsUnique         | Whether the custom field is unique ('Yes' or 'No')                   | No        |
+| Years            | The years option for a date field                                    | No        |
 
 ::: code-group
 
