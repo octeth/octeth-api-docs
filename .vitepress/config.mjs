@@ -31,7 +31,6 @@ export default defineConfig({
 
     base: '/',
     externalLinkIcon: true,
-    lang: 'en-US',
 
     themeConfig: {
         // https://vitepress.dev/reference/default-theme-config
@@ -54,9 +53,12 @@ export default defineConfig({
         nav: [
             {text: 'Homepage', link: '/'},
             {
-                text: "v5.5.0",
+                text: "v5.5.5",
                 items: [
-                    {text: 'Changelog', link: 'https://help.octeth.com/whats-new', target: '_blank', rel: 'dofollow'},
+                    {text: 'v5.5.x', link: 'https://help.octeth.com/whats-new', target: '_blank', rel: 'dofollow'},
+                    {text: 'v5.1.x', link: 'https://help.octeth.com/whats-new', target: '_blank', rel: 'dofollow'},
+                    {text: 'v5.0.x', link: 'https://help.octeth.com/whats-new', target: '_blank', rel: 'dofollow'},
+                    {text: 'Changelog', link: 'https://help.octeth.com/whats-new', target: '_blank', rel: 'dofollow'}
                 ]
             },
             {
