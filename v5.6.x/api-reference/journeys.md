@@ -749,7 +749,7 @@ Please note that any actions not included in the provided list will be removed f
 | Actions   | The list of action objects. See below for the structure of action objects. | Yes      | 
 
 > For the detailed usage instructions of journey actions, refer to
-> the [Journey Actions](/api-reference/journey-actions.html)
+> the [Journey Actions](/v5.6.x/api-reference/journey-actions.html)
 > .
 
 ::: code-group

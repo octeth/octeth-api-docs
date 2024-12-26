@@ -7,7 +7,7 @@ prev:
 
 # RulesJson Criteria Syntax
 
-The criteria is being used on a few different API end-points including [journey action update](/api-reference/journeys#modifying-journey-actions) and [subscribers](/api-reference/subscribers).
+The criteria is being used on a few different API end-points including [journey action update](/v5.5.x/api-reference/journeys#modifying-journey-actions) and [subscribers](/v5.5.x/api-reference/subscribers).
 
 ## Schema
 

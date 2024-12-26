@@ -321,6 +321,49 @@ This action will implement a decision with a criteria and set of actions for bot
 }
 ```
 
+Decision action can have multi-nested decision actions. Here is an example:
+
+```json
+{
+  "ActionID": 1,
+  "Action": "Decision",
+  "Notes": "Administative note",
+  "CriteriaOperator": "or",
+  "Criteria": [
+  ],
+  "Actions": {
+    "True": [
+      {
+        "ActionID": 2,
+        "Action": "Decision",
+        "Notes": "Administative note",
+        "CriteriaOperator": "and",
+        "Criteria": [
+        ],
+        "Actions": {
+          "True": [],
+          "False": []
+        }
+      }
+    ],
+    "False": [
+      {
+        "ActionID": 3,
+        "Action": "Decision",
+        "Notes": "Administative note",
+        "CriteriaOperator": "and",
+        "Criteria": [
+        ],
+        "Actions": {
+          "True": [],
+          "False": []
+        }
+      }
+    ]
+  }
+}
+```
+
 | Parameter        | Description                                                                                           |
 |------------------|-------------------------------------------------------------------------------------------------------|
 | ActionID         | Provide an ActionID to update a specific action. Set this parameter to `null` to create a new action. |

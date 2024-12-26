@@ -163,6 +163,7 @@ Here are the rephrased descriptions:
 | EmailAddress             | The email address where the preview will be sent.                                                                                        | Yes       |
 | CampaignID               | The ID of the campaign associated with the email (optional).                                                                             | No        |
 | ListID                   | The ID of the list associated with the email (optional).                                                                                 | No        |
+| SubscriberID             | The ID of the target subscriber to preview the email with (optional).                                                                    | No        |
 | AddUserGroupHeaderFooter | Indicates if the user group header and footer should be added (optional).                                                                | No        |
 | EmailType                | The type of the email, e.g., 'optinconfirmation' (optional).                                                                             | No        |
 | HTMLContent              | The HTML content of the preview email (if `EmailID` is not provided).                                                                    | No        |

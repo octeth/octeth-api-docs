@@ -1556,7 +1556,7 @@ pagination and ordering of the subscriber list.
 ::: code-group
 
 ::: warning NOTICE
-Please refer to [this help article](/api-reference/criteria-syntax) for `RulesJSON` parameter syntax.
+Please refer to [this help article](/v5.5.x/api-reference/criteria-syntax) for `RulesJSON` parameter syntax.
 :::
 
 ```bash [Example Request]

@@ -83,13 +83,14 @@ associated with them.
 
 **Request Body Parameters:**
 
-| Parameter    | Description                                                          | Required? |
-|--------------|----------------------------------------------------------------------|-----------|
-| SessionID    | The ID of the user's current session                                 | Yes       |
-| APIKey       | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command      | Subscriber.Get                                                       | Yes       |
-| EmailAddress | The email address of the subscriber to retrieve                      | Yes       |
-| ListID       | The ID of the list the subscriber belongs to                         | Yes       |
+| Parameter    | Description                                                                                     | Required? |
+|--------------|-------------------------------------------------------------------------------------------------|-----------|
+| SessionID    | The ID of the user's current session                                                            | Yes       |
+| APIKey       | The user's API key. Either `SessionID` or `APIKey` must be provided.                            | Yes       |
+| Command      | Subscriber.Get                                                                                  | Yes       |
+| EmailAddress | The email address of the subscriber to retrieve                                                 | Yes       |
+| SubscriberID | The ID of the subscriber to retrieve. Either `EmailAddress` or `SubscriberID` must be provided. | No        |
+| ListID       | The ID of the list the subscriber belongs to                                                    | Yes       |
 
 ::: code-group
 
@@ -1177,6 +1178,15 @@ Sure, here are the rephrased descriptions:
 | ImportFrom.Drip.AccountID                      | The Drip account ID to import subscribers.                                            | No        |
 | ImportStatusUpdateWebhookURL                   | A webhook URL to receive updates about the import status.                             | No        |
 
+`ImportFrom.CSV.MappedFields` can be an array of field names (ex: `EmailAddress`, `CustomFieldX` where X is the ID of
+the custom field, `YYYY` where YYYY is the merge tag alias of the custom field) and also `TagAdd` and `TagSync` values.
+
+If you pass `TagAdd` and/or `TagSync` values as `ImportFrom.CSV.MappedFields` array elements, import from CSV
+functionality will perform any of these processes during the import:
+
+- `TagAdd`: Adds comma-separated tags from the mapped field to the subscriber during import.
+- `TagSync`: Synchronizes tags from the data, adding new tags and removing existing ones as necessary.
+
 ::: code-group
 
 ```bash [Example Request]
@@ -1205,12 +1215,40 @@ curl -X POST "https://example.com/api/v1/subscriber.import" \
              }
            }
          }'
+         
+# An example request to show TagAdd and TagSync usage
+curl -X POST "https://example.com/api/v1/subscriber.import" \
+     -H "Authorization: Bearer {User API Key}" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "SessionID": "example-session-id",
+           "APIKey": "example-api-key",
+           "ListID": "123",
+           "AddToGlobalSuppressionList": false,
+           "AddToSuppressionList": false,
+           "UpdateDuplicates": true,
+           "TriggerActions": true,
+           "Tags": ["NewSubscriber", "Imported"],
+           "ImportFrom": {
+             "CSV": {
+               "Data": "email,name,tags_to_sync,tags_to_add\nexample@example.com,John Doe, \"tag1,tag2\",\"tag3,tag4\"",
+               "FieldTerminator": ",",
+               "FieldEncloser": "\"",
+               "EscapedBy": "\\",
+               "MappedFields": [
+                 "EmailAddress", "Name", "TagSync", "TagAdd"
+               ]
+             }
+           }
+         }'
+
 ```
 
 ```json [Success Response]
 {
   "ImportID": 456,
-  "ImportType": "sync" // or "async"
+  "ImportType": "sync"
+  // or "async"
 }
 ```
 
@@ -1556,7 +1594,7 @@ pagination and ordering of the subscriber list.
 ::: code-group
 
 ::: warning NOTICE
-Please refer to [this help article](/api-reference/criteria-syntax) for `RulesJSON` parameter syntax.
+Please refer to [this help article](/v5.6.x/api-reference/criteria-syntax) for `RulesJSON` parameter syntax.
 :::
 
 ```bash [Example Request]

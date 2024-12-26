@@ -447,7 +447,7 @@ curl -X POST https://example.com/api.php \
 
 ### `RulesJsonBundle` Instructions
 
-This parameter is based on [`RulesJson` criteria syntax](/api-reference/criteria-syntax.html). You can set a detailed
+This parameter is based on [`RulesJson` criteria syntax](/v5.6.x/api-reference/criteria-syntax.html). You can set a detailed
 target audience for your email campaigns using `RulesJsonbundle` parameter.
 
 Here's an example:

@@ -5,7 +5,7 @@ layout: doc
 # Sender Domains
 
 ::: info NOTICE
-Email Gateway email sender domain API end-points are documented under [Email Gateway](/api-reference/email-gateway.html#add-a-new-email-sender-domain) section.
+Email Gateway email sender domain API end-points are documented under [Email Gateway](/v5.5.x/api-reference/email-gateway.html#add-a-new-email-sender-domain) section.
 :::
 
 

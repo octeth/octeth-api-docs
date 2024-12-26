@@ -749,7 +749,7 @@ Please note that any actions not included in the provided list will be removed f
 | Actions   | The list of action objects. See below for the structure of action objects. | Yes      | 
 
 > For the detailed usage instructions of journey actions, refer to
-> the [Journey Actions](/api-reference/journey-actions.html)
+> the [Journey Actions](/v5.5.x/api-reference/journey-actions.html)
 > .
 
 ::: code-group
@@ -1582,4 +1582,4 @@ The filtering works as "match all". Multiple criteria rules as shown above will 
 - `is not set`
 
 The `Property` can be any of properties for a specific website event. You can get the list of website event properties
-using [`List.Get` API end-point](/api-reference/subscriber-lists.html#retrieve-subscriber-list).
+using [`List.Get` API end-point](/v5.5.x/api-reference/subscriber-lists.html#retrieve-subscriber-list).
