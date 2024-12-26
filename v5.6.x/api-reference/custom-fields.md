@@ -8,31 +8,33 @@ layout: doc
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to create a new custom field for a subscriber list. It allows for various field types and configurations, including preset fields, validation rules, and merge tag aliases.
+This endpoint is used to create a new custom field for a subscriber list. It allows for various field types and
+configurations, including preset fields, validation rules, and merge tag aliases.
 
 **Request Body Parameters:**
 
-| Parameter        | Description                                                           | Required?   |
-|------------------|-----------------------------------------------------------------------|-------------|
-| SessionID        | The ID of the user's current session                                  | Yes         |
-| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided.  | Yes         |
-| Command          | CustomField.Create                                                    | Yes         |
-| SubscriberListID | The ID of the subscriber list to which the custom field will be added | Yes         |
-| FieldName        | The name of the custom field                                          | Conditional |
-| FieldType        | The type of the custom field (e.g., 'Date field', 'Drop down', etc.)  | Conditional |
-| DefaultValue     | The default value for the custom field                                | No          |
-| ValidationMethod | The method used to validate the field (e.g., 'None', 'Custom')        | No          |
-| ValidationRule   | The rule used for custom validation                                   | Conditional |
-| MergeTagAlias    | An alias for the merge tag associated with the custom field           | No          |
-| PresetName       | The name of the preset to use for the custom field                    | Conditional |
-| Years            | The range of years for a 'Date field' type                            | Conditional |
-| OptionLabel      | The labels for the options of the field                               | Conditional |
-| OptionValue      | The values for the options of the field                               | Conditional |
-| OptionSelected   | The selected options of the field                                     | Conditional |
-| IsRequired       | Whether the field is required ('Yes' or 'No')                         | No          |
-| IsUnique         | Whether the field must have a unique value ('Yes' or 'No')            | No          |
-| Visibility       | The visibility of the field (`Public`, `User Only`, `Hidden`)         | No          |
-| IsGlobal         | Whether the field is global ('Yes' or 'No')                           | No          |
+| Parameter        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Required?   |
+|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
+| SessionID        | The ID of the user's current session                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Yes         |
+| APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Yes         |
+| Command          | CustomField.Create                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Yes         |
+| SubscriberListID | The ID of the subscriber list to which the custom field will be added                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Yes         |
+| FieldName        | The name of the custom field                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Conditional |
+| FieldType        | The type of the custom field (e.g., 'Date field', 'Drop down', etc.)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Conditional |
+| DefaultValue     | The default value for the custom field                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | No          |
+| ValidationMethod | The method used to validate the field (e.g., 'None', 'Custom')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | No          |
+| ValidationRule   | The rule used for custom validation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Conditional |
+| MergeTagAlias    | An alias for the merge tag associated with the custom field                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | No          |
+| PresetName       | The name of the preset to use for the custom field                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Conditional |
+| Years            | The range of years for a 'Date field' type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Conditional |
+| OptionLabel      | The labels for the options of the field                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Conditional |
+| OptionValue      | The values for the options of the field                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Conditional |
+| OptionSelected   | The selected options of the field                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Conditional |
+| IsRequired       | Whether the field is required ('Yes' or 'No')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | No          |
+| IsUnique         | Whether the field must have a unique value ('Yes' or 'No')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | No          |
+| Visibility       | The visibility of the field (`Public`, `User Only`, `Hidden`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | No          |
+| IsGlobal         | Whether the field is global ('Yes' or 'No')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | No          |
+| DataType         | If this parameter is provided, the custom field column type will be set accordingly. Available values: `text`, `longtext`, `number`, `datetime` (`DefaultValue` must be in `YYYY-MM-DD HH:II:SS` format), `date` (`DefaultValue` must be in `YYYY-MM-DD` format), `time` (`DefaultValue` must be in `HH:II:SS` format), `timestamp` (`DefaultValue` must be in `YYYY-MM-DD HH:II:SS` format), `single-select` (`OptionValue` should be a comma separated value for enum values. `DefaultValue` should be one of those default values.), `multi-select` (`OptionValue` should be a comma separated value for set values. `DefaultValue` should be an array from those set values.) | No          |
 
 ::: code-group
 
@@ -66,7 +68,9 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [1],
+  "ErrorCode": [
+    1
+  ],
   "ErrorText": "Missing subscriber list id"
 }
 ```
@@ -128,17 +132,21 @@ curl -X POST https://example.com/api.php \
 
 ```json [Success Response]
 {
-    "Success": true,
-    "ErrorCode": 0,
-    "ErrorText": ""
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": ""
 }
 ```
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": [1],
-    "ErrorText": ["Missing custom field id"]
+  "Success": false,
+  "ErrorCode": [
+    1
+  ],
+  "ErrorText": [
+    "Missing custom field id"
+  ]
 }
 ```
 
@@ -162,7 +170,8 @@ curl -X POST https://example.com/api.php \
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint is used to delete one or more custom fields associated with a user. The custom fields to be deleted are specified by their IDs.
+This endpoint is used to delete one or more custom fields associated with a user. The custom fields to be deleted are
+specified by their IDs.
 
 **Request Body Parameters:**
 
@@ -200,20 +209,24 @@ curl -X POST https://example.com/api.php \
   "ErrorCode": {
     "customfields": 1
   },
-  "ErrorText": ["Custom field ids are missing"]
+  "ErrorText": [
+    "Custom field ids are missing"
+  ]
 }
 ```
 
 ```txt [Error Codes]
 1: Custom field ids are missing
 ```
+
 :::
 
 ## Retrieve Custom Fields
 
 <Badge type="info" text="POST" /> `/api.php`
 
-This endpoint retrieves custom fields associated with a specific subscriber list. It allows for the optional return of global custom fields as well.
+This endpoint retrieves custom fields associated with a specific subscriber list. It allows for the optional return of
+global custom fields as well.
 
 **Request Body Parameters:**
 
@@ -261,9 +274,9 @@ curl -X POST https://yourdomain.com/api.php \
 
 ```json [Error Response]
 {
-    "Success": false,
-    "ErrorCode": 1,
-    "ErrorText": "Missing subscriber list id"
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Missing subscriber list id"
 }
 ```
 

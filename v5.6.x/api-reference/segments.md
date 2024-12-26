@@ -72,7 +72,7 @@ curl -X POST https://example.com/api.php \
 ::: warning NOTICE
 Please note that the `SegmentRuleField`, `SegmentRuleOperator`, and `SegmentRuleFilter` parameters are arrays and should
 be used to define complex segment rules. If you provide the `RulesJson` parameter, it should be a JSON string that
-represents the segment rules in a structured format.
+represents the segment rules in a structured format. Learn more about rules syntax in the [Criteria Syntax](/v5.6.x/api-reference/criteria-syntax) section.
 :::
 
 ## Update Segment Information

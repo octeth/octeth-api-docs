@@ -143,6 +143,83 @@ curl -X POST https://yourdomain.com/api.php \
 
 :::
 
+## Render an Email
+
+<Badge type="info" text="GET" /> `/api/v1/email.render`
+
+This API endpoint renders an email and returns the HTML content of the email.
+
+**Request Body Parameters:**
+
+| Parameter              | Description                                                          | Required? |
+|------------------------|----------------------------------------------------------------------|-----------|
+| SessionID              | The ID of the user's current session.                                | Yes       |
+| APIKey                 | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| UserID                 | The ID of the user associated with the email.                        | Yes       |
+| ListID                 | The ID of the list associated with the email.                        | Yes       |
+| SubscriberID           | The ID of the subscriber associated with the email.                  | Yes       |
+| CampaignID             | The ID of the campaign associated with the email.                    | No        |
+| AutoResponderID        | The ID of the autoresponder associated with the email.               | No        |
+| EmailID                | The ID of the email to render.                                       | Yes       |
+| QueueRowID             | The ID of the email gateway queue row associated with the email.     | No        |
+| IsPreview              | Indicates if the email is a preview. `1` or `0`                      | Yes       |
+| DisablePersonalization | Indicates if personalization should be disabled. `1` or `0`          | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/email.render \
+-H "Content-Type: application/json" \
+-d '{
+    "SessionID": "your-session-id",
+    "APIKey": "your-api-key",
+    "UserID": "123",
+    "ListID": "456",
+    "SubscriberID": "789",
+    "CampaignID": "1011",
+    "AutoResponderID": "1213",
+    "EmailID": "1415",
+    "QueueRowID": "1617",
+    "IsPreview": 1,
+    "DisablePersonalization": 0
+}'
+```
+
+```json [Success Response]
+{
+    "Subject": "Test AR For cem.hurturk+70@gmail.com",
+    "EmailContent": "<html>...</html>"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1
+}
+```
+
+```txt [Error Codes]
+1: Missing UserID parameter
+2: Missing ListID parameter
+3: Missing SubscriberID parameter
+4: Missing CampaignID parameter
+5: Missing AutoResponderID parameter
+6: Missing EmailID parameter
+7: Missing QueueRowID parameter
+8: Missing IsPreview parameter
+9: Missing DisablePersonalization parameter
+10: Invalid UserID parameter
+11: Invalid ListID parameter
+12: Invalid SubscriberID parameter
+13: Invalid CampaignID parameter
+14: Invalid AutoResponderID parameter
+15: Invalid EmailID parameter
+16: Invalid QueueRowID parameter
+```
+
+:::
+
 ## Preview an Email
 
 <Badge type="info" text="POST" /> `/api.php`
@@ -151,8 +228,6 @@ This endpoint allows you to preview an email by sending it to a specified email 
 appearance and content of an email before sending it out to the actual recipients.
 
 **Request Body Parameters:**
-
-Here are the rephrased descriptions:
 
 | Parameter                | Description                                                                                                                              | Required? |
 |--------------------------|------------------------------------------------------------------------------------------------------------------------------------------|-----------|
@@ -418,6 +493,9 @@ This endpoint allows updating the content and settings of an existing email by p
 | ExtraContent2            | Additional content field 2                                                                                                                                                                                                | No        |
 | PlainContentAutoConvert  | Indicates if plain content should be auto-converted from HTML content                                                                                                                                                     | No        |
 | SubjectSetToTitleElement | Indicates if the subject should be set to the title element of HTML content                                                                                                                                               | No        |
+| OpenTracking             | Indicates if open tracking should be enabled for the email. `true` or `false`                                                                                                                                             | No        |
+| LinkTracking             | Indicates if click tracking should be enabled for the email. `true` or `false`                                                                                                                                            | No        |
+| UTMTracking              | Indicates if UTM tracking should be enabled for the email. `true` or `false`                                                                                                                                              | No        |
 
 ::: code-group
 

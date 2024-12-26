@@ -98,7 +98,7 @@ export default defineConfig({
                         {text: 'Subscribers', link: '/v5.6.x/api-reference/subscribers'},
                         {text: 'Suppression Lists', link: '/v5.6.x/api-reference/suppression-lists'},
                         {text: 'Journeys', link: '/v5.6.x/api-reference/journeys'},
-                        {text: 'Email Contents', link: '/v5.6.x./api-reference/email-contents'},
+                        {text: 'Email Contents', link: '/v5.6.x/api-reference/email-contents'},
                         {text: 'Email Campaigns', link: '/v5.6.x/api-reference/email-campaigns'},
                         {text: 'System Management', link: '/v5.6.x/api-reference/system-management'},
                     ]
@@ -138,7 +138,7 @@ export default defineConfig({
                         {text: 'Subscribers', link: '/v5.5.x/api-reference/subscribers'},
                         {text: 'Suppression Lists', link: '/v5.5.x/api-reference/suppression-lists'},
                         {text: 'Journeys', link: '/v5.5.x/api-reference/journeys'},
-                        {text: 'Email Contents', link: '/v5.5.x./api-reference/email-contents'},
+                        {text: 'Email Contents', link: '/v5.5.x/api-reference/email-contents'},
                         {text: 'Email Campaigns', link: '/v5.5.x/api-reference/email-campaigns'},
                         {text: 'System Management', link: '/v5.5.x/api-reference/system-management'},
                     ]

@@ -964,6 +964,7 @@ curl -X POST https://example.com/api.php \
 1: "ListID is a required field."
 2: "Operator is a required field."
 3: "The list does not belong to the authenticated user."
+4: "PRoblem with the segment engine"
 ```
 
 :::
@@ -1140,6 +1141,80 @@ curl -X GET 'https://api.example.com/api/v1/subscriber.export' \
 - If `ExportID` is not provided, the API will return a list of all export jobs for the user.
   :::
 
+## Prepare for Subscriber Import
+
+<Badge type="info" text="POST" /> `/api/v1/subscribers.import.prepare`
+
+This API enpoint is responsible for listing all the ESP importables so the frontend can let the users pick what they
+want to import and how they want to import them.
+
+**Request Body Parameters:**
+
+| Parameter                             | Description                                                          | Required? |
+|---------------------------------------|----------------------------------------------------------------------|-----------|
+| SessionID                             | The ID of the user's current session.                                | Yes       |
+| APIKey                                | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
+| ImportFrom.Mailchimp.APIKey           | The Mailchimp API key for importing subscribers.                     | No        |
+| ImportFrom.Mailchimp.Server           | The Mailchimp server prefix for importing subscribers.               | No        |
+| ImportFrom.ActiveCampaign.APIKey      | The ActiveCampaign API key for importing subscribers.                | No        |
+| ImportFrom.ActiveCampaign.AccountName | The ActiveCampaign account name for importing subscribers.           | No        |
+| ImportFrom.Drip.APIKey                | The Drip API key to import subscribers.                              | No        |
+| ImportFrom.Drip.AccountID             | The Drip account ID to import subscribers.                           | No        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST "https://example.com/api/v1/subscribers.import.prepare" \
+     -H "Authorization: Bearer {User API Key}" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "SessionID": "example-session-id",
+           "APIKey": "example-api-key",
+           ...
+         }'
+```
+
+```json [Success Response]
+{
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    {
+      "Code": 1,
+      "Message": "ImportFrom.Mailchimp.APIKey, ImportFrom.ActiveCampaign.APIKey or ImportFrom.Drip.APIKey must be provided"
+    }
+  ]
+}
+```
+
+```txt [Error Codes]
+1: ImportFrom.Mailchimp.APIKey, ImportFrom.ActiveCampaign.APIKey or ImportFrom.Drip.APIKey must be provided
+2: Invalid ImportFrom source
+3: ActiveCampaign API key is missing
+4: ActiveCampaign account name is missing
+5: ActiveCampaign Error: ...
+6: 
+7: Mailchimp API key is missing
+7: Drip API key is missing
+8: Mailchimp server is missing
+8: Drip account is missing
+9: Mailchimp Error: ...
+9: Drip Error: ...
+10: 
+11: Mailchimp Error While Retrieving Lists: ...
+12: Mailchimp Error While Retrieving Merge Fields: ...
+13: Mailchimp Error While Retrieving Tags: ...
+14: Mailchimp Error While Retrieving Interest Categories: ...
+15: Mailchimp Error While Retrieving Interests: ...
+
+
+```
+
+:::
+
 ## Import Subscribers
 
 <Badge type="info" text="POST" /> `/api/v1/subscribers.import`
@@ -1150,33 +1225,44 @@ triggering actions, and adding to suppression lists.
 
 **Request Body Parameters:**
 
-Sure, here are the rephrased descriptions:
-
-| Parameter                                      | Description                                                                           | Required? |
-|------------------------------------------------|---------------------------------------------------------------------------------------|-----------|
-| SessionID                                      | The ID of the user's current session.                                                 | Yes       |
-| APIKey                                         | The user's API key. Either `SessionID` or `APIKey` must be provided.                  | Yes       |
-| ListID                                         | The unique identifier of the list to import subscribers into.                         | Yes       |
-| AddToGlobalSuppressionList                     | Indicates if the imported subscribers should be added to the global suppression list. | Yes       |
-| AddToSuppressionList                           | Indicates if the imported subscribers should be added to the list's suppression list. | Yes       |
-| UpdateDuplicates                               | Indicates if existing subscribers should be updated when duplicates are found.        | Yes       |
-| TriggerActions                                 | Indicates if actions should be triggered for the imported subscribers.                | Yes       |
-| Tags                                           | An array of tags to assign to the imported subscribers.                               | Yes       |
-| ImportFrom.CSV.URL                             | The URL to fetch CSV data from (optional if CSV data is provided).                    | No        |
-| ImportFrom.CSV.Data                            | The CSV data to import (optional if a URL is provided).                               | No        |
-| ImportFrom.CSV.FieldTerminator                 | The character used to terminate fields in the CSV data.                               | No        |
-| ImportFrom.CSV.FieldEncloser                   | The character used to enclose fields in the CSV data.                                 | No        |
-| ImportFrom.CSV.EscapedBy                       | The character used to escape special characters in the CSV data.                      | No        |
-| ImportFrom.CSV.MappedFields                    | An array mapping CSV fields to subscriber attributes.                                 | Yes       |
-| ImportFrom.Mailchimp.APIKey                    | The Mailchimp API key for importing subscribers.                                      | No        |
-| ImportFrom.Mailchimp.Server                    | The Mailchimp server prefix for importing subscribers.                                | No        |
-| ImportFrom.Mailchimp.MailchimpListID           | The Mailchimp list ID to import subscribers from.                                     | No        |
-| ImportFrom.ActiveCampaign.APIKey               | The ActiveCampaign API key for importing subscribers.                                 | No        |
-| ImportFrom.ActiveCampaign.AccountName          | The ActiveCampaign account name for importing subscribers.                            | No        |
-| ImportFrom.ActiveCampaign.ActiveCampaignListID | The ActiveCampaign list ID to import subscribers from.                                | No        |
-| ImportFrom.Drip.APIKey                         | The Drip API key to import subscribers.                                               | No        |
-| ImportFrom.Drip.AccountID                      | The Drip account ID to import subscribers.                                            | No        |
-| ImportStatusUpdateWebhookURL                   | A webhook URL to receive updates about the import status.                             | No        |
+| Parameter                                              | Description                                                                                                                                                             | Required? |
+|--------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
+| SessionID                                              | The ID of the user's current session.                                                                                                                                   | Yes       |
+| APIKey                                                 | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                    | Yes       |
+| ListID                                                 | The unique identifier of the list to import subscribers into.                                                                                                           | Yes       |
+| AddToGlobalSuppressionList                             | Indicates if the imported subscribers should be added to the global suppression list.                                                                                   | Yes       |
+| AddToSuppressionList                                   | Indicates if the imported subscribers should be added to the list's suppression list.                                                                                   | Yes       |
+| UpdateDuplicates                                       | Indicates if existing subscribers should be updated when duplicates are found.                                                                                          | Yes       |
+| TriggerActions                                         | Indicates if actions should be triggered for the imported subscribers.                                                                                                  | Yes       |
+| Tags                                                   | An array of tags to assign to the imported subscribers.                                                                                                                 | Yes       |
+| ImportFrom.CSV.URL                                     | The URL to fetch CSV data from (optional if CSV data is provided).                                                                                                      | No        |
+| ImportFrom.CSV.Data                                    | The CSV data to import (optional if a URL is provided).                                                                                                                 | No        |
+| ImportFrom.CSV.FieldTerminator                         | The character used to terminate fields in the CSV data.                                                                                                                 | No        |
+| ImportFrom.CSV.FieldEncloser                           | The character used to enclose fields in the CSV data.                                                                                                                   | No        |
+| ImportFrom.CSV.EscapedBy                               | The character used to escape special characters in the CSV data.                                                                                                        | No        |
+| ImportFrom.CSV.MappedFields                            | An array mapping CSV fields to subscriber attributes.                                                                                                                   | Yes       |
+| ImportFrom.CSV.MapToFirstAndLastName                   | An object specifying the field IDs for mapping full name columns into FirstName and LastName attributes. Required if a CSV column is mapped to `MapToFirstAndLastName`. | No        |
+| ImportFrom.Mailchimp.APIKey                            | The Mailchimp API key for importing subscribers.                                                                                                                        | No        |
+| ImportFrom.Mailchimp.Server                            | The Mailchimp server prefix for importing subscribers.                                                                                                                  | No        |
+| ImportFrom.Mailchimp.MailchimpListID                   | The Mailchimp list ID to import subscribers from.                                                                                                                       | No        |
+| ImportFrom.Mailchimp.MailchimpListIDs                  | The list of Mailchimp list IDs to import subscribers from.                                                                                                              | No        |
+| ImportFrom.Mailchimp.MailchimpFieldIDs                 | The list of Mailchimp field IDs to import along with the email address.                                                                                                 | No        |
+| ImportFrom.Mailchimp.MailchimpTagIDs                   | The list of Mailchimp tag IDs to import along with the subscriber.                                                                                                      | No        |
+| ImportFrom.Mailchimp.MailchimpGroupIDs                 | The list of Mailchimp group IDs to import along with the subscriber.                                                                                                    | No        |
+| ImportFrom.ActiveCampaign.APIKey                       | The ActiveCampaign API key for importing subscribers.                                                                                                                   | No        |
+| ImportFrom.ActiveCampaign.AccountName                  | The ActiveCampaign account name for importing subscribers.                                                                                                              | No        |
+| ImportFrom.ActiveCampaign.ActiveCampaignListID         | The ActiveCampaign list ID to import subscribers from.                                                                                                                  | No        |
+| ImportFrom.ActiveCampaign.ActiveCampaignListIDs        | The list of ActiveCampaign list IDs to import subscribers from.                                                                                                         | No        |
+| ImportFrom.ActiveCampaign.IncludeInactive              | Indicates if inactive subscribers should be imported.                                                                                                                   | No        |
+| ImportFrom.ActiveCampaign.ActiveCampaignTagIDs         | The list of ActiveCampaign tag IDs to import along with the subscriber.                                                                                                 | No        |
+| ImportFrom.ActiveCampaign.ActiveCampaignNativeFieldIDs | The list of ActiveCampaign native field IDs to import along with the subscriber.                                                                                        | No        |
+| ImportFrom.ActiveCampaign.ActiveCampaignCustomFieldIDs | The list of ActiveCampaign custom field IDs to import along with the subscriber.                                                                                        | No        |
+| ImportFrom.Drip.APIKey                                 | The Drip API key to import subscribers.                                                                                                                                 | No        |
+| ImportFrom.Drip.AccountID                              | The Drip account ID to import subscribers.                                                                                                                              | No        |
+| ImportFrom.Drip.AccountIDs                             | The list of Drip account IDs to import subscribers.                                                                                                                     | No        |
+| ImportFrom.Drip.NativeFieldIDs                         | The list of Drip native field IDs to import along with the subscriber.                                                                                                  | No        |
+| ImportFrom.Drip.CustomFieldIDs                         | The list of Drip custom field IDs to import along with the subscriber.                                                                                                  | No        |
+| ImportStatusUpdateWebhookURL                           | A webhook URL to receive updates about the import status.                                                                                                               | No        |
 
 `ImportFrom.CSV.MappedFields` can be an array of field names (ex: `EmailAddress`, `CustomFieldX` where X is the ID of
 the custom field, `YYYY` where YYYY is the merge tag alias of the custom field) and also `TagAdd` and `TagSync` values.
@@ -1186,6 +1272,19 @@ functionality will perform any of these processes during the import:
 
 - `TagAdd`: Adds comma-separated tags from the mapped field to the subscriber during import.
 - `TagSync`: Synchronizes tags from the data, adding new tags and removing existing ones as necessary.
+
+If you are importing from a CSV data, you can split a full name CSV column into separate first and last name fields.
+This is done once `ImportFrom.CSV.MapToFirstAndLastName` array is provided in the API request. The array should contain
+the CSV column name that contains the full name and the custom field IDs to map the first and last names to. Here's an
+example:
+
+```json
+{
+  "FirstNameFieldID": "Field ID for First Name",
+  "LastNameFieldID": "Field ID for Last Name"
+  "
+}
+```
 
 ::: code-group
 
@@ -1242,6 +1341,36 @@ curl -X POST "https://example.com/api/v1/subscriber.import" \
            }
          }'
 
+# An example request to show how to split a full name column into first and last names. (123 and 456 are custom field IDs)
+curl -X POST "https://example.com/api/v1/subscriber.import" \
+     -H "Authorization: Bearer {User API Key}" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "SessionID": "example-session-id",
+           "APIKey": "example-api-key",
+           "ListID": "123",
+           "AddToGlobalSuppressionList": false,
+           "AddToSuppressionList": false,
+           "UpdateDuplicates": true,
+           "TriggerActions": true,
+           "Tags": ["NewSubscriber", "Imported"],
+           "ImportFrom": {
+             "CSV": {
+               "Data": "email,name,tags_to_sync,tags_to_add\nexample@example.com,John Doe, \"tag1,tag2\",\"tag3,tag4\"",
+               "FieldTerminator": ",",
+               "FieldEncloser": "\"",
+               "EscapedBy": "\\",
+               "MappedFields": {
+                   ...,
+                   "name": "MapToFirstAndLastName"
+               },
+               "MapToFirstAndLastName": {
+                   "FirstNameFieldID": 123,
+                   "LastNameFieldID": 456
+               }
+             }
+           }
+         }'
 ```
 
 ```json [Success Response]
