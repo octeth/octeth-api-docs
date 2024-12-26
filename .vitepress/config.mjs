@@ -100,6 +100,7 @@ export default defineConfig({
                         {text: 'Journeys', link: '/v5.6.x/api-reference/journeys'},
                         {text: 'Email Contents', link: '/v5.6.x/api-reference/email-contents'},
                         {text: 'Email Campaigns', link: '/v5.6.x/api-reference/email-campaigns'},
+                        {text: 'Events', link: '/v5.6.x/api-reference/events'},
                         {text: 'System Management', link: '/v5.6.x/api-reference/system-management'},
                     ]
                 },
