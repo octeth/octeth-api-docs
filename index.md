@@ -3,21 +3,24 @@
 layout: home
 
 hero:
-  name: "Octeth API"
-  text: "Build your in-house email marketing system"
-
-features:
-  - icon: 📍
-    title: GETTING STARTED
-    link: /getting-started
-    linkText: Learn
-  - icon: 🔒
-    title: AUTHORIZATION
-    link: /authorization
-    linkText: Learn
-  - icon: 🤖
-    title: API REFERENCE
-    link: /api-reference/administrators
-    linkText: Learn
+  name: "Octeth Developer Portal"
+  text: "Welcome to Octeth Developer Portal"
+  tagline: API Documentation and Developer Resources
+  actions:
+    - theme: brand
+      text: Get Started
+      link: /v5.6.x/getting-started
+    - theme: alt
+      text: API Reference
+      link: /v5.6.x/api-reference/administrators
 ---
 
+<script setup>
+import { onMounted } from 'vue'
+import { useRouter } from 'vitepress'
+
+onMounted(() => {
+  const router = useRouter()
+  router.go('/v5.6.x/')
+})
+</script>
