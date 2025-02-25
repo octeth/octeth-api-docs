@@ -192,18 +192,35 @@ This action triggers a webhook.
 }
 ```
 
-| Parameter         | Description                                                                                                                                         |
-|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| ActionID          | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                                    |
-| Action            | Set this parameter to `Webhook`.                                                                                                                    |
-| Published         | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                                                     |
-| WebhookURL        | The URL of the webhook to trigger.                                                                                                                  |
-| WebhookSecurity   | Object containing security configuration for the webhook:                                                                                           |
-| &rdsh; Method     | Security method to use. Currently supports `HMAC` (HMAC-SHA256).                                                                                    |
-| &rdsh; SecretKey  | Secret key used to generate the signature.                                                                                                          |
-| &rdsh; HeaderName | Name of the header containing the signature. Default: `X-Octeth-Signature`                                                                          |
-| WebhookBody       | JSON object containing the custom payload to send in the request body. If not provided, a default payload with subscriber information will be sent. |
-| WebhookHeaders    | Object containing custom HTTP headers to include in the webhook request.                                                                            |
+| Parameter         | Description                                                                                                                                                                                                                                                           |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ActionID          | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                                                                                                                                                      |
+| Action            | Set this parameter to `Webhook`.                                                                                                                                                                                                                                      |
+| Published         | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                                                                                                                                                                       |
+| WebhookURL        | The URL of the webhook to trigger.                                                                                                                                                                                                                                    |
+| WebhookSecurity   | Object containing security configuration for the webhook:                                                                                                                                                                                                             |
+| &rdsh; Method     | Security method to use. Currently supports `HMAC` (HMAC-SHA256).                                                                                                                                                                                                      |
+| &rdsh; SecretKey  | Secret key used to generate the signature.                                                                                                                                                                                                                            |
+| &rdsh; HeaderName | Name of the header containing the signature. Default: `X-Octeth-Signature`                                                                                                                                                                                            |
+| WebhookBody       | JSON object containing additional fields to include in the request body. These fields will be merged with the default payload data (journey, subscriber, and list information). Custom fields with the same names as default fields will override the default values. |
+| WebhookHeaders    | Object containing custom HTTP headers to include in the webhook request.                                                                                                                                                                                              |
+
+### Default Webhook Payload
+
+When a webhook is triggered, the following default data is included in the payload (unless overridden by custom
+WebhookBody fields):
+
+```json
+{
+  "JourneyID": 9,
+  "ListID": 12,
+  "SubscriberID": 42,
+  "JourneyName": "Welcome Journey",
+  "JourneyTrigger": "ListSubscription:12",
+  "EmailAddress": "subscriber@example.com",
+  "ListName": "Newsletter List"
+}
+```
 
 ## `StartJourney`
 
