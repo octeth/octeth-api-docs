@@ -213,6 +213,30 @@ WebhookBody fields):
 ```json
 {
   "JourneyID": 9,
+  "JourneyName": "Welcome Journey",
+  "JourneyTrigger": "ListSubscription:12",
+  "ListID": 12,
+  "ListName": "Newsletter List",
+  "SubscriberID": 42,
+  "EmailAddress": "subscriber@example.com",
+  "BounceType": "Not Bounced",
+  "SubscriptionStatus": "Subscribed",
+  "SubscriptionDate": "2025-02-20",
+  "SubscriptionIP": "192.168.1.1",
+  "UnsubscriptionDate": "0000-00-00",
+  "UnsubscriptionIP": "0.0.0.0",
+  "OptInDate": "2025-02-20"
+}
+```
+
+### Default Webhook Payload
+
+When a webhook is triggered, the following default data is included in the payload (unless overridden by custom
+WebhookBody fields):
+
+```json
+{
+  "JourneyID": 9,
   "ListID": 12,
   "SubscriberID": 42,
   "JourneyName": "Welcome Journey",
