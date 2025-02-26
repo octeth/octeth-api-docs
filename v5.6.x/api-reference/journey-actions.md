@@ -180,7 +180,7 @@ This action triggers a webhook.
     "HeaderName": "X-Octeth-Signature"
   },
   "WebhookBody": {
-    "custom": "payload with \{\{ Subscriber:EmailAddress }}",
+    "custom": "payload with &lcub;&lcub; Subscriber:EmailAddress &rcub;&rcub;",
     "data": "values"
   },
   "WebhookHeaders": {
@@ -192,18 +192,18 @@ This action triggers a webhook.
 }
 ```
 
-| Parameter         | Description                                                                                                                                                                                                                                            |
-|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ActionID          | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                                                                                                                                       |
-| Action            | Set this parameter to `Webhook`.                                                                                                                                                                                                                       |
-| Published         | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                                                                                                                                                        |
-| WebhookURL        | The URL of the webhook to trigger.                                                                                                                                                                                                                     |
-| WebhookSecurity   | Object containing security configuration for the webhook:                                                                                                                                                                                              |
-| &rdsh; Method     | Security method to use. Currently supports `HMAC` (HMAC-SHA256).                                                                                                                                                                                       |
-| &rdsh; SecretKey  | Secret key used to generate the signature.                                                                                                                                                                                                             |
-| &rdsh; HeaderName | Name of the header containing the signature. Default: `X-Octeth-Signature`                                                                                                                                                                             |
-| WebhookBody       | JSON object containing additional fields to include in the request body. These fields will be merged with the default payload data as a "CustomPayload" property. The WebhookBody values support merge tags (e.g., `\{\{ Subscriber:EmailAddress }}`). |
-| WebhookHeaders    | Object containing custom HTTP headers to include in the webhook request.                                                                                                                                                                               |
+| Parameter         | Description                                                                                                                                                                                                                                                              |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ActionID          | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                                                                                                                                                         |
+| Action            | Set this parameter to `Webhook`.                                                                                                                                                                                                                                         |
+| Published         | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                                                                                                                                                                          |
+| WebhookURL        | The URL of the webhook to trigger.                                                                                                                                                                                                                                       |
+| WebhookSecurity   | Object containing security configuration for the webhook:                                                                                                                                                                                                                |
+| &rdsh; Method     | Security method to use. Currently supports `HMAC` (HMAC-SHA256).                                                                                                                                                                                                         |
+| &rdsh; SecretKey  | Secret key used to generate the signature.                                                                                                                                                                                                                               |
+| &rdsh; HeaderName | Name of the header containing the signature. Default: `X-Octeth-Signature`                                                                                                                                                                                               |
+| WebhookBody       | JSON object containing additional fields to include in the request body. These fields will be merged with the default payload data as a "CustomPayload" property. The WebhookBody values support merge tags (e.g., `&lcub;&lcub; Subscriber:EmailAddress &rcub;&rcub;`). |
+| WebhookHeaders    | Object containing custom HTTP headers to include in the webhook request.                                                                                                                                                                                                 |
 
 ### Default Webhook Payload
 
@@ -254,10 +254,10 @@ When a webhook is triggered, the following structured data is included in the pa
 
 The following merge tag formats are available for use in WebhookBody values:
 
-- `\{\{ Subscriber:FieldName }}` - Access subscriber data fields (e.g., `\{\{ Subscriber:EmailAddress }}`, `\{\{ Subscriber:CustomField1 }}`)
-- `\{\{ List:FieldName }}` - Access list data fields (e.g., `\{\{ List:Name }}`)
-- `\{\{ Entry:FieldName }}` - Access journey entry data
-- `\{\{ Action:FieldName }}` - Access journey action data
+- `&lcub;&lcub; Subscriber:FieldName &rcub;&rcub;` - Access subscriber data fields (e.g., `&lcub;&lcub; Subscriber:EmailAddress &rcub;&rcub;`, `&lcub;&lcub; Subscriber:CustomField1 &rcub;&rcub;`)
+- `&lcub;&lcub; List:FieldName &rcub;&rcub;` - Access list data fields (e.g., `&lcub;&lcub; List:Name &rcub;&rcub;`)
+- `&lcub;&lcub; Entry:FieldName &rcub;&rcub;` - Access journey entry data
+- `&lcub;&lcub; Action:FieldName &rcub;&rcub;` - Access journey action data
 
 Note that all merge tags in your custom payload will be replaced with actual values before the webhook is triggered.
 
