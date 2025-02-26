@@ -238,9 +238,11 @@ When a webhook is triggered, the following structured data is included in the pa
     "UnsubscriptionDate": "0000-00-00",
     "UnsubscriptionIP": "0.0.0.0",
     "OptInDate": "2025-02-20",
-    "CustomField1": "John",
-    "CustomField2": "Doe",
-    "CustomField3": "USA"
+    "CustomFields": {
+      "1": "John",
+      "2": "Doe",
+      "3": "USA"
+    }
   },
   
   "CustomPayload": {
