@@ -29,7 +29,6 @@ This action pauses the journey for a specified period.
 | WaitUnit   | Set to one of `seconds`, `minutes`, `hours`, `days`.                                                             |
 | WaitAmount | Set to an integer value based on the `WaitUnit` parameter.                                                       |
 | Notes      | The administrative note for the journey action.                                                                  |
-| Published  | If this is set to `true`, the action will be enabled. Values: `true`, `false`                                    |
 
 ## `UpdateCustomFieldValue`
 
