@@ -82,7 +82,6 @@ This action permanently deletes the subscriber from the target list.
 {
   "ActionID": 1,
   "Action": "DeleteSubscriber",
-  "TargetListID": 10,
   "Notes": "Administative note"
 }
 ```
@@ -92,8 +91,6 @@ This action permanently deletes the subscriber from the target list.
 | ActionID     | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action       | Set this parameter to `DeleteSubscriber`.                                                                             |
 | Published    | Set this parameter to `true` to activate it. Default: `false`.                                                   |
-| TargetListID | The ID of the target list from which to unsubscribe.                                                             |
-| Published    | If this is set to `true`, the action will be enabled. Values: `true`, `false`                                    |
 
 ## `ExitJourney`
 
