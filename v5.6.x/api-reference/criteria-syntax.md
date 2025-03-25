@@ -106,7 +106,7 @@ Filter people based on custom field values.
 }
 ```
 
-* `field_id` - the custom field id (or `email` for email address)
+* `field_id` - the custom field id (or `EmailAddress` for email address)
 * `operator` - one of `is`, `is not`, `contains`, `does not contain`, `ends with`, `begins with`, `is less than`, `is less than or equal to`, `is greater than`, `is greater than or equal to`, `is set`, `is not set`
 * `value` - the value to compare against
 
