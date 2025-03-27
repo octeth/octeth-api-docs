@@ -1202,6 +1202,73 @@ Please note that this API endpoint requires a raw JSON body.
 | 404                | 8          | List not found                 |
 | 404                | 9          | Subscriber not found           |
 
+## Exit Subscriber From A Journey
+
+<Badge type="info" text="POST" /> `/api/v1/subscriber.journey.exit`
+
+This API call will exit a subscriber from an enrolled journey.
+
+::: warning NOTICE
+Please note that this API endpoint requires a raw JSON body.
+:::
+
+**Request Body Parameters:**
+
+| Parameter    | Description                                                                  | Required |
+| ------------ | ---------------------------------------------------------------------------- | -------- |
+| SessionID    | This is the user's session ID.                                               | Yes      |
+| APIKey       | This is the user's API key. Either `SessionID` or `APIKey` must be provided. | Yes      |
+| JourneyID    | This is the ID of the journey you would like exit a subscriber.              | Yes      |
+| ListID       | List ID of the subscriber.                                                   | Yes      |
+| SubscriberID | ID of the target subscriber.                                                 | Yes      |
+
+::: code-group
+
+```json [Example Request]
+{
+  "SessionID": "<user_session_id>",
+  "APIKey": "",
+  "JourneyID": 6,
+  "ListID": 30,
+  "SubscriberID": 11
+}
+```
+
+```json [Success Response]
+{
+  "JourneyID": "18",
+  "ListID": "26",
+  "SubscriberID": "1"
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    {
+      "Code": 7,
+      "Message": "Journey not found"
+    }
+  ]
+}
+```
+
+:::
+
+**HTTP Response and Error Codes:**
+
+| HTTP Response Code | Error Code | Description                    |
+| ------------------ | ---------- | ------------------------------ |
+| 422                | 1          | Missing JourneyID parameter    |
+| 422                | 2          | Missing ListID parameter       |
+| 422                | 3          | Missing SubscriberID parameter |
+| 422                | 4          | Invalid JourneyID parameter    |
+| 422                | 5          | Invalid ListID parameter       |
+| 422                | 6          | Invalid SubscriberID parameter |
+| 404                | 7          | Journey not found              |
+| 404                | 8          | List not found                 |
+| 404                | 9          | Subscriber not found           |
+
 ## Journey Action Subscribers
 
 <Badge type="info" text="POST" /> `/api/v1/journey.action.subscribers`
