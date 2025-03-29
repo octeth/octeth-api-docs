@@ -13,7 +13,7 @@ This API call allows you to unsubscribe a subscriber from a mailing list.
 **Request Body Parameters:**
 
 | Parameter              | Description                                                                    | Required? |
-|------------------------|--------------------------------------------------------------------------------|-----------|
+| ---------------------- | ------------------------------------------------------------------------------ | --------- |
 | SessionID              | The ID of the user's current session                                           | Yes       |
 | APIKey                 | The user's API key. Either `SessionID` or `APIKey` must be provided.           | Yes       |
 | Command                | Subscriber.Unsubscribe                                                         | Yes       |
@@ -84,7 +84,7 @@ associated with them.
 **Request Body Parameters:**
 
 | Parameter    | Description                                                                                     | Required? |
-|--------------|-------------------------------------------------------------------------------------------------|-----------|
+| ------------ | ----------------------------------------------------------------------------------------------- | --------- |
 | SessionID    | The ID of the user's current session                                                            | Yes       |
 | APIKey       | The user's API key. Either `SessionID` or `APIKey` must be provided.                            | Yes       |
 | Command      | Subscriber.Get                                                                                  | Yes       |
@@ -518,7 +518,7 @@ This endpoint returns the list of subscriber activities.
 **Request Body Parameters:**
 
 | Parameter         | Description                                                                                                                                                                                                                                                                                                                                           | Required? |
-|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | SessionID         | The ID of the user's current session                                                                                                                                                                                                                                                                                                                  | Yes       |
 | APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                                                                                                                                                                                                  | Yes       |
 | Command           | `Subscriber.Get.Activity`                                                                                                                                                                                                                                                                                                                             | Yes       |
@@ -769,7 +769,7 @@ JSON rule set to define a group of subscribers to be deleted.
 **Request Body Parameters:**
 
 | Parameter        | Description                                                                  | Required?   |
-|------------------|------------------------------------------------------------------------------|-------------|
+| ---------------- | ---------------------------------------------------------------------------- | ----------- |
 | SessionID        | The ID of the user's current session                                         | Yes         |
 | APIKey           | The user's API key. Either `SessionID` or `APIKey` must be provided.         | Yes         |
 | Command          | `Subscribers.Delete`                                                         | Yes         |
@@ -841,7 +841,7 @@ This endpoint retrieves subscriber information based on various segments and cri
 **Request Body Parameters:**
 
 | Parameter         | Description                                                             | Required? |
-|-------------------|-------------------------------------------------------------------------|-----------|
+| ----------------- | ----------------------------------------------------------------------- | --------- |
 | SessionID         | The ID of the user's current session                                    | Yes       |
 | APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided.    | Yes       |
 | Command           | Subscribers.Get                                                         | Yes       |
@@ -907,7 +907,7 @@ This endpoint retrieves a list of subscribers based on various criteria such as 
 **Request Body Parameters:**
 
 | Parameter         | Description                                                          | Required? |
-|-------------------|----------------------------------------------------------------------|-----------|
+| ----------------- | -------------------------------------------------------------------- | --------- |
 | SessionID         | The ID of the user's current session                                 | Yes       |
 | APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | Command           | `Subscribers.Search`                                                 | Yes       |
@@ -979,7 +979,7 @@ exporting in different formats.
 **Request Body Parameters:**
 
 | Parameter      | Description                                                               | Required? |
-|----------------|---------------------------------------------------------------------------|-----------|
+| -------------- | ------------------------------------------------------------------------- | --------- |
 | SessionID      | The ID of the user's current session                                      | Yes       |
 | APIKey         | The user's API key. Either `SessionID` or `APIKey` must be provided.      | Yes       |
 | ListID         | The unique identifier for the list to export from                         | Yes       |
@@ -1055,7 +1055,7 @@ export job or download the exported data if the job is completed.
 **Request Body Parameters:**
 
 | Parameter | Description                                                                            | Required? |
-|-----------|----------------------------------------------------------------------------------------|-----------|
+| --------- | -------------------------------------------------------------------------------------- | --------- |
 | SessionID | The ID of the user's current session                                                   | Yes       |
 | APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.                   | Yes       |
 | ListID    | The unique identifier for the list to export from                                      | Yes       |
@@ -1151,7 +1151,7 @@ want to import and how they want to import them.
 **Request Body Parameters:**
 
 | Parameter                             | Description                                                          | Required? |
-|---------------------------------------|----------------------------------------------------------------------|-----------|
+| ------------------------------------- | -------------------------------------------------------------------- | --------- |
 | SessionID                             | The ID of the user's current session.                                | Yes       |
 | APIKey                                | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | ImportFrom.Mailchimp.APIKey           | The Mailchimp API key for importing subscribers.                     | No        |
@@ -1226,7 +1226,7 @@ triggering actions, and adding to suppression lists.
 **Request Body Parameters:**
 
 | Parameter                                              | Description                                                                                                                                                             | Required? |
-|--------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | SessionID                                              | The ID of the user's current session.                                                                                                                                   | Yes       |
 | APIKey                                                 | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                    | Yes       |
 | ListID                                                 | The unique identifier of the list to import subscribers into.                                                                                                           | Yes       |
@@ -1438,7 +1438,7 @@ statistics.
 **Request Body Parameters:**
 
 | Parameter | Description                                                          | Required? |
-|-----------|----------------------------------------------------------------------|-----------|
+| --------- | -------------------------------------------------------------------- | --------- |
 | SessionID | The ID of the user's current session                                 | Yes       |
 | APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | ListID    | The unique identifier for the subscriber list                        | Yes       |
@@ -1503,27 +1503,29 @@ accepts various subscriber details.
 
 **Request Body Parameters:**
 
-| Parameter             | Description                                                                                 | Required?   |
-|-----------------------|---------------------------------------------------------------------------------------------|-------------|
-| SessionID             | The ID of the user's current session                                                        | Yes         |
-| APIKey                | The user's API key. Either `SessionID` or `APIKey` must be provided.                        | Yes         |
-| ListID                | The unique identifier for the mailing list                                                  | Yes         |
-| EmailAddress          | The email address of the new subscriber                                                     | Yes         |
-| Status                | The subscription status ('Opt-In Pending', 'Subscribed', 'Opt-Out Pending', 'Unsubscribed') | No          |
-| OptInDate             | The date the user opted in                                                                  | Conditional |
-| SubscriptionDate      | The date the user subscribed                                                                | Conditional |
-| SubscriptionIP        | The IP address from which the subscription was made                                         | Conditional |
-| UnsubscriptionDate    | The date the user unsubscribed                                                              | Conditional |
-| UnsubscriptionIP      | The IP address from which the unsubscription was made                                       | Conditional |
-| BounceType            | The type of email bounce (e.g., 'Not Bounced', 'Hard', 'Soft')                              | No          |
-| CustomFields          | An array of custom field IDs and their values                                               | No          |
-| UpdateIfDuplicate     | Flag to update subscriber if email address is duplicate                                     | No          |
-| UpdateIfUnsubscribed  | Flag to update subscriber if previously unsubscribed                                        | No          |
-| ApplyBehaviors        | Flag to apply behaviors associated with the subscription                                    | No          |
-| SendConfirmationEmail | Flag to send a confirmation email to the subscriber                                         | No          |
-| UpdateStatistics      | Flag to update statistics upon subscription                                                 | No          |
-| TriggerWebServices    | Flag to trigger web services upon subscription                                              | No          |
-| TriggerAutoResponders | Flag to trigger autoresponders upon subscription                                            | No          |
+| Parameter                | Description                                                                                                                                          | Required?   |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| SessionID                | The ID of the user's current session                                                                                                                 | Yes         |
+| APIKey                   | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                 | Yes         |
+| ListID                   | The unique identifier for the mailing list                                                                                                           | Yes         |
+| EmailAddress             | The email address of the new subscriber                                                                                                              | Yes         |
+| Status                   | The subscription status ('Opt-In Pending', 'Subscribed', 'Opt-Out Pending', 'Unsubscribed')                                                          | No          |
+| OptInDate                | The date the user opted in                                                                                                                           | Conditional |
+| SubscriptionDate         | The date the user subscribed                                                                                                                         | Conditional |
+| SubscriptionIP           | The IP address from which the subscription was made                                                                                                  | Conditional |
+| UnsubscriptionDate       | The date the user unsubscribed                                                                                                                       | Conditional |
+| UnsubscriptionIP         | The IP address from which the unsubscription was made                                                                                                | Conditional |
+| BounceType               | The type of email bounce (e.g., 'Not Bounced', 'Hard', 'Soft')                                                                                       | No          |
+| CustomFields             | An array of custom field IDs and their values                                                                                                        | No          |
+| UpdateIfDuplicate        | Flag to update subscriber if email address is duplicate                                                                                              | No          |
+| UpdateIfUnsubscribed     | Flag to update subscriber if previously unsubscribed                                                                                                 | No          |
+| ApplyBehaviors           | Flag to apply behaviors associated with the subscription                                                                                             | No          |
+| SendConfirmationEmail    | Flag to send a confirmation email to the subscriber                                                                                                  | No          |
+| UpdateStatistics         | Flag to update statistics upon subscription                                                                                                          | No          |
+| TriggerWebServices       | Flag to trigger web services upon subscription                                                                                                       | No          |
+| TriggerAutoResponders    | Flag to trigger autoresponders upon subscription                                                                                                     | No          |
+| OptInConfirmationEmailID | The ID of the target opt-in confirmation to send to the subscriber. This feature is only available if the parent list is set as "Double Opt-in list" | No          |
+| 
 
 ::: code-group
 
@@ -1597,6 +1599,7 @@ curl -X POST 'https://example.com/api/v1/subscriber.create' \
 21: Previously unsubscribed EmailAddress
 22: Invalid user information
 23: Invalid list information
+25: Invalid OptInConfirmationEmailID. The sepecified email does not exist or does not belong to this user
 ```
 
 :::
@@ -1604,7 +1607,7 @@ curl -X POST 'https://example.com/api/v1/subscriber.create' \
 **HTTP Response and Error Codes:**
 
 | HTTP Code | Error Code | Description                                |
-|-----------|------------|--------------------------------------------|
+| --------- | ---------- | ------------------------------------------ |
 | 200       | 0          | Success                                    |
 | 422       | 1-23       | Various errors related to input validation |
 
@@ -1618,7 +1621,7 @@ subscriber details, including email address, subscription status, bounce type, a
 **Request Body Parameters:**
 
 | Parameter                                 | Description                                                                                               | Required? |
-|-------------------------------------------|-----------------------------------------------------------------------------------------------------------|-----------|
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------- | --------- |
 | SessionID                                 | The ID of the user's current session                                                                      | Yes       |
 | APIKey                                    | The user's API key. Either `SessionID` or `APIKey` must be provided.                                      | Yes       |
 | Command                                   | The API command to execute: `Subscriber.Update`                                                           | Yes       |
@@ -1683,7 +1686,7 @@ curl --location 'https://example.com/api.php' \
 **HTTP Response and Error Codes:**
 
 | HTTP Code | Error Code | Description                                   |
-|-----------|------------|-----------------------------------------------|
+| --------- | ---------- | --------------------------------------------- |
 | 200       | 0          | Success                                       |
 | 400       | 1          | Missing required 'subscriberid' parameter     |
 | 400       | 2          | Missing required 'subscriberlistid' parameter |
@@ -1706,7 +1709,7 @@ pagination and ordering of the subscriber list.
 **Request Body Parameters:**
 
 | Parameter         | Description                                                          | Required? |
-|-------------------|----------------------------------------------------------------------|-----------|
+| ----------------- | -------------------------------------------------------------------- | --------- |
 | SessionID         | The ID of the user's current session                                 | Yes       |
 | APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | Command           | `Subscribers.Search`                                                 | Yes       |
@@ -1778,7 +1781,7 @@ curl --location 'https://example/api.php' \
 **HTTP Response and Error Codes:**
 
 | HTTP Code | Error Code | Description                      |
-|-----------|------------|----------------------------------|
+| --------- | ---------- | -------------------------------- |
 | 200       | 0          | Success                          |
 | 400       | 1          | List ID is required.             |
 | 400       | 2          | Operator is required.            |

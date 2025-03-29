@@ -39,6 +39,8 @@ If the event is set to `conversion`, following event properties must be set:
 
 If the event is set to `identify`, the `email` parameter is required and the `properties` array is optional.
 
+If `isSilent=true` property is included, journeys will not be triggered.
+
 ::: code-group
 
 ```json [Example Request]
@@ -53,6 +55,78 @@ If the event is set to `identify`, the `email` parameter is required and the `pr
   "properties": {
     "number-of-subscribers-imported": 100
   }
+}
+
+// Someone visits the product page:
+{
+    "APIKey":"{{user_apikey}}",
+    "ListID": 94,
+    "event": "page_view"
+}
+
+// Someone adds the product to the shopping cart:
+{
+    "APIKey":"{{user_apikey}}",
+    "ListID": 94,
+    "event": "add_to_shopping_cart",
+    "uuid": "aae6840b-3b7e-4f95-a9d5-6dbf5da8d84d",
+    "properties": {
+        "product": "My Product",
+        "product_id": 101
+    }
+}
+
+// Someone goes to the checkout:
+{
+    "APIKey":"{{user_apikey}}",
+    "ListID": 94,
+    "event": "checkout_page_visited",
+    "uuid": "aae6840b-3b7e-4f95-a9d5-6dbf5da8d84d"
+}
+
+// Someone attempted to pay but failed:
+{
+    "APIKey":"{{user_apikey}}",
+    "ListID": 94,
+    "event": "payment_failed",
+    "uuid": "aae6840b-3b7e-4f95-a9d5-6dbf5da8d84d",
+    "email": "event-test-001@test.com",
+    "id": "user-100",
+    "properties": {
+        "cart_id": "cart-001"
+    }
+}
+
+// Someone attempted to pay and succeeded:
+// First, we execute our own custom event which is payment_succeeded. This is event call is optional:
+{
+    "APIKey":"{{user_apikey}}",
+    "ListID": 94,
+    "event": "payment_succeeded",
+    "uuid": "aae6840b-3b7e-4f95-a9d5-6dbf5da8d84d",
+    "email": "event-test-001@test.com",
+    "id": "user-100",
+    "properties": {
+        "cart_id": "cart-001"
+    }
+}
+
+// Second, we exeute the conversion event so that the conversion can be attributed to the subscriber, campaign, journey, etc.
+{
+    "APIKey":"{{user_apikey}}",
+    "ListID": 94,
+    "id": "user-100",
+    "event": "conversion",
+    "email": "event-test-001@test.com",
+    "uuid": "aae6840b-3b7e-4f95-a9d5-6dbf5da8d84d",
+    "properties": {
+        "conversion-id": "test-order-2",
+        "conversion-name": "Order 2",
+        "conversion-value": 50,
+        "conversion-currency": "USD",
+        "conversion-quantity": 2,
+        "pr": ""
+    }
 }
 ```
 

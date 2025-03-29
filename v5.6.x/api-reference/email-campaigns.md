@@ -14,7 +14,7 @@ unique `CampaignID`.
 **Request Body Parameters:**
 
 | Parameter  | Description                                                          | Required? |
-|------------|----------------------------------------------------------------------|-----------|
+| ---------- | -------------------------------------------------------------------- | --------- |
 | SessionID  | The ID of the user's current session                                 | Yes       |
 | APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | Command    | Campaign.Approve                                                     | Yes       |
@@ -58,7 +58,7 @@ This endpoint is used to cancel a specific campaign. The campaign must belong to
 **Request Body Parameters:**
 
 | Parameter  | Description                                                          | Required? |
-|------------|----------------------------------------------------------------------|-----------|
+| ---------- | -------------------------------------------------------------------- | --------- |
 | SessionID  | The ID of the user's current session                                 | Yes       |
 | APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | Command    | Campaign.Cancel                                                      | Yes       |
@@ -105,7 +105,7 @@ Draft' and all the settings from the original campaign, except for the scheduled
 **Request Body Parameters:**
 
 | Parameter  | Description                                                          | Required? |
-|------------|----------------------------------------------------------------------|-----------|
+| ---------- | -------------------------------------------------------------------- | --------- |
 | SessionID  | The ID of the user's current session                                 | Yes       |
 | APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | Command    | Campaign.Copy                                                        | Yes       |
@@ -156,7 +156,7 @@ This endpoint is used to create a new campaign in the system. It requires the us
 **Request Body Parameters:**
 
 | Parameter    | Description                                                          | Required? |
-|--------------|----------------------------------------------------------------------|-----------|
+| ------------ | -------------------------------------------------------------------- | --------- |
 | SessionID    | The ID of the user's current session                                 | Yes       |
 | APIKey       | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | Command      | Campaign.Create                                                      | Yes       |
@@ -200,14 +200,16 @@ calculates the campaign's email delivery throughput.
 
 **Request Body Parameters:**
 
-| Parameter          | Description                                                          | Required? |
-|--------------------|----------------------------------------------------------------------|-----------|
-| SessionID          | The ID of the user's current session                                 | Yes       |
-| APIKey             | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
-| Command            | Campaign.Get                                                         | Yes       |
-| campaignid         | Unique identifier for the campaign to retrieve                       | Yes       |
-| retrievestatistics | Boolean flag to indicate if campaign statistics should be retrieved  | No        |
-| retrievetags       | Boolean flag to indicate if campaign tags should be retrieved        | No        |
+| Parameter             | Description                                                                  | Required? |
+| --------------------- | ---------------------------------------------------------------------------- | --------- |
+| SessionID             | The ID of the user's current session                                         | Yes       |
+| APIKey                | The user's API key. Either `SessionID` or `APIKey` must be provided.         | Yes       |
+| Command               | Campaign.Get                                                                 | Yes       |
+| CampaignID            | Unique identifier for the campaign to retrieve                               | Yes       |
+| RetrieveStatistics    | Boolean flag to indicate if campaign statistics should be retrieved          | No        |
+| RetrieveTags          | Boolean flag to indicate if campaign tags should be retrieved                | No        |
+| SplitABTestStatistics | Boolean flag to indicate if campaign A/B test statistics should be retrieved | No        |
+
 
 ::: code-group
 
@@ -279,7 +281,7 @@ a 'Sending' state before pausing it.
 **Request Body Parameters:**
 
 | Parameter  | Description                                                          | Required? |
-|------------|----------------------------------------------------------------------|-----------|
+| ---------- | -------------------------------------------------------------------- | --------- |
 | SessionID  | The ID of the user's current session                                 | Yes       |
 | APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | Command    | Campaign.Pause                                                       | Yes       |
@@ -327,7 +329,7 @@ in a 'Paused' state before it can be resumed.
 **Request Body Parameters:**
 
 | Parameter  | Description                                                          | Required? |
-|------------|----------------------------------------------------------------------|-----------|
+| ---------- | -------------------------------------------------------------------- | --------- |
 | SessionID  | The ID of the user's current session                                 | Yes       |
 | APIKey     | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | Command    | Campaign.Resume                                                      | Yes       |
@@ -375,7 +377,7 @@ campaign, including its status, schedule, recipients, and more.
 **Request Body Parameters:**
 
 | Parameter                         | Description                                                                                                                                                                                                  | Required? |
-|-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
 | SessionID                         | The ID of the user's current session                                                                                                                                                                         | Yes       |
 | APIKey                            | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                                                         | Yes       |
 | Command                           | Campaign.Update                                                                                                                                                                                              | Yes       |
@@ -400,6 +402,12 @@ campaign, including its status, schedule, recipients, and more.
 | RecipientListsAndSegments         | Comma-separated list of recipient list and segment IDs                                                                                                                                                       | No        |
 | Exclude_RecipientListsAndSegments | Comma-separated list of recipient list and segment IDs to exclude                                                                                                                                            | No        |
 | S2SEnabled                        | Whether the Send-to-Send feature is enabled or not                                                                                                                                                           | No        |
+| AutoResendEnabled                 | Enable or disable auto-resend functionality. `true` or `false`.                                                                                                                                              | No        |
+| AutoResendWaitDays                | Number of days to wait before resending the campaign.                                                                                                                                                        | No        |
+| AutoResendSubject                 | The subject of the auto-resend campaign.                                                                                                                                                                     | No        |
+| AutoResendPreHeaderText           | The pre-header text of the auto-resend campaign.                                                                                                                                                             | No        |
+| ABTesting[Variations][0][EmailID] | The email ID of the nth variation. Start from 0 and add incrementally.                                                                                                                                       | No        |
+| ABTesting[Variations][0][Weight]  | The weight of the nth variation. Set to 1 for equal distribution.                                                                                                                                            | No        |
 
 ::: code-group
 
@@ -506,7 +514,7 @@ list of campaign IDs to be deleted.
 **Request Body Parameters:**
 
 | Parameter | Description                                                          | Required? |
-|-----------|----------------------------------------------------------------------|-----------|
+| --------- | -------------------------------------------------------------------- | --------- |
 | SessionID | The ID of the user's current session                                 | Yes       |
 | APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | Command   | Campaigns.Delete                                                     | Yes       |
@@ -554,20 +562,21 @@ optionally include campaign statistics.
 
 **Request Body Parameters:**
 
-| Parameter          | Description                                                                                                                                        | Required? |
-|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
-| SessionID          | The ID of the user's current session                                                                                                               | Yes       |
-| APIKey             | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                               | Yes       |
-| Command            | Campaigns.Get                                                                                                                                      | Yes       |
-| RecordsPerRequest  | The number of records to retrieve per request                                                                                                      | No        |
-| RecordsFrom        | The starting point from which to retrieve records                                                                                                  | No        |
-| CampaignStatus     | The status of the campaigns to filter by `All`, `Sent`, `Draft`, `Ready`, `Sending`, `Pending`, `Sent`, `Failed`, `Scheduled`                      | No        |
-| SearchKeyword      | A keyword to search for in campaign names                                                                                                          | No        |
-| OrderField         | The field to order the results by. It can be any campaign field or any of `sort-by-status` (always sorts in descending order), `sort-by-send-date` | No        |
-| OrderType          | The type of ordering to apply (e.g., 'ASC', 'DESC')                                                                                                | No        |
-| RetrieveTags       | Whether to retrieve tags associated with the campaigns (true/false)                                                                                | No        |
-| Tags               | A comma-separated list of tag IDs to filter campaigns by                                                                                           | No        |
-| RetrieveStatistics | Whether to retrieve statistics for the campaigns (true/false)                                                                                      | No        |
+| Parameter             | Description                                                                                                                                        | Required? |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| SessionID             | The ID of the user's current session                                                                                                               | Yes       |
+| APIKey                | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                               | Yes       |
+| Command               | Campaigns.Get                                                                                                                                      | Yes       |
+| RecordsPerRequest     | The number of records to retrieve per request                                                                                                      | No        |
+| RecordsFrom           | The starting point from which to retrieve records                                                                                                  | No        |
+| CampaignStatus        | The status of the campaigns to filter by `All`, `Sent`, `Draft`, `Ready`, `Sending`, `Pending`, `Sent`, `Failed`, `Scheduled`                      | No        |
+| SearchKeyword         | A keyword to search for in campaign names                                                                                                          | No        |
+| OrderField            | The field to order the results by. It can be any campaign field or any of `sort-by-status` (always sorts in descending order), `sort-by-send-date` | No        |
+| OrderType             | The type of ordering to apply (e.g., 'ASC', 'DESC')                                                                                                | No        |
+| RetrieveTags          | Whether to retrieve tags associated with the campaigns (true/false)                                                                                | No        |
+| Tags                  | A comma-separated list of tag IDs to filter campaigns by                                                                                           | No        |
+| RetrieveStatistics    | Whether to retrieve statistics for the campaigns (true/false)                                                                                      | No        |
+| SplitABTestStatistics | Whether to retrieve A/B test statistics for the campaign (true/false)                                                                              | No        |
 
 ::: code-group
 

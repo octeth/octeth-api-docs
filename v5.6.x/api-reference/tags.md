@@ -200,7 +200,8 @@ curl -X POST https://yourdomain.com/api.php \
 ```txt [Error Codes]
 1: Missing subscriber list id
 2: Missing tag name
-4: The specified list does not exist or does not belong to the user
+3: Tag can only contain letters, numbers, spaces, hyphens and underscores.
+4: Tag cannot be empty.
 5: There is another tag with the same name
 ```
 
@@ -376,8 +377,8 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 1: Missing tag id
 2: Missing subscriber list id
-3: Missing tag name
-4: Invalid tag id or subscriber list id
+3: Tag can only contain letters, numbers, spaces, hyphens and underscores.
+4: Tag cannot be empty.
 ```
 
 :::
