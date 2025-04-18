@@ -265,13 +265,78 @@ Filter people based on campaign events.
 {
   "type": "campaign-events",
   "operator": "...",
-  "value": "..."
+  "value": "...",
+  "time_filter": {
+    "type": "...",
+    "value": "..."
+  }
 }
 ```
 
 * `operator` - one of `opened`, `not opened`, `clicked`, `not clicked`, `unsubscribed`, `complained`, `not complained`, `bounced`, `not bounced`, `delivered`, `not delivered`, `queued-recipients`, `failed`
 * `value` - target campaign ID. This value can be an `integer` (a single campaign ID), an `array` (multiple campaign IDs), or an `empty string "" or array []` (any campaign)
 * `email-id` - target email ID to apply an additional filter if the campaign is A/B test campaign (optional)
+* `time_filter` - optional time-based filtering configuration
+  * `type` - one of:
+    * `in_last_x_days` - events that occurred within the last X days
+    * `not_in_last_x_days` - events that occurred before the last X days
+    * `between` - events that occurred between two dates
+    * `not_between` - events that occurred outside of two dates
+    * `after` - events that occurred after a specific date
+    * `before` - events that occurred before a specific date
+  * `value` - depends on the type:
+    * For `in_last_x_days` and `not_in_last_x_days`: number of days (integer)
+    * For `between` and `not_between`: object with `start` and `end` dates
+    * For `after` and `before`: date string in YYYY-MM-DD format
+
+### Examples
+
+1. Find subscribers who opened emails in the last 7 days:
+```json
+{
+  "type": "campaign-events",
+  "operator": "opened",
+  "value": "",
+  "time_filter": {
+    "type": "in_last_x_days",
+    "value": 7
+  }
+}
+```
+
+2. Find subscribers who clicked links between specific dates:
+```json
+{
+  "type": "campaign-events",
+  "operator": "clicked",
+  "value": 123,
+  "time_filter": {
+    "type": "between",
+    "value": {
+      "start": "2024-01-01",
+      "end": "2024-01-31"
+    }
+  }
+}
+```
+
+3. Find subscribers who unsubscribed before a specific date:
+```json
+{
+  "type": "campaign-events",
+  "operator": "unsubscribed",
+  "value": "",
+  "time_filter": {
+    "type": "before",
+    "value": "2024-01-01"
+  }
+}
+```
+
+Note: Time filtering is not supported for the following operators:
+- `delivered`
+- `queued-recipients`
+- `failed`
 
 ## Filtering By Journey Email Action Events
 
