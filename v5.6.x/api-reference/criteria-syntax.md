@@ -269,12 +269,19 @@ Filter people based on campaign events.
   "time_filter": {
     "type": "...",
     "value": "..."
+  },
+  "aggregation": {
+    "operator": "...",
+    "count": ...
   }
 }
 ```
 
 * `operator` - one of `opened`, `not opened`, `clicked`, `not clicked`, `unsubscribed`, `complained`, `not complained`, `bounced`, `not bounced`, `delivered`, `not delivered`, `queued-recipients`, `failed`
-* `value` - target campaign ID. This value can be an `integer` (a single campaign ID), an `array` (multiple campaign IDs), or an `empty string "" or array []` (any campaign)
+* `value` - target campaign ID. This value can be:
+  * `integer` - a single campaign ID
+  * `array` - multiple campaign IDs (e.g., `[123, 124, 125]`)
+  * `empty string "" or array []` - any campaign
 * `email-id` - target email ID to apply an additional filter if the campaign is A/B test campaign (optional)
 * `time_filter` - optional time-based filtering configuration
   * `type` - one of:
@@ -288,6 +295,12 @@ Filter people based on campaign events.
     * For `in_last_x_days` and `not_in_last_x_days`: number of days (integer)
     * For `between` and `not_between`: object with `start` and `end` dates
     * For `after` and `before`: date string in YYYY-MM-DD format
+* `aggregation` - optional configuration for counting events (not available for `delivered`, `not delivered`, `queued-recipients`, `failed`)
+  * `operator` - one of:
+    * `at_least` - count is greater than or equal to
+    * `at_most` - count is less than or equal to
+    * `exactly` - count equals exactly
+  * `count` - the number to compare against (integer)
 
 ### Examples
 
@@ -333,10 +346,52 @@ Filter people based on campaign events.
 }
 ```
 
-Note: Time filtering is not supported for the following operators:
-- `delivered`
-- `queued-recipients`
-- `failed`
+4. Find subscribers who opened at least 3 campaigns:
+```json
+{
+  "type": "campaign-events",
+  "operator": "opened",
+  "value": [],
+  "aggregation": {
+    "operator": "at_least",
+    "count": 3
+  }
+}
+```
+
+5. Find subscribers who clicked exactly 2 times in specific campaigns:
+```json
+{
+  "type": "campaign-events",
+  "operator": "clicked",
+  "value": [123, 124, 125],
+  "aggregation": {
+    "operator": "exactly",
+    "count": 2
+  }
+}
+```
+
+### Important Notes:
+
+1. Time filtering is not supported for the following operators:
+   - `delivered`
+   - `queued-recipients`
+   - `failed`
+
+2. Aggregation is not available for:
+   - `delivered`
+   - `not delivered`
+   - `queued-recipients`
+   - `failed`
+
+3. When using both `time_filter` and `aggregation`, the time filter is applied first, then the aggregation is calculated on the filtered results.
+
+4. For optimal performance, it's recommended to:
+   - Use time filters when possible to limit the data range
+   - Be specific with campaign IDs when you don't need to search across all campaigns
+   - Use aggregation carefully as it may impact query performance on large datasets
+
 
 ## Filtering By Journey Email Action Events
 
