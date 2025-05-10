@@ -277,7 +277,7 @@ Filter people based on campaign events.
 }
 ```
 
-* `operator` - one of `opened`, `not opened`, `clicked`, `not clicked`, `unsubscribed`, `complained`, `not complained`, `bounced`, `not bounced`, `delivered`, `not delivered`, `queued-recipients`, `failed`
+* `operator` - one of `opened`, `not opened`, `clicked`, `not clicked`, `unsubscribed`, `not unsubscribed`, `complained`, `not complained`, `bounced`, `not bounced`, `delivered`, `not delivered`, `queued-recipients`, `not queued-recipients`, `failed`, `not failed`
 * `value` - target campaign ID. This value can be:
   * `integer` - a single campaign ID
   * `array` - multiple campaign IDs (e.g., `[123, 124, 125]`)
