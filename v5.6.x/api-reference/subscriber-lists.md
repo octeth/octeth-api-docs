@@ -14,7 +14,7 @@ and autoresponders associated with the list.
 **Request Body Parameters:**
 
 | Parameter | Description                                                          | Required? |
-|-----------|----------------------------------------------------------------------|-----------|
+| --------- | -------------------------------------------------------------------- | --------- |
 | SessionID | The ID of the user's current session                                 | Yes       |
 | APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | Command   | List.Assets                                                          | Yes       |
@@ -77,7 +77,7 @@ based on their `UserID`.
 **Request Body Parameters:**
 
 | Parameter          | Description                                                          | Required? |
-|--------------------|----------------------------------------------------------------------|-----------|
+| ------------------ | -------------------------------------------------------------------- | --------- |
 | SessionID          | The ID of the user's current session                                 | Yes       |
 | APIKey             | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | Command            | `List.Create` - The command to create a new subscriber list          | Yes       |
@@ -132,7 +132,7 @@ This endpoint retrieves a specific subscriber list based on the provided list id
 **Request Body Parameters:**
 
 | Parameter | Description                                                          | Required? |
-|-----------|----------------------------------------------------------------------|-----------|
+| --------- | -------------------------------------------------------------------- | --------- |
 | SessionID | The ID of the user's current session                                 | Yes       |
 | APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | Command   | List.Get                                                             | Yes       |
@@ -186,48 +186,49 @@ This endpoint updates the information of an existing subscriber list based on th
 
 **Request Body Parameters:**
 
-| Parameter                                | Description                                                                      | Required? |
-|------------------------------------------|----------------------------------------------------------------------------------|-----------|
-| SessionID                                | The ID of the user's current session                                             | Yes       |
-| APIKey                                   | The user's API key. Either `SessionID` or `APIKey` must be provided.             | Yes       |
-| Command                                  | `List.Update`                                                                    | Yes       |
-| SubscriberListID                         | The unique identifier of the subscriber list to update                           | Yes       |
-| Name                                     | The new name of the subscriber list                                              | No        |
-| SenderName                               | The new sender's name                                                            | No        |
-| SenderEmailAddress                       | The new sender's email address                                                   | No        |
-| SenderCompany                            | The new sender's company name                                                    | No        |
-| SenderAddress                            | The new sender's address                                                         | No        |
-| OptInMode                                | The opt-in mode for the list (`Single` or `Double`)                              | No        |
-| OptInConfirmationEmailID                 | The email ID used for opt-in confirmation                                        | No        |
-| OptOutAddToSuppressionList               | Whether to add opt-outs to the suppression list (`Yes` or `No`)                  | No        |
-| OptOutAddToGlobalSuppressionList         | Whether to add opt-outs to the global suppression list (`Yes` or `No`)           | No        |
-| HideInSubscriberArea                     | Whether to hide the list in the subscriber area (`true` or `false`)              | No        |
-| SendServiceIntegrationFailedNotification | Whether to send notifications on service integration failure (`true` or `false`) | No        |
-| SendActivityNotification                 | Whether to send activity notifications (`true` or `false`)                       | No        |
-| SubscriptionConfirmationPendingPageURL   | URL for the subscription confirmation pending page                               | No        |
-| SubscriptionConfirmedPageURL             | URL for the subscription confirmed page                                          | No        |
-| SubscriptionErrorPageURL                 | URL for the subscription error page                                              | No        |
-| UnsubscriptionConfirmedPageURL           | URL for the unsubscription confirmed page                                        | No        |
-| UnsubscriptionErrorPageURL               | URL for the unsubscription error page                                            | No        |
-| ReqByEmailSearchToAddress                | The email address to search for email-based requests                             | No        |
-| ReqByEmailSubscriptionCommand            | The command for email-based subscription                                         | No        |
-| ReqByEmailUnsubscriptionCommand          | The command for email-based unsubscription                                       | No        |
-| SyncStatus                               | The status of data synchronization (`Enabled` or `Disabled`)                     | No        |
-| SyncPeriod                               | The period for data synchronization                                              | No        |
-| SyncSendReportEmail                      | Whether to send a report email after synchronization (`Yes` or `No`)             | No        |
-| SyncMySQLHost                            | The MySQL host for data synchronization                                          | No        |
-| SyncMySQLPort                            | The MySQL port for data synchronization                                          | No        |
-| SyncMySQLUsername                        | The MySQL username for data synchronization                                      | No        |
-| SyncMySQLPassword                        | The MySQL password for data synchronization                                      | No        |
-| SyncMySQLDBName                          | The MySQL database name for data synchronization                                 | No        |
-| SyncMySQLQuery                           | The MySQL query for data synchronization                                         | No        |
-| SyncFieldMapping                         | The field mapping for data synchronization                                       | No        |
-| SyncLastDateTime                         | The last date and time of data synchronization                                   | No        |
-| OptOutScope                              | The scope of opt-out (`This list` or `All lists`)                                | No        |
-| OptOutSubscribeTo                        | The list ID to subscribe to on opt-out                                           | No        |
-| OptOutUnsubscribeFrom                    | The list ID to unsubscribe from on opt-out                                       | No        |
-| OptInSubscribeTo                         | The list ID to subscribe to on opt-in                                            | No        |
-| OptInUnsubscribeFrom                     | The list ID to unsubscribe from on opt-in                                        | No        |
+| Parameter                                | Description                                                                                                                                                                                                  | Required? |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| SessionID                                | The ID of the user's current session                                                                                                                                                                         | Yes       |
+| APIKey                                   | The user's API key. Either `SessionID` or `APIKey` must be provided.                                                                                                                                         | Yes       |
+| Command                                  | `List.Update`                                                                                                                                                                                                | Yes       |
+| SubscriberListID                         | The unique identifier of the subscriber list to update                                                                                                                                                       | Yes       |
+| Name                                     | The new name of the subscriber list                                                                                                                                                                          | No        |
+| SenderName                               | The new sender's name                                                                                                                                                                                        | No        |
+| SenderEmailAddress                       | The new sender's email address                                                                                                                                                                               | No        |
+| SenderCompany                            | The new sender's company name                                                                                                                                                                                | No        |
+| SenderAddress                            | The new sender's address                                                                                                                                                                                     | No        |
+| OptInMode                                | The opt-in mode for the list (`Single` or `Double`)                                                                                                                                                          | No        |
+| OptInConfirmationEmailID                 | The email ID used for opt-in confirmation                                                                                                                                                                    | No        |
+| OptOutAddToSuppressionList               | Whether to add opt-outs to the suppression list (`Yes` or `No`)                                                                                                                                              | No        |
+| OptOutAddToGlobalSuppressionList         | Whether to add opt-outs to the global suppression list (`Yes` or `No`)                                                                                                                                       | No        |
+| HideInSubscriberArea                     | Whether to hide the list in the subscriber area (`true` or `false`)                                                                                                                                          | No        |
+| SendServiceIntegrationFailedNotification | Whether to send notifications on service integration failure (`true` or `false`)                                                                                                                             | No        |
+| SendActivityNotification                 | Whether to send activity notifications (`true` or `false`)                                                                                                                                                   | No        |
+| SubscriptionConfirmationPendingPageURL   | URL for the subscription confirmation pending page                                                                                                                                                           | No        |
+| SubscriptionConfirmedPageURL             | URL for the subscription confirmed page                                                                                                                                                                      | No        |
+| SubscriptionErrorPageURL                 | URL for the subscription error page                                                                                                                                                                          | No        |
+| UnsubscriptionConfirmedPageURL           | URL for the unsubscription confirmed page                                                                                                                                                                    | No        |
+| UnsubscriptionErrorPageURL               | URL for the unsubscription error page                                                                                                                                                                        | No        |
+| ReqByEmailSearchToAddress                | The email address to search for email-based requests                                                                                                                                                         | No        |
+| ReqByEmailSubscriptionCommand            | The command for email-based subscription                                                                                                                                                                     | No        |
+| ReqByEmailUnsubscriptionCommand          | The command for email-based unsubscription                                                                                                                                                                   | No        |
+| SyncStatus                               | The status of data synchronization (`Enabled` or `Disabled`)                                                                                                                                                 | No        |
+| SyncPeriod                               | The period for data synchronization                                                                                                                                                                          | No        |
+| SyncSendReportEmail                      | Whether to send a report email after synchronization (`Yes` or `No`)                                                                                                                                         | No        |
+| SyncMySQLHost                            | The MySQL host for data synchronization                                                                                                                                                                      | No        |
+| SyncMySQLPort                            | The MySQL port for data synchronization                                                                                                                                                                      | No        |
+| SyncMySQLUsername                        | The MySQL username for data synchronization                                                                                                                                                                  | No        |
+| SyncMySQLPassword                        | The MySQL password for data synchronization                                                                                                                                                                  | No        |
+| SyncMySQLDBName                          | The MySQL database name for data synchronization                                                                                                                                                             | No        |
+| SyncMySQLQuery                           | The MySQL query for data synchronization                                                                                                                                                                     | No        |
+| SyncFieldMapping                         | The field mapping for data synchronization                                                                                                                                                                   | No        |
+| SyncLastDateTime                         | The last date and time of data synchronization                                                                                                                                                               | No        |
+| OptOutScope                              | The scope of opt-out (`This list` or `All lists`)                                                                                                                                                            | No        |
+| OptOutSubscribeTo                        | The list ID to subscribe to on opt-out                                                                                                                                                                       | No        |
+| OptOutUnsubscribeFrom                    | The list ID to unsubscribe from on opt-out                                                                                                                                                                   | No        |
+| OptInSubscribeTo                         | The list ID to subscribe to on opt-in                                                                                                                                                                        | No        |
+| OptInUnsubscribeFrom                     | The list ID to unsubscribe from on opt-in                                                                                                                                                                    | No        |
+| Options                                  | The options in array. Can include `DoNotSendEmailCampaignIfRecipientIsEnrolledInJourneyOrAutoresponder` (true/false) to prevent sending email campaigns to recipients enrolled in journeys or autoresponders | No        |
 
 ::: code-group
 
@@ -290,7 +291,7 @@ provide the list IDs to be deleted.
 **Request Body Parameters:**
 
 | Parameter | Description                                                            | Required? |
-|-----------|------------------------------------------------------------------------|-----------|
+| --------- | ---------------------------------------------------------------------- | --------- |
 | SessionID | The ID of the user's current session                                   | Yes       |
 | APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided.   | Yes       |
 | Command   | The API command to execute, which is `Lists.Delete` for this endpoint. | Yes       |
@@ -338,7 +339,7 @@ records, starting point, order, and additional statistics.
 **Request Body Parameters:**
 
 | Parameter         | Description                                                                | Required? |
-|-------------------|----------------------------------------------------------------------------|-----------|
+| ----------------- | -------------------------------------------------------------------------- | --------- |
 | SessionID         | The ID of the user's current session                                       | Yes       |
 | APIKey            | The user's API key. Either `SessionID` or `APIKey` must be provided.       | Yes       |
 | Command           | `Lists.Get` - The command to execute the retrieval of subscriber lists.    | Yes       |
@@ -407,7 +408,7 @@ This API call will return the list of website event properties for a specific su
 **Request Body Parameters:**
 
 | Parameter | Description                                                          | Required? |
-|-----------|----------------------------------------------------------------------|-----------|
+| --------- | -------------------------------------------------------------------- | --------- |
 | SessionID | The ID of the user's current session                                 | Yes       |
 | APIKey    | The user's API key. Either `SessionID` or `APIKey` must be provided. | Yes       |
 | Command   | `Website_Events.Properties`                                          | Yes       |
