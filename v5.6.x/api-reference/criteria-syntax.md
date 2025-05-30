@@ -90,8 +90,8 @@ Filter people based on their journey enrollments.
 }
 ```
 
-* `operator` - one of `in journey`, `completed journey`, `not in journey`
-* `value` - the ID number of the target journey
+* `operator` - one of `in journey`, `completed journey`, `not in journey`, `opened`, `not opened`, `clicked`, `not clicked`, `unsubscribed`, `complained`, `not complained`, `bounced`, `not bounced`
+* `value` - the ID number of the target journey or action depending on the chosen `operator`
 
 ## Filtering By Custom Fields
 
@@ -392,23 +392,6 @@ Filter people based on campaign events.
    - Be specific with campaign IDs when you don't need to search across all campaigns
    - Use aggregation carefully as it may impact query performance on large datasets
 
-
-## Filtering By Journey Email Action Events
-
-Filter people based on journey email action activities.
-
-```json
-{
-  "type": "journey-email-action",
-  "operator": "opened",
-  "journey-id": "...",
-  "value": "..."
-}
-```
-
-* `operator` - one of `opened`, `not opened`, `clicked`, `not clicked`, `unsubscribed`, `complained`, `not complained`, `bounced`, `not bounced`
-* `journey-id` - Target journey ID.
-* `value` - must be `ActionID` of the journey.
 
 ## Example Rules and Rendered Queries
 
