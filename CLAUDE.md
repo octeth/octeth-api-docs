@@ -260,6 +260,33 @@ Update CLAUDE.md to reflect the new version in:
 - Each version maintains its own complete documentation set
 - Previous versions remain accessible but are no longer marked as current
 
+## Working with Octeth Source Code
+
+When creating or updating API documentation, we reference the actual Octeth source code located at:
+- **Source Code Path**: `/Users/cemhurturk/Development/oempro/`
+- **Documentation Reference**: `/Users/cemhurturk/Development/oempro/CLAUDE.md`
+- **Additional Rules**: `/Users/cemhurturk/Development/oempro/.cursor/rules/*`
+
+### Source Code Structure
+The Octeth/Oempro codebase contains:
+- **API Endpoints**: Located in `/includes/api/` directory
+- **Frontend Controllers**: CodeIgniter controllers in `/includes/frontend/controllers/`
+- **Backend System**: Laravel framework in `/system/` directory
+- **Classes**: Core functionality in `/includes/classes/`
+
+### Documentation Workflow
+1. **Analyze Source**: Read actual API implementation from oempro codebase
+2. **Understand Behavior**: Review code logic, parameters, and responses
+3. **Create Documentation**: Write accurate API docs based on actual implementation
+4. **Verify Accuracy**: Cross-reference with existing code and test cases
+
+### Important Notes
+- Always reference the actual source code for accurate documentation
+- The oempro CLAUDE.md file contains development conventions and architecture details
+- Check `.cursor/rules/` for additional coding standards and patterns
+- Ensure documentation matches the actual implementation, not assumptions
+- Do NOT make any code/file changes in the Octeth software project directory.
+
 ## Contact & Support
 - **Support Email**: support@octeth.com, hello@octeth.com
 - **Company**: 50SAAS LLC
