@@ -56,7 +56,8 @@ export default defineConfig({
             {
                 text: "Version",
                 items: [
-                    {text: 'v5.6.x (Current)', link: '/v5.6.x/'},
+                    {text: 'v5.7.x (Current)', link: '/v5.7.x/'},
+                    {text: 'v5.6.x', link: '/v5.6.x/'},
                     {text: 'v5.5.x', link: '/v5.5.x/'},
                     {text: 'Changelog', link: 'https://help.octeth.com/whats-new', target: '_blank', rel: 'dofollow'}
                 ]
@@ -72,6 +73,47 @@ export default defineConfig({
         ],
 
         sidebar: {
+            '/v5.7.x/': [
+                {
+                    text: 'OCTETH V5.7.X',
+                    collapsed: false,
+                    items: [
+                        {text: 'Getting Started', link: '/v5.7.x/getting-started'},
+                        {text: 'Authorization', link: '/v5.7.x/authorization'},
+                        {text: 'Error Handling', link: '/v5.7.x/error-handling'},
+                        {text: 'Support', link: '/v5.7.x/support'},
+                        {text: 'Changelog', link: 'https://github.com/octeth/octeth-api-docs/releases'}
+                    ]
+                },
+                {
+                    text: 'API REFERENCE',
+                    collapsed: false,
+                    items: [
+                        {text: 'Administrators', link: '/v5.7.x/api-reference/administrators'},
+                        {text: 'Users', link: '/v5.7.x/api-reference/users'},
+                        {text: 'Subscriber Lists', link: '/v5.7.x/api-reference/subscriber-lists'},
+                        {text: 'Custom Fields', link: '/v5.7.x/api-reference/custom-fields'},
+                        {text: 'Segments', link: '/v5.7.x/api-reference/segments'},
+                        {text: 'Tags', link: '/v5.7.x/api-reference/tags'},
+                        {text: 'Sender Domains', link: '/v5.7.x/api-reference/sender-domains'},
+                        {text: 'Subscribers', link: '/v5.7.x/api-reference/subscribers'},
+                        {text: 'Suppression Lists', link: '/v5.7.x/api-reference/suppression-lists'},
+                        {text: 'Journeys', link: '/v5.7.x/api-reference/journeys'},
+                        {text: 'Email Contents', link: '/v5.7.x/api-reference/email-contents'},
+                        {text: 'Email Campaigns', link: '/v5.7.x/api-reference/email-campaigns'},
+                        {text: 'Events', link: '/v5.7.x/api-reference/events'},
+                        {text: 'System Management', link: '/v5.7.x/api-reference/system-management'},
+                    ]
+                },
+                {
+                    text: 'PLUGIN DEVELOPMENT',
+                    collapsed: false,
+                    items: [
+                        {text: 'Hook Reference', link: '/v5.7.x/plugin-development/hook-reference'},
+                    ]
+                }
+
+            ],
             '/v5.6.x/': [
                 {
                     text: 'OCTETH V5.6.X',
