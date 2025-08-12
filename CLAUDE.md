@@ -21,16 +21,19 @@ api-docs.octeth.com/
 ├── api-reference/       # Latest API documentation (symlink/copy of current version)
 ├── plugin-development/  # Plugin development documentation
 ├── public/              # Static assets (logos)
-├── v5.5.x/             # Version 5.5.x documentation
-├── v5.6.x/             # Version 5.6.x documentation (current)
+├── v5.5.x/             # Version 5.5.x documentation (legacy)
+├── v5.6.x/             # Version 5.6.x documentation
+├── v5.7.x/             # Version 5.7.x documentation (current)
 ├── index.md            # Homepage (redirects to current version)
 ├── merge-docs.js       # Utility to merge all docs into single file
 ├── package.json        # Node dependencies
-└── README.md           # Development instructions
+├── README.md           # Development instructions
+├── CLAUDE.md           # Project documentation for AI assistance
+└── TASKS.md            # Task tracking for improvements
 ```
 
 ### Version Directories Structure
-Each version directory (v5.5.x, v5.6.x) contains:
+Each version directory (v5.5.x, v5.6.x, v5.7.x) contains:
 ```
 v5.x.x/
 ├── api-reference/
@@ -77,7 +80,7 @@ v5.x.x/
 ### Navigation Structure
 - **Main Nav**:
   - Homepage
-  - Version selector (v5.6.x current, v5.5.x legacy)
+  - Version selector (v5.7.x current, v5.6.x, v5.5.x legacy)
   - Resources (Client Area, Help Portal, Contact)
 - **Sidebar**: Auto-generated based on version with three main sections:
   1. Getting Started section
@@ -133,8 +136,8 @@ node merge-docs.js
 ## Important Features & Considerations
 
 ### Version Management
-- Multiple API versions maintained simultaneously (v5.5.x, v5.6.x)
-- Current version is v5.6.x
+- Multiple API versions maintained simultaneously (v5.5.x, v5.6.x, v5.7.x)
+- Current version is v5.7.x
 - Homepage automatically redirects to current version
 - Each version has independent documentation set
 
@@ -172,6 +175,90 @@ node merge-docs.js
 ## Custom Components & Scripts
 - **merge-docs.js**: Node.js utility to concatenate all documentation into single file
 - **Homepage Redirect**: Vue component auto-redirects root to current version
+
+## Creating a New Version - Step-by-Step Guide
+
+When releasing a new version of the API documentation, follow these steps:
+
+### 1. Copy Previous Version Directory
+```bash
+cp -r v5.6.x v5.7.x  # Replace with appropriate version numbers
+```
+
+### 2. Update VitePress Configuration
+Edit `.vitepress/config.mjs`:
+
+#### Update Navigation (nav section):
+- Change the current version label to include "(Current)"
+- Remove "(Current)" from the previous version
+- Add the new version at the top of the version list
+
+```javascript
+items: [
+    {text: 'v5.7.x (Current)', link: '/v5.7.x/'},
+    {text: 'v5.6.x', link: '/v5.6.x/'},
+    {text: 'v5.5.x', link: '/v5.5.x/'},
+]
+```
+
+#### Add Sidebar Configuration:
+- Copy the entire sidebar configuration from the previous version
+- Update all paths to point to the new version directory
+- Update the section title to reflect the new version
+
+```javascript
+'/v5.7.x/': [
+    {
+        text: 'OCTETH V5.7.X',
+        // ... rest of configuration
+    }
+]
+```
+
+### 3. Update Homepage Redirect
+Edit `index.md`:
+
+#### Update action buttons:
+```markdown
+actions:
+  - theme: brand
+    text: Get Started
+    link: /v5.7.x/getting-started
+  - theme: alt
+    text: API Reference
+    link: /v5.7.x/api-reference/administrators
+```
+
+#### Update auto-redirect script:
+```javascript
+router.go('/v5.7.x/')  // Update to new version
+```
+
+### 4. Update Version Homepage
+Edit `v5.7.x/index.md`:
+- Update the hero name to reflect the new version
+- Update all internal links to point to the new version path
+
+### 5. Verify Setup
+```bash
+npm run docs:dev
+```
+Visit the development server to ensure:
+- Homepage redirects to new version
+- Navigation shows correct current version
+- All sidebar links work properly
+- Version selector displays all versions correctly
+
+### 6. Update Documentation Files
+Update CLAUDE.md to reflect the new version in:
+- Project structure
+- Navigation structure
+- Version management section
+
+### Notes
+- The `api-reference/` directory in root can be updated to mirror the current version if needed
+- Each version maintains its own complete documentation set
+- Previous versions remain accessible but are no longer marked as current
 
 ## Contact & Support
 - **Support Email**: support@octeth.com, hello@octeth.com
