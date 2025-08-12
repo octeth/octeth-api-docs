@@ -89,20 +89,73 @@ export default defineConfig({
                     text: 'API REFERENCE',
                     collapsed: false,
                     items: [
+                        // Authentication & Authorization
+                        {text: 'Authentication', link: '/v5.7.x/api-reference/authentication'},
+                        
+                        // User Management
                         {text: 'Administrators', link: '/v5.7.x/api-reference/administrators'},
                         {text: 'Users', link: '/v5.7.x/api-reference/users'},
+                        {text: 'User Groups', link: '/v5.7.x/api-reference/user-groups'},
+                        {text: 'Clients', link: '/v5.7.x/api-reference/clients'},
+                        
+                        // List Management
                         {text: 'Subscriber Lists', link: '/v5.7.x/api-reference/subscriber-lists'},
+                        {text: 'List Integration', link: '/v5.7.x/api-reference/list-integration'},
+                        
+                        // Subscriber Management
+                        {text: 'Subscribers', link: '/v5.7.x/api-reference/subscribers'},
+                        {text: 'Subscriber Import/Export', link: '/v5.7.x/api-reference/subscriber-import-export'},
+                        {text: 'Subscriber Activities', link: '/v5.7.x/api-reference/subscriber-activities'},
+                        
+                        // Data Management
                         {text: 'Custom Fields', link: '/v5.7.x/api-reference/custom-fields'},
+                        {text: 'Global Custom Fields', link: '/v5.7.x/api-reference/global-custom-fields'},
                         {text: 'Segments', link: '/v5.7.x/api-reference/segments'},
                         {text: 'Tags', link: '/v5.7.x/api-reference/tags'},
-                        {text: 'Sender Domains', link: '/v5.7.x/api-reference/sender-domains'},
-                        {text: 'Subscribers', link: '/v5.7.x/api-reference/subscribers'},
                         {text: 'Suppression Lists', link: '/v5.7.x/api-reference/suppression-lists'},
-                        {text: 'Journeys', link: '/v5.7.x/api-reference/journeys'},
+                        
+                        // Email Management
                         {text: 'Email Contents', link: '/v5.7.x/api-reference/email-contents'},
+                        {text: 'Email Templates', link: '/v5.7.x/api-reference/email-templates'},
+                        {text: 'Email Preview & Testing', link: '/v5.7.x/api-reference/email-preview-testing'},
+                        {text: 'Design Preview', link: '/v5.7.x/api-reference/design-preview'},
+                        
+                        // Campaign Management
                         {text: 'Email Campaigns', link: '/v5.7.x/api-reference/email-campaigns'},
+                        {text: 'Autoresponders', link: '/v5.7.x/api-reference/autoresponders'},
+                        {text: 'Split Testing', link: '/v5.7.x/api-reference/split-testing'},
+                        
+                        // Journey Management
+                        {text: 'Journeys', link: '/v5.7.x/api-reference/journeys'},
+                        {text: 'Journey Actions', link: '/v5.7.x/api-reference/journey-actions'},
+                        
+                        // Email Gateway & Delivery
+                        {text: 'Email Gateway', link: '/v5.7.x/api-reference/email-gateway'},
+                        {text: 'Sender Domains', link: '/v5.7.x/api-reference/sender-domains'},
+                        {text: 'Delivery Servers', link: '/v5.7.x/api-reference/delivery-servers'},
+                        {text: 'DNS Management', link: '/v5.7.x/api-reference/dns-management'},
+                        {text: 'Webhooks', link: '/v5.7.x/api-reference/webhooks'},
+                        
+                        // Analytics & Reporting
                         {text: 'Events', link: '/v5.7.x/api-reference/events'},
+                        {text: 'Event Tracking', link: '/v5.7.x/api-reference/event-tracking'},
+                        {text: 'Campaign Archives', link: '/v5.7.x/api-reference/campaign-archives'},
+                        
+                        // Media & Assets
+                        {text: 'Media Library', link: '/v5.7.x/api-reference/media-library'},
+                        {text: 'Attachments', link: '/v5.7.x/api-reference/attachments'},
+                        {text: 'Themes', link: '/v5.7.x/api-reference/themes'},
+                        
+                        // System & Settings
                         {text: 'System Management', link: '/v5.7.x/api-reference/system-management'},
+                        {text: 'System Health', link: '/v5.7.x/api-reference/system-health'},
+                        {text: 'Settings', link: '/v5.7.x/api-reference/settings'},
+                        {text: 'SSO Management', link: '/v5.7.x/api-reference/sso-management'},
+                        
+                        // Advanced Features
+                        {text: 'Criteria Syntax', link: '/v5.7.x/api-reference/criteria-syntax'},
+                        {text: 'Inbound Relay', link: '/v5.7.x/api-reference/inbound-relay'},
+                        {text: 'API Keys Management', link: '/v5.7.x/api-reference/api-keys-management'},
                     ]
                 },
                 {
