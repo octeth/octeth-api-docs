@@ -20,13 +20,13 @@ export default defineConfig({
             'link',
             {rel: 'icon', href: '/logo_icon.png'}
         ],
+        // Fathom
         ['script', {defer: '', 'data-site': 'HSMUHQVG', src: 'https://cdn.usefathom.com/script.js'}],
         ['script', {}, '!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys onSessionId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);\n' +
         '    posthog.init(\'phc_ygHo6UNsJBeftPHqARO3gDFqYnsug63Xy5d9QW6cKEg\',{api_host:\'https://app.posthog.com\'})'],
-        // [
-        //     'script',
-        //     { defer: '', 'data-domain':'apidocs.octeth.com', src:'https://analytics.metricshq.com/js/script.js'},
-        // ]
+        // ContactWidget.com
+        ['script', {}, '(()=>{(function(d,i){let t={apiBase:"https://b.contactwidget.com",widgetId:null,scriptLoaded:!1};function a(){if(t.scriptLoaded)return;let e=i.createElement("script");e.src=`${t.apiBase}/widget/${t.widgetId}/widget.min.js`,e.async=!0,e.onload=()=>{t.scriptLoaded=!0,d.ContactWidget.init({widgetId:t.widgetId,domain:d.location.hostname})},i.body?i.body.appendChild(e):i.addEventListener("DOMContentLoaded",function(){i.body.appendChild(e)})}function n(e){if(typeof e=="string")t.widgetId=e;else if(typeof e=="object"&&e!==null){if(!e.widgetId){console.error("ContactWidget: Widget ID is required");return}t.widgetId=e.widgetId,e.apiBase&&(t.apiBase=e.apiBase),t.widgetOptions={domain:e.domain||window.location.hostname,primaryColor:e.primaryColor,position:e.position}}else{console.error("ContactWidget: Invalid initialization parameters");return}i.readyState==="complete"||i.readyState==="interactive"?a():i.addEventListener("DOMContentLoaded",a)}d.ContactWidgetLoader={init:n}})(window,document);})();'],
+        ['script', {}, 'ContactWidgetLoader.init({widgetId: "25a184cc-085d-42fd-b6b7-53f72f2b8c21", domain: window.location.hostname});']
     ],
 
     base: '/',
