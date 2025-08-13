@@ -82,7 +82,7 @@ export default defineConfig({
                         {text: 'Authorization', link: '/v5.7.x/authorization'},
                         {text: 'Error Handling', link: '/v5.7.x/error-handling'},
                         {text: 'Support', link: '/v5.7.x/support'},
-                        {text: 'Changelog', link: 'https://github.com/octeth/octeth-api-docs/releases'}
+                        {text: 'Changelog', link: 'https://help.octeth.com/whats-new'}
                     ]
                 },
                 {
@@ -176,7 +176,7 @@ export default defineConfig({
                         {text: 'Authorization', link: '/v5.6.x/authorization'},
                         {text: 'Error Handling', link: '/v5.6.x/error-handling'},
                         {text: 'Support', link: '/v5.6.x/support'},
-                        {text: 'Changelog', link: 'https://github.com/octeth/octeth-api-docs/releases'}
+                        {text: 'Changelog', link: 'https://help.octeth.com/whats-new'}
                     ]
                 },
                 {
@@ -217,7 +217,7 @@ export default defineConfig({
                         {text: 'Authorization', link: '/v5.5.x/authorization'},
                         {text: 'Error Handling', link: '/v5.5.x/error-handling'},
                         {text: 'Support', link: '/v5.5.x/support'},
-                        {text: 'Changelog', link: 'https://github.com/octeth/octeth-api-docs/releases'}
+                        {text: 'Changelog', link: 'https://help.octeth.com/whats-new'}
                     ]
                 },
                 {

@@ -102,10 +102,29 @@ Each API endpoint follows this format:
    - Error Codes (text list)
 
 ### Common API Patterns
-- **Authentication**: SessionID or APIKey required for all endpoints
+- **Authentication**: Multiple authentication methods and scopes
+  - **Methods**: SessionID (temporary) or API Key (permanent)
+  - **Scopes**: User scope or Admin scope
+  - **Parameters**: 
+    - User scope: `SessionID` or `APIKey`
+    - Admin scope: `SessionID` or `AdminAPIKey`
 - **Commands**: All endpoints use a `Command` parameter (e.g., "Campaign.Create")
 - **Response Format**: JSON responses with Success, ErrorCode, ErrorText fields
 - **Base URL**: `https://<octeth-installation-domain>/api.php`
+- **Alternative Format**: Some admin endpoints use `/api/v1/` with Bearer token authentication
+
+### Important Parameter Casing
+API parameters often use specific casing that must be matched exactly:
+- **Login endpoints**: Use lowercase for special parameters
+  - `apikey` (not APIKey) for User.Login with API key
+  - `adminapikey` (not AdminAPIKey) for Admin.Login
+  - `tfacode` (not TFACode) for two-factor authentication
+  - `tfarecoverycode` for 2FA recovery
+  - `disablecaptcha` to bypass captcha
+- **Most other endpoints**: Use PascalCase for field names
+  - `SubscriberListName` (not subscriberlistname)
+  - `EmailAddress`, `FirstName`, `LastName`, etc.
+- **Always verify**: Check the actual PHP implementation files for correct parameter names
 
 ## Development Commands
 
@@ -141,11 +160,43 @@ node merge-docs.js
 - Homepage automatically redirects to current version
 - Each version has independent documentation set
 
-### API Key Features
-- **User Authentication**: User.Login endpoint for session management
-- **Admin Authentication**: Admin.Login endpoint for admin sessions
-- **API Keys**: Alternative to session-based auth
+### API Authentication System
+
+#### Authentication Methods
+1. **Session ID** (Temporary)
+   - Obtained via `User.Login` or `Admin.Login` endpoints
+   - Expires after inactivity period
+   - Suitable for interactive applications
+
+2. **API Key** (Permanent)
+   - **User API Key**: Created in User Dashboard > Settings > API Keys
+   - **Admin API Key**: Found in Admin > Settings > Account > API tab
+   - Never expires unless manually revoked
+   - Recommended for automation and integrations
+
+#### Authentication Scopes
+1. **User Scope**
+   - Access to user-level operations (lists, campaigns, subscribers)
+   - Parameters: `SessionID` or `APIKey`
+   
+2. **Admin Scope**
+   - Access to system-level operations (user management, system settings)
+   - Parameters: `SessionID` or `AdminAPIKey`
+
+#### Authentication Formats
+1. **Standard Format** (`/api.php`)
+   - Use form data with authentication parameter
+   - Example: `APIKey=xxx` or `AdminAPIKey=xxx`
+
+2. **Bearer Token Format** (`/api/v1/`)
+   - Some admin endpoints use Bearer authentication
+   - Example: `Authorization: Bearer xxx`
+
+#### Additional Features
 - **Two-Factor Authentication**: TFA support in login endpoints
+- **Response Format**: Always includes `ResponseFormat="JSON"` parameter
+- **Captcha**: Can be disabled with `DisableCaptcha=true` parameter
+- **Password Masking**: User.Login response masks password as `****** masked ******`
 
 ### Documentation Features
 - **Criteria Syntax**: Complex filtering system for segments, tags, journeys, fields
@@ -280,6 +331,27 @@ The Octeth/Oempro codebase contains:
 2. **Understand Behavior**: Review code logic, parameters, and responses
 3. **Create Documentation**: Write accurate API docs based on actual implementation
 4. **Verify Accuracy**: Cross-reference with existing code and test cases
+
+### Key API Implementation Details
+- **User.Login**: 
+  - Supports both username/password and API key authentication
+  - Can login with email address if ALLOW_SAME_USER_EMAILADDRESS is false
+  - Returns full UserInfo object with GroupInformation set to null for security
+- **Admin.Login**:
+  - When using adminapikey with ADMIN_API_KEY constant, logs in as AdminID=1
+  - Returns AdminInfo object in response
+- **List.Create**:
+  - Auto-enables double opt-in if user group has ForceOptInList enabled
+  - Checks user's list limit from GroupInformation
+- **Subscriber.Create**:
+  - Returns comprehensive response with tags, segments, journeys, and website events
+  - Supports many optional parameters for automation triggers
+  - Custom fields use `CustomFields[ID]` syntax
+- **Email.Create**:
+  - Creates empty email container that must be updated with Email.Update
+- **Campaign.Create**:
+  - Only requires CampaignName parameter
+  - Must use Campaign.Update to configure recipients and schedule
 
 ### Important Notes
 - Always reference the actual source code for accurate documentation

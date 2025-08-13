@@ -4,66 +4,289 @@ layout: doc
 
 # Authorization
 
-Before accessing API endpoints, you must be authorized as an administrator or user, depending on the requirements of each endpoint. Authorization can be done in two ways:
+The Octeth API supports two authentication methods and two permission scopes.
 
-1. Generating a session ID
-2. Using the admin or user API key
+## Authentication Methods
 
-To generate a session ID, execute the `Admin.Login` or `User.Login` API endpoints. Here are examples of how to do this:
+### API Key (Recommended)
 
-## Generate an administrator session ID:
-
-```bash
-curl --location 'http://<octeth-installation-domain>/api.php' \
---header 'Content-Type: application/x-www-form-urlencoded' \
---data-urlencode 'ResponseFormat=JSON' \
---data-urlencode 'Command=Admin.Login' \
---data-urlencode 'Username=<admin-username>' \
---data-urlencode 'Password=<admin-password>' \
---data-urlencode 'TFACode=' \
---data-urlencode 'DisableCaptcha=true'
-```
-
-## Generate a user session ID:
+Permanent authentication for automated integrations.
 
 ```bash
-curl --location 'http://<octeth-installation-domain>/api.php' \
---header 'Content-Type: application/x-www-form-urlencoded' \
---data-urlencode 'ResponseFormat=JSON' \
---data-urlencode 'Command=User.Login' \
---data-urlencode 'Username=<user-username>' \
---data-urlencode 'Password=<user-password>' \
---data-urlencode 'TFACode=' \
---data-urlencode 'DisableCaptcha=true'
+curl https://your-domain.com/api.php \
+  -F "ResponseFormat=JSON" \
+  -F "Command=List.Create" \
+  -F "APIKey=your-api-key" \
+  -F "SubscriberListName=Newsletter"
 ```
 
-After providing the correct username and password, you will receive a success response with a session ID. The `SessionID` parameter will be used in further API calls.
+**Get your API key:**
+- **User API Key**: User Dashboard → Settings → API Keys
+- **Admin API Key**: Admin Area → Settings → Account → API tab
 
-If you prefer to authenticate using the admin API key or user API key, generate an API key in the `User Area > Settings > API Keys` section. If you need to use the admin API key, gather your admin API key from `Admin Area > Settings > Admin Account > API` tab.
+### Session ID
 
-When making API requests, pass the SessionID or APIKey parameter depending on the authorization method you have chosen.
-
-## Test Your Setup
-
-To ensure your setup is correct, you can make a simple API call to create a new subscriber list. Here's an example (assuming that the SessionID gathered from User.Login API endpoint is ****):
+Temporary authentication for interactive applications.
 
 ```bash
-curl --location 'http://<octeth-installation-domain>/api.php' \
---form 'ResponseFormat="JSON"' \
---form 'Command="List.Create"' \
---form 'SessionID="****"' \
---form 'SubscriberListName="My Test List"'
+# User login
+curl https://your-domain.com/api.php \
+  -F "ResponseFormat=JSON" \
+  -F "Command=User.Login" \
+  -F "Username=user@example.com" \
+  -F "Password=password" \
+  -F "DisableCaptcha=true"
+
+# Returns: {"SessionID": "abc123..."}
+
+# Use session in subsequent calls
+curl https://your-domain.com/api.php \
+  -F "ResponseFormat=JSON" \
+  -F "Command=List.Create" \
+  -F "SessionID=abc123..." \
+  -F "SubscriberListName=Newsletter"
 ```
 
-The response should look like this:
+## Permission Scopes
+
+### User Scope
+
+Access to marketing operations.
+
+| Parameter | Method | Access |
+|-----------|--------|--------|
+| `APIKey` | API Key | Lists, campaigns, subscribers, emails |
+| `SessionID` | Session | Same as API Key |
+
+**Login options:**
+
+```bash
+# With username/password
+curl https://your-domain.com/api.php \
+  -F "ResponseFormat=JSON" \
+  -F "Command=User.Login" \
+  -F "Username=user@example.com" \
+  -F "Password=password" \
+  -F "DisableCaptcha=true"
+
+# With API key (skip password)
+curl https://your-domain.com/api.php \
+  -F "ResponseFormat=JSON" \
+  -F "Command=User.Login" \
+  -F "apikey=your-api-key"
+
+# With 2FA
+curl https://your-domain.com/api.php \
+  -F "ResponseFormat=JSON" \
+  -F "Command=User.Login" \
+  -F "Username=user@example.com" \
+  -F "Password=password" \
+  -F "tfacode=123456" \
+  -F "DisableCaptcha=true"
+```
+
+### Admin Scope
+
+Access to system administration.
+
+| Parameter | Method | Access |
+|-----------|--------|--------|
+| `AdminAPIKey` | API Key | Users, system settings, all user data |
+| `SessionID` | Session | Same as API Key |
+
+**Login options:**
+
+```bash
+# With username/password
+curl https://your-domain.com/api.php \
+  -F "ResponseFormat=JSON" \
+  -F "Command=Admin.Login" \
+  -F "Username=admin" \
+  -F "Password=admin-password" \
+  -F "DisableCaptcha=true"
+
+# With admin API key (if ADMIN_API_KEY configured)
+curl https://your-domain.com/api.php \
+  -F "ResponseFormat=JSON" \
+  -F "Command=Admin.Login" \
+  -F "adminapikey=admin-api-key"
+```
+
+## Two-Factor Authentication
+
+When 2FA is enabled, include the verification code:
+
+```bash
+# User login with 2FA
+curl https://your-domain.com/api.php \
+  -F "ResponseFormat=JSON" \
+  -F "Command=User.Login" \
+  -F "Username=user@example.com" \
+  -F "Password=password" \
+  -F "tfacode=123456" \
+  -F "DisableCaptcha=true"
+
+# Using recovery code (disables 2FA)
+curl https://your-domain.com/api.php \
+  -F "ResponseFormat=JSON" \
+  -F "Command=User.Login" \
+  -F "Username=user@example.com" \
+  -F "Password=password" \
+  -F "tfarecoverycode=XXXX-XXXX-XXXX" \
+  -F "DisableCaptcha=true"
+```
+
+## Response Format
+
+### Successful login
 
 ```json
 {
-"Success": true,
-"ErrorCode": 0,
-"ErrorText": "",
-"ListID": 1
+  "Success": true,
+  "ErrorCode": 0,
+  "SessionID": "abc123...",
+  "UserInfo": {
+    "UserID": 42,
+    "Username": "user@example.com",
+    "EmailAddress": "user@example.com",
+    "FirstName": "John",
+    "LastName": "Doe",
+    "GroupInformation": {...}
+  }
 }
 ```
 
-If you receive a success response, congratulations! You're now ready to start using the Octeth API.
+### Failed login
+
+```json
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Invalid credentials"
+}
+```
+
+## Common Error Codes
+
+| Code | Description |
+|------|-------------|
+| 1 | Missing username |
+| 2 | Missing password |
+| 3 | Invalid credentials |
+| 5 | Invalid captcha |
+| 6 | Invalid 2FA code |
+| 101 | 2FA required |
+
+## Parameter Reference
+
+### Login Parameters
+
+All login parameters are **lowercase**:
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `username` | Account username or email | `user@example.com` |
+| `password` | Account password | `mypassword` |
+| `apikey` | User API key (skip password) | `XXXX-XXXX-XXXX` |
+| `adminapikey` | Admin API key | `XXXX-XXXX-XXXX` |
+| `tfacode` | 2FA verification code | `123456` |
+| `tfarecoverycode` | 2FA recovery code | `XXXX-XXXX-XXXX` |
+| `disablecaptcha` | Skip captcha validation | `true` |
+
+### API Call Parameters
+
+Authentication parameters for API calls are **PascalCase**:
+
+| Parameter | Scope | Description |
+|-----------|-------|-------------|
+| `APIKey` | User | User API key |
+| `AdminAPIKey` | Admin | Admin API key |
+| `SessionID` | Both | Session from login |
+
+## Best Practices
+
+### Use API Keys for automation
+
+```php
+// Good: API key for automated tasks
+$api->call('Campaign.Send', [
+    'APIKey' => getenv('OCTETH_API_KEY'),
+    'CampaignID' => 123
+]);
+```
+
+### Use Sessions for user interfaces
+
+```javascript
+// Good: Session for web apps
+const session = await login(username, password);
+localStorage.setItem('sessionId', session.SessionID);
+
+// Use session for subsequent calls
+await api.call('Lists.Get', {
+    SessionID: localStorage.getItem('sessionId')
+});
+```
+
+### Handle session expiration
+
+```python
+def api_call(command, data):
+    response = make_request(command, data)
+    
+    if response['ErrorCode'] == 401:  # Session expired
+        # Re-authenticate
+        session = login()
+        data['SessionID'] = session['SessionID']
+        response = make_request(command, data)
+    
+    return response
+```
+
+### Secure your credentials
+
+```bash
+# Store API keys in environment variables
+export OCTETH_API_KEY="your-api-key"
+export OCTETH_ADMIN_KEY="your-admin-key"
+
+# Use in scripts
+curl https://your-domain.com/api.php \
+  -F "APIKey=$OCTETH_API_KEY" \
+  ...
+```
+
+## Testing Your Setup
+
+Quick test to verify authentication:
+
+```bash
+# Test with API key
+curl https://your-domain.com/api.php \
+  -F "ResponseFormat=JSON" \
+  -F "Command=Lists.Get" \
+  -F "APIKey=your-api-key"
+
+# Test with session
+curl https://your-domain.com/api.php \
+  -F "ResponseFormat=JSON" \
+  -F "Command=Lists.Get" \
+  -F "SessionID=your-session-id"
+```
+
+Success response confirms authentication is working:
+
+```json
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "TotalLists": 5,
+  "Lists": [...]
+}
+```
+
+## Next Steps
+
+- [API Reference →](/v5.7.x/api-reference/subscribers)
+- [Error Handling →](/v5.7.x/error-handling)
+- [Getting Started →](/v5.7.x/getting-started)
