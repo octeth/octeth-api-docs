@@ -273,6 +273,7 @@ The Octeth/Oempro codebase contains:
 - **Frontend Controllers**: CodeIgniter controllers in `/includes/frontend/controllers/`
 - **Backend System**: Laravel framework in `/system/` directory
 - **Classes**: Core functionality in `/includes/classes/`
+- **API Entrypoint**: Located in `api.php` and `/includes/classes/api.inc.php`. Each API endpoint is defined and registered in one of these files.
 
 ### Documentation Workflow
 1. **Analyze Source**: Read actual API implementation from oempro codebase
