@@ -513,3 +513,98 @@ This action sends the email to the subscriber.
 | Reply-To       | `ReplyTo.Name` and `ReplyTo.Email` parameters to set as `Reply-To` header of the email.                          |
 | CC             | The array with `Name` and `Email` parameters to set as `CC` header of the email.                                 |
 | BCC            | The array with `Name` and `Email` parameters to set as `BCC` header of the email.                                |
+
+## `SendSMS`
+
+This action sends an SMS message to the subscriber.
+
+```json
+{
+  "ActionID": 705,
+  "Action": "SendSMS",
+  "Published": true,
+  "Notes": "Send welcome SMS",
+  "message": "Hello {{ Subscriber:FirstName }}, welcome to our service!",
+  "gateway_id": 45,
+  "sender_id": "+1234567890",
+  "skip_if_no_phone": true,
+  "max_retry_attempts": 3,
+  "priority": "normal",
+  "delivery_window_enabled": false,
+  "delivery_window": {
+    "timezone": "America/New_York",
+    "start_time": "09:00",
+    "end_time": "18:00",
+    "days": ["mon", "tue", "wed", "thu", "fri"]
+  },
+  "include_link": true,
+  "link_url": "https://example.com/offer",
+  "link_expiry_hours": 24
+}
+```
+
+| Parameter                   | Description                                                                                                                                                                                     |
+|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ActionID                    | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action.                                                                               |
+| Action                      | Set this parameter to `SendSMS`.                                                                                                                                                               |
+| Published                   | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                                                                                                |
+| Notes                       | The administrative note for the journey action.                                                                                                                                                |
+| message                     | The SMS message content. Supports merge tags (e.g., `{{ Subscriber:FirstName }}`). Maximum 1600 characters for GSM7 encoding, 700 for Unicode.                                               |
+| gateway_id                  | The ID of the SMS gateway to use for sending the message. Required.                                                                                                                            |
+| sender_id                   | The sender ID or phone number to use. If not specified, the gateway's default sender will be used.                                                                                             |
+| skip_if_no_phone            | If `true`, the journey continues without error when the subscriber has no phone number. If `false`, the journey stops with an error. Default: `true`                                          |
+| max_retry_attempts          | Maximum number of retry attempts if the SMS fails to send. Range: 0-10. Default: `3`                                                                                                          |
+| priority                    | Message priority level. Values: `normal`, `high`. High priority messages are processed first. Default: `normal`                                                                                |
+| delivery_window_enabled     | If `true`, SMS will only be sent during the specified delivery window. Default: `false`                                                                                                        |
+| delivery_window             | Object containing delivery window settings (only used when `delivery_window_enabled` is `true`):                                                                                               |
+| &rdsh; timezone             | Timezone for the delivery window (e.g., `America/New_York`, `Europe/London`, `UTC`). Default: `UTC`                                                                                           |
+| &rdsh; start_time           | Start time in 24-hour format (e.g., `09:00`). Default: `09:00`                                                                                                                                |
+| &rdsh; end_time             | End time in 24-hour format (e.g., `18:00`). Default: `18:00`                                                                                                                                  |
+| &rdsh; days                 | Array of days when SMS can be sent. Values: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`. Default: `["mon", "tue", "wed", "thu", "fri"]`                                                  |
+| include_link                | If `true`, includes a trackable link in the message. The placeholder `{link}` in the message will be replaced with the shortened URL. Default: `false`                                        |
+| link_url                    | The URL to include in the SMS (only used when `include_link` is `true`). The URL will be shortened automatically.                                                                              |
+| link_expiry_hours           | Number of hours after which the shortened link expires. Range: 1-8760 (1 year). Default: `72`                                                                                                 |
+
+### Message Encoding
+
+SMS messages are automatically detected for encoding:
+- **GSM7 encoding**: Standard characters, 160 characters per SMS part
+- **Unicode encoding**: Special characters/emojis, 70 characters per SMS part
+
+### Available Merge Tags
+
+The SMS message supports the same merge tag formats as other journey actions:
+- `{{ Subscriber:FieldName }}` - Access subscriber data fields (e.g., `{{ Subscriber:FirstName }}`, `{{ Subscriber:PhoneNumber }}`)
+- `{{ List:FieldName }}` - Access list data fields
+- `{{ CustomField:ID }}` - Access custom field values by ID
+
+### Delivery Window Example
+
+To send SMS only during business hours on weekdays:
+
+```json
+{
+  "delivery_window_enabled": true,
+  "delivery_window": {
+    "timezone": "America/New_York",
+    "start_time": "09:00",
+    "end_time": "17:00",
+    "days": ["mon", "tue", "wed", "thu", "fri"]
+  }
+}
+```
+
+### Link Tracking Example
+
+To include a trackable link that expires after 48 hours:
+
+```json
+{
+  "message": "Special offer for you! Click here: {{link}}",
+  "include_link": true,
+  "link_url": "https://example.com/special-offer",
+  "link_expiry_hours": 48
+}
+```
+
+The `{{link}}` placeholder will be replaced with a shortened, trackable URL.
