@@ -197,7 +197,7 @@ This action triggers a webhook.
     "HeaderName": "X-Octeth-Signature"
   },
   "WebhookBody": {
-    "custom": "payload with &lcub;&lcub; Subscriber:EmailAddress &rcub;&rcub;",
+    "custom": "payload with { Subscriber:EmailAddress }",
     "data": "values"
   },
   "WebhookHeaders": {
@@ -219,7 +219,7 @@ This action triggers a webhook.
 | &rdsh; Method     | Security method to use. Currently supports `HMAC` (HMAC-SHA256).                                                                                                                                                                                                         |
 | &rdsh; SecretKey  | Secret key used to generate the signature.                                                                                                                                                                                                                               |
 | &rdsh; HeaderName | Name of the header containing the signature. Default: `X-Octeth-Signature`                                                                                                                                                                                               |
-| WebhookBody       | JSON object containing additional fields to include in the request body. These fields will be merged with the default payload data as a "CustomPayload" property. The WebhookBody values support merge tags (e.g., `&lcub;&lcub; Subscriber:EmailAddress &rcub;&rcub;`). |
+| WebhookBody       | JSON object containing additional fields to include in the request body. These fields will be merged with the default payload data as a "CustomPayload" property. The WebhookBody values support merge tags (e.g., `{ Subscriber:EmailAddress }`). |
 | WebhookHeaders    | Object containing custom HTTP headers to include in the webhook request.                                                                                                                                                                                                 |
 
 ### Default Webhook Payload
@@ -273,10 +273,10 @@ When a webhook is triggered, the following structured data is included in the pa
 
 The following merge tag formats are available for use in WebhookBody values:
 
-- `&lcub;&lcub; Subscriber:FieldName &rcub;&rcub;` - Access subscriber data fields (e.g., `&lcub;&lcub; Subscriber:EmailAddress &rcub;&rcub;`, `&lcub;&lcub; Subscriber:CustomField1 &rcub;&rcub;`)
-- `&lcub;&lcub; List:FieldName &rcub;&rcub;` - Access list data fields (e.g., `&lcub;&lcub; List:Name &rcub;&rcub;`)
-- `&lcub;&lcub; Entry:FieldName &rcub;&rcub;` - Access journey entry data
-- `&lcub;&lcub; Action:FieldName &rcub;&rcub;` - Access journey action data
+- `\{\{ Subscriber:FieldName \}\}` - Access subscriber data fields (e.g., `\{\{ Subscriber:EmailAddress \}\}`, `\{\{ Subscriber:CustomField1 \}\}`)
+- `\{\{ List:FieldName \}\}` - Access list data fields (e.g., `\{\{ List:Name \}\}`)
+- `\{\{ Entry:FieldName \}\}` - Access journey entry data
+- `\{\{ Action:FieldName \}\}` - Access journey action data
 
 Note that all merge tags in your custom payload will be replaced with actual values before the webhook is triggered.
 
@@ -524,7 +524,7 @@ This action sends an SMS message to the subscriber.
   "Action": "SendSMS",
   "Published": true,
   "Notes": "Send welcome SMS",
-  "message": "Hello {{ Subscriber:FirstName }}, welcome to our service!",
+  "message": "Hello \{\{ Subscriber:FirstName \}\}, welcome to our service!",
   "gateway_id": 45,
   "sender_id": "+1234567890",
   "skip_if_no_phone": true,
@@ -549,7 +549,7 @@ This action sends an SMS message to the subscriber.
 | Action                      | Set this parameter to `SendSMS`.                                                                                                                                                               |
 | Published                   | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                                                                                                |
 | Notes                       | The administrative note for the journey action.                                                                                                                                                |
-| message                     | The SMS message content. Supports merge tags (e.g., `{{ Subscriber:FirstName }}`). Maximum 1600 characters for GSM7 encoding, 700 for Unicode.                                               |
+| message                     | The SMS message content. Supports merge tags (e.g., `\{\{ Subscriber:FirstName \}\}`). Maximum 1600 characters for GSM7 encoding, 700 for Unicode.                                               |
 | gateway_id                  | The ID of the SMS gateway to use for sending the message. Required.                                                                                                                            |
 | sender_id                   | The sender ID or phone number to use. If not specified, the gateway's default sender will be used.                                                                                             |
 | skip_if_no_phone            | If `true`, the journey continues without error when the subscriber has no phone number. If `false`, the journey stops with an error. Default: `true`                                          |
@@ -574,9 +574,9 @@ SMS messages are automatically detected for encoding:
 ### Available Merge Tags
 
 The SMS message supports the same merge tag formats as other journey actions:
-- `{{ Subscriber:FieldName }}` - Access subscriber data fields (e.g., `{{ Subscriber:FirstName }}`, `{{ Subscriber:PhoneNumber }}`)
-- `{{ List:FieldName }}` - Access list data fields
-- `{{ CustomField:ID }}` - Access custom field values by ID
+- `\{\{ Subscriber:FieldName \}\}` - Access subscriber data fields (e.g., `\{\{ Subscriber:FirstName \}\}`, `\{\{ Subscriber:PhoneNumber \}\}`)
+- `\{\{ List:FieldName \}\}` - Access list data fields
+- `\{\{ CustomField:ID \}\}` - Access custom field values by ID
 
 ### Delivery Window Example
 
@@ -600,11 +600,11 @@ To include a trackable link that expires after 48 hours:
 
 ```json
 {
-  "message": "Special offer for you! Click here: {{link}}",
+  "message": "Special offer for you! Click here: \{\{link\}\}",
   "include_link": true,
   "link_url": "https://example.com/special-offer",
   "link_expiry_hours": 48
 }
 ```
 
-The `{{link}}` placeholder will be replaced with a shortened, trackable URL.
+The `\{\{link\}\}` placeholder will be replaced with a shortened, trackable URL.
