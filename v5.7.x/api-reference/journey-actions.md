@@ -539,7 +539,10 @@ This action sends an SMS message to the subscriber.
   },
   "include_link": true,
   "link_url": "https://example.com/offer",
-  "link_expiry_hours": 24
+  "link_expiry_hours": 72,
+  "link_utm_source": "sms",
+  "link_utm_medium": "journey",
+  "link_utm_campaign": "welcome_series"
 }
 ```
 
@@ -561,9 +564,12 @@ This action sends an SMS message to the subscriber.
 | &rdsh; start_time           | Start time in 24-hour format (e.g., `09:00`). Default: `09:00`                                                                                                                                |
 | &rdsh; end_time             | End time in 24-hour format (e.g., `18:00`). Default: `18:00`                                                                                                                                  |
 | &rdsh; days                 | Array of days when SMS can be sent. Values: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`. Default: `["mon", "tue", "wed", "thu", "fri"]`                                                  |
-| include_link                | If `true`, includes a trackable link in the message. The placeholder `{link}` in the message will be replaced with the shortened URL. Default: `false`                                        |
+| include_link                | If `true`, includes a trackable link in the message. The placeholder `{{link}}` in the message will be replaced with the shortened URL. Default: `false`                                      |
 | link_url                    | The URL to include in the SMS (only used when `include_link` is `true`). The URL will be shortened automatically.                                                                              |
 | link_expiry_hours           | Number of hours after which the shortened link expires. Range: 1-8760 (1 year). Default: `72`                                                                                                 |
+| link_utm_source             | UTM source parameter for tracking (e.g., `sms`, `newsletter`). Added to the destination URL for analytics. Optional.                                                                          |
+| link_utm_medium             | UTM medium parameter for tracking (e.g., `journey`, `campaign`). Added to the destination URL for analytics. Optional.                                                                        |
+| link_utm_campaign           | UTM campaign parameter for tracking (e.g., `welcome_series`, `summer_sale`). Added to the destination URL for analytics. Optional.                                                           |
 
 ### Message Encoding
 
@@ -608,3 +614,26 @@ To include a trackable link that expires after 48 hours:
 ```
 
 The `\{\{link\}\}` placeholder will be replaced with a shortened, trackable URL.
+
+### Link Tracking with UTM Parameters Example
+
+To include a trackable link with UTM parameters for analytics:
+
+```json
+{
+  "message": "Special offer! Visit: \{\{link\}\}",
+  "include_link": true,
+  "link_url": "https://example.com/special-offer",
+  "link_expiry_hours": 48,
+  "link_utm_source": "sms",
+  "link_utm_medium": "journey",
+  "link_utm_campaign": "summer_sale_2025"
+}
+```
+
+When the shortened link is clicked, it will redirect to:
+```
+https://example.com/special-offer?utm_source=sms&utm_medium=journey&utm_campaign=summer_sale_2025
+```
+
+This allows you to track SMS link performance in analytics tools like Google Analytics.
