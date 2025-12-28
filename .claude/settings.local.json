@@ -3,7 +3,8 @@
     "allow": [
       "Bash(cp:*)",
       "Bash(npm run docs:dev:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Skill(frontend-design:frontend-design)"
     ],
     "deny": [],
     "ask": []
