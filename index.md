@@ -9,10 +9,10 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /v5.6.x/getting-started
+      link: /v5.7.2/getting-started
     - theme: alt
       text: API Reference
-      link: /v5.6.x/api-reference/administrators
+      link: /v5.7.2/api-reference/administrators
 ---
 
 <script setup>
@@ -21,6 +21,6 @@ import { useRouter } from 'vitepress'
 
 onMounted(() => {
   const router = useRouter()
-  router.go('/v5.6.x/')
+  router.go('/v5.7.2/')
 })
 </script>

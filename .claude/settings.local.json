@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp:*)",
+      "Bash(npm run docs:dev:*)",
+      "Bash(grep:*)",
+      "Skill(frontend-design:frontend-design)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
