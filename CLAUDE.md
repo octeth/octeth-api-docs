@@ -66,7 +66,7 @@ v5.x.x/
 ## Key Configuration Details
 
 ### VitePress Configuration (.vitepress/config.mjs)
-- **Site Title**: "Octeth Developer Portal"
+- **Site Title**: "Octeth Help Portal"
 - **Base URL**: https://dev.octeth.com
 - **Theme**: Default VitePress theme with customizations
 - **Search**: Local search provider enabled
@@ -311,6 +311,241 @@ Update CLAUDE.md to reflect the new version in:
 - Each version maintains its own complete documentation set
 - Previous versions remain accessible but are no longer marked as current
 
+## Help Article Writing Standards
+
+When creating or updating help articles (particularly in the `getting-started/` directories), follow these standards to ensure consistency, security, and quality across all documentation.
+
+### Security & Privacy Guidelines
+
+**CRITICAL**: Never include real personal information in documentation examples.
+
+- **Names**: Use generic placeholders like "John Doe", "Jane Smith", or "Your Name"
+- **Email Addresses**: Use example.com domain: "admin@example.com", "user@example.com"
+- **IP Addresses**: Use reserved TEST-NET ranges (RFC 5737):
+  - Primary example: `203.0.113.10` (from TEST-NET-3: 203.0.113.0/24)
+  - Secondary example: `203.0.113.20`
+  - Never use real production IP addresses
+- **Passwords**: Use obvious placeholders: "YourSecurePassword123", "your-password-here"
+- **API Keys**: Use placeholder format: "your-api-key-here", "sk_xxxxxxxxxxxxx"
+- **License Keys**: Use placeholder format with masked characters
+- **SSH Keys**: Reference as "Your SSH key" or "your-ssh-key-name"
+- **Server Names**: Use generic names: "octeth-server", "octeth-link-proxy"
+- **Provider Details**: Avoid company-specific details unless necessary for the tutorial
+
+::: danger Never Commit Sensitive Information
+Real credentials, IP addresses, names, or other personal information must NEVER appear in documentation. Always use placeholder values from reserved ranges.
+:::
+
+### Writing Style Standards
+
+Maintain a consistent, professional tone across all documentation:
+
+**Do:**
+- ✓ Use imperative mood (command form): "Install the package", "Configure the server"
+- ✓ Use second person ("you") when addressing the reader: "You will need to configure..."
+- ✓ Be professional, clear, and concise
+- ✓ Write for intermediate technical users - explain concepts but don't over-explain
+- ✓ Use active voice: "The installer creates..." rather than "The installation is created by..."
+- ✓ Use present tense for describing what happens: "This command starts the service"
+
+**Don't:**
+- ✗ Use first-person narrative: "I will install...", "We will configure..."
+- ✗ Use passive voice unnecessarily: "The server should be configured..."
+- ✗ Include personal anecdotes or experiences
+- ✗ Use colloquial language or slang
+- ✗ Leave steps unexplained
+
+**Example Comparison:**
+
+```markdown
+❌ Wrong: "I will initialize a virtual machine on Hetzner. I will choose the CX33 option."
+✓ Correct: "Initialize a virtual machine with your hosting provider. Choose specifications similar to: 4 vCPUs, 8GB RAM, 80GB SSD."
+
+❌ Wrong: "Now we need to install Docker and then we can start using it."
+✓ Correct: "Install Docker on your server. The following commands download and configure the Docker packages."
+```
+
+### Document Structure Standards
+
+Every help article must follow this structure:
+
+1. **Frontmatter** (required)
+   ```markdown
+   ---
+   layout: doc
+   ---
+   ```
+
+2. **Title** (H1 - one per document)
+   ```markdown
+   # Page Title
+   ```
+
+3. **Introduction Paragraph**
+   - Brief explanation (2-4 sentences) of what this section covers
+   - Set expectations for what the user will accomplish
+   - Mention prerequisites if any
+
+4. **Section Headings** (H2 for main sections, H3 for subsections)
+   ```markdown
+   ## Main Section
+   ### Subsection
+   ```
+
+5. **Command Examples with Context**
+   - Always explain what a command does BEFORE showing it
+   - Show the command in a code block with proper syntax highlighting
+   - Explain the expected outcome AFTER the command when helpful
+
+6. **VitePress Components** (use appropriately)
+   - Tips, warnings, and other contextual information
+
+7. **Next Steps or Conclusion** (when applicable)
+   - Link to related documentation
+   - Suggest what to do next
+
+**NO Empty Files**: Every file must have meaningful content. If a section isn't ready, don't create an empty file.
+
+### VitePress Components Usage
+
+Use VitePress custom containers to highlight important information:
+
+```markdown
+::: tip Best Practice
+Use this for helpful suggestions and recommended approaches.
+:::
+
+::: info Additional Context
+Use this for supplementary information that provides context.
+:::
+
+::: warning Important
+Use this for important cautions that could lead to issues if ignored.
+:::
+
+::: danger Critical Warning
+Use this for critical warnings about data loss, security risks, or irreversible actions.
+:::
+```
+
+**When to Use Each:**
+
+- **`::: tip`**: Best practices, optimization suggestions, helpful shortcuts
+- **`::: info`**: Background information, architectural explanations, context
+- **`::: warning`**: Important cautions, potential issues, things to remember
+- **`::: danger`**: Data loss warnings, security risks, irreversible operations
+
+### Code Examples Standards
+
+All code examples must follow these guidelines:
+
+1. **Specify Language** for syntax highlighting:
+   ```markdown
+   ```bash
+   apt install docker
+   ```
+
+   ```javascript
+   const server = require('express')()
+   ```
+
+   ```json
+   {"key": "value"}
+   ```
+   ```
+
+2. **Use Full Paths** in commands:
+   ```bash
+   # Good
+   /opt/octeth/cli/octeth.sh health:check
+
+   # Avoid (unless context is clear)
+   ./octeth.sh health:check
+   ```
+
+3. **Include Comments** for complex commands:
+   ```bash
+   # Add Docker repository to apt sources
+   echo "deb [arch=$(dpkg --print-architecture)] https://..." | tee /etc/apt/sources.list.d/docker.list
+   ```
+
+4. **Show Expected Output** when helpful:
+   ```bash
+   ls -la /opt/octeth/
+   ```
+
+   Output:
+   ```
+   drwxr-xr-x  5 root root 4096 Jan  1 12:00 cli
+   drwxr-xr-x  3 root root 4096 Jan  1 12:00 config
+   ```
+
+5. **Test All Commands** before publishing - ensure they work and produce expected results
+
+6. **Use Placeholder Values** consistently:
+   - IP: `203.0.113.10`
+   - Email: `admin@example.com`
+   - Password: `YourSecurePassword123`
+   - Domain: `octeth.example.com`
+
+### Consistency Requirements
+
+Maintain consistency across all documentation:
+
+1. **Terminology**
+   - Use the same term for the same concept throughout
+   - Example: "server" not "machine" or "VM" interchangeably
+   - Create a glossary for project-specific terms
+
+2. **Placeholder Values**
+   - Use the same placeholder values across all documents
+   - See "Security & Privacy Guidelines" for standard placeholders
+
+3. **File Naming**
+   - Use lowercase with hyphens (kebab-case)
+   - Examples: `server-setup.md`, `octeth-installation.md`
+   - Not: `ServerSetup.md`, `octeth_installation.md`
+
+4. **Command Format**
+   - Always show full paths in examples
+   - Be consistent with command options format (-v vs --verbose)
+
+5. **Cross-References**
+   - Link to related sections when mentioning them
+   - Use relative paths: `[Server Setup](./server-setup)`
+   - Keep links updated when reorganizing content
+
+### Quality Checklist
+
+Before publishing any help article, verify:
+
+- [ ] **No personal/sensitive information present** (names, real emails, real IPs, passwords, API keys)
+- [ ] **Consistent imperative writing style** (no first-person narrative)
+- [ ] **Frontmatter included** with `layout: doc`
+- [ ] **H1 title** at the top (only one per document)
+- [ ] **Introduction paragraph** explaining what the section covers
+- [ ] **All commands tested and working** with expected outcomes
+- [ ] **VitePress components used appropriately** (tips, warnings, danger boxes)
+- [ ] **Code blocks have language specified** (```bash, ```javascript, etc.)
+- [ ] **Cross-references updated** and working
+- [ ] **File has meaningful content** (no empty placeholder files)
+- [ ] **Follows document structure standards** (intro, sections, examples, conclusion)
+- [ ] **Terminology consistent** with other documentation
+- [ ] **Placeholder values match** standards (TEST-NET IPs, example.com emails)
+- [ ] **Commands use full paths** where applicable
+- [ ] **Explanatory text** provided before/after commands
+
+### Common Mistakes to Avoid
+
+1. **Using first-person narrative**: "I will create a server..." → "Create a server..."
+2. **Including real personal data**: Use placeholders from reserved ranges
+3. **Empty or stub files**: Only create files with complete content
+4. **Inconsistent terminology**: Pick one term and use it throughout
+5. **Commands without context**: Always explain what a command does
+6. **Missing VitePress components**: Use tips/warnings where appropriate
+7. **Untested commands**: All commands must be verified before publishing
+8. **Mixing writing styles**: Maintain imperative/instructional tone throughout
+
 ## Working with Octeth Source Code
 
 When creating or updating API documentation, we reference the actual Octeth source code located at:
@@ -359,6 +594,391 @@ The Octeth/Oempro codebase contains:
 - Check `.cursor/rules/` for additional coding standards and patterns
 - Ensure documentation matches the actual implementation, not assumptions
 - Do NOT make any code/file changes in the Octeth software project directory.
+
+## Changelog Writing Standards
+
+When creating or updating changelog/release notes (particularly in version directories like `v5.7.2/changelog.md`), follow these standards to ensure consistency, clarity, and user-friendliness across all documentation.
+
+### Document Structure
+
+Every changelog must follow this structure:
+
+1. **Frontmatter** (required)
+   ```markdown
+   ---
+   layout: doc
+   title: What's New in Octeth v5.7.x
+   description: Release notes for Octeth v5.7.x - Brief highlights
+   ---
+   ```
+
+2. **Security Alert** (if applicable - use VitePress danger component)
+   ```markdown
+   ::: danger Critical Security Update
+   This release includes fixes for [vulnerability type]. **Immediate upgrade recommended.**
+   :::
+   ```
+
+3. **Release Summary** (required)
+   - Release date
+   - Development period
+   - Upgrade impact level (Low/Medium/High)
+   - Breaking changes indicator
+   - Brief 2-3 sentence overview
+
+4. **"Should You Upgrade?" Table** (required for major releases)
+   - Priority levels: 🔴 URGENT, 🟡 RECOMMENDED, 🟢 BENEFICIAL
+   - Target audience segments
+   - Clear reasoning
+
+5. **Table of Contents** (use VitePress auto-TOC)
+   ```markdown
+   [[toc]]
+   ```
+
+6. **Top New Features** (3-5 highlighted features)
+   - "What's New" - Brief description
+   - "Why It Matters" - Business value
+   - "Use Case Example" - Practical scenario
+   - "How to Use" - Code examples with proper syntax highlighting
+   - Links to detailed documentation
+
+7. **Security Fixes** (if applicable - separate prominent section)
+   - Use `::: danger` for critical security issues
+   - List affected components
+   - Explain resolution approach
+
+8. **Performance Improvements** (grouped logically)
+   - Use `::: tip` for best practices
+   - Include code examples where helpful
+   - Quantify improvements when possible
+
+9. **Bug Fixes** (grouped by category)
+   - Campaign & Email Fixes
+   - Journey & Workflow Fixes
+   - Configuration & Environment Fixes
+   - Use checkmark bullets (✅)
+
+10. **Upgrade Guide** (comprehensive step-by-step)
+    - Prerequisites checklist
+    - Numbered steps with explanations
+    - Expected outputs for verification
+    - "What this does" explanations
+    - Troubleshooting section with `<details>` collapsibles
+    - Rollback procedure with data loss warnings
+
+11. **Migration Notes** (technical details)
+    - Database changes
+    - Environment variables
+    - API changes
+    - Docker/infrastructure updates
+
+12. **Developer Resources** (for technical audience)
+    - Testing instructions
+    - Debugging tools
+    - Code quality standards
+    - Documentation requirements
+
+13. **Additional Resources & Support** (links)
+
+14. **Previous Versions** (preserved in full)
+    - All older version changelogs included
+    - Maintain original formatting
+
+### Writing Style
+
+**Do:**
+- ✓ Use imperative mood for instructions: "Backup your database", "Run migrations"
+- ✓ Use active voice: "This release fixes..." not "Fixes have been made..."
+- ✓ Be professional, clear, and concise
+- ✓ Focus on user impact and business value
+- ✓ Use present tense for current state: "This release includes..."
+- ✓ Target multiple audiences: end users, admins, developers
+- ✓ Quantify improvements: "10x faster", "95% reduction"
+- ✓ Use visual hierarchy with emojis sparingly (🎯 🔐 ⚡ 🐛 🐳)
+
+**Don't:**
+- ✗ Use first-person narrative: "I upgraded...", "We improved..."
+- ✗ Include overly technical jargon without explanation
+- ✗ Bury critical security information
+- ✗ Make assumptions about user technical knowledge
+- ✗ Use vague terms: "various improvements", "minor fixes"
+
+### VitePress Components Usage
+
+Use VitePress custom containers appropriately:
+
+```markdown
+::: danger Critical Warning
+Use for security vulnerabilities, data loss risks, breaking changes that require immediate action.
+:::
+
+::: warning Important
+Use for important upgrade considerations, configuration changes, potential issues.
+:::
+
+::: tip Best Practice
+Use for recommended approaches, optimization suggestions, helpful shortcuts.
+:::
+
+::: info Additional Context
+Use for background information, architectural explanations, supplementary details.
+:::
+```
+
+**Collapsible Sections:**
+```markdown
+<details>
+<summary><strong>Click to expand troubleshooting</strong></summary>
+
+Content here...
+</details>
+```
+
+### Security & Privacy Standards
+
+**CRITICAL:** Never include real personal information in changelog examples.
+
+- **Placeholder Values:**
+  - API Keys: `your-api-key-here`, `sk_xxxxxxxxxxxxx`
+  - Passwords: `YourSecurePassword123`, `your-password-here`
+  - Email: `admin@example.com`, `user@example.com`
+  - IP Addresses: Use TEST-NET ranges (`203.0.113.10`)
+  - Server Names: `octeth-server`, `octeth.example.com`
+
+### Code Examples Standards
+
+1. **Always specify language** for syntax highlighting:
+   ```markdown
+   ```bash
+   ./cli/octeth.sh health:check
+   ```
+
+   ```javascript
+   const config = { ... }
+   ```
+
+   ```php
+   $list = Lists::GetListByID($listID);
+   ```
+   ```
+
+2. **Include "What this does" explanations**:
+   ```markdown
+   This command updates your database schema to support new v5.7.2 features:
+
+   ```bash
+   docker exec oempro_app bash -c "cd /var/www/html/cli/ && php5.6 dbmigrator.php migrate"
+   ```
+
+   **What this does:**
+   - Adds composite index on Journeys table
+   - Updates AuthToken handling schema
+   - Adds campaign batch profiling support
+   ```
+
+3. **Show expected outputs**:
+   ```markdown
+   **Expected output:**
+   ```
+   Running migration 001_journey_composite_index.php... ✓
+   All migrations completed successfully.
+   ```
+   ```
+
+4. **Use full paths** in commands:
+   ```bash
+   # Good
+   /opt/octeth/cli/octeth.sh health:check
+
+   # Acceptable if context is clear
+   ./cli/octeth.sh health:check
+   ```
+
+### Upgrade Guide Requirements
+
+Every major/minor release must include:
+
+1. **Prerequisites Checklist**
+   - [ ] Server access requirements
+   - [ ] Backup requirements
+   - [ ] Time window requirements
+   - [ ] Configuration review requirements
+
+2. **Step-by-Step Instructions**
+   - Number each step clearly
+   - Explain what each step does BEFORE the command
+   - Show expected outputs AFTER the command
+   - Include verification steps
+
+3. **Troubleshooting Section**
+   - Common issues in collapsible `<details>` blocks
+   - Symptoms clearly stated
+   - Solutions with commands
+   - When to contact support
+
+4. **Rollback Procedure**
+   - Include `::: danger` warning about data loss
+   - Step-by-step rollback commands
+   - When rollback is/isn't appropriate
+
+### Audience Segmentation
+
+Target content for specific audiences:
+
+- **👤 End Users** - Focus on features, UI changes, business value
+- **⚙️ System Admins** - Infrastructure, configuration, deployment
+- **🔧 Developers** - API changes, code quality, testing tools
+
+Use audience indicators or separate sections for different groups.
+
+### Content Organization
+
+**Progressive Disclosure:**
+- Put critical information (security, breaking changes) at the top
+- Use collapsible sections for detailed technical content
+- Highlight top 3-5 features prominently
+- Collapse full technical changelog into `<details>` section
+
+**Scannable Format:**
+- Use tables for comparison data
+- Use checkboxes for task lists
+- Use bullet points for lists
+- Use bold for key terms
+- Use code blocks for commands
+- Use headings for clear hierarchy
+
+### Version History Preservation
+
+**IMPORTANT:** Never remove older version changelogs.
+
+- All previous versions must remain in the changelog file
+- Maintain original formatting for older versions
+- Create separate pages if file becomes too large (5000+ lines)
+- Link between related version pages
+
+### Consistency Requirements
+
+1. **Terminology** - Use consistent terms throughout
+   - "Upgrade" vs "Update" - pick one
+   - "Docker container" not "docker image" interchangeably
+   - "Environment variable" not "env var" inconsistently
+
+2. **Placeholder Values** - Use same examples throughout
+   - IP: `203.0.113.10` (TEST-NET-3)
+   - Email: `admin@example.com`
+   - Domain: `octeth.example.com`
+
+3. **Date Format** - Consistent date formatting
+   - Release dates: "January 3, 2026"
+   - Command outputs: "20260103_120000"
+
+4. **Version References** - Consistent version numbering
+   - v5.7.2 (with 'v' prefix)
+   - Octeth v5.7.2 (in titles)
+
+### Quality Checklist
+
+Before publishing, verify:
+
+- [ ] **Frontmatter complete** with title and description
+- [ ] **Security alerts prominent** if applicable
+- [ ] **"Should You Upgrade?" table** present for major releases
+- [ ] **Top features highlighted** with use cases and examples
+- [ ] **Upgrade guide comprehensive** with prerequisites, steps, troubleshooting
+- [ ] **All code examples tested** with correct syntax highlighting
+- [ ] **Placeholder values used** (no real credentials/IPs/names)
+- [ ] **VitePress components used** appropriately (tip, warning, danger, info)
+- [ ] **All older versions preserved** in full
+- [ ] **Links verified** and working
+- [ ] **Consistent terminology** throughout
+- [ ] **No first-person narrative** (no "I", "we")
+- [ ] **Clear audience targeting** for different user types
+- [ ] **Expected outputs shown** for commands
+- [ ] **Rollback procedure included** with warnings
+
+### Common Mistakes to Avoid
+
+1. **Removing older versions** - Never delete previous version changelogs
+2. **Burying security fixes** - Always put security issues prominently at top
+3. **Missing upgrade impact** - Users need to know: Low/Medium/High impact
+4. **No rollback procedure** - Always include emergency rollback steps
+5. **Vague descriptions** - "Various improvements" → Specific improvements listed
+6. **Missing prerequisites** - Users need to know requirements BEFORE starting
+7. **No expected outputs** - Show what success looks like for each step
+8. **Inconsistent placeholder values** - Use same examples throughout document
+9. **Wall of text** - Use tables, bullets, code blocks, collapsibles for scannability
+10. **Missing troubleshooting** - Include common issues and solutions
+
+### File Location
+
+Changelogs should be located at:
+```
+/vX.X.X/changelog.md
+```
+
+Example: `/v5.7.2/changelog.md`
+
+### Example Structure Template
+
+```markdown
+---
+layout: doc
+title: What's New in Octeth vX.X.X
+description: Release notes for Octeth vX.X.X - Brief highlights
+---
+
+# What's New in Octeth vX.X.X
+
+::: danger Critical Security Update
+[If applicable]
+:::
+
+## Release Summary
+[Date, stats, breaking changes]
+
+## Should You Upgrade?
+[Priority table]
+
+[[toc]]
+
+## 🎯 Top New Features
+### Feature Name
+**What's New:** ...
+**Why It Matters:** ...
+**Use Case Example:** ...
+**How to Use:** [code example]
+
+## 🔐 Critical Security Fixes
+[If applicable]
+
+## ⚡ Performance Improvements
+[Grouped improvements]
+
+## 🐛 Notable Bug Fixes
+[Categorized fixes]
+
+## 📋 Complete Change List
+<details>
+<summary><strong>Click to expand full changelog</strong></summary>
+[Detailed technical changes]
+</details>
+
+## 🔄 Upgrade Guide
+### Prerequisites
+### Step-by-Step Process
+### Troubleshooting
+### Rollback Procedure
+
+## 📝 Migration Notes
+
+## 🎓 For Developers
+
+## 📚 Additional Resources
+
+## Previous Versions
+[All older changelogs preserved]
+```
 
 ## Contact & Support
 - **Support Email**: support@octeth.com, hello@octeth.com

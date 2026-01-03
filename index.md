@@ -3,9 +3,9 @@
 layout: home
 
 hero:
-  name: "Octeth Developer Portal"
-  text: "Welcome to Octeth Developer Portal"
-  tagline: API Documentation and Developer Resources
+  name: "Octeth Help Portal"
+  text: "Welcome to Octeth Help Portal"
+  tagline: Help Articles, API Documentation and Developer Resources
   actions:
     - theme: brand
       text: Get Started

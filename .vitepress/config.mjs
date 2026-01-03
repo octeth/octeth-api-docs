@@ -3,8 +3,8 @@ import {defineConfig} from 'vitepress'
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
     lang: 'en-US',
-    title: "Octeth Developer Portal",
-    description: "Octeth Developer Portal",
+    title: "Octeth Help Portal",
+    description: "Octeth Help Portal",
 
     appearance: false,
 
@@ -49,7 +49,7 @@ export default defineConfig({
         search: {
             provider: 'local'
         },
-        siteTitle: 'Developer Portal',
+        siteTitle: 'Help Portal',
 
         nav: [
             {
@@ -83,17 +83,54 @@ export default defineConfig({
                     text: 'OCTETH V5.7.2',
                     collapsed: false,
                     items: [
-                        {text: 'Getting Started', link: '/v5.7.2/getting-started'},
-                        {text: 'Authorization', link: '/v5.7.2/authorization'},
-                        {text: 'Error Handling', link: '/v5.7.2/error-handling'},
-                        {text: 'Support', link: '/v5.7.2/support'},
-                        {text: 'Changelog', link: 'https://help.octeth.com/whats-new'}
+                        {text: 'Changelog', link: '/v5.7.2/changelog'},
+                        {text: 'Roadmap', link: '/v5.7.2/roadmap'},
+                        {text: 'Support', link: '/v5.7.2/support'}
+                    ]
+                },
+                {
+                    text: 'INSTALLATION GUIDE',
+                    collapsed: true,
+                    items: [
+                        {text: 'Server Requirements', link: '/v5.7.2/getting-started/server-requirements'},
+                        {text: 'Preparations', link: '/v5.7.2/getting-started/preparations'},
+                        {text: 'Server Initialization', link: '/v5.7.2/getting-started/server-initialization'},
+                        {text: 'Server Setup', link: '/v5.7.2/getting-started/server-setup'},
+                        {text: 'Upload Octeth To The Server', link: '/v5.7.2/getting-started/upload-octeth-to-server'},
+                        {text: 'Octeth Installation', link: '/v5.7.2/getting-started/octeth-installation'},
+                        {text: 'Backup Add-On Setup', link: '/v5.7.2/getting-started/backup-addon-setup'},
+                        {text: 'Link Proxy Add-On Setup', link: '/v5.7.2/getting-started/link-proxy-addon-setup'},
+                        {text: 'Octeth Configuration', link: '/v5.7.2/getting-started/octeth-configuration'},
+                        {text: 'Monitoring', link: '/v5.7.2/getting-started/monitoring'},
+                        {text: 'Octeth CLI Tool', link: '/v5.7.2/getting-started/octeth-cli-tool'},
+                        {text: 'Sender Domain DNS Settings', link: '/v5.7.2/getting-started/sender-domain-dns-settings'},
+                        {text: 'Upgrading Octeth', link: '/v5.7.2/getting-started/upgrading-octeth'},
+                        {text: 'Troubleshooting', link: '/v5.7.2/getting-started/troubleshooting'}
+                    ]
+                },
+                {
+                    text: 'USING OCTETH',
+                    collapsed: true,
+                    items: [
+                        {text: 'Managing Users', link: '/v5.7.2/using-octeth/managing-users'},
+                        {text: 'Managing Subscribers', link: '/v5.7.2/using-octeth/managing-subscribers'},
+                        {text: 'Managing Lists', link: '/v5.7.2/using-octeth/managing-lists'},
+                        {text: 'Managing Campaigns', link: '/v5.7.2/using-octeth/managing-campaigns'},
+                        {text: 'Managing Journeys', link: '/v5.7.2/using-octeth/managing-journeys'},
+                        {text: 'Managing Segments', link: '/v5.7.2/using-octeth/managing-segments'},
+                        {text: 'Managing Tags', link: '/v5.7.2/using-octeth/managing-tags'},
+                        {text: 'Managing Custom Fields', link: '/v5.7.2/using-octeth/managing-custom-fields'},
+                        {text: 'Managing Suppression Lists', link: '/v5.7.2/using-octeth/managing-suppression-lists'}
                     ]
                 },
                 {
                     text: 'API REFERENCE',
-                    collapsed: false,
+                    collapsed: true,
                     items: [
+                        {text: 'Getting Started', link: '/v5.7.2/getting-started'},
+                        {text: 'Authorization', link: '/v5.7.2/authorization'},
+                        {text: 'Error Handling', link: '/v5.7.2/error-handling'},
+
                         // Admin API Endpoints
                         {text: 'Admin', link: '/v5.7.2/api-reference/admin'},
                         {text: 'Reports', link: '/v5.7.2/api-reference/reports'},
@@ -122,7 +159,7 @@ export default defineConfig({
                 },
                 {
                     text: 'PLUGIN DEVELOPMENT',
-                    collapsed: false,
+                    collapsed: true,
                     items: [
                         {text: 'Hook Reference', link: '/v5.7.2/plugin-development/reference'},
                     ]
