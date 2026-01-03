@@ -1557,3 +1557,142 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## Unstuck a Stuck Campaign
+
+<Badge type="info" text="POST" /> `/api/v1/admin.campaign.unstuck`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Manually unstucks a stuck campaign by resetting stuck batches to Pending status. This endpoint verifies the campaign is actually stuck before resetting batches. A campaign is considered stuck when batches remain in "Working" status with no activity (no ping updates for over 60 seconds) or when batches have a "Working" status but no assigned ProcessID.
+
+The endpoint performs the following operations atomically:
+1. Validates the campaign exists and is in "Sending" status
+2. Checks if the campaign is actually stuck using health metrics
+3. Resets stuck batches to "Pending" status
+4. Updates campaign's last activity timestamp
+5. Logs the unstuck action in the stuck campaigns log
+
+**Request Body Parameters:**
+
+| Parameter  | Type    | Required | Description                                                         |
+|------------|---------|----------|---------------------------------------------------------------------|
+| Command    | String  | Yes      | API command: `admin.campaign.unstuck`                               |
+| SessionID  | String  | No       | Session ID obtained from login                                      |
+| APIKey     | String  | No       | API key for authentication                                          |
+| CampaignID | Integer | Yes      | Campaign ID to unstuck. Must be a campaign in "Sending" status.     |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.campaign.unstuck \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.campaign.unstuck",
+    "APIKey": "your-admin-api-key",
+    "CampaignID": 123
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "BatchesReset": 5,
+  "Message": "Campaign unstuck successfully. 5 batch(es) reset to Pending status."
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "Campaign is not stuck. The campaign appears to be processing normally."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: campaign_id parameter is required
+2: Campaign not found
+3: Campaign is not in Sending status. Only campaigns in Sending status can be unstuck.
+4: Campaign is not stuck. The campaign appears to be processing normally.
+5: Database error during unstuck operation
+```
+
+:::
+
+## Mark Campaign as Failed
+
+<Badge type="info" text="POST" /> `/api/v1/admin.campaign.markfailed`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Marks a stuck campaign as failed by completing all pending/working batches and setting the campaign status to Failed. This endpoint verifies the campaign is actually stuck before marking it as failed. Use this endpoint when a campaign cannot be recovered through the unstuck operation or when you need to definitively end a problematic campaign.
+
+The endpoint performs the following operations atomically:
+1. Validates the campaign exists and is in "Sending" status
+2. Checks if the campaign is actually stuck using health metrics
+3. Marks all pending/working batches as "Completed"
+4. Updates campaign status to "Failed" with reason
+5. Sets SendProcessFinishedOn timestamp
+6. Logs the action in the stuck campaigns log
+
+**Request Body Parameters:**
+
+| Parameter  | Type    | Required | Description                                                         |
+|------------|---------|----------|---------------------------------------------------------------------|
+| Command    | String  | Yes      | API command: `admin.campaign.markfailed`                            |
+| SessionID  | String  | No       | Session ID obtained from login                                      |
+| APIKey     | String  | No       | API key for authentication                                          |
+| CampaignID | Integer | Yes      | Campaign ID to mark as failed. Must be a stuck campaign in "Sending" status. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.campaign.markfailed \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.campaign.markfailed",
+    "APIKey": "your-admin-api-key",
+    "CampaignID": 123
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "BatchesCompleted": 5,
+  "Message": "Campaign marked as failed successfully. 5 batch(es) completed."
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "Campaign is not stuck. Only stuck campaigns can be marked as failed."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: campaign_id parameter is required
+2: Campaign not found
+3: Campaign is not in Sending status. Only campaigns in Sending status can be marked as failed.
+4: Campaign is not stuck. Only stuck campaigns can be marked as failed.
+5: Database error during mark as failed operation
+```
+
+:::
+
