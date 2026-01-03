@@ -3,9 +3,9 @@
 layout: home
 
 hero:
-  name: "Octeth Developer Portal"
-  text: "Welcome to Octeth Developer Portal"
-  tagline: API Documentation and Developer Resources
+  name: "Octeth Help Portal"
+  text: "Welcome to Octeth Help Portal"
+  tagline: Help Articles, API Documentation and Developer Resources
   actions:
     - theme: brand
       text: Get Started
@@ -21,6 +21,6 @@ import { useRouter } from 'vitepress'
 
 onMounted(() => {
   const router = useRouter()
-  router.go('/v5.7.2/')
+  router.go('/v5.7.3/')
 })
 </script>

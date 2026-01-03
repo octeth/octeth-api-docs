@@ -4,7 +4,9 @@
       "Bash(cp:*)",
       "Bash(npm run docs:dev:*)",
       "Bash(grep:*)",
-      "Skill(frontend-design:frontend-design)"
+      "Skill(frontend-design:frontend-design)",
+      "Bash(ls:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
