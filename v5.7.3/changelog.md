@@ -1,10 +1,671 @@
 ---
 layout: doc
-title: What's New in Octeth v5.7.2
-description: Release notes for Octeth v5.7.2 - Multi-tag journeys, enhanced security, and performance improvements
+title: What's New in Octeth v5.7.3
+description: Release notes for Octeth v5.7.3 - Stuck campaign detector, security hardening, and operational reliability
 ---
 
-# What's New in Octeth v5.7.2
+# What's New in Octeth v5.7.3
+
+## Release Summary
+
+Octeth v5.7.3 is a focused release emphasizing **operational reliability**, **security hardening**, and **campaign monitoring capabilities**. This release includes critical fixes for journey email delivery and introduces an automated stuck campaign detection system to prevent campaign delivery failures.
+
+**Release Date:** January 3, 2026
+**Development Period:** 6 days (December 29, 2025 - January 3, 2026)
+**Upgrade Impact:** Low (requires database migrations, ~5 minute downtime)
+**Breaking Changes:** None (fully backward compatible with v5.7.2)
+
+---
+
+## Should You Upgrade?
+
+| Priority | Audience | Reason |
+|----------|----------|--------|
+| 🔴 **URGENT** | Journey users | Critical Reply-To validation fix preventing email delivery failures |
+| 🟡 **RECOMMENDED** | Campaign managers | Automated stuck campaign detection and recovery system |
+| 🟡 **RECOMMENDED** | System admins | Security improvements and performance optimizations |
+| 🟢 **BENEFICIAL** | All users | Enhanced UI, improved developer tools, better debugging |
+
+---
+
+## Table of Contents
+
+[[toc]]
+
+---
+
+## 🎯 Top New Features
+
+### Stuck Campaign Detector
+
+**What's New:** Automated detection and recovery system for campaigns that stop progressing due to worker failures.
+
+**Why It Matters:** Campaign delivery failures can go unnoticed for hours, resulting in missed opportunities and revenue loss. This system automatically detects stuck campaigns and provides tools for recovery.
+
+**Key Capabilities:**
+- **Automated Detection**: Cron job running every 5 minutes monitors campaigns in 'Sending' status
+- **Detection Criteria**: Identifies campaigns with no active workers, silent workers (LastPingedAt > 60s), or lost worker assignments
+- **Webhook Notifications**: Real-time alerts with 30-minute cooldown to prevent spam
+- **Admin UI Management**: "Stuck Campaigns" filter, "Unstuck" action, and "Mark as Failed" action
+- **Audit Trail**: Complete logging in `oempro_stuck_campaigns_log` table with resolution tracking
+
+**How to Use:**
+
+Enable the detector in your `.oempro_env` file:
+
+```bash
+# Stuck Campaign Detector Configuration
+STUCK_CAMPAIGN_DETECTOR_ENABLED=true
+STUCK_CAMPAIGN_WEBHOOK_URL=https://octeth.example.com/webhook
+STUCK_CAMPAIGN_WEBHOOK_HMAC_SECRET=your-secret-key-here
+STUCK_CAMPAIGN_NOTIFICATION_COOLDOWN_MINUTES=30
+```
+
+**What this does:**
+- Enables automated stuck campaign detection every 5 minutes
+- Sends webhook notifications to your specified URL
+- Uses HMAC-SHA256 signature for security
+- Prevents notification spam with 30-minute cooldown
+
+**Verify the detector is running:**
+```bash
+# Test the detector
+docker exec oempro_app bash -c "php5.6 /var/www/html/cli/stuck_campaign_detector.php --help"
+
+# Check cron status
+./cli/octeth.sh supervisor:status
+```
+
+**Access stuck campaigns:**
+1. Navigate to Admin > Campaign Reports
+2. Click "Stuck Campaigns" filter in sidebar
+3. Use "Unstuck" action to reset batches to Pending
+4. Use "Mark as Failed" to cancel stuck campaigns
+
+::: tip Webhook Security
+Always set `STUCK_CAMPAIGN_WEBHOOK_HMAC_SECRET` to validate webhook authenticity. The webhook payload includes campaign details, stuck reason, and batch information.
+:::
+
+[Learn more about stuck campaign detector →](/v5.7.3/api-reference/system-management#stuck-campaign-detector)
+
+---
+
+### Enhanced Email Validation for Journeys
+
+**What's New:** Comprehensive validation and trimming for all email fields in journey actions.
+
+**Why It Matters:** A single trailing space in an email address can cause journey email delivery to fail. This enhancement prevents such failures and provides clear diagnostic information.
+
+**Improvements:**
+- **From Email Validation**: Validates From email before API calls to catch issues early
+- **Trimming & Validation**: Applied to all email fields (From, Reply-To, CC, BCC)
+- **Smart Reply-To Handling**: Skips Reply-To field if personalization returns invalid email
+- **Enhanced Error Logging**: Includes actual email addresses in error context for easier debugging
+
+**Use Case Example:** Journey action configured with `"support@example.com "` (trailing space) will now:
+1. Trim the whitespace automatically
+2. Validate the resulting email address
+3. Send successfully instead of failing with validation error
+4. Log clear error messages if email is invalid
+
+::: warning Important
+This fix is critical for installations using journey email actions with Reply-To addresses. Update immediately if experiencing "Reply-To email address is invalid" errors.
+:::
+
+---
+
+### MySQL Slow Query Analysis Tool
+
+**What's New:** New CLI command for analyzing MySQL slow query log directly from the command line.
+
+**Why It Matters:** Quick access to slow query diagnostics helps identify performance bottlenecks without accessing log files manually.
+
+**How to Use:**
+
+```bash
+# View last 50 slow queries (default)
+./cli/octeth.sh mysql:slow-log
+
+# View last 100 slow queries
+./cli/octeth.sh mysql:slow-log --lines=100
+```
+
+**Expected output:**
+```
+=== MySQL Slow Query Log (Last 50 lines) ===
+# Time: 2026-01-03T14:30:22.123456Z
+# User@Host: oempro[oempro] @ localhost []
+# Query_time: 2.345678  Lock_time: 0.000123 Rows_sent: 1000  Rows_examined: 50000
+SELECT * FROM oempro_campaigns WHERE Status='Sending' ORDER BY CreatedAt DESC;
+...
+```
+
+::: tip Best Practice
+Combine with enhanced log management to reset logs after analysis:
+```bash
+./cli/octeth.sh mysql:slow-log --lines=200 > /tmp/slow-queries.txt
+./cli/octeth.sh logs:reset
+```
+:::
+
+---
+
+## 🔐 Security Improvements
+
+### Current Password Requirement for Password Changes
+
+**Enhancement:** Added current password validation when users change their passwords.
+
+**Security Benefits:**
+- Prevents unauthorized password changes if session is compromised
+- Follows security best practices for password management
+- Protects user accounts from session hijacking scenarios
+
+**Implementation:**
+- Users must enter current password before setting new password
+- Server-side validation of current password
+- Clear error messages for failed validation
+
+::: danger Session Security
+This feature significantly improves account security. If an attacker gains access to an active session, they cannot change the account password without knowing the current password.
+:::
+
+---
+
+### XSS Prevention in DatePreset Parameter
+
+**Vulnerability Fixed:** DatePreset parameter lacked input validation, creating potential XSS vector.
+
+**Fix:**
+- Implemented whitelist validation for DatePreset values
+- Only allows predefined safe values: "today", "yesterday", "last7days", "last30days", "thismonth", "lastmonth"
+- Rejects any unexpected or malicious input
+
+**Impact:** Prevents potential cross-site scripting attacks via URL parameters.
+
+---
+
+## 🐛 Notable Bug Fixes
+
+### Critical Fixes
+
+#### Journey Email Reply-To Validation Errors
+
+**Problem:** Journey emails failing with "Reply-To email address is invalid" errors.
+
+**Root Cause:** Journey action parameters contained email addresses with trailing whitespace (e.g., `"support@example.com "`), which failed `filter_var()` validation.
+
+**Solution:**
+- Add `trim()` to all personalized email fields (From, Reply-To, CC, BCC)
+- Validate Reply-To before including in API request
+- Skip Reply-To entirely if personalized email is empty or invalid
+- Enhanced error logging with actual email addresses for debugging
+
+**Impact:** All journey emails with Reply-To addresses containing trailing whitespace can now send successfully.
+
+#### Installation Theme and Permission Issues
+
+**Problem:** Fresh installations failing with theme errors and permission issues.
+
+**Fixes:**
+- Resolved theme selection errors during installation
+- Fixed file and directory permission issues
+- Improved installation script robustness
+
+### UI/UX Fixes
+
+✅ **Campaign Report Chart Overlap** - Adjusted chart positioning to prevent overlap with "Scheduled" link, making it clickable again
+
+✅ **Invalid Custom Fields During Subscription** - Validate custom fields during subscription process, skip invalid fields instead of failing the entire subscription
+
+✅ **Campaign Report Empty State Improvements** - Removed CREATE CAMPAIGN button from admin campaign report (admins shouldn't create campaigns), improved Octeth Plug-Ins empty state messaging
+
+✅ **Campaign Report UI Enhancements** - Better scheduled campaign display, improved campaign metrics visibility, increased column widths for Recipients/Delivered and Open/Click Rate columns
+
+---
+
+## ⚡ Performance Improvements
+
+### Composite Index for Link Click Deduplication
+
+Added database index to improve link click statistics query performance.
+
+**Technical Details:**
+- Created composite index on `oempro_link_stats` table: `(RelCampaignID, SubscriberID, LinkID)`
+- Optimizes deduplication queries for campaign link click reporting
+- Reduces query execution time for large campaigns
+
+**Performance Impact:** Significantly faster campaign link click reporting, especially for campaigns with 100k+ recipients.
+
+::: tip Database Optimization
+This index is automatically created during database migration. No manual action required.
+:::
+
+---
+
+## 🛠️ Developer Tools
+
+### Enhanced Log Management
+
+Improved `logs:reset` command to include additional log files.
+
+**Now Includes:**
+- Daily error logs from `data/logs/`
+- MySQL slow query log
+- Existing log files (queue logs, supervisor logs, etc.)
+
+**Usage:**
+```bash
+# Reset all logs (includes slow query log)
+./cli/octeth.sh logs:reset
+```
+
+**What this does:**
+- Truncates all application log files
+- Clears MySQL slow query log
+- Resets supervisor process logs
+- Frees up disk space
+
+::: warning Data Loss
+Log reset is irreversible. Export logs before resetting if you need to retain them for analysis.
+:::
+
+---
+
+## 📋 Complete Change List
+
+<details>
+<summary><strong>Click to expand full changelog</strong></summary>
+
+### Features (3)
+1. **Enhanced Email Sending** - From field validation and comprehensive email field trimming
+2. **Version 5.7.3 Upgrade Function** - Automated upgrade process for smooth transitions
+3. **Stuck Campaign Detector** - Automated detection with webhook notifications (#1500)
+
+### Bug Fixes (6)
+1. **Journey Email Reply-To Validation** - Fixed trailing space validation errors (#1497)
+2. **Campaign Report Empty State** - Removed CREATE CAMPAIGN button for admins (#1504)
+3. **Octeth Plug-Ins Empty State** - Improved messaging and updated plugin links (#1496)
+4. **Campaign Chart Overlap** - Prevented chart from overlapping Scheduled link (#1494)
+5. **Custom Field Validation** - Skip invalid custom fields during subscription (#1503)
+6. **Installation Issues** - Resolved theme error and permission issues
+
+### Enhancements (4)
+1. **Campaign Report UI** - Better scheduled campaign display and metrics (#1495)
+2. **Log Management** - Include daily error logs and MySQL slow log in logs:reset (#1499)
+3. **MySQL Slow Log Command** - New CLI command for slow query analysis (#1502)
+4. **Link Click Performance** - Composite index for deduplication (#1501)
+
+### Security (2)
+1. **Password Change Validation** - Current password requirement (#1498)
+2. **XSS Prevention** - Whitelist validation for DatePreset parameter
+
+### UI Improvements (1)
+1. **Column Width Optimization** - Increased widths for Recipients/Delivered and Open/Click Rate columns
+
+</details>
+
+---
+
+## 🔄 Upgrade Guide
+
+### Prerequisites
+
+Before upgrading, ensure you have:
+- [ ] Access to server with root/sudo privileges
+- [ ] Current database backup
+- [ ] Configuration file backup
+- [ ] At least 5 minutes for maintenance window
+- [ ] Reviewed new environment variables
+
+### Step-by-Step Upgrade Process
+
+#### 1. Backup Everything
+
+**Backup database:**
+```bash
+./cli/octeth.sh db:backup
+```
+
+**Expected output:**
+```
+Creating database backup...
+Backup saved to: /opt/octeth/backups/oempro_20260103_120000.sql.gz
+```
+
+**Backup configuration:**
+```bash
+cp .oempro_env .oempro_env.backup.$(date +%Y%m%d)
+```
+
+#### 2. Add New Environment Variables
+
+Add stuck campaign detector configuration to `.oempro_env`:
+
+```bash
+# Add to .oempro_env
+nano .oempro_env
+```
+
+**Add these lines:**
+```bash
+## Stuck Campaign Detector (v5.7.3)
+STUCK_CAMPAIGN_DETECTOR_ENABLED=true
+STUCK_CAMPAIGN_WEBHOOK_URL=
+STUCK_CAMPAIGN_WEBHOOK_HMAC_SECRET=
+STUCK_CAMPAIGN_NOTIFICATION_COOLDOWN_MINUTES=30
+```
+
+::: tip Optional Configuration
+Leave `STUCK_CAMPAIGN_WEBHOOK_URL` empty to disable webhook notifications. The detector will still run and log stuck campaigns.
+:::
+
+#### 3. Pull Latest Code
+
+```bash
+# Navigate to Octeth directory
+cd /opt/octeth
+
+# Pull latest code
+git pull origin main
+```
+
+#### 4. Run Database Migrations
+
+This updates your database schema to support v5.7.3 features:
+
+```bash
+docker exec oempro_app bash -c "cd /var/www/html/cli/ && php5.6 dbmigrator.php migrate"
+```
+
+**What this does:**
+- Creates `oempro_stuck_campaigns_log` table for audit logging
+- Adds composite index on `oempro_link_stats` for performance
+- Updates schema for stuck campaign detection
+
+**Expected output:**
+```
+Running migration 001_stuck_campaigns_log.php... ✓
+Running migration 002_link_stats_composite_index.php... ✓
+All migrations completed successfully.
+```
+
+#### 5. Update Docker Containers
+
+```bash
+# Pull latest container images
+./cli/octeth.sh docker:pull
+
+# Restart containers with new images
+./cli/octeth.sh docker:up
+```
+
+**Expected downtime:** 2-3 minutes while containers restart.
+
+#### 6. Verify Cron Job Configuration
+
+Verify stuck campaign detector cron is running:
+
+```bash
+# Check supervisor status
+./cli/octeth.sh supervisor:status
+
+# Should show: stuck_campaign_detector   RUNNING
+```
+
+#### 7. Clear Application Cache
+
+```bash
+./cli/octeth.sh cache:flush
+```
+
+#### 8. Verify Installation
+
+Run comprehensive health checks:
+
+```bash
+# Test stuck campaign detector
+docker exec oempro_app bash -c "php5.6 /var/www/html/cli/stuck_campaign_detector.php --help"
+
+# Check Docker container health
+./cli/octeth.sh docker:status
+
+# Verify backend processes
+./cli/octeth.sh backend:status
+
+# Test MySQL slow log command
+./cli/octeth.sh mysql:slow-log --lines=10
+
+# View logs
+./cli/octeth.sh logs:tail
+```
+
+**Expected results:**
+- Stuck campaign detector help message displays
+- All containers show "healthy" status
+- Backend workers are running
+- MySQL slow log command works
+
+---
+
+### Troubleshooting
+
+<details>
+<summary><strong>Database migration fails</strong></summary>
+
+**Symptom:** Migration script returns errors
+
+**Solution:**
+1. Check database connectivity
+2. Ensure user has ALTER TABLE and CREATE TABLE privileges
+3. Review migration error messages
+4. Contact support if issue persists
+
+```bash
+# Test database connection
+docker exec oempro_mysql mysql -u$MYSQL_USERNAME -p$MYSQL_PASSWORD -e "SELECT 1;"
+```
+</details>
+
+<details>
+<summary><strong>Stuck campaign detector not running</strong></summary>
+
+**Symptom:** Detector help command fails or cron not showing in supervisor
+
+**Solution:**
+```bash
+# Restart supervisor to reload cron configuration
+./cli/octeth.sh supervisor:restart
+
+# Check supervisor logs
+./cli/octeth.sh logs:tail supervisor
+
+# Verify cron file contains detector entry
+docker exec oempro_app cat /etc/cron.d/oempro-crons
+```
+</details>
+
+<details>
+<summary><strong>Journey emails still failing with Reply-To errors</strong></summary>
+
+**Symptom:** Journey emails continue to fail with "Reply-To email address is invalid"
+
+**Solution:**
+1. Verify you're running v5.7.3 (not v5.7.2)
+2. Clear Redis cache
+3. Check journey action configuration for other email field issues
+4. Review error logs for specific email addresses
+
+```bash
+# Verify version
+./cli/octeth.sh version
+
+# Clear cache
+./cli/octeth.sh cache:flush
+
+# Check error logs
+./cli/octeth.sh logs:tail | grep "Reply-To"
+```
+</details>
+
+---
+
+### Rollback Procedure
+
+If you need to rollback to v5.7.2:
+
+::: danger Data Loss Warning
+Rolling back may cause loss of stuck campaign log data and any campaigns detected after upgrade. Only rollback if absolutely necessary.
+:::
+
+```bash
+# 1. Stop all containers
+./cli/octeth.sh docker:down
+
+# 2. Restore database backup
+gunzip < /opt/octeth/backups/oempro_YYYYMMDD_HHMMSS.sql.gz | \
+  docker exec -i oempro_mysql mysql -u$MYSQL_USERNAME -p$MYSQL_PASSWORD $MYSQL_DATABASE
+
+# 3. Restore configuration
+cp .oempro_env.backup.YYYYMMDD .oempro_env
+
+# 4. Checkout previous version
+git checkout v5.7.2
+
+# 5. Restart containers
+./cli/octeth.sh docker:up
+```
+
+---
+
+## 📝 Migration Notes
+
+### Database Changes
+
+**New tables:**
+- `oempro_stuck_campaigns_log` - Audit log for stuck campaign detection and resolution
+
+**New indexes:**
+- Composite index on `oempro_link_stats(RelCampaignID, SubscriberID, LinkID)` for performance
+
+**Automatic migration:** All changes applied automatically during upgrade.
+
+### Configuration Changes
+
+**New environment variables** (optional - have defaults):
+
+```bash
+STUCK_CAMPAIGN_DETECTOR_ENABLED=true  # Enable/disable detector
+STUCK_CAMPAIGN_WEBHOOK_URL=  # Webhook endpoint for notifications
+STUCK_CAMPAIGN_WEBHOOK_HMAC_SECRET=  # HMAC secret for webhook security
+STUCK_CAMPAIGN_NOTIFICATION_COOLDOWN_MINUTES=30  # Notification cooldown
+```
+
+**No breaking changes** - All existing configuration remains compatible.
+
+### Cron Job Changes
+
+**New cron job** (automatically added):
+```bash
+*/5 * * * * /usr/bin/php5.6 /var/www/html/cli/stuck_campaign_detector.php
+```
+
+This runs every 5 minutes to detect stuck campaigns.
+
+### API Changes
+
+**No breaking changes** - All existing API endpoints remain compatible.
+
+**Enhanced error messages:**
+- Journey email validation errors now include actual email addresses for debugging
+- More descriptive error messages for email field validation failures
+
+---
+
+## 🎓 For Developers
+
+### Testing Stuck Campaign Detection
+
+Manually test the stuck campaign detector:
+
+```bash
+# Run detector manually
+docker exec oempro_app bash -c "php5.6 /var/www/html/cli/stuck_campaign_detector.php"
+
+# Check stuck campaign log
+docker exec oempro_mysql mysql -u$MYSQL_USERNAME -p$MYSQL_PASSWORD $MYSQL_DATABASE -e "SELECT * FROM oempro_stuck_campaigns_log ORDER BY DetectedAt DESC LIMIT 10;"
+```
+
+### Webhook Payload Example
+
+When a stuck campaign is detected, the webhook receives this payload:
+
+```json
+{
+  "event": "campaign.stuck",
+  "timestamp": "2026-01-03T14:30:00Z",
+  "campaign": {
+    "id": 12345,
+    "name": "Weekly Newsletter",
+    "status": "Sending",
+    "user_id": 789
+  },
+  "stuck_reason": "No workers processing pending batches",
+  "batch_info": {
+    "total_batches": 100,
+    "pending_batches": 45,
+    "working_batches": 0,
+    "completed_batches": 55
+  },
+  "detection_time": "2026-01-03T14:30:00Z"
+}
+```
+
+**Webhook signature verification:**
+```php
+$secret = 'your-secret-key-here';
+$payload = file_get_contents('php://input');
+$signature = hash_hmac('sha256', $payload, $secret);
+$expected = $_SERVER['HTTP_X_OCTETH_SIGNATURE'];
+
+if (!hash_equals($signature, $expected)) {
+    http_response_code(401);
+    exit('Invalid signature');
+}
+```
+
+### Code Quality Standards
+
+All contributions in this release follow:
+
+1. **Email Validation:** All email fields trimmed and validated
+2. **XSS Prevention:** Whitelist validation for user input
+3. **Test Coverage:** Stuck campaign detector has comprehensive tests
+4. **Logging Levels:** Appropriate levels used (DEBUG, INFO, WARNING, ERROR)
+5. **Error Context:** Enhanced error messages with actual values for debugging
+
+---
+
+## 📚 Additional Resources
+
+- [User Guide](https://help.octeth.com/)
+- [API Documentation](https://dev.octeth.com/)
+- [GitHub Repository](https://github.com/octeth/octeth)
+- [Support Portal](https://my.octeth.com/)
+
+## 💬 Support
+
+Need help with the upgrade?
+
+- **Email:** support@octeth.com
+- **Client Area:** https://my.octeth.com/
+- **Help Portal:** https://help.octeth.com/
+
+---
+
+## Previous Versions
+
+## v5.7.2
 
 ::: danger Critical Security Update
 This release includes fixes for SQL injection vulnerabilities in API endpoints. **Immediate upgrade recommended for all installations.**
