@@ -94,6 +94,38 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
    CREDITS_SYSTEM_ENABLED=true              # Enable credit-based delivery
    ```
 
+7. **Stuck Campaign Detector**
+   ```bash
+   STUCK_CAMPAIGN_DETECTOR_ENABLED=true                    # Enable/disable stuck campaign detection
+   STUCK_CAMPAIGN_WEBHOOK_URL=                             # Webhook URL for notifications
+   STUCK_CAMPAIGN_WEBHOOK_HMAC_SECRET=                     # HMAC secret for webhook security
+   STUCK_CAMPAIGN_NOTIFICATION_COOLDOWN_MINUTES=30         # Cooldown between notifications
+   ```
+
+   The Stuck Campaign Detector is an automated monitoring system that runs every 5 minutes to identify campaigns stuck in 'Sending' status. A campaign is considered stuck when it has pending batches but no workers are processing them, all workers are silent (haven't pinged in over 60 seconds), or working batches have lost their worker assignments.
+
+   When stuck campaigns are detected, they are automatically logged to the database for audit tracking. If you configure a webhook URL, Octeth will send notifications to help you respond quickly to delivery issues.
+
+   **Configuration Details:**
+
+   - **STUCK_CAMPAIGN_DETECTOR_ENABLED**: Set to `true` to enable automatic detection, or `false` to disable. When disabled, no monitoring occurs.
+
+   - **STUCK_CAMPAIGN_WEBHOOK_URL**: The URL where Octeth will send webhook notifications when stuck campaigns are detected. Leave this empty to disable webhook notifications. Stuck campaigns will still be logged to the database even without a webhook URL.
+
+   - **STUCK_CAMPAIGN_WEBHOOK_HMAC_SECRET**: Optional HMAC-SHA256 secret for webhook signature verification. This adds security by allowing your webhook endpoint to verify requests actually came from Octeth. Generate a secure secret with: `openssl rand -hex 32`
+
+   - **STUCK_CAMPAIGN_NOTIFICATION_COOLDOWN_MINUTES**: How many minutes to wait before sending another notification for the same stuck campaign. Default is 30 minutes. This prevents notification spam if a campaign remains stuck for an extended period.
+
+   ::: tip Managing Stuck Campaigns
+   When campaigns are detected as stuck, you can manage them through the admin UI:
+   - **Unstuck Action**: Resets stuck batches to Pending status so workers can retry them automatically
+   - **Mark as Failed Action**: Completes all pending batches and marks the campaign as Failed
+   :::
+
+   ::: info
+   Stuck campaign detection helps maintain delivery reliability by alerting you when campaigns stop progressing. Common causes include worker process crashes, network issues, or system resource constraints. The detection system uses the same health check logic that powers the campaign monitoring dashboard.
+   :::
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::
