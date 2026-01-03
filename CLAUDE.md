@@ -4,7 +4,7 @@
 This is the official API documentation website for Octeth.com, an on-premise enterprise-grade email marketing software. The documentation is built using VitePress and provides comprehensive API reference documentation for developers integrating with Octeth.
 
 ## Technology Stack
-- **Framework**: VitePress v1.0.0-rc.4
+- **Framework**: VitePress v1.6.4
 - **Language**: Markdown + Vue.js components
 - **Build Tool**: Vite
 - **Deployment**: Static site hosted at https://dev.octeth.com

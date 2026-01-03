@@ -252,6 +252,24 @@ This changes MySQL performance settings. Options include **development**, **smal
 Switching MySQL configuration will temporarily stop your database and all backend processes. Only do this during a maintenance window.
 :::
 
+**Viewing MySQL slow query log:**
+
+```bash
+/opt/octeth/cli/octeth.sh mysql:slow-log
+```
+
+This displays slow database queries that may be affecting performance. By default, it shows the last 50 queries. Use this when diagnosing performance issues or troubleshooting slow campaign sending.
+
+You can specify how many lines to display:
+
+```bash
+/opt/octeth/cli/octeth.sh mysql:slow-log --lines=100
+```
+
+::: tip
+If you see queries taking several seconds to complete, contact Octeth support. They can help optimize your database performance.
+:::
+
 ## Cache Management
 
 Octeth uses caching to improve performance. These commands help you manage cached data.
