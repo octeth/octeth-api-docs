@@ -1,7 +1,7 @@
-# Octeth API Documentation Project Overview
+# Octeth Help Portal Project Overview
 
 ## Project Description
-This is the official API documentation website for Octeth.com, an on-premise enterprise-grade email marketing software. The documentation is built using VitePress and provides comprehensive API reference documentation for developers integrating with Octeth.
+This is the official help portal and documentation website for Octeth.com, an on-premise enterprise-grade email marketing software. The portal is built using VitePress and provides comprehensive documentation including installation guides, user guides, API reference, and developer resources for integrating with Octeth.
 
 ## Technology Stack
 - **Framework**: VitePress v1.6.4
@@ -229,7 +229,7 @@ node merge-docs.js
 
 ## Creating a New Version - Step-by-Step Guide
 
-When releasing a new version of the API documentation, follow these steps:
+When releasing a new version of the documentation, follow these steps:
 
 ### 1. Copy Previous Version Directory
 ```bash

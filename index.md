@@ -5,14 +5,14 @@ layout: home
 hero:
   name: "Octeth Help Portal"
   text: "Welcome to Octeth Help Portal"
-  tagline: Help Articles, API Documentation and Developer Resources
+  tagline: Installation Guides, User Documentation, API Reference, and Developer Resources
   actions:
     - theme: brand
       text: Get Started
-      link: /v5.7.2/getting-started
+      link: /v5.7.3/getting-started
     - theme: alt
       text: API Reference
-      link: /v5.7.2/api-reference/administrators
+      link: /v5.7.3/api-reference/administrators
 ---
 
 <script setup>

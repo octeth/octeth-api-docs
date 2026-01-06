@@ -1,7 +1,13 @@
 ---
 layout: doc
-title: What's New in Octeth v5.7.3
-description: Release notes for Octeth v5.7.3 - Stuck campaign detector, security hardening, and operational reliability
+title: Octeth Changelog
+description: Complete release history for all Octeth versions - features, improvements, and bug fixes
+---
+
+# Octeth Changelog
+
+All notable changes to Octeth are documented in this file.
+
 ---
 
 # What's New in Octeth v5.7.3
@@ -86,7 +92,7 @@ docker exec oempro_app bash -c "php5.6 /var/www/html/cli/stuck_campaign_detector
 Always set `STUCK_CAMPAIGN_WEBHOOK_HMAC_SECRET` to validate webhook authenticity. The webhook payload includes campaign details, stuck reason, and batch information.
 :::
 
-[Learn more about stuck campaign detector →](/v5.7.3/api-reference/system-management#stuck-campaign-detector)
+[Learn more in the API Reference →](/v5.7.3/api-reference/system-management#stuck-campaign-detector)
 
 ---
 
@@ -729,7 +735,7 @@ POST /api.php?command=journey.bulk_trigger
 Multi-tag validation uses a single optimized query instead of loops, ensuring fast performance even with thousands of subscribers.
 :::
 
-[Learn more about journey triggers →](/v5.7.2/api-reference/journeys)
+[Learn more in the API Reference →](/v5.7.3/api-reference/journeys)
 
 ---
 

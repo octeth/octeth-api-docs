@@ -6,6 +6,8 @@ export default defineConfig({
     title: "Octeth Help Portal",
     description: "Octeth Help Portal",
 
+    cleanUrls: true,
+
     appearance: false,
 
     sitemap: {
@@ -78,15 +80,16 @@ export default defineConfig({
             {text: 'Contact Us', link: 'https://octeth.com/contact/', target: '_blank', rel: 'dofollow'}
         ],
 
-        sidebar: {
-            '/v5.7.3/': [
+        sidebar: (() => {
+            // Define v5.7.3 sidebar config ONCE
+            const v5_7_3_sidebar = [
                 {
-                    text: 'OCTETH V5.7.3',
+                    text: 'INTRODUCTION',
                     collapsed: false,
                     items: [
-                        {text: 'Changelog', link: '/v5.7.3/changelog'},
-                        {text: 'Roadmap', link: '/v5.7.3/roadmap'},
-                        {text: 'Support', link: '/v5.7.3/support'}
+                        {text: 'Changelog', link: '/changelog'},
+                        {text: 'Roadmap', link: '/roadmap'},
+                        {text: 'Support', link: '/support'}
                     ]
                 },
                 {
@@ -105,6 +108,7 @@ export default defineConfig({
                         {text: 'Monitoring', link: '/v5.7.3/getting-started/monitoring'},
                         {text: 'Octeth CLI Tool', link: '/v5.7.3/getting-started/octeth-cli-tool'},
                         {text: 'Sender Domain DNS Settings', link: '/v5.7.3/getting-started/sender-domain-dns-settings'},
+                        {text: 'SSL Certificates', link: '/v5.7.3/getting-started/ssl-certificates'},
                         {text: 'Upgrading Octeth', link: '/v5.7.3/getting-started/upgrading-octeth'},
                         {text: 'Troubleshooting', link: '/v5.7.3/getting-started/troubleshooting'}
                     ]
@@ -113,68 +117,109 @@ export default defineConfig({
                     text: 'USING OCTETH',
                     collapsed: true,
                     items: [
-                        {text: 'Managing Users', link: '/v5.7.3/using-octeth/managing-users'},
-                        {text: 'Managing Subscribers', link: '/v5.7.3/using-octeth/managing-subscribers'},
-                        {text: 'Managing Lists', link: '/v5.7.3/using-octeth/managing-lists'},
-                        {text: 'Managing Campaigns', link: '/v5.7.3/using-octeth/managing-campaigns'},
-                        {text: 'Managing Journeys', link: '/v5.7.3/using-octeth/managing-journeys'},
-                        {text: 'Managing Segments', link: '/v5.7.3/using-octeth/managing-segments'},
-                        {text: 'Managing Tags', link: '/v5.7.3/using-octeth/managing-tags'},
-                        {text: 'Managing Custom Fields', link: '/v5.7.3/using-octeth/managing-custom-fields'},
-                        {text: 'Managing Suppression Lists', link: '/v5.7.3/using-octeth/managing-suppression-lists'}
+                        {
+                            text: 'Features', items: [
+                                {text: 'Users', link: '/v5.7.3/using-octeth/users'},
+                                {text: 'Subscribers', link: '/v5.7.3/using-octeth/subscribers'},
+                                {text: 'Lists', link: '/v5.7.3/using-octeth/lists'},
+                                {text: 'Email Campaigns', link: '/v5.7.3/using-octeth/email-campaigns'},
+                                {text: 'Journeys', link: '/v5.7.3/using-octeth/journeys'},
+                                {text: 'Segments', link: '/v5.7.3/using-octeth/segments'},
+                                {text: 'Tags', link: '/v5.7.3/using-octeth/tags'},
+                                {text: 'Custom Fields', link: '/v5.7.3/using-octeth/custom-fields'},
+                                {text: 'Auto Responders', link: '/v5.7.3/using-octeth/auto-responders'},
+                                {text: 'Sender Domains', link: '/v5.7.3/using-octeth/sender-domains'},
+                                {text: 'Email Builder', link: '/v5.7.3/using-octeth/email-builder'},
+                                {text: 'Email Personalization', link: '/v5.7.3/using-octeth/email-personalization'},
+                                {text: 'Event Tracking', link: '/v5.7.3/using-octeth/event-tracking'},
+                                {text: 'SMS Messages', link: '/v5.7.3/using-octeth/sms-messages'},
+                                {text: 'Cookbook', link: '/v5.7.3/using-octeth/cookbook'}
+                            ],
+                        }, {
+                            text: 'Email Deliverability', items: [
+                                {text: 'Email Sending', link: '/v5.7.3/using-octeth/email-deliverability/email-sending'},
+                                {text: 'Email Tracking', link: '/v5.7.3/using-octeth/email-deliverability/email-tracking'},
+                                {text: 'Bounce Processing', link: '/v5.7.3/using-octeth/email-deliverability/bounce-processing'},
+                                {text: 'Complaint Processing', link: '/v5.7.3/using-octeth/email-deliverability/complaint-processing'},
+                                {text: 'Unsubscriptions', link: '/v5.7.3/using-octeth/email-deliverability/unsubscriptions'},
+                                {text: 'Suppression Lists', link: '/v5.7.3/using-octeth/email-deliverability/suppression-lists'},
+                                {text: 'SPF/DKIM/DMARC', link: '/v5.7.3/using-octeth/email-deliverability/spf-dkim-dmarc'}
+                            ],
+                        }, {
+                            text: 'Use Cases', items: [
+                                {text: 'Internal Use', link: '/v5.7.3/using-octeth/use-cases/internal-use'},
+                                {text: 'Agency Use', link: '/v5.7.3/using-octeth/use-cases/agency-use'},
+                                {text: 'Enterprise Use', link: '/v5.7.3/using-octeth/use-cases/enterprise-use'},
+                                {text: 'SaaS/ESP Use', link: '/v5.7.3/using-octeth/use-cases/saas-esp-use'}
+                            ]
+                        }
                     ]
                 },
                 {
-                    text: 'API REFERENCE',
+                    text: 'INTEGRATIONS',
                     collapsed: true,
                     items: [
-                        {text: 'Getting Started', link: '/v5.7.3/getting-started'},
-                        {text: 'Authorization', link: '/v5.7.3/authorization'},
-                        {text: 'Error Handling', link: '/v5.7.3/error-handling'},
-
-                        // Admin API Endpoints
-                        {text: 'Admin', link: '/v5.7.3/api-reference/admin'},
-                        {text: 'Reports', link: '/v5.7.3/api-reference/reports'},
-                        {text: 'Auto Responders', link: '/v5.7.3/api-reference/autoresponders'},
-                        {text: 'Campaigns', link: '/v5.7.3/api-reference/campaigns'},
-                        {text: 'Custom Fields', link: '/v5.7.3/api-reference/customfields'},
-                        {text: 'Delivery Servers', link: '/v5.7.3/api-reference/deliveryservers'},
-                        {text: 'DNS', link: '/v5.7.3/api-reference/dns'},
-                        {text: 'Email Gateway', link: '/v5.7.3/api-reference/emailgateway'},
-                        {text: 'Journeys', link: '/v5.7.3/api-reference/journeys'},
-                        {text: 'Lists', link: '/v5.7.3/api-reference/lists'},
-                        {text: 'Re-Branding', link: '/v5.7.3/api-reference/rebranding'},
-                        {text: 'Clients', link: '/v5.7.3/api-reference/clients'},
-                        {text: 'Emails', link: '/v5.7.3/api-reference/emails'},
-                        {text: 'Media Library', link: '/v5.7.3/api-reference/medialibrary'},
-                        {text: 'SSO', link: '/v5.7.3/api-reference/sso'},
-                        {text: 'Suppression Lists', link: '/v5.7.3/api-reference/suppression'},
-                        {text: 'Settings', link: '/v5.7.3/api-reference/settings'},
-                        {text: 'Event Tracking', link: '/v5.7.3/api-reference/eventtracking'},
-                        {text: 'System', link: '/v5.7.3/api-reference/system'},
-                        {text: 'Users', link: '/v5.7.3/api-reference/users'},
-                        {text: 'Segments', link: '/v5.7.3/api-reference/segments'},
-                        {text: 'Subscribers', link: '/v5.7.3/api-reference/subscribers'},
-                        {text: 'Internal', link: '/v5.7.3/api-reference/internal'}
+                        {text: 'Google Analytics', link: '/v5.7.3/using-octeth/integrations/google-analytics'},
+                        {text: 'Stripo Email Builder', link: '/v5.7.3/using-octeth/integrations/stripo-email-builder'},
+                        {text: 'Single Sign On (SSO)', link: '/v5.7.3/using-octeth/integrations/sso'},
+                        {text: 'n8n Integration', link: '/v5.7.3/using-octeth/integrations/n8n-integration'}
                     ]
                 },
                 {
-                    text: 'PLUGIN DEVELOPMENT',
+                    text: 'DEVELOPERS',
                     collapsed: true,
                     items: [
-                        {text: 'Hook Reference', link: '/v5.7.3/plugin-development/reference'},
+                        {
+                            text: 'API Reference', items: [
+                                {text: 'Getting Started', link: '/v5.7.3/api-reference/getting-started'},
+                                {text: 'Authorization', link: '/v5.7.3/api-reference/authorization'},
+                                {text: 'Error Handling', link: '/v5.7.3/api-reference/error-handling'},
+                                {text: 'Admin', link: '/v5.7.3/api-reference/admin'},
+                                {text: 'Reports', link: '/v5.7.3/api-reference/reports'},
+                                {text: 'Auto Responders', link: '/v5.7.3/api-reference/autoresponders'},
+                                {text: 'Campaigns', link: '/v5.7.3/api-reference/campaigns'},
+                                {text: 'Custom Fields', link: '/v5.7.3/api-reference/customfields'},
+                                {text: 'Delivery Servers', link: '/v5.7.3/api-reference/deliveryservers'},
+                                {text: 'DNS', link: '/v5.7.3/api-reference/dns'},
+                                {text: 'Email Gateway', link: '/v5.7.3/api-reference/emailgateway'},
+                                {text: 'Journeys', link: '/v5.7.3/api-reference/journeys'},
+                                {text: 'Lists', link: '/v5.7.3/api-reference/lists'},
+                                {text: 'Re-Branding', link: '/v5.7.3/api-reference/rebranding'},
+                                {text: 'Clients', link: '/v5.7.3/api-reference/clients'},
+                                {text: 'Emails', link: '/v5.7.3/api-reference/emails'},
+                                {text: 'Media Library', link: '/v5.7.3/api-reference/medialibrary'},
+                                {text: 'SSO', link: '/v5.7.3/api-reference/sso'},
+                                {text: 'Suppression Lists', link: '/v5.7.3/api-reference/suppression'},
+                                {text: 'Settings', link: '/v5.7.3/api-reference/settings'},
+                                {text: 'Event Tracking', link: '/v5.7.3/api-reference/eventtracking'},
+                                {text: 'System', link: '/v5.7.3/api-reference/system'},
+                                {text: 'Users', link: '/v5.7.3/api-reference/users'},
+                                {text: 'Segments', link: '/v5.7.3/api-reference/segments'},
+                                {text: 'Subscribers', link: '/v5.7.3/api-reference/subscribers'},
+                                {text: 'Internal', link: '/v5.7.3/api-reference/internal'}
+                            ]
+                        },
+                        {
+                            text: 'Plug-In Development', items: [
+                                {text: 'Hook Reference', link: '/v5.7.3/plugin-development/reference'}
+                            ]
+                        }
                     ]
                 }
+            ]
 
-            ],
-            '/v5.7.2/': [
+            // Return sidebar config with shared reference
+            return {
+                '/': v5_7_3_sidebar,  // Root pages use latest version sidebar
+                '/v5.7.3/': v5_7_3_sidebar,  // Reference same config
+                '/v5.7.2/': [
                 {
-                    text: 'OCTETH V5.7.2',
+                    text: 'INTRODUCTION',
                     collapsed: false,
                     items: [
-                        {text: 'Changelog', link: '/v5.7.2/changelog'},
-                        {text: 'Roadmap', link: '/v5.7.2/roadmap'},
-                        {text: 'Support', link: '/v5.7.2/support'}
+                        {text: 'Changelog', link: '/changelog'},
+                        {text: 'Roadmap', link: '/roadmap'},
+                        {text: 'Support', link: '/support'}
                     ]
                 },
                 {
@@ -195,21 +240,6 @@ export default defineConfig({
                         {text: 'Sender Domain DNS Settings', link: '/v5.7.2/getting-started/sender-domain-dns-settings'},
                         {text: 'Upgrading Octeth', link: '/v5.7.2/getting-started/upgrading-octeth'},
                         {text: 'Troubleshooting', link: '/v5.7.2/getting-started/troubleshooting'}
-                    ]
-                },
-                {
-                    text: 'USING OCTETH',
-                    collapsed: true,
-                    items: [
-                        {text: 'Managing Users', link: '/v5.7.2/using-octeth/managing-users'},
-                        {text: 'Managing Subscribers', link: '/v5.7.2/using-octeth/managing-subscribers'},
-                        {text: 'Managing Lists', link: '/v5.7.2/using-octeth/managing-lists'},
-                        {text: 'Managing Campaigns', link: '/v5.7.2/using-octeth/managing-campaigns'},
-                        {text: 'Managing Journeys', link: '/v5.7.2/using-octeth/managing-journeys'},
-                        {text: 'Managing Segments', link: '/v5.7.2/using-octeth/managing-segments'},
-                        {text: 'Managing Tags', link: '/v5.7.2/using-octeth/managing-tags'},
-                        {text: 'Managing Custom Fields', link: '/v5.7.2/using-octeth/managing-custom-fields'},
-                        {text: 'Managing Suppression Lists', link: '/v5.7.2/using-octeth/managing-suppression-lists'}
                     ]
                 },
                 {
@@ -254,89 +284,86 @@ export default defineConfig({
                     ]
                 }
 
-            ],
-            '/v5.6.x/': [
-                {
-                    text: 'OCTETH V5.6.X',
-                    collapsed: false,
-                    items: [
-                        {text: 'Getting Started', link: '/v5.6.x/getting-started'},
-                        {text: 'Authorization', link: '/v5.6.x/authorization'},
-                        {text: 'Error Handling', link: '/v5.6.x/error-handling'},
-                        {text: 'Support', link: '/v5.6.x/support'},
-                        {text: 'Changelog', link: 'https://help.octeth.com/whats-new'}
-                    ]
-                },
-                {
-                    text: 'API REFERENCE',
-                    collapsed: false,
-                    items: [
-                        {text: 'Administrators', link: '/v5.6.x/api-reference/administrators'},
-                        {text: 'Users', link: '/v5.6.x/api-reference/users'},
-                        {text: 'Subscriber Lists', link: '/v5.6.x/api-reference/subscriber-lists'},
-                        {text: 'Custom Fields', link: '/v5.6.x/api-reference/custom-fields'},
-                        {text: 'Segments', link: '/v5.6.x/api-reference/segments'},
-                        {text: 'Tags', link: '/v5.6.x/api-reference/tags'},
-                        {text: 'Sender Domains', link: '/v5.6.x/api-reference/sender-domains'},
-                        {text: 'Subscribers', link: '/v5.6.x/api-reference/subscribers'},
-                        {text: 'Suppression Lists', link: '/v5.6.x/api-reference/suppression-lists'},
-                        {text: 'Journeys', link: '/v5.6.x/api-reference/journeys'},
-                        {text: 'Email Contents', link: '/v5.6.x/api-reference/email-contents'},
-                        {text: 'Email Campaigns', link: '/v5.6.x/api-reference/email-campaigns'},
-                        {text: 'Events', link: '/v5.6.x/api-reference/events'},
-                        {text: 'System Management', link: '/v5.6.x/api-reference/system-management'},
-                    ]
-                },
-                {
-                    text: 'PLUGIN DEVELOPMENT',
-                    collapsed: false,
-                    items: [
-                        {text: 'Hook Reference', link: '/v5.6.x/plugin-development/hook-reference'},
-                    ]
-                }
+                ],
+                '/v5.6.x/': [
+                    {
+                        text: 'INTRODUCTION',
+                        collapsed: false,
+                        items: [
+                            {text: 'Changelog', link: '/changelog'},
+                            {text: 'Roadmap', link: '/roadmap'},
+                            {text: 'Support', link: '/support'}
+                        ]
+                    },
+                    {
+                        text: 'API REFERENCE',
+                        collapsed: false,
+                        items: [
+                            {text: 'Administrators', link: '/v5.6.x/api-reference/administrators'},
+                            {text: 'Users', link: '/v5.6.x/api-reference/users'},
+                            {text: 'Subscriber Lists', link: '/v5.6.x/api-reference/subscriber-lists'},
+                            {text: 'Custom Fields', link: '/v5.6.x/api-reference/custom-fields'},
+                            {text: 'Segments', link: '/v5.6.x/api-reference/segments'},
+                            {text: 'Tags', link: '/v5.6.x/api-reference/tags'},
+                            {text: 'Sender Domains', link: '/v5.6.x/api-reference/sender-domains'},
+                            {text: 'Subscribers', link: '/v5.6.x/api-reference/subscribers'},
+                            {text: 'Suppression Lists', link: '/v5.6.x/api-reference/suppression-lists'},
+                            {text: 'Journeys', link: '/v5.6.x/api-reference/journeys'},
+                            {text: 'Email Contents', link: '/v5.6.x/api-reference/email-contents'},
+                            {text: 'Email Campaigns', link: '/v5.6.x/api-reference/email-campaigns'},
+                            {text: 'Events', link: '/v5.6.x/api-reference/events'},
+                            {text: 'System Management', link: '/v5.6.x/api-reference/system-management'},
+                        ]
+                    },
+                    {
+                        text: 'PLUGIN DEVELOPMENT',
+                        collapsed: false,
+                        items: [
+                            {text: 'Hook Reference', link: '/v5.6.x/plugin-development/hook-reference'},
+                        ]
+                    }
 
-            ],
-            '/v5.5.x/': [
-                {
-                    text: 'OCTETH V5.5.X',
-                    collapsed: false,
-                    items: [
-                        {text: 'Getting Started', link: '/v5.5.x/getting-started'},
-                        {text: 'Authorization', link: '/v5.5.x/authorization'},
-                        {text: 'Error Handling', link: '/v5.5.x/error-handling'},
-                        {text: 'Support', link: '/v5.5.x/support'},
-                        {text: 'Changelog', link: 'https://help.octeth.com/whats-new'}
-                    ]
-                },
-                {
-                    text: 'API REFERENCE',
-                    collapsed: false,
-                    items: [
-                        {text: 'Administrators', link: '/v5.5.x/api-reference/administrators'},
-                        {text: 'Users', link: '/v5.5.x/api-reference/users'},
-                        {text: 'Subscriber Lists', link: '/v5.5.x/api-reference/subscriber-lists'},
-                        {text: 'Custom Fields', link: '/v5.5.x/api-reference/custom-fields'},
-                        {text: 'Segments', link: '/v5.5.x/api-reference/segments'},
-                        {text: 'Tags', link: '/v5.5.x/api-reference/tags'},
-                        {text: 'Sender Domains', link: '/v5.5.x/api-reference/sender-domains'},
-                        {text: 'Subscribers', link: '/v5.5.x/api-reference/subscribers'},
-                        {text: 'Suppression Lists', link: '/v5.5.x/api-reference/suppression-lists'},
-                        {text: 'Journeys', link: '/v5.5.x/api-reference/journeys'},
-                        {text: 'Email Contents', link: '/v5.5.x/api-reference/email-contents'},
-                        {text: 'Email Campaigns', link: '/v5.5.x/api-reference/email-campaigns'},
-                        {text: 'System Management', link: '/v5.5.x/api-reference/system-management'},
-                    ]
-                },
-                {
-                    text: 'PLUGIN DEVELOPMENT',
-                    collapsed: false,
-                    items: [
-                        {text: 'Hook Reference', link: '/v5.5.x/plugin-development/hook-reference'},
-                    ]
-                }
+                ],
+                '/v5.5.x/': [
+                    {
+                        text: 'INTRODUCTION',
+                        collapsed: false,
+                        items: [
+                            {text: 'Changelog', link: '/changelog'},
+                            {text: 'Roadmap', link: '/roadmap'},
+                            {text: 'Support', link: '/support'}
+                        ]
+                    },
+                    {
+                        text: 'API REFERENCE',
+                        collapsed: false,
+                        items: [
+                            {text: 'Administrators', link: '/v5.5.x/api-reference/administrators'},
+                            {text: 'Users', link: '/v5.5.x/api-reference/users'},
+                            {text: 'Subscriber Lists', link: '/v5.5.x/api-reference/subscriber-lists'},
+                            {text: 'Custom Fields', link: '/v5.5.x/api-reference/custom-fields'},
+                            {text: 'Segments', link: '/v5.5.x/api-reference/segments'},
+                            {text: 'Tags', link: '/v5.5.x/api-reference/tags'},
+                            {text: 'Sender Domains', link: '/v5.5.x/api-reference/sender-domains'},
+                            {text: 'Subscribers', link: '/v5.5.x/api-reference/subscribers'},
+                            {text: 'Suppression Lists', link: '/v5.5.x/api-reference/suppression-lists'},
+                            {text: 'Journeys', link: '/v5.5.x/api-reference/journeys'},
+                            {text: 'Email Contents', link: '/v5.5.x/api-reference/email-contents'},
+                            {text: 'Email Campaigns', link: '/v5.5.x/api-reference/email-campaigns'},
+                            {text: 'System Management', link: '/v5.5.x/api-reference/system-management'},
+                        ]
+                    },
+                    {
+                        text: 'PLUGIN DEVELOPMENT',
+                        collapsed: false,
+                        items: [
+                            {text: 'Hook Reference', link: '/v5.5.x/plugin-development/hook-reference'},
+                        ]
+                    }
 
-            ]
-        },
+                ]
+            }
+        })(),
 
         socialLinks: [
             {icon: 'github', link: 'https://github.com/orgs/octeth/repositories'}

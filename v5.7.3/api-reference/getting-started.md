@@ -4,7 +4,25 @@ layout: doc
 
 # Getting Started
 
-Start sending emails through the Octeth API in minutes.
+Get started with Octeth - whether you're installing the platform, using the web interface, or integrating via API.
+
+## Choose Your Path
+
+### 🖥️ Installing Octeth
+New to Octeth? Start with our comprehensive installation guides:
+- [Server Requirements](./getting-started/server-requirements) - Hardware and software prerequisites
+- [Server Setup](./getting-started/server-setup) - Prepare your server environment
+- [Octeth Installation](./getting-started/octeth-installation) - Install and configure Octeth
+
+### 👤 Using the Web Interface
+Learn how to use Octeth's web-based platform:
+- [Managing Users](./using-octeth/managing-users) - User account management
+- [Managing Campaigns](./using-octeth/managing-campaigns) - Create and send email campaigns
+- [Managing Subscribers](./using-octeth/managing-subscribers) - Build and manage your audience
+
+### 🔌 API Integration
+
+Integrate Octeth programmatically with our REST API.
 
 ## Get your API key
 
@@ -321,16 +339,16 @@ const subscriber = await api.call('Subscriber.Create', {
 
 ## Next steps
 
-- **[API Reference →](/v5.7.2/api-reference/subscribers)**  
+- **[API Reference →](/v5.7.3/api-reference/subscribers)**
   Complete documentation for all endpoints
 
-- **[Authentication →](/v5.7.2/authorization)**  
+- **[Authentication →](/v5.7.3/authorization)**
   API keys, sessions, and 2FA
 
-- **[Error Handling →](/v5.7.2/error-handling)**  
+- **[Error Handling →](/v5.7.3/error-handling)**
   Error codes and troubleshooting
 
-- **[Advanced Filtering →](/v5.7.2/api-reference/criteria-syntax)**  
+- **[Advanced Filtering →](/v5.7.3/api-reference/criteria-syntax)**
   RulesJson syntax for segmentation
 
 ## Support

@@ -1,4 +1,6 @@
-# Octeth API Docs
+# Octeth Help Portal
+
+Official documentation for Octeth - installation guides, user documentation, API reference, and developer resources.
 
 ## Starting The Dev Environment
 
