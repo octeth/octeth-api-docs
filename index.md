@@ -17,10 +17,23 @@ hero:
 
 <script setup>
 import { onMounted } from 'vue'
-import { useRouter } from 'vitepress'
+import { useRouter, useData } from 'vitepress'
 
 onMounted(() => {
   const router = useRouter()
-  router.go('/v5.7.3/')
+  const { theme } = useData()
+
+  // Find the current version from config
+  const versionNav = theme.value.nav?.find(item => item.items?.some(i => i.text.includes('Current')))
+  let currentVersionPath = '/v5.7.3/' // Fallback
+
+  if (versionNav?.items) {
+    const currentItem = versionNav.items.find(item => item.text.includes('(Current)'))
+    if (currentItem?.link) {
+      currentVersionPath = currentItem.link
+    }
+  }
+
+  router.go(currentVersionPath)
 })
 </script>
