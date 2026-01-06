@@ -339,7 +339,7 @@ export default defineConfig({
         },
 
         socialLinks: [
-            {icon: 'github', link: 'https://github.com/octeth/octeth-api-docs'}
+            {icon: 'github', link: 'https://github.com/orgs/octeth/repositories'}
         ],
 
         footer: {
