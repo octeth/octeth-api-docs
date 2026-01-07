@@ -9,10 +9,10 @@ hero:
   actions:
     - theme: brand
       text: Get Started →
-      link: /v5.7.3/getting-started
+      link: /v5.7.3/getting-started/server-requirements
     - theme: alt
       text: API Reference
-      link: /v5.7.3/api-reference/admin
+      link: /v5.7.3/api-reference/getting-started
     - theme: alt
       text: Plugin Hooks
       link: /v5.7.3/plugin-development/reference
@@ -26,12 +26,12 @@ features:
   - icon: 👥
     title: Using Octeth
     details: Comprehensive guides for managing subscribers, campaigns, journeys, segments, and more
-    link: /v5.7.3/using-octeth/managing-users
+    link: /v5.7.3/using-octeth/users
     linkText: Learn the platform
   - icon: 🔌
     title: API Reference
     details: Complete REST API documentation for programmatic integration with campaigns, subscribers, and automation
-    link: /v5.7.3/api-reference/admin
+    link: /v5.7.3/api-reference/getting-started
     linkText: Explore API
   - icon: 🛠️
     title: Plugin Development
