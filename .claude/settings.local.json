@@ -44,7 +44,8 @@
       "WebFetch(domain:vitepress.dev)",
       "Bash(npm run docs:build:*)",
       "WebFetch(domain:github.com)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

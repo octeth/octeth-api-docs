@@ -11,57 +11,26 @@ This is the official help portal and documentation website for Octeth.com, an on
 
 ## Project Structure
 
-### Root Directory
-```
-api-docs.octeth.com/
-├── .vitepress/           # VitePress configuration
-│   ├── config.mjs       # Main configuration file
-│   ├── cache/           # Build cache
-│   └── dist/            # Production build output
-├── api-reference/       # Latest API documentation (symlink/copy of current version)
-├── plugin-development/  # Plugin development documentation
-├── public/              # Static assets (logos)
-├── v5.5.x/             # Version 5.5.x documentation (legacy)
-├── v5.6.x/             # Version 5.6.x documentation
-├── v5.7.x/             # Version 5.7.x documentation (current)
-├── index.md            # Homepage (redirects to current version)
-├── merge-docs.js       # Utility to merge all docs into single file
-├── package.json        # Node dependencies
-├── README.md           # Development instructions
-├── CLAUDE.md           # Project documentation for AI assistance
-└── TASKS.md            # Task tracking for improvements
-```
+### Key Directories
+- `.docs/` - Additional documentation and guides for AI assistance (SOPs, examples, version management)
+- `.vitepress/` - VitePress configuration and build output
+- `v5.x.x/` - Version-specific documentation (v5.5.x, v5.6.x, v5.7.x - current)
+- `public/` - Static assets (logos, images)
 
-### Version Directories Structure
-Each version directory (v5.5.x, v5.6.x, v5.7.x) contains:
-```
-v5.x.x/
-├── api-reference/
-│   ├── administrators.md     # Admin management endpoints
-│   ├── criteria-syntax.md    # RulesJson criteria documentation
-│   ├── custom-fields.md      # Custom field management
-│   ├── email-campaigns.md    # Campaign management
-│   ├── email-contents.md     # Email content management
-│   ├── email-gateway.md      # Email gateway configuration
-│   ├── events.md             # Event tracking (v5.6.x only)
-│   ├── journey-actions.md    # Journey action management
-│   ├── journeys.md           # Customer journey automation
-│   ├── segments.md           # Audience segmentation
-│   ├── sender-domains.md     # Sender domain configuration
-│   ├── subscriber-lists.md   # List management
-│   ├── subscribers.md        # Subscriber management
-│   ├── suppression-lists.md  # Suppression list management
-│   ├── system-management.md  # System configuration
-│   ├── tags.md              # Tag management
-│   └── users.md             # User management
-├── plugin-development/
-│   └── hook-reference.md     # Plugin hook documentation
-├── authorization.md          # API authentication guide
-├── error-handling.md         # Error codes and handling
-├── getting-started.md        # Quick start guide
-├── index.md                  # Version homepage
-└── support.md               # Support information
-```
+### Version Directory Contents
+Each version directory contains:
+- `api-reference/` - API endpoint documentation (administrators, campaigns, journeys, subscribers, etc.)
+- `plugin-development/` - Plugin hook reference
+- `authorization.md` - API authentication guide
+- `error-handling.md` - Error codes and handling
+- `getting-started.md` - Quick start guide
+- `index.md` - Version homepage
+- `support.md` - Support information
+
+### Additional Documentation in .docs/
+- `sop-publishing-release.md` - Step-by-step process for publishing new releases
+- `creating-new-version.md` - Guide for creating new version documentation
+- `writing-standards-examples.md` - Detailed examples for writing standards
 
 ## Key Configuration Details
 
@@ -70,22 +39,11 @@ v5.x.x/
 - **Base URL**: https://dev.octeth.com
 - **Theme**: Default VitePress theme with customizations
 - **Search**: Local search provider enabled
-- **Appearance**: Dark mode disabled
-- **Analytics**: 
-  - Fathom Analytics (site: HSMUHQVG)
-  - PostHog (key: phc_ygHo6UNsJBeftPHqARO3gDFqYnsug63Xy5d9QW6cKEg)
-- **Logo**: Dynamic (light/dark mode support)
-- **Sitemap**: Generated with hostname https://dev.octeth.com
+- **Sitemap**: Automatically generated
 
 ### Navigation Structure
-- **Main Nav**:
-  - Homepage
-  - Version selector (v5.7.x current, v5.6.x, v5.5.x legacy)
-  - Resources (Client Area, Help Portal, Contact)
-- **Sidebar**: Auto-generated based on version with three main sections:
-  1. Getting Started section
-  2. API Reference section (all endpoints)
-  3. Plugin Development section
+- **Main Nav**: Homepage, Version selector (v5.7.x current), Resources
+- **Sidebar**: Auto-generated per version with Getting Started, API Reference, and Plugin Development sections
 
 ## API Documentation Format
 
@@ -128,29 +86,10 @@ API parameters often use specific casing that must be matched exactly:
 
 ## Development Commands
 
-### Local Development
-```bash
-npm run docs:dev
-# Starts development server with hot reload
-```
-
-### Production Build
-```bash
-npm run docs:build
-# Builds static site to .vitepress/dist/
-```
-
-### Preview Production Build
-```bash
-npm run docs:preview
-# Preview built site locally
-```
-
-### Merge Documentation Utility
-```bash
-node merge-docs.js
-# Merges all markdown files from v5.6.x into single merged-docs.md file
-```
+See `package.json` for all available commands. Key commands:
+- `npm run docs:dev` - Start development server with hot reload
+- `npm run docs:build` - Build static site to .vitepress/dist/
+- `npm run docs:preview` - Preview production build locally
 
 ## Important Features & Considerations
 
@@ -208,108 +147,10 @@ node merge-docs.js
 - **GitHub Repository**: https://github.com/octeth/octeth-api-docs
 - **Client Area**: https://my.octeth.com/
 - **Help Portal**: https://help.octeth.com/
-- **Changelog**: https://help.octeth.com/whats-new
 
-## Recent Updates (from git history)
-- Updated criteria syntax documentation with new operators and aggregation parameters
-- Enhanced journey API with 'JourneyCompleted' trigger option
-- Standardized request body parameter formatting across endpoints
-- Added campaign event filtering improvements
+## Creating New Versions
 
-## Build & Deployment Notes
-- Build output goes to `.vitepress/dist/`
-- Site is configured for static hosting
-- Sitemap automatically generated for SEO
-- External links open with icon indicator
-- Last updated timestamps shown on all pages
-
-## Custom Components & Scripts
-- **merge-docs.js**: Node.js utility to concatenate all documentation into single file
-- **Homepage Redirect**: Vue component auto-redirects root to current version
-
-## Creating a New Version - Step-by-Step Guide
-
-When releasing a new version of the documentation, follow these steps:
-
-### 1. Copy Previous Version Directory
-```bash
-cp -r v5.6.x v5.7.x  # Replace with appropriate version numbers
-```
-
-### 2. Update VitePress Configuration
-Edit `.vitepress/config.mjs`:
-
-#### Update Navigation (nav section):
-- Change the current version label to include "(Current)"
-- Remove "(Current)" from the previous version
-- Add the new version at the top of the version list
-
-```javascript
-items: [
-    {text: 'v5.7.x (Current)', link: '/v5.7.x/'},
-    {text: 'v5.6.x', link: '/v5.6.x/'},
-    {text: 'v5.5.x', link: '/v5.5.x/'},
-]
-```
-
-#### Add Sidebar Configuration:
-- Copy the entire sidebar configuration from the previous version
-- Update all paths to point to the new version directory
-- Update the section title to reflect the new version
-
-```javascript
-'/v5.7.x/': [
-    {
-        text: 'OCTETH V5.7.X',
-        // ... rest of configuration
-    }
-]
-```
-
-### 3. Update Homepage Redirect
-Edit `index.md`:
-
-#### Update action buttons:
-```markdown
-actions:
-  - theme: brand
-    text: Get Started
-    link: /v5.7.x/getting-started
-  - theme: alt
-    text: API Reference
-    link: /v5.7.x/api-reference/administrators
-```
-
-#### Update auto-redirect script:
-```javascript
-router.go('/v5.7.x/')  // Update to new version
-```
-
-### 4. Update Version Homepage
-Edit `v5.7.x/index.md`:
-- Update the hero name to reflect the new version
-- Update all internal links to point to the new version path
-
-### 5. Verify Setup
-```bash
-npm run docs:dev
-```
-Visit the development server to ensure:
-- Homepage redirects to new version
-- Navigation shows correct current version
-- All sidebar links work properly
-- Version selector displays all versions correctly
-
-### 6. Update Documentation Files
-Update CLAUDE.md to reflect the new version in:
-- Project structure
-- Navigation structure
-- Version management section
-
-### Notes
-- The `api-reference/` directory in root can be updated to mirror the current version if needed
-- Each version maintains its own complete documentation set
-- Previous versions remain accessible but are no longer marked as current
+For detailed instructions on creating a new version of the documentation, see `.docs/creating-new-version.md`.
 
 ## Help Article Writing Standards
 
@@ -355,15 +196,7 @@ Maintain a consistent, professional tone across all documentation:
 - ✗ Use colloquial language or slang
 - ✗ Leave steps unexplained
 
-**Example Comparison:**
-
-```markdown
-❌ Wrong: "I will initialize a virtual machine on Hetzner. I will choose the CX33 option."
-✓ Correct: "Initialize a virtual machine with your hosting provider. Choose specifications similar to: 4 vCPUs, 8GB RAM, 80GB SSD."
-
-❌ Wrong: "Now we need to install Docker and then we can start using it."
-✓ Correct: "Install Docker on your server. The following commands download and configure the Docker packages."
-```
+For detailed examples, see `.docs/writing-standards-examples.md`.
 
 ### Document Structure Standards
 
@@ -555,45 +388,23 @@ When creating or updating API documentation, we reference the actual Octeth sour
 
 ### Source Code Structure
 The Octeth/Oempro codebase contains:
-- **API Endpoints**: Located in `/includes/api/` directory
-- **Frontend Controllers**: CodeIgniter controllers in `/includes/frontend/controllers/`
-- **Backend System**: Laravel framework in `/system/` directory
-- **Classes**: Core functionality in `/includes/classes/`
-- **API Entrypoint**: Located in `api.php` and `/includes/classes/api.inc.php`. Each API endpoint is defined and registered in one of these files.
+- **API Endpoints**: `/includes/api/` directory
+- **API Entrypoint**: `api.php` and `/includes/classes/api.inc.php`
+- **Frontend Controllers**: `/includes/frontend/controllers/`
+- **Backend System**: `/system/` (Laravel)
+- **Classes**: `/includes/classes/`
 
 ### Documentation Workflow
-1. **Analyze Source**: Read actual API implementation from oempro codebase
-2. **Understand Behavior**: Review code logic, parameters, and responses
-3. **Create Documentation**: Write accurate API docs based on actual implementation
-4. **Verify Accuracy**: Cross-reference with existing code and test cases
-
-### Key API Implementation Details
-- **User.Login**: 
-  - Supports both username/password and API key authentication
-  - Can login with email address if ALLOW_SAME_USER_EMAILADDRESS is false
-  - Returns full UserInfo object with GroupInformation set to null for security
-- **Admin.Login**:
-  - When using adminapikey with ADMIN_API_KEY constant, logs in as AdminID=1
-  - Returns AdminInfo object in response
-- **List.Create**:
-  - Auto-enables double opt-in if user group has ForceOptInList enabled
-  - Checks user's list limit from GroupInformation
-- **Subscriber.Create**:
-  - Returns comprehensive response with tags, segments, journeys, and website events
-  - Supports many optional parameters for automation triggers
-  - Custom fields use `CustomFields[ID]` syntax
-- **Email.Create**:
-  - Creates empty email container that must be updated with Email.Update
-- **Campaign.Create**:
-  - Only requires CampaignName parameter
-  - Must use Campaign.Update to configure recipients and schedule
+1. Read actual API implementation from oempro codebase
+2. Review code logic, parameters, and responses
+3. Write accurate API docs based on actual implementation
+4. Verify accuracy with existing code
 
 ### Important Notes
-- Always reference the actual source code for accurate documentation
-- The oempro CLAUDE.md file contains development conventions and architecture details
-- Check `.cursor/rules/` for additional coding standards and patterns
-- Ensure documentation matches the actual implementation, not assumptions
-- Do NOT make any code/file changes in the Octeth software project directory.
+- Always reference actual source code for accurate documentation
+- Review oempro CLAUDE.md and `.cursor/rules/` for conventions
+- Ensure documentation matches implementation, not assumptions
+- Do NOT make any code/file changes in the Octeth software project directory
 
 ## Changelog Writing Standards
 
@@ -912,307 +723,13 @@ Before publishing, verify:
 
 ### File Location
 
-Changelogs should be located at:
-```
-/vX.X.X/changelog.md
-```
+Changelogs should be located at `/vX.X.X/changelog.md`
 
-Example: `/v5.7.2/changelog.md`
-
-### Example Structure Template
-
-```markdown
----
-layout: doc
-title: What's New in Octeth vX.X.X
-description: Release notes for Octeth vX.X.X - Brief highlights
----
-
-# What's New in Octeth vX.X.X
-
-::: danger Critical Security Update
-[If applicable]
-:::
-
-## Release Summary
-[Date, stats, breaking changes]
-
-## Should You Upgrade?
-[Priority table]
-
-[[toc]]
-
-## 🎯 Top New Features
-### Feature Name
-**What's New:** ...
-**Why It Matters:** ...
-**Use Case Example:** ...
-**How to Use:** [code example]
-
-## 🔐 Critical Security Fixes
-[If applicable]
-
-## ⚡ Performance Improvements
-[Grouped improvements]
-
-## 🐛 Notable Bug Fixes
-[Categorized fixes]
-
-## 📋 Complete Change List
-<details>
-<summary><strong>Click to expand full changelog</strong></summary>
-[Detailed technical changes]
-</details>
-
-## 🔄 Upgrade Guide
-### Prerequisites
-### Step-by-Step Process
-### Troubleshooting
-### Rollback Procedure
-
-## 📝 Migration Notes
-
-## 🎓 For Developers
-
-## 📚 Additional Resources
-
-## Previous Versions
-[All older changelogs preserved]
-```
+For detailed changelog structure examples, see `.docs/writing-standards-examples.md`.
 
 ## Standard Operating Procedures (SOPs)
 
-### SOP: Publishing a New Octeth Release
-
-This SOP defines the complete process for publishing a new Octeth version release to the help portal. Follow these steps in order to ensure consistency and completeness.
-
-#### Prerequisites
-
-Before starting the release publishing process:
-
-1. **Source Changelog Available**: Ensure the source changelog exists at `/Users/cemhurturk/Development/oempro/.docs/changelog_vXXX.md`
-2. **Version Documentation Created**: Version directory (e.g., `v5.7.3/`) must exist with all necessary documentation files
-3. **Release Information**: Confirm the exact release date, version number, and key highlights
-
-#### Step 1: Read Source Materials
-
-```bash
-# Read the source changelog from Octeth/Oempro repository
-Read: /Users/cemhurturk/Development/oempro/.docs/changelog_vXXX.md
-
-# Read current changelog and roadmap files
-Read: /Users/cemhurturk/Development/api-docs.octeth.com/vX.X.X/changelog.md
-Read: /Users/cemhurturk/Development/api-docs.octeth.com/vX.X.X/roadmap.md
-```
-
-#### Step 2: Update Changelog
-
-Transform the source changelog into the api-docs format following the **Changelog Writing Standards** section in this document.
-
-**Key Requirements:**
-1. **Frontmatter**: Update title and description for new version
-2. **Release Summary**: Include release date, development period, upgrade impact, breaking changes
-3. **Should You Upgrade Table**: Priority levels (🔴 URGENT, 🟡 RECOMMENDED, 🟢 BENEFICIAL)
-4. **Top New Features**: 3-5 highlighted features with "What's New", "Why It Matters", "Use Case Example", "How to Use"
-5. **Security Fixes**: Separate prominent section if applicable
-6. **Performance Improvements**: Grouped improvements
-7. **Bug Fixes**: Categorized by type
-8. **Complete Change List**: Collapsible `<details>` section
-9. **Upgrade Guide**: Comprehensive step-by-step with prerequisites, troubleshooting, rollback
-10. **Migration Notes**: Database, configuration, API, Docker changes
-11. **For Developers**: Testing instructions, code examples, standards
-12. **Previous Versions**: Preserve all older version changelogs in full
-
-**File Location:**
-```
-/vX.X.X/changelog.md
-```
-
-**Edit Process:**
-```bash
-# Update the title and add new version section at the top
-Edit: /Users/cemhurturk/Development/api-docs.octeth.com/vX.X.X/changelog.md
-
-# Add new v5.7.3 content BEFORE the "## v5.7.2" section
-# Preserve all previous versions below
-```
-
-#### Step 3: Update Roadmap
-
-Update the roadmap to reflect the new release status.
-
-**Changes Required:**
-
-1. **Update "Current Version" tip**:
-   ```markdown
-   ::: tip Current Version
-   The latest stable release is **vX.X.X** (released [Date]). [View changelog](./changelog) to see what's new.
-   :::
-   ```
-
-2. **Add version to table**:
-   ```markdown
-   | vX.X.X  | <Badge type="tip" text="Released" /> | [Date] | [Key highlights] |
-   ```
-
-3. **Update "What's Next?" section**:
-   ```markdown
-   ::: info What's Next?
-   **vX.X.X+1** is currently in testing with select users. We're collecting feedback before the general release.
-
-   **v6.0.0** is a major release under active development with significant platform improvements planned.
-   :::
-   ```
-
-**File Location:**
-```
-/vX.X.X/roadmap.md
-```
-
-**Edit Process:**
-```bash
-# Update current version tip
-Edit: /Users/cemhurturk/Development/api-docs.octeth.com/vX.X.X/roadmap.md
-
-# Add new version row to version history table
-Edit: /Users/cemhurturk/Development/api-docs.octeth.com/vX.X.X/roadmap.md
-
-# Update "What's Next?" section
-Edit: /Users/cemhurturk/Development/api-docs.octeth.com/vX.X.X/roadmap.md
-```
-
-#### Step 4: Quality Assurance Checklist
-
-Before finalizing, verify the changelog meets all standards:
-
-**Changelog Quality Checklist:**
-- [ ] Frontmatter complete with title and description
-- [ ] Security alerts prominent if applicable
-- [ ] "Should You Upgrade?" table present
-- [ ] Top features highlighted with use cases and examples
-- [ ] Upgrade guide comprehensive with prerequisites, steps, troubleshooting
-- [ ] All code examples have correct syntax highlighting (```bash, ```json, etc.)
-- [ ] Placeholder values used (no real credentials/IPs/names)
-- [ ] VitePress components used appropriately (::: tip, ::: warning, ::: danger, ::: info)
-- [ ] All older versions preserved in full
-- [ ] Consistent terminology throughout
-- [ ] No first-person narrative (no "I", "we")
-- [ ] Clear audience targeting (users, admins, developers)
-- [ ] Expected outputs shown for commands
-- [ ] Rollback procedure included with warnings
-
-**Roadmap Quality Checklist:**
-- [ ] Current version tip updated with correct version and date
-- [ ] New version added to version history table with Released badge
-- [ ] Key highlights accurate and concise (max 60 chars)
-- [ ] "What's Next?" section updated to reflect next version in testing
-- [ ] Date format consistent (e.g., "Jan 3rd, 2026")
-
-#### Step 5: Document Verification
-
-**Verify all links work:**
-```markdown
-# Check internal links
-[View changelog](./changelog)  # Should point to same directory
-[Learn more →](/vX.X.X/api-reference/...)  # Should use full path
-
-# Verify version references
-All version numbers should match (v5.7.3 throughout)
-```
-
-**Verify code examples:**
-- All bash code blocks use ```bash
-- All JSON code blocks use ```json
-- All PHP code blocks use ```php
-- Configuration examples properly formatted
-
-**Verify VitePress components:**
-- Security warnings use `::: danger`
-- Important notes use `::: warning`
-- Best practices use `::: tip`
-- Additional context uses `::: info`
-- Collapsible sections use `<details>` and `<summary>` tags
-
-#### Step 6: Final Review
-
-**Read the updated files completely:**
-```bash
-# Review changelog
-Read: /Users/cemhurturk/Development/api-docs.octeth.com/vX.X.X/changelog.md
-
-# Review roadmap
-Read: /Users/cemhurturk/Development/api-docs.octeth.com/vX.X.X/roadmap.md
-```
-
-**Checklist for Final Review:**
-- [ ] Version numbers consistent throughout all documents
-- [ ] Release dates match across changelog and roadmap
-- [ ] Previous versions preserved intact in changelog
-- [ ] No placeholder text (e.g., "TBA", "TODO") in released sections
-- [ ] All sections complete and properly formatted
-- [ ] No first-person narrative or casual language
-
-#### Step 7: Build and Test (Optional)
-
-If requested by user, test the documentation locally:
-
-```bash
-# Navigate to project
-cd /Users/cemhurturk/Development/api-docs.octeth.com
-
-# Start dev server
-npm run docs:dev
-
-# Visit http://localhost:5173 to verify
-# - Changelog renders correctly
-# - Roadmap shows correct status
-# - All links work
-# - Code blocks have syntax highlighting
-# - VitePress components render properly
-```
-
-#### Common Issues and Solutions
-
-**Issue: Old version content accidentally removed**
-- **Solution**: Never delete previous version sections. Always add new version at the top.
-
-**Issue: Inconsistent version numbers**
-- **Solution**: Use search to verify all version references match (e.g., v5.7.3)
-
-**Issue: Missing VitePress components**
-- **Solution**: Review security fixes, important notes, and tips - ensure they use proper components
-
-**Issue: Code blocks missing syntax highlighting**
-- **Solution**: Verify all code blocks specify language: ```bash, ```json, ```php
-
-**Issue: Placeholder values contain real data**
-- **Solution**: Replace with standard placeholders:
-  - IP: `203.0.113.10`
-  - Email: `admin@example.com`
-  - Domain: `octeth.example.com`
-  - API Key: `your-api-key-here`
-
-#### Completion Criteria
-
-The release publishing process is complete when:
-
-1. ✅ Changelog updated with comprehensive new version section
-2. ✅ Roadmap updated with new version as "Released"
-3. ✅ All quality checklists verified
-4. ✅ Previous version content preserved intact
-5. ✅ No placeholder or real personal data present
-6. ✅ All documentation standards followed
-7. ✅ User confirms completion or review
-
-#### Post-Publication Steps (Optional)
-
-If requested:
-- Build production site: `npm run docs:build`
-- Deploy to hosting: Follow deployment procedures
-- Announce release: Notify users via appropriate channels
-- Monitor feedback: Watch for user questions or issues
-
----
+For detailed SOPs including publishing new releases, see `.docs/sop-publishing-release.md`.
 
 ## Contact & Support
 - **Support Email**: support@octeth.com, hello@octeth.com
