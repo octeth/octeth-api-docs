@@ -40,6 +40,9 @@ const currentVersion = computed(() => {
 
 // Update navbar version text dynamically
 const updateVersionText = () => {
+  // Skip during SSR
+  if (typeof document === 'undefined') return
+
   // Try multiple selector strategies to find the version dropdown
   const selectors = [
     '.VPNavBarMenuGroup button',
@@ -80,6 +83,9 @@ const updateVersionText = () => {
 
 // Replace sidebar content with version-specific sidebar via DOM manipulation
 const replaceSidebarContent = () => {
+  // Skip during SSR
+  if (typeof window === 'undefined') return
+
   // Get target version from sessionStorage
   let targetVersion
   try {
@@ -108,6 +114,9 @@ const replaceSidebarContent = () => {
 
 // Wait for sidebar to appear in DOM and then update it
 const updateSidebarDOM = (sidebarConfig, version) => {
+  // Skip during SSR
+  if (typeof document === 'undefined') return
+
   // Try multiple sidebar selectors
   const sidebarSelectors = [
     '.VPSidebar',
@@ -210,6 +219,9 @@ const updateSidebarDOM = (sidebarConfig, version) => {
 
 // Use MutationObserver to wait for sidebar to appear
 const waitForSidebar = (sidebarConfig, version) => {
+  // Skip during SSR
+  if (typeof window === 'undefined' || typeof MutationObserver === 'undefined') return
+
   let attempts = 0
   const maxAttempts = 20
 
@@ -268,7 +280,7 @@ const rebuildSidebarHTML = (sidebar, sidebarConfig, version) => {
 watch(() => route.path, (newPath) => {
   // Track version in sessionStorage when on versioned pages
   const match = newPath.match(/\/v([^/]+)\//)
-  if (match) {
+  if (match && typeof sessionStorage !== 'undefined') {
     const version = `v${match[1]}`
     try {
       sessionStorage.setItem('octeth-last-version', version)
