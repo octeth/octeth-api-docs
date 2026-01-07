@@ -408,324 +408,127 @@ The Octeth/Oempro codebase contains:
 
 ## Changelog Writing Standards
 
-When creating or updating changelog/release notes (particularly in version directories like `v5.7.2/changelog.md`), follow these standards to ensure consistency, clarity, and user-friendliness across all documentation.
+When creating or updating changelog/release notes, follow these standards to ensure consistency and clarity across all documentation.
 
-### Document Structure
+### Required Sections (in order)
 
-Every changelog must follow this structure:
+Every version entry must have exactly these 6 sections:
 
-1. **Frontmatter** (required)
-   ```markdown
-   ---
-   layout: doc
-   title: What's New in Octeth v5.7.x
-   description: Release notes for Octeth v5.7.x - Brief highlights
-   ---
-   ```
+1. **Release Summary**
+   - Release date and development period (if applicable)
+   - Brief 1-2 sentence overview of the release focus
+   - Example: "Released January 3, 2026 after 6 days of development. This release focuses on operational reliability and security improvements."
 
-2. **Security Alert** (if applicable - use VitePress danger component)
-   ```markdown
-   ::: danger Critical Security Update
-   This release includes fixes for [vulnerability type]. **Immediate upgrade recommended.**
-   :::
-   ```
+2. **New Features**
+   - List of new functionality added
+   - Format: `- **Feature Name** - Brief description`
 
-3. **Release Summary** (required)
-   - Release date
-   - Development period
-   - Upgrade impact level (Low/Medium/High)
-   - Breaking changes indicator
-   - Brief 2-3 sentence overview
+3. **Enhancements**
+   - Improvements to existing features
+   - Performance optimizations
+   - UI/UX improvements
 
-4. **"Should You Upgrade?" Table** (required for major releases)
-   - Priority levels: 🔴 URGENT, 🟡 RECOMMENDED, 🟢 BENEFICIAL
-   - Target audience segments
-   - Clear reasoning
+4. **Bug Fixes**
+   - Issues resolved
+   - Format: `- **Component/Area** - Brief description of fix`
 
-5. **Table of Contents** (use VitePress auto-TOC)
-   ```markdown
-   [[toc]]
-   ```
+5. **Security Patches**
+   - Security vulnerabilities fixed
+   - Security improvements
+   - Use "None" if no security patches in this release
 
-6. **Top New Features** (3-5 highlighted features)
-   - "What's New" - Brief description
-   - "Why It Matters" - Business value
-   - "Use Case Example" - Practical scenario
-   - "How to Use" - Code examples with proper syntax highlighting
-   - Links to detailed documentation
+6. **Deprecations**
+   - Deprecated or removed features
+   - Migration guidance if needed
+   - Use "None" if no deprecations in this release
 
-7. **Security Fixes** (if applicable - separate prominent section)
-   - Use `::: danger` for critical security issues
-   - List affected components
-   - Explain resolution approach
-
-8. **Performance Improvements** (grouped logically)
-   - Use `::: tip` for best practices
-   - Include code examples where helpful
-   - Quantify improvements when possible
-
-9. **Bug Fixes** (grouped by category)
-   - Campaign & Email Fixes
-   - Journey & Workflow Fixes
-   - Configuration & Environment Fixes
-   - Use checkmark bullets (✅)
-
-10. **Upgrade Guide** (comprehensive step-by-step)
-    - Prerequisites checklist
-    - Numbered steps with explanations
-    - Expected outputs for verification
-    - "What this does" explanations
-    - Troubleshooting section with `<details>` collapsibles
-    - Rollback procedure with data loss warnings
-
-11. **Migration Notes** (technical details)
-    - Database changes
-    - Environment variables
-    - API changes
-    - Docker/infrastructure updates
-
-12. **Developer Resources** (for technical audience)
-    - Testing instructions
-    - Debugging tools
-    - Code quality standards
-    - Documentation requirements
-
-13. **Additional Resources & Support** (links)
-
-14. **Previous Versions** (preserved in full)
-    - All older version changelogs included
-    - Maintain original formatting
-
-### Writing Style
+### Writing Guidelines
 
 **Do:**
-- ✓ Use imperative mood for instructions: "Backup your database", "Run migrations"
-- ✓ Use active voice: "This release fixes..." not "Fixes have been made..."
-- ✓ Be professional, clear, and concise
-- ✓ Focus on user impact and business value
-- ✓ Use present tense for current state: "This release includes..."
-- ✓ Target multiple audiences: end users, admins, developers
-- ✓ Quantify improvements: "10x faster", "95% reduction"
-- ✓ Use visual hierarchy with emojis sparingly (🎯 🔐 ⚡ 🐛 🐳)
+- ✓ Use concise, factual descriptions (maximum 1 sentence per item)
+- ✓ Use bullet format: `- **Name** - Description`
+- ✓ Be direct and professional
+- ✓ Focus on **what changed**, not why or how
+- ✓ Use active voice: "Added feature X" not "Feature X was added"
+- ✓ Use present tense for current state
+- ✓ Use "None" for empty sections rather than omitting them
 
 **Don't:**
-- ✗ Use first-person narrative: "I upgraded...", "We improved..."
-- ✗ Include overly technical jargon without explanation
-- ✗ Bury critical security information
-- ✗ Make assumptions about user technical knowledge
-- ✗ Use vague terms: "various improvements", "minor fixes"
+- ✗ Use emojis anywhere in changelog entries
+- ✗ Include code examples or configuration snippets
+- ✗ Add upgrade guides or step-by-step instructions
+- ✗ Include troubleshooting sections
+- ✗ Add migration notes or database details
+- ✗ Use marketing language ("We're excited...", "Welcome to...")
+- ✗ Include "Why It Matters" or "Use Case Examples"
+- ✗ Add tables of contents or "Should You Upgrade?" tables
+- ✗ Use first-person narrative ("I", "we")
+- ✗ Add footer promotional content
 
-### VitePress Components Usage
+### Examples
 
-Use VitePress custom containers appropriately:
-
+**Good:**
 ```markdown
-::: danger Critical Warning
-Use for security vulnerabilities, data loss risks, breaking changes that require immediate action.
-:::
+## v5.7.3
 
-::: warning Important
-Use for important upgrade considerations, configuration changes, potential issues.
-:::
+### Release Summary
 
-::: tip Best Practice
-Use for recommended approaches, optimization suggestions, helpful shortcuts.
-:::
+Released January 3, 2026 after 6 days of development. This release focuses on operational reliability and security improvements with critical fixes for journey email delivery.
 
-::: info Additional Context
-Use for background information, architectural explanations, supplementary details.
-:::
+### New Features
+
+- **Stuck Campaign Detector** - Automated detection and recovery system for campaigns stuck due to worker failures
+- **MySQL Slow Query Tool** - New CLI command for analyzing MySQL slow query log
+
+### Enhancements
+
+- **Campaign Report UI** - Better scheduled campaign display with improved metrics visibility
+- **Log Management** - Enhanced logs:reset command now includes daily error logs
+
+### Bug Fixes
+
+- **Journey Email Validation** - Fixed validation errors caused by trailing whitespace in email addresses
+- **Campaign Chart Overlap** - Adjusted chart positioning to prevent overlap with Scheduled link
+
+### Security Patches
+
+- **Current Password Requirement** - Added validation when users change passwords to prevent unauthorized changes
+- **XSS Prevention** - Implemented whitelist validation for DatePreset parameter
+
+### Deprecations
+
+None
 ```
 
-**Collapsible Sections:**
+**Bad (avoid this):**
 ```markdown
-<details>
-<summary><strong>Click to expand troubleshooting</strong></summary>
+## v5.7.3
 
-Content here...
-</details>
+We're excited to announce Octeth v5.7.3! 🎉
+
+### 🎯 Top New Features
+
+**Stuck Campaign Detector**
+
+What's New: Automated detection system for campaigns.
+
+Why It Matters: Campaign failures can go unnoticed...
+
+How to Use:
+```bash
+./cli/octeth.sh supervisor:status
 ```
 
-### Security & Privacy Standards
-
-**CRITICAL:** Never include real personal information in changelog examples.
-
-- **Placeholder Values:**
-  - API Keys: `your-api-key-here`, `sk_xxxxxxxxxxxxx`
-  - Passwords: `YourSecurePassword123`, `your-password-here`
-  - Email: `admin@example.com`, `user@example.com`
-  - IP Addresses: Use TEST-NET ranges (`203.0.113.10`)
-  - Server Names: `octeth-server`, `octeth.example.com`
-
-### Code Examples Standards
-
-1. **Always specify language** for syntax highlighting:
-   ```markdown
-   ```bash
-   ./cli/octeth.sh health:check
-   ```
-
-   ```javascript
-   const config = { ... }
-   ```
-
-   ```php
-   $list = Lists::GetListByID($listID);
-   ```
-   ```
-
-2. **Include "What this does" explanations**:
-   ```markdown
-   This command updates your database schema to support new v5.7.2 features:
-
-   ```bash
-   docker exec oempro_app bash -c "cd /var/www/html/cli/ && php5.6 dbmigrator.php migrate"
-   ```
-
-   **What this does:**
-   - Adds composite index on Journeys table
-   - Updates AuthToken handling schema
-   - Adds campaign batch profiling support
-   ```
-
-3. **Show expected outputs**:
-   ```markdown
-   **Expected output:**
-   ```
-   Running migration 001_journey_composite_index.php... ✓
-   All migrations completed successfully.
-   ```
-   ```
-
-4. **Use full paths** in commands:
-   ```bash
-   # Good
-   /opt/octeth/cli/octeth.sh health:check
-
-   # Acceptable if context is clear
-   ./cli/octeth.sh health:check
-   ```
-
-### Upgrade Guide Requirements
-
-Every major/minor release must include:
-
-1. **Prerequisites Checklist**
-   - [ ] Server access requirements
-   - [ ] Backup requirements
-   - [ ] Time window requirements
-   - [ ] Configuration review requirements
-
-2. **Step-by-Step Instructions**
-   - Number each step clearly
-   - Explain what each step does BEFORE the command
-   - Show expected outputs AFTER the command
-   - Include verification steps
-
-3. **Troubleshooting Section**
-   - Common issues in collapsible `<details>` blocks
-   - Symptoms clearly stated
-   - Solutions with commands
-   - When to contact support
-
-4. **Rollback Procedure**
-   - Include `::: danger` warning about data loss
-   - Step-by-step rollback commands
-   - When rollback is/isn't appropriate
-
-### Audience Segmentation
-
-Target content for specific audiences:
-
-- **👤 End Users** - Focus on features, UI changes, business value
-- **⚙️ System Admins** - Infrastructure, configuration, deployment
-- **🔧 Developers** - API changes, code quality, testing tools
-
-Use audience indicators or separate sections for different groups.
-
-### Content Organization
-
-**Progressive Disclosure:**
-- Put critical information (security, breaking changes) at the top
-- Use collapsible sections for detailed technical content
-- Highlight top 3-5 features prominently
-- Collapse full technical changelog into `<details>` section
-
-**Scannable Format:**
-- Use tables for comparison data
-- Use checkboxes for task lists
-- Use bullet points for lists
-- Use bold for key terms
-- Use code blocks for commands
-- Use headings for clear hierarchy
-
-### Version History Preservation
-
-**IMPORTANT:** Never remove older version changelogs.
-
-- All previous versions must remain in the changelog file
-- Maintain original formatting for older versions
-- Create separate pages if file becomes too large (5000+ lines)
-- Link between related version pages
-
-### Consistency Requirements
-
-1. **Terminology** - Use consistent terms throughout
-   - "Upgrade" vs "Update" - pick one
-   - "Docker container" not "docker image" interchangeably
-   - "Environment variable" not "env var" inconsistently
-
-2. **Placeholder Values** - Use same examples throughout
-   - IP: `203.0.113.10` (TEST-NET-3)
-   - Email: `admin@example.com`
-   - Domain: `octeth.example.com`
-
-3. **Date Format** - Consistent date formatting
-   - Release dates: "January 3, 2026"
-   - Command outputs: "20260103_120000"
-
-4. **Version References** - Consistent version numbering
-   - v5.7.2 (with 'v' prefix)
-   - Octeth v5.7.2 (in titles)
-
-### Quality Checklist
-
-Before publishing, verify:
-
-- [ ] **Frontmatter complete** with title and description
-- [ ] **Security alerts prominent** if applicable
-- [ ] **"Should You Upgrade?" table** present for major releases
-- [ ] **Top features highlighted** with use cases and examples
-- [ ] **Upgrade guide comprehensive** with prerequisites, steps, troubleshooting
-- [ ] **All code examples tested** with correct syntax highlighting
-- [ ] **Placeholder values used** (no real credentials/IPs/names)
-- [ ] **VitePress components used** appropriately (tip, warning, danger, info)
-- [ ] **All older versions preserved** in full
-- [ ] **Links verified** and working
-- [ ] **Consistent terminology** throughout
-- [ ] **No first-person narrative** (no "I", "we")
-- [ ] **Clear audience targeting** for different user types
-- [ ] **Expected outputs shown** for commands
-- [ ] **Rollback procedure included** with warnings
-
-### Common Mistakes to Avoid
-
-1. **Removing older versions** - Never delete previous version changelogs
-2. **Burying security fixes** - Always put security issues prominently at top
-3. **Missing upgrade impact** - Users need to know: Low/Medium/High impact
-4. **No rollback procedure** - Always include emergency rollback steps
-5. **Vague descriptions** - "Various improvements" → Specific improvements listed
-6. **Missing prerequisites** - Users need to know requirements BEFORE starting
-7. **No expected outputs** - Show what success looks like for each step
-8. **Inconsistent placeholder values** - Use same examples throughout document
-9. **Wall of text** - Use tables, bullets, code blocks, collapsibles for scannability
-10. **Missing troubleshooting** - Include common issues and solutions
+[Detailed 500-line upgrade guide with code examples...]
+```
 
 ### File Location
 
-Changelogs should be located at `/vX.X.X/changelog.md`
+Changelogs should be located at `/changelog.md` in the project root.
 
-For detailed changelog structure examples, see `.docs/writing-standards-examples.md`.
+### Version History Preservation
+
+**IMPORTANT:** Never remove older version changelogs. All previous versions must remain in the changelog file.
 
 ## Standard Operating Procedures (SOPs)
 

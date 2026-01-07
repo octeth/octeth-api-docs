@@ -3,5 +3,5 @@ layout: doc
 ---
 
 ::: info
-TODO: SSL certificate initiation instructions
+TODO: This page will be published soon.
 :::

@@ -62,28 +62,6 @@ Each version has a status badge indicating its current state:
 **v6.0.0** is a major release under active development with significant platform improvements planned.
 :::
 
-## Upgrade Information
-
-::: warning Before You Upgrade
-Always backup your database and review the [changelog](./changelog) before upgrading to a new version.
-:::
-
-### Recommended Upgrade Path
-
-If you're running an older version:
-
-1. **Review the changelog** for all versions between your current and target version
-2. **Check for breaking changes** (clearly marked in release notes)
-3. **Test in a staging environment** before upgrading production
-4. **Follow the upgrade guide** specific to your target version
-
-### Need Help?
-
-- **Upgrade Documentation:** [View upgrade guide](/v5.7.3/getting-started/upgrading-octeth)
-- **Installation Guide:** [Getting started](/v5.7.3/getting-started/octeth-installation)
-- **Support:** Email support@octeth.com
-- **Help Portal:** [help.octeth.com](https://help.octeth.com/)
-
 ## Release Schedule
 
 Octeth follows this general release cadence:
@@ -91,7 +69,3 @@ Octeth follows this general release cadence:
 - **Patch releases** (v5.7.x) - As needed for bug fixes and minor improvements
 - **Minor releases** (v5.x.0) - Every 3-6 months with new features
 - **Major releases** (v6.0.0) - Annually with significant platform updates
-
-::: tip Stay Updated
-Subscribe to release notifications in your [account settings](https://my.octeth.com/) to get notified when new versions are available.
-:::

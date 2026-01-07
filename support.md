@@ -134,34 +134,6 @@ Steps tried:
 3. Tested with different lists
 ```
 
-## Development Resources
-
-### SDKs and Libraries
-
-Official and community SDKs:
-
-- **PHP SDK**: Coming soon
-- **Python SDK**: Coming soon
-- **Node.js SDK**: Coming soon
-- **Community Libraries**: [GitHub Search](https://github.com/search?q=octeth+api)
-
-### Testing Tools
-
-**Postman Collection**
-- Import our API collection for testing
-- Download: Coming soon
-
-**cURL Examples**
-- All documentation includes cURL examples
-- Copy and modify for your testing
-
-### API Changelog
-
-Stay updated with API changes:
-- [Changelog](/changelog)
-- [Roadmap](/roadmap)
-
-
 ## Community
 
 ### Feature Requests
@@ -205,9 +177,8 @@ Need help with implementation?
 ## Company Information
 
 **50SAAS LLC**
-Email: [hello@octeth.com](mailto:hello@octeth.com)
-Website: [https://octeth.com](https://octeth.com)
 
----
+- Email: [hello@octeth.com](mailto:hello@octeth.com)
+- Website: [https://octeth.com](https://octeth.com)
 
 *We're here to help you succeed with Octeth. Don't hesitate to reach out if you need assistance.*
