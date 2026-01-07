@@ -416,10 +416,6 @@ If you've tried the solutions above and still need assistance:
    - Attach log snapshots
    - Describe what you've already tried
 
-3. **Community Resources:**
-   - [Octeth Help Portal](https://help.octeth.com/)
-   - [GitHub Issues](https://github.com/octeth/octeth-api-docs/issues)
-
 ::: tip Pro Tip
 Enable debug mode temporarily when troubleshooting:
 ```bash
