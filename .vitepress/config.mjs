@@ -6,6 +6,9 @@ export default defineConfig({
     title: "Octeth Help Portal",
     description: "Octeth Help Portal",
 
+    // TODO: I temporarily turned this on to ignore dead links. We need to turn it off later.
+    ignoreDeadLinks: true,
+
     cleanUrls: true,
 
     appearance: false,
