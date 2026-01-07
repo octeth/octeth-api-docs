@@ -1,0 +1,39 @@
+# Tasks
+
+- [ ] Sender Domain DNS Settings: http://localhost:5173/v5.7.3/getting-started/sender-domain-dns-settings
+- [ ] SSL Certificates: http://localhost:5173/v5.7.3/getting-started/ssl-certificates
+- [ ] Upgrading Octeth: http://localhost:5173/v5.7.3/getting-started/upgrading-octeth
+- [ ] Bug: Visit http://localhost:5173/v5.7.3/. On the side, you will see "Features > Users". Click "Changelog". Then you will see "Features > Features"
+- [ ] v5.7.3 Homepage links
+- [ ] Users: http://localhost:5173/v5.7.3/using-octeth/users
+- [ ] Subscribers: http://localhost:5173/v5.7.3/using-octeth/subscribers
+- [ ] Lists: http://localhost:5173/v5.7.3/using-octeth/lists
+- [ ] Email Campaigns: http://localhost:5173/v5.7.3/using-octeth/email-campaigns
+- [ ] Journeys: http://localhost:5173/v5.7.3/using-octeth/journeys
+- [ ] Segments: http://localhost:5173/v5.7.3/using-octeth/segments
+- [ ] Tags: http://localhost:5173/v5.7.3/using-octeth/tags
+- [ ] Custom Fields: http://localhost:5173/v5.7.3/using-octeth/custom-fields
+- [ ] Auto Responders: http://localhost:5173/v5.7.3/using-octeth/auto-responders
+- [ ] Sender Domains: http://localhost:5173/v5.7.3/using-octeth/sender-domains
+- [ ] Email Builder: http://localhost:5173/v5.7.3/using-octeth/email-builder
+- [ ] Email Personalization: http://localhost:5173/v5.7.3/using-octeth/email-personalization
+- [ ] Event Tracking: http://localhost:5173/v5.7.3/using-octeth/event-tracking
+- [ ] SMS Messages: http://localhost:5173/v5.7.3/using-octeth/sms-messages
+- [ ] Cookbook: http://localhost:5173/v5.7.3/using-octeth/cookbook
+- [ ] Email Sending: http://localhost:5173/v5.7.3/using-octeth/email-deliverability/email-sending
+- [ ] Email Tracking: http://localhost:5173/v5.7.3/using-octeth/email-deliverability/email-tracking
+- [ ] Bounce Processing: http://localhost:5173/v5.7.3/using-octeth/email-deliverability/bounce-processing
+- [ ] Complaint Processing: http://localhost:5173/v5.7.3/using-octeth/email-deliverability/complaint-processing
+- [ ] Unsubscriptions: http://localhost:5173/v5.7.3/using-octeth/email-deliverability/unsubscriptions
+- [ ] Suppression Lists: http://localhost:5173/v5.7.3/using-octeth/email-deliverability/suppression-lists
+- [ ] SPF/DKIM/DMARC: http://localhost:5173/v5.7.3/using-octeth/email-deliverability/spf-dkim-dmarc
+- [ ] Internal Use: http://localhost:5173/v5.7.3/using-octeth/use-cases/internal-use
+- [ ] Agency Use: http://localhost:5173/v5.7.3/using-octeth/use-cases/agency-use
+- [ ] Enterprise Use: http://localhost:5173/v5.7.3/using-octeth/use-cases/enterprise-use
+- [ ] SaaS/ESP Use: http://localhost:5173/v5.7.3/using-octeth/use-cases/saas-esp-use
+- [ ] Google Analytics: http://localhost:5173/v5.7.3/using-octeth/integrations/google-analytics
+- [ ] Stripo Email Builder: http://localhost:5173/v5.7.3/using-octeth/integrations/stripo-email-builder
+- [ ] SSO: http://localhost:5173/v5.7.3/using-octeth/integrations/sso
+- [ ] n8n Integration: http://localhost:5173/v5.7.3/using-octeth/integrations/n8n-integration
+- [ ] RulesJSON (API)
+- [ ] Journey Actions (API)
