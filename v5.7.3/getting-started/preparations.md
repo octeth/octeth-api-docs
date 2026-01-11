@@ -37,9 +37,9 @@ If you plan to use the Link Proxy add-on, you'll need a separate server:
 
 Download the latest Octeth package from the [Octeth Client Area](https://my.octeth.com/):
 
-- File format: ZIP archive (e.g., `oempro-rel-v5.7.2.zip`)
+- File format: ZIP archive (e.g., `oempro-rel-v5.7.3.zip`)
 - Size: Approximately 200-300 MB
-- Version: 5.7.2 or newer
+- Version: 5.7.3 or newer
 
 ### License File
 

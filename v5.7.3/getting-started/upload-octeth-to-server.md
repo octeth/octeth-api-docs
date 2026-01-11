@@ -10,7 +10,7 @@ After setting up your server, you need to transfer the Octeth installation packa
 
 1. Log in to the [Octeth Client Area](https://my.octeth.com/)
 2. Navigate to your active Octeth license
-3. Download the latest version (e.g., `oempro-rel-v5.7.2.zip`)
+3. Download the latest version (e.g., `oempro-rel-v5.7.3.zip`)
 4. Save it to your `~/Downloads/` directory
 
 ## Upload to Server
@@ -22,7 +22,7 @@ You can use either `rsync` (recommended) or `scp` to transfer the file to your s
 The `rsync` command provides progress indication and resume capability:
 
 ```bash
-rsync -avz --progress -e "ssh -p 22" ~/Downloads/oempro-rel-v5.7.2.zip root@203.0.113.10:/opt/
+rsync -avz --progress -e "ssh -p 22" ~/Downloads/oempro-rel-v5.7.3.zip root@203.0.113.10:/opt/
 ```
 
 **Parameters explained:**
@@ -37,7 +37,7 @@ rsync -avz --progress -e "ssh -p 22" ~/Downloads/oempro-rel-v5.7.2.zip root@203.
 Alternatively, use the simpler `scp` command:
 
 ```bash
-scp -P 22 ~/Downloads/oempro-rel-v5.7.2.zip root@203.0.113.10:/opt/
+scp -P 22 ~/Downloads/oempro-rel-v5.7.3.zip root@203.0.113.10:/opt/
 ```
 
 ::: tip File Size
@@ -50,13 +50,13 @@ SSH into your server and verify the file was uploaded successfully:
 
 ```bash
 ssh root@203.0.113.10 -p 22
-ls -lh /opt/oempro-rel-v5.7.2.zip
+ls -lh /opt/oempro-rel-v5.7.3.zip
 ```
 
 You should see the file size and confirmation that the file exists in `/opt/`.
 
 ::: warning Important
-Replace `203.0.113.10` with your actual server IP address and `oempro-rel-v5.7.2.zip` with your downloaded version filename.
+Replace `203.0.113.10` with your actual server IP address and `oempro-rel-v5.7.3.zip` with your downloaded version filename.
 :::
 
 ## Next Steps

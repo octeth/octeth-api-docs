@@ -51,7 +51,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
    ```bash
    APP_ENV=local                    # Environment: local, staging, production
    APP_URL=http://203.0.113.10/   # Your Octeth access URL (always end with /)
-   PRODUCT_VERSION=5.7.2            # Octeth version number
+   PRODUCT_VERSION=5.7.3            # Octeth version number
    ```
 
 2. **Database Credentials**

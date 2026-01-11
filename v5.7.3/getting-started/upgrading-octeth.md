@@ -44,7 +44,7 @@ cat /opt/octeth/.oempro_env | grep PRODUCT_VERSION
 ### Download New Version
 
 1. Log in to [Octeth Client Area](https://my.octeth.com/)
-2. Download the latest version (e.g., `oempro-rel-v5.7.2.zip`)
+2. Download the latest version (e.g., `oempro-rel-v5.7.3.zip`)
 3. Upload to your server at `/opt/`
 
 ## Upgrade Process
@@ -78,7 +78,7 @@ Extract the new version to a temporary directory:
 
 ```bash
 cd /tmp
-unzip /opt/oempro-rel-v5.7.2.zip -d /tmp/octeth-upgrade
+unzip /opt/oempro-rel-v5.7.3.zip -d /tmp/octeth-upgrade
 ```
 
 ### Step 4: Preserve Configuration Files
@@ -121,7 +121,7 @@ Update the version number in your environment file:
 
 ```bash
 vi /opt/octeth/.oempro_env
-# Change PRODUCT_VERSION=5.7.2 (or your new version)
+# Change PRODUCT_VERSION=5.7.3 (or your new version)
 ```
 
 ### Step 7: Run Database Migrations

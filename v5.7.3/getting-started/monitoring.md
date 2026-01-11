@@ -63,4 +63,4 @@ Raw JSON response (for debugging):
 
 You can use Octeth's health check API endpoint for this purpose. [Cronitor](https://cronitor.io/), [Uptime Kuma](https://github.com/louislam/uptime-kuma), [Hyperping](https://hyperping.com/) or any similar uptime monitoring and alerting service can be used.
 
-You will need to use Octeth's `/api/v1/system-health-check` API endpoint. You can learn more about API usage instructions [here](https://dev.octeth.com/v5.7.2/api-reference/system.html#check-system-health).
+You will need to use Octeth's `/api/v1/system-health-check` API endpoint. You can learn more about API usage instructions [here](https://dev.octeth.com/v5.7.3/api-reference/system.html#check-system-health).
