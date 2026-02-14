@@ -53,11 +53,12 @@ Each version has a status badge indicating its current state:
 | v5.7.1  |           <Badge type="tip" text="Released" />           | Dec 4th, 2025  | Google Postmaster integration, auto-resend campaigns |
 | v5.7.2  |           <Badge type="tip" text="Released" />           | Dec 29th, 2025 | Multi-tag journey triggers, critical security fixes  |
 | v5.7.3  |           <Badge type="tip" text="Released" />           | Jan 3rd, 2026  | Stuck campaign detector, security hardening          |
-| v5.7.4  | <Badge type="warning" text="Collecting User Feedback" /> | January 2026   | TBA                                                  |
-| v6.0.0  |    <Badge type="warning" text="Under Development" />     | Q1 2026        | Major architecture updates                           |
+| v5.8.0  |    <Badge type="warning" text="Under Development" />     | February 2026  | TBA                                                  |
+| v5.9.0  | <Badge type="warning" text="Collecting User Feedback" /> | March 2026     | TBA                                                  |
+| v6.0.0  |    <Badge type="warning" text="Under Development" />     | Early Q2 2026  | Major architecture updates                           |
 
 ::: info What's Next?
-**v5.7.4** is currently in testing with select users. We're collecting feedback before the general release.
+**v5.8.0** is currently in testing with select users. We're collecting feedback before the general release.
 
 **v6.0.0** is a major release under active development with significant platform improvements planned.
 :::
