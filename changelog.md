@@ -8,6 +8,67 @@ description: Complete release history for all Octeth versions - features, improv
 
 This document tracks the complete release history of Octeth, including new features, enhancements, bug fixes, security patches, and deprecations for each version. Use this changelog to understand what changed between releases and determine when to upgrade your installation.
 
+## v5.8.0
+
+### Release Summary
+
+Released February 15, 2026 after 43 days of development. Major release featuring redesigned campaign creation, automatic TLS via Caddy proxy, natural language segment rules, and significant legacy code removal.
+
+### New Features
+
+- **Simplified Campaign Create UI** - Complete redesign with advanced audience targeting, estimated recipients widget, and read-only mode for sent campaigns
+- **Caddy Link Proxy with On-Demand TLS** - Automatic HTTPS certificate provisioning via Caddy reverse proxy for sender domains
+- **Retry Failed Recipients** - Ability to retry delivery to failed recipients for sent or failed campaigns
+- **Multi-List Journey Triggers** - Journey subscription triggers now support selecting multiple lists
+- **Delivery Window Constraints** - Journey wait action supports delivery window time constraints
+- **Journey Email Preview** - Preview email functionality directly in SendEmail action node
+- **Natural Language Segment Rules** - Segment rules displayed as human-readable natural language descriptions
+- **Future Date Segment Operators** - Future range and exact date offset operators for date-based segmentation
+- **Recipient Domain Stats API** - New API endpoint for recipient domain statistics
+- **Database Stats CLI & API** - New db:stats CLI command and admin.database.stats API endpoint
+- **Upgrade CLI Command** - New upgrade command added to octeth.sh CLI tool
+
+### Enhancements
+
+- **Estimated Recipients in Campaign API** - Real-time estimated recipient count in campaign API and scheduled views
+- **Campaign ID in Admin Reports** - Campaign ID shown alongside campaign name in admin reports
+- **Seed List Exclusion** - Seed list deliveries excluded from campaign metrics, billing, and limits
+- **Delivery Server / User Group Cross-Reference** - Admin listings show cross-reference between servers and groups
+- **Stuck Campaign High Failure Detection** - Stuck campaign monitor detects campaigns with high failure rates
+- **Health Check Logging** - System health check API endpoint now logs error responses
+- **Custom Subdomain & Tracking Prefix** - Support for custom subdomains and tracking prefixes on sender domains
+- **Deterministic Random Sampling** - Segment random sampling uses deterministic RAND(seed) for consistent pagination
+- **Default Features on Fresh Install** - SenderDomainManagement and SimplifiedCampaignCreateUI enabled by default
+- **ClickHouse Upgrade** - Updated ClickHouse image from 21.3.20.1 to 22.8
+- **Primary Keys for Cluster Support** - Added primary keys to tables missing them for database cluster compatibility
+
+### Bug Fixes
+
+- **N+1 Query in Campaigns API** - Fixed N+1 query problem in campaigns.get API for improved performance
+- **Stuck Campaign Zero Recipients** - Detects stuck campaigns with 0 sent recipients in Sending status
+- **Segment Pagination Consistency** - Deterministic RAND(seed) ensures consistent results across segment pages
+- **"Any Campaign" Segment Rules** - Rules with "Any Campaign" now work correctly when no campaigns exist
+- **Global Custom Fields** - Fixed global custom fields breaking subscriber subscription flow
+- **MergeTagAlias Validation** - Reserved subscriber field names properly rejected as MergeTagAlias
+- **Duplicate Journey Entry** - Prevented duplicate journey entry registration for active subscribers
+- **Sender Domain Scoping** - Sender domain lookup in journey email sending scoped by UserID
+- **Chart Line Colors** - Swapped chart line colors to correctly match legend icons
+- **MySQL 8.0+ Compatibility** - Added SET sql_mode for MySQL 8.0+ installation compatibility
+- **ClickHouse Retention** - Changed website events retention from infinite to 180 days
+- **Env File Parsing** - Fixed support for parentheses in .oempro_*_env comment lines
+
+### Security Patches
+
+- Various security improvements and fixes
+
+### Deprecations
+
+- **ionCube Loader** - Removed all ionCube loader references
+- **Legacy PHP Frameworks** - Removed includes/framework_1_7_1/ directory
+- **Flash SWF References** - Removed all Flash/SWF file references
+- **Obsolete Docker Configs** - Removed Docker configs for Elasticsearch, HAProxy, Kibana, SSH, and PHP 7.2/7.4/8.2/8.3
+- **Legacy Files** - Removed cron.php, orphaned package-lock.json, and legacy directories
+
 ## v5.7.3
 
 ### Release Summary

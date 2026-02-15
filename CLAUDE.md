@@ -14,7 +14,7 @@ This is the official help portal and documentation website for Octeth.com, an on
 ### Key Directories
 - `.docs/` - Additional documentation and guides for AI assistance (SOPs, examples, version management)
 - `.vitepress/` - VitePress configuration and build output
-- `v5.x.x/` - Version-specific documentation (v5.5.x, v5.6.x, v5.7.x - current)
+- `v5.x.x/` - Version-specific documentation (v5.5.x, v5.6.x, v5.7.x, v5.8.0 - current)
 - `public/` - Static assets (logos, images)
 
 ### Version Directory Contents
@@ -42,7 +42,7 @@ Each version directory contains:
 - **Sitemap**: Automatically generated
 
 ### Navigation Structure
-- **Main Nav**: Homepage, Version selector (v5.7.x current), Resources
+- **Main Nav**: Homepage, Version selector (v5.8.0 current), Resources
 - **Sidebar**: Auto-generated per version with Getting Started, API Reference, and Plugin Development sections
 
 ## API Documentation Format
@@ -94,8 +94,8 @@ See `package.json` for all available commands. Key commands:
 ## Important Features & Considerations
 
 ### Version Management
-- Multiple API versions maintained simultaneously (v5.5.x, v5.6.x, v5.7.x)
-- Current version is v5.7.x
+- Multiple API versions maintained simultaneously (v5.5.x, v5.6.x, v5.7.x, v5.8.0)
+- Current version is v5.8.0
 - Homepage automatically redirects to current version
 - Each version has independent documentation set
 
