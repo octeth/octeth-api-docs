@@ -34,12 +34,6 @@ export default defineConfig({
         ['script', {}, 'ContactWidgetLoader.init({widgetId: "25a184cc-085d-42fd-b6b7-53f72f2b8c21", domain: window.location.hostname});']
     ],
 
-    vite: {
-        resolve: {
-            preserveSymlinks: true
-        }
-    },
-
     base: '/',
     externalLinkIcon: true,
 
