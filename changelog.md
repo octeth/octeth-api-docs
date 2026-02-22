@@ -8,6 +8,32 @@ description: Complete release history for all Octeth versions - features, improv
 
 This document tracks the complete release history of Octeth, including new features, enhancements, bug fixes, security patches, and deprecations for each version. Use this changelog to understand what changed between releases and determine when to upgrade your installation.
 
+## v5.8.1
+
+### Release Summary
+
+Release in progress. Changelog will be updated upon release.
+
+### New Features
+
+- (To be documented)
+
+### Enhancements
+
+- (To be documented)
+
+### Bug Fixes
+
+- (To be documented)
+
+### Security Patches
+
+- (To be documented)
+
+### Deprecations
+
+None
+
 ## v5.8.0
 
 ### Release Summary
