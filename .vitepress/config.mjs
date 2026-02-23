@@ -137,8 +137,7 @@ export default defineConfig({
                                 {text: 'Email Builder', link: '/v5.8.1/using-octeth/email-builder'},
                                 {text: 'Email Personalization', link: '/v5.8.1/using-octeth/email-personalization'},
                                 {text: 'Event Tracking', link: '/v5.8.1/using-octeth/event-tracking'},
-                                {text: 'SMS Messages', link: '/v5.8.1/using-octeth/sms-messages'},
-                                {text: 'Cookbook', link: '/v5.8.1/using-octeth/cookbook'}
+                                {text: 'SMS Messages', link: '/v5.8.1/using-octeth/sms-messages'}
                             ],
                         }, {
                             text: 'Email Deliverability', items: [
@@ -150,13 +149,6 @@ export default defineConfig({
                                 {text: 'Suppression Lists', link: '/v5.8.1/using-octeth/email-deliverability/suppression-lists'},
                                 {text: 'SPF/DKIM/DMARC', link: '/v5.8.1/using-octeth/email-deliverability/spf-dkim-dmarc'}
                             ],
-                        }, {
-                            text: 'Use Cases', items: [
-                                {text: 'Internal Use', link: '/v5.8.1/using-octeth/use-cases/internal-use'},
-                                {text: 'Agency Use', link: '/v5.8.1/using-octeth/use-cases/agency-use'},
-                                {text: 'Enterprise Use', link: '/v5.8.1/using-octeth/use-cases/enterprise-use'},
-                                {text: 'SaaS/ESP Use', link: '/v5.8.1/using-octeth/use-cases/saas-esp-use'}
-                            ]
                         }
                     ]
                 },
@@ -268,8 +260,7 @@ export default defineConfig({
                                 {text: 'Email Builder', link: '/v5.8.0/using-octeth/email-builder'},
                                 {text: 'Email Personalization', link: '/v5.8.0/using-octeth/email-personalization'},
                                 {text: 'Event Tracking', link: '/v5.8.0/using-octeth/event-tracking'},
-                                {text: 'SMS Messages', link: '/v5.8.0/using-octeth/sms-messages'},
-                                {text: 'Cookbook', link: '/v5.8.0/using-octeth/cookbook'}
+                                {text: 'SMS Messages', link: '/v5.8.0/using-octeth/sms-messages'}
                             ],
                         }, {
                             text: 'Email Deliverability', items: [
@@ -281,13 +272,6 @@ export default defineConfig({
                                 {text: 'Suppression Lists', link: '/v5.8.0/using-octeth/email-deliverability/suppression-lists'},
                                 {text: 'SPF/DKIM/DMARC', link: '/v5.8.0/using-octeth/email-deliverability/spf-dkim-dmarc'}
                             ],
-                        }, {
-                            text: 'Use Cases', items: [
-                                {text: 'Internal Use', link: '/v5.8.0/using-octeth/use-cases/internal-use'},
-                                {text: 'Agency Use', link: '/v5.8.0/using-octeth/use-cases/agency-use'},
-                                {text: 'Enterprise Use', link: '/v5.8.0/using-octeth/use-cases/enterprise-use'},
-                                {text: 'SaaS/ESP Use', link: '/v5.8.0/using-octeth/use-cases/saas-esp-use'}
-                            ]
                         }
                     ]
                 },
@@ -394,8 +378,7 @@ export default defineConfig({
                                 {text: 'Email Builder', link: '/v5.7.3/using-octeth/email-builder'},
                                 {text: 'Email Personalization', link: '/v5.7.3/using-octeth/email-personalization'},
                                 {text: 'Event Tracking', link: '/v5.7.3/using-octeth/event-tracking'},
-                                {text: 'SMS Messages', link: '/v5.7.3/using-octeth/sms-messages'},
-                                {text: 'Cookbook', link: '/v5.7.3/using-octeth/cookbook'}
+                                {text: 'SMS Messages', link: '/v5.7.3/using-octeth/sms-messages'}
                             ],
                         }, {
                             text: 'Email Deliverability', items: [
@@ -407,13 +390,6 @@ export default defineConfig({
                                 {text: 'Suppression Lists', link: '/v5.7.3/using-octeth/email-deliverability/suppression-lists'},
                                 {text: 'SPF/DKIM/DMARC', link: '/v5.7.3/using-octeth/email-deliverability/spf-dkim-dmarc'}
                             ],
-                        }, {
-                            text: 'Use Cases', items: [
-                                {text: 'Internal Use', link: '/v5.7.3/using-octeth/use-cases/internal-use'},
-                                {text: 'Agency Use', link: '/v5.7.3/using-octeth/use-cases/agency-use'},
-                                {text: 'Enterprise Use', link: '/v5.7.3/using-octeth/use-cases/enterprise-use'},
-                                {text: 'SaaS/ESP Use', link: '/v5.7.3/using-octeth/use-cases/saas-esp-use'}
-                            ]
                         }
                     ]
                 },
