@@ -58,9 +58,10 @@ export default defineConfig({
 
         nav: [
             {
-                text: "v5.8.0",
+                text: "v5.8.1",
                 items: [
-                    {text: 'v5.8.0 (Current)', link: '/v5.8.0/'},
+                    {text: 'v5.8.1 (Current)', link: '/v5.8.1/'},
+                    {text: 'v5.8.0', link: '/v5.8.0/'},
                     {text: 'v5.7.3', link: '/v5.7.3/'},
                     {text: 'v5.7.2', link: '/v5.7.2/'},
                     {text: 'v5.6.x', link: '/v5.6.x/'},
@@ -85,8 +86,139 @@ export default defineConfig({
         ],
 
         sidebar: (() => {
-            // Define v5.8.0 sidebar config ONCE
-            const v5_8_0_sidebar = [
+            // Define v5.8.1 sidebar config ONCE
+            const v5_8_1_sidebar = [
+                {
+                    text: 'INTRODUCTION',
+                    collapsed: false,
+                    items: [
+                        {text: 'Changelog', link: '/changelog'},
+                        {text: 'Roadmap', link: '/roadmap'},
+                        {text: 'Support', link: '/support'}
+                    ]
+                },
+                {
+                    text: 'INSTALLATION GUIDE',
+                    collapsed: true,
+                    items: [
+                        {text: 'Server Requirements', link: '/v5.8.1/getting-started/server-requirements'},
+                        {text: 'Preparations', link: '/v5.8.1/getting-started/preparations'},
+                        {text: 'Server Initialization', link: '/v5.8.1/getting-started/server-initialization'},
+                        {text: 'Server Setup', link: '/v5.8.1/getting-started/server-setup'},
+                        {text: 'Upload Octeth To The Server', link: '/v5.8.1/getting-started/upload-octeth-to-server'},
+                        {text: 'Octeth Installation', link: '/v5.8.1/getting-started/octeth-installation'},
+                        {text: 'Backup Add-On Setup', link: '/v5.8.1/getting-started/backup-addon-setup'},
+                        {text: 'Link Proxy Add-On Setup', link: '/v5.8.1/getting-started/link-proxy-addon-setup'},
+                        {text: 'Octeth Configuration', link: '/v5.8.1/getting-started/octeth-configuration'},
+                        {text: 'Monitoring', link: '/v5.8.1/getting-started/monitoring'},
+                        {text: 'Octeth CLI Tool', link: '/v5.8.1/getting-started/octeth-cli-tool'},
+                        {text: 'Sender Domain DNS Settings', link: '/v5.8.1/getting-started/sender-domain-dns-settings'},
+                        {text: 'SSL Certificates', link: '/v5.8.1/getting-started/ssl-certificates'},
+                        {text: 'Upgrading Octeth', link: '/v5.8.1/getting-started/upgrading-octeth'},
+                        {text: 'Troubleshooting', link: '/v5.8.1/getting-started/troubleshooting'}
+                    ]
+                },
+                {
+                    text: 'USING OCTETH',
+                    collapsed: true,
+                    items: [
+                        {
+                            text: 'Features', items: [
+                                {text: 'Users', link: '/v5.8.1/using-octeth/users'},
+                                {text: 'Subscribers', link: '/v5.8.1/using-octeth/subscribers'},
+                                {text: 'Lists', link: '/v5.8.1/using-octeth/lists'},
+                                {text: 'Email Campaigns', link: '/v5.8.1/using-octeth/email-campaigns'},
+                                {text: 'Journeys', link: '/v5.8.1/using-octeth/journeys'},
+                                {text: 'Segments', link: '/v5.8.1/using-octeth/segments'},
+                                {text: 'Tags', link: '/v5.8.1/using-octeth/tags'},
+                                {text: 'Custom Fields', link: '/v5.8.1/using-octeth/custom-fields'},
+                                {text: 'Auto Responders', link: '/v5.8.1/using-octeth/auto-responders'},
+                                {text: 'Sender Domains', link: '/v5.8.1/using-octeth/sender-domains'},
+                                {text: 'Email Builder', link: '/v5.8.1/using-octeth/email-builder'},
+                                {text: 'Email Personalization', link: '/v5.8.1/using-octeth/email-personalization'},
+                                {text: 'Event Tracking', link: '/v5.8.1/using-octeth/event-tracking'},
+                                {text: 'SMS Messages', link: '/v5.8.1/using-octeth/sms-messages'},
+                                {text: 'Cookbook', link: '/v5.8.1/using-octeth/cookbook'}
+                            ],
+                        }, {
+                            text: 'Email Deliverability', items: [
+                                {text: 'Email Sending', link: '/v5.8.1/using-octeth/email-deliverability/email-sending'},
+                                {text: 'Email Tracking', link: '/v5.8.1/using-octeth/email-deliverability/email-tracking'},
+                                {text: 'Bounce Processing', link: '/v5.8.1/using-octeth/email-deliverability/bounce-processing'},
+                                {text: 'Complaint Processing', link: '/v5.8.1/using-octeth/email-deliverability/complaint-processing'},
+                                {text: 'Unsubscriptions', link: '/v5.8.1/using-octeth/email-deliverability/unsubscriptions'},
+                                {text: 'Suppression Lists', link: '/v5.8.1/using-octeth/email-deliverability/suppression-lists'},
+                                {text: 'SPF/DKIM/DMARC', link: '/v5.8.1/using-octeth/email-deliverability/spf-dkim-dmarc'}
+                            ],
+                        }, {
+                            text: 'Use Cases', items: [
+                                {text: 'Internal Use', link: '/v5.8.1/using-octeth/use-cases/internal-use'},
+                                {text: 'Agency Use', link: '/v5.8.1/using-octeth/use-cases/agency-use'},
+                                {text: 'Enterprise Use', link: '/v5.8.1/using-octeth/use-cases/enterprise-use'},
+                                {text: 'SaaS/ESP Use', link: '/v5.8.1/using-octeth/use-cases/saas-esp-use'}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    text: 'INTEGRATIONS',
+                    collapsed: true,
+                    items: [
+                        {text: 'Google Analytics', link: '/v5.8.1/using-octeth/integrations/google-analytics'},
+                        {text: 'Stripo Email Builder', link: '/v5.8.1/using-octeth/integrations/stripo-email-builder'},
+                        {text: 'Single Sign On (SSO)', link: '/v5.8.1/using-octeth/integrations/sso'},
+                        {text: 'n8n Integration', link: '/v5.8.1/using-octeth/integrations/n8n-integration'}
+                    ]
+                },
+                {
+                    text: 'DEVELOPERS',
+                    collapsed: true,
+                    items: [
+                        {
+                            text: 'API Reference', items: [
+                                {text: 'Getting Started', link: '/v5.8.1/api-reference/getting-started'},
+                                {text: 'Authorization', link: '/v5.8.1/api-reference/authorization'},
+                                {text: 'Error Handling', link: '/v5.8.1/api-reference/error-handling'},
+                                {text: 'Admin', link: '/v5.8.1/api-reference/admin'},
+                                {text: 'Reports', link: '/v5.8.1/api-reference/reports'},
+                                {text: 'Auto Responders', link: '/v5.8.1/api-reference/autoresponders'},
+                                {text: 'Campaigns', link: '/v5.8.1/api-reference/campaigns'},
+                                {text: 'Custom Fields', link: '/v5.8.1/api-reference/customfields'},
+                                {text: 'Delivery Servers', link: '/v5.8.1/api-reference/deliveryservers'},
+                                {text: 'DNS', link: '/v5.8.1/api-reference/dns'},
+                                {text: 'Email Gateway', link: '/v5.8.1/api-reference/emailgateway'},
+                                {text: 'Journeys', link: '/v5.8.1/api-reference/journeys'},
+                                {text: 'Journey Actions', link: '/v5.8.1/api-reference/journey-actions'},
+                                {text: 'Lists', link: '/v5.8.1/api-reference/lists'},
+                                {text: 'Re-Branding', link: '/v5.8.1/api-reference/rebranding'},
+                                {text: 'Clients', link: '/v5.8.1/api-reference/clients'},
+                                {text: 'Emails', link: '/v5.8.1/api-reference/emails'},
+                                {text: 'Media Library', link: '/v5.8.1/api-reference/medialibrary'},
+                                {text: 'SSO', link: '/v5.8.1/api-reference/sso'},
+                                {text: 'Suppression Lists', link: '/v5.8.1/api-reference/suppression'},
+                                {text: 'Settings', link: '/v5.8.1/api-reference/settings'},
+                                {text: 'Event Tracking', link: '/v5.8.1/api-reference/eventtracking'},
+                                {text: 'System', link: '/v5.8.1/api-reference/system'},
+                                {text: 'Users', link: '/v5.8.1/api-reference/users'},
+                                {text: 'Segments', link: '/v5.8.1/api-reference/segments'},
+                                {text: 'Subscribers', link: '/v5.8.1/api-reference/subscribers'},
+                                {text: 'Internal', link: '/v5.8.1/api-reference/internal'}
+                            ]
+                        },
+                        {
+                            text: 'Plug-In Development', items: [
+                                {text: 'Hook Reference', link: '/v5.8.1/plugin-development/reference'}
+                            ]
+                        }
+                    ]
+                }
+            ]
+
+            // Return sidebar config with shared reference
+            return {
+                '/': v5_8_1_sidebar,  // Root pages use latest version sidebar
+                '/v5.8.1/': v5_8_1_sidebar,  // Reference same config
+                '/v5.8.0/': [
                 {
                     text: 'INTRODUCTION',
                     collapsed: false,
@@ -211,12 +343,7 @@ export default defineConfig({
                         }
                     ]
                 }
-            ]
-
-            // Return sidebar config with shared reference
-            return {
-                '/': v5_8_0_sidebar,  // Root pages use latest version sidebar
-                '/v5.8.0/': v5_8_0_sidebar,  // Reference same config
+                ],
                 '/v5.7.3/': [
                 {
                     text: 'INTRODUCTION',
