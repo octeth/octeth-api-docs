@@ -521,12 +521,16 @@ Files prefixed with `const_` define PHP constants that cannot be changed during 
 | `const_WEBSITE_EVENT_MAPPING.php`         | Website event type mappings     |
 
 ::: info How Configuration Files Work
-When Octeth starts:
+When Octeth starts, configuration files are loaded in the following order. Since PHP constants can only be defined once, the **first file to define a value wins**:
+
 1. Environment variables are loaded first (`.oempro_env`, `system/.env`, etc.)
-2. Configuration files in `config/global/` are loaded and processed
-3. Environment-specific configs from `config/environments/{APP_ENV}/` override global settings
-4. Scalar values are defined as PHP constants
-5. Array values are stored in PHP's `$GLOBALS` array
+2. Priority global config files are loaded (`app.php`)
+3. If `APP_PROJECT_CONFIG_PATH` is set, project-specific configs are loaded (see [Project-Specific Configuration Overrides](#project-specific-configuration-overrides))
+4. Core environment-specific configs from `config/environments/{APP_ENV}/` are loaded
+5. Core global configs from `config/global/` are loaded
+6. Scalar values become PHP constants, array values are stored in `$GLOBALS`
+
+Because project configs load before core configs, project overrides take precedence over core defaults.
 :::
 
 ### Environment-Specific Configuration
@@ -614,95 +618,151 @@ Configuration files must return a valid PHP array. Common mistakes:
 
 ### Project-Specific Configuration Overrides
 
-Octeth supports project-specific configuration overrides using the `APP_PROJECT_CONFIG_PATH` mechanism. This is ideal for:
+Octeth supports project-specific configuration overrides using the `APP_PROJECT_CONFIG_PATH` environment variable. This allows custom configuration without modifying core files, and is ideal for:
 
-- Multi-tenant deployments with custom settings per tenant
 - White-label installations requiring specific configurations
-- Testing custom configurations without modifying core files
+- Custom deployments with tailored feature flags or settings
+- Testing configuration changes without modifying core files
 
 **How It Works:**
 
-1. Set `APP_PROJECT_CONFIG_PATH` in `.oempro_env` to point to your project directory
-2. Create a `config/` directory in your project path
-3. Mirror the structure of `/opt/octeth/config/`
-4. Add only the files and settings you want to override
+1. Set `APP_PROJECT_CONFIG_PATH` in `.oempro_env` to point to your project config directory
+2. Create `global/` and/or `environments/{APP_ENV}/` subdirectories inside that path
+3. Add PHP config files that return arrays of key-value pairs
+4. Only include the settings you want to override — no need to copy entire files
+
+::: danger Critical: Path Must Be Relative
+`APP_PROJECT_CONFIG_PATH` must be a **relative path** from the Octeth installation root (`/opt/octeth/`). The system automatically prepends the application root path.
+
+```bash
+# Correct — relative path
+APP_PROJECT_CONFIG_PATH=.engage/config
+
+# Wrong — absolute path (will be double-prefixed and fail silently)
+APP_PROJECT_CONFIG_PATH=/opt/octeth/.engage/config
+```
+:::
+
+**Expected Directory Structure:**
+
+The path set in `APP_PROJECT_CONFIG_PATH` must contain `global/` and/or `environments/` subdirectories directly:
+
+```
+/opt/octeth/{APP_PROJECT_CONFIG_PATH}/
+├── global/                              # Applied to all environments
+│   ├── features.php
+│   └── const_custom.php
+└── environments/
+    └── production/                      # Applied only when APP_ENV=production
+        └── engage.php
+```
 
 **Loading Priority (highest to lowest):**
 
-1. Project environment constants (`{PROJECT_PATH}/config/environments/{APP_ENV}/const_*.php`)
-2. Project environment configs (`{PROJECT_PATH}/config/environments/{APP_ENV}/*.php`)
-3. Project global constants (`{PROJECT_PATH}/config/global/const_*.php`)
-4. Project global configs (`{PROJECT_PATH}/config/global/*.php`)
-5. Core environment constants (`/opt/octeth/config/environments/{APP_ENV}/const_*.php`)
-6. Core environment configs (`/opt/octeth/config/environments/{APP_ENV}/*.php`)
-7. Core global constants (`/opt/octeth/config/global/const_*.php`)
-8. Core global configs (`/opt/octeth/config/global/*.php`)
+Since PHP constants can only be defined once, the **first file to define a value wins**. After the priority files (like `app.php`), the config loader processes files in this order:
+
+| Priority | Source | Path |
+|----------|--------|------|
+| 1 | Priority files (core) | `/opt/octeth/config/global/app.php` |
+| 2 | Project environment constants | `{PROJECT_PATH}/environments/{APP_ENV}/const_*.php` |
+| 3 | Project environment configs | `{PROJECT_PATH}/environments/{APP_ENV}/*.php` |
+| 4 | Project global constants | `{PROJECT_PATH}/global/const_*.php` |
+| 5 | Project global configs | `{PROJECT_PATH}/global/*.php` |
+| 6 | Core environment constants | `/opt/octeth/config/environments/{APP_ENV}/const_*.php` |
+| 7 | Core environment configs | `/opt/octeth/config/environments/{APP_ENV}/*.php` |
+| 8 | Core global constants | `/opt/octeth/config/global/const_*.php` |
+| 9 | Core global configs | `/opt/octeth/config/global/*.php` |
+
+Because project configs (priorities 2–5) load before core configs (priorities 6–9), project values take precedence.
+
+::: warning Filename-Based Deduplication
+The config loader tracks loaded files **by filename**. If the same filename exists in multiple locations, only the first one encountered is loaded. For example, if `engage.php` exists in both `environments/production/` and `global/` within the project path, only the environment-specific version loads. The global version is skipped because a file named `engage.php` was already processed.
+:::
 
 ### Example: Creating a Project-Specific Configuration
 
-Let's create a custom configuration for a project called "acme-corp":
+Create a custom configuration for a project called "engage":
 
 **Step 1: Create the project directory structure**
 
 ```bash
-mkdir -p /opt/octeth/.acme-corp/config/global
-mkdir -p /opt/octeth/.acme-corp/config/environments/production
+mkdir -p /opt/octeth/.engage/config/global
+mkdir -p /opt/octeth/.engage/config/environments/production
 ```
 
-**Step 2: Configure APP_PROJECT_CONFIG_PATH**
+**Step 2: Set APP_PROJECT_CONFIG_PATH**
 
-Edit `/opt/octeth/.oempro_env`:
+Edit `/opt/octeth/.oempro_env` and add:
 
 ```bash
-APP_PROJECT_CONFIG_PATH=.acme-corp
+APP_PROJECT_CONFIG_PATH=.engage/config
 ```
 
-**Step 3: Create project-specific feature flags**
+This resolves to `/opt/octeth/.engage/config/` internally.
 
-Create `/opt/octeth/.acme-corp/config/global/features.php`:
+**Step 3: Create a global configuration file**
+
+Create `/opt/octeth/.engage/config/global/features.php`:
 
 ```php
 <?php
 
 return [
-    // Enable WYSIWYG editor for this project
     'WYSIWYG_ENABLED' => true,
-
-    // Disable credit notices for this premium client
     'DISPLAY_CREDIT_NOTICE' => false,
-
-    // Custom webhook timeout for their slower server
     'WEBHOOK_TIMEOUT_SECONDS' => 15,
 ];
 ```
 
-**Step 4: Create production environment overrides**
+These values apply to all environments and override the defaults from core config files.
 
-Create `/opt/octeth/.acme-corp/config/environments/production/config.php`:
+**Step 4: Create environment-specific overrides**
+
+Create `/opt/octeth/.engage/config/environments/production/settings.php`:
 
 ```php
 <?php
 
 return [
-    // Stricter log level for production
     'OEMPRO_LOG_LEVEL' => 'WARNING',
-
-    // Enable session secure cookies for their HTTPS setup
     'SESSION_SECURE_COOKIE' => true,
 ];
 ```
 
-**Step 5: Restart Octeth**
+These values only apply when `APP_ENV=production` is set in `.oempro_env`.
+
+**Step 5: Verify and restart**
+
+Validate PHP syntax, then restart Octeth:
 
 ```bash
-cd /opt/octeth
+php -l /opt/octeth/.engage/config/global/features.php
+php -l /opt/octeth/.engage/config/environments/production/settings.php
 /opt/octeth/cli/octeth.sh docker:restart
+```
+
+Verify the configuration loaded correctly:
+
+```bash
+/opt/octeth/cli/octeth.sh config:list
+```
+
+The resulting directory structure should look like this:
+
+```
+/opt/octeth/.engage/
+└── config/
+    ├── global/
+    │   └── features.php
+    └── environments/
+        └── production/
+            └── settings.php
 ```
 
 ::: tip Project Directory Naming
 Use a leading dot (`.`) for project directories to keep them hidden from casual directory listings:
+- `.engage` instead of `engage`
 - `.acme-corp` instead of `acme-corp`
-- `.client-xyz` instead of `client-xyz`
 :::
 
 ### Best Practices for Configuration Files
