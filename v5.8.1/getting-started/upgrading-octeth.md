@@ -222,6 +222,16 @@ When the upgrade adds new environment keys, they are set to default values. Revi
 
 The upgrade summary lists all new keys that were added. Check the release notes for details on what each new setting controls.
 
+### Migrating From the Old Configuration System
+
+If you are upgrading from an older Octeth version that used a single `config.inc.php` file (with `define()` statements), use the `config:migrate` command to generate a migration report:
+
+```bash
+/opt/octeth/cli/octeth.sh config:migrate /path/to/old/config.inc.php
+```
+
+This compares your old configuration against the new modular system and tells you exactly which values to set in `.oempro_env` and which config files to update. See the [Octeth CLI Tool](./octeth-cli-tool#environment-and-configuration) documentation for full details.
+
 ## Manual Database Restore
 
 If you need to restore the database from the upgrade backup:

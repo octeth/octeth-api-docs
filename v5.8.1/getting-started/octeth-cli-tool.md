@@ -208,6 +208,41 @@ This finds all configuration settings that match your search term.
 
 This displays all active configuration values loaded by Octeth.
 
+**Getting a specific configuration value:**
+
+```bash
+/opt/octeth/cli/octeth.sh config:get APP_URL
+```
+
+This displays the current value of a specific configuration constant.
+
+**Migrating from an old configuration file:**
+
+```bash
+/opt/octeth/cli/octeth.sh config:migrate /path/to/old/config.inc.php
+```
+
+This analyzes an old monolithic `config.inc.php` file and generates a migration report. Use this when upgrading from an older Octeth installation that used a single configuration file instead of the current modular system (environment files + `config/global/*.php`).
+
+The report shows:
+
+- **Environment variables to set** — Settings that differ from new defaults, grouped by config file. Copy these values into your `.oempro_env` file.
+- **Array constant differences** — Changes in const arrays like `OEMPRO_SERVICE_HOSTNAMES`. Edit the corresponding `const_*.php` files in `config/global/`.
+- **Data structures** — Large data structures (bounce patterns, custom field presets, TinyMCE settings, DNS templates) that are now in dedicated config files. Review these only if you customized them.
+- **Dynamic values** — Constants that referenced variables or other constants. Each one includes guidance on where to configure it in the new system.
+- **Obsolete settings** — Old constants that no longer exist, with explanations of what replaced them.
+- **Matching defaults** — Constants that already match the new default values. No action needed for these.
+
+Example:
+
+```bash
+/opt/octeth/cli/octeth.sh config:migrate data/config.inc.old.php
+```
+
+::: tip
+This command is read-only. It does not modify any files — it only analyzes and reports. You apply the changes manually based on the report.
+:::
+
 ::: warning
 Always restart the appropriate containers after changing configuration values to apply your changes.
 :::
