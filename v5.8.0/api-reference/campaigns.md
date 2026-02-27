@@ -464,7 +464,24 @@ curl -X POST https://example.com/api.php \
 | Exclude_RecipientListsAndSegments | String | No  | Comma-separated exclusion list (format: ListID:SegmentID)         |
 | RulesJsonBundle              | String  | No       | JSON string with advanced recipient selection rules               |
 | S2SEnabled                   | Boolean | No       | Enable server-to-server tracking                                  |
-| ABTesting                    | Object  | No       | A/B testing configuration with variations                         |
+| ABTesting                    | Object  | No       | A/B testing configuration (see [A/B Testing Parameters](#a-b-testing-parameters) below) |
+
+**A/B Testing Parameters:**
+
+When the `ABTesting` object is provided, the campaign is configured as an A/B split test. Each variation references a separate email (created via `Email.Create` + `Email.Update`) and is assigned a weight that determines the distribution percentage across recipients.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| ABTesting[Variations] | Array | Yes | Array of variation objects (minimum 2, maximum 5) |
+| ABTesting[Variations][N][emailid] | Integer | Yes | Email ID for this variation (must belong to the authenticated user) |
+| ABTesting[Variations][N][weight] | Integer | Yes | Relative weight for distribution (must be > 0). Distribution percentages are calculated automatically from the weights. For example, two variations with weight `1` each results in 50%/50% distribution. Weights of `1`, `1`, `2` result in 25%/25%/50% |
+
+::: warning Important Notes
+- When A/B testing is enabled, the campaign's `RelEmailID` is automatically set to `0` — do not pass a `RelEmailID` alongside `ABTesting`.
+- Each variation must have a distribution of at least 1%.
+- To disable A/B testing on a campaign, pass an empty `ABTesting` parameter.
+- The system randomly distributes recipients across variations during queue generation, so each subscriber receives exactly one variation.
+:::
 
 ::: code-group
 
@@ -1065,7 +1082,218 @@ curl -X POST https://example.com/api.php \
 
 :::
 
-## Create a Split Test
+## Create an A/B Split Test Campaign
+
+A/B split test campaigns allow you to send different email variations to segments of your audience and compare performance. The system randomly distributes recipients across variations based on configurable weights.
+
+### How A/B Split Testing Works
+
+1. **Create a campaign** using `Campaign.Create`
+2. **Create email variations** — one `Email.Create` + `Email.Update` call per variation (minimum 2, maximum 5)
+3. **Configure the campaign** using `Campaign.Update` with `ABTesting[Variations]`, audience rules, and schedule
+4. **The system handles the rest** — during delivery, recipients are randomly assigned to variations based on distribution weights
+
+When the campaign is sent, each recipient receives exactly one email variation. Statistics (opens, clicks, conversions, unsubscriptions, revenue) are tracked per variation, allowing you to compare performance.
+
+### Step-by-Step Example
+
+::: code-group
+
+```bash [Step 1: Create Campaign]
+# Create the campaign shell
+curl -X POST https://example.com/api.php \
+  -d 'ResponseFormat=JSON' \
+  -d 'Command=Campaign.Create' \
+  -d 'APIKey=your-api-key' \
+  -d 'CampaignName=A/B Test: Subject Line Comparison'
+
+# Response: {"Success": true, "ErrorCode": 0, "CampaignID": 200}
+```
+
+```bash [Step 2: Create Email Variations]
+# --- Variation A ---
+# Create the first email
+curl -X POST https://example.com/api.php \
+  -d 'ResponseFormat=JSON' \
+  -d 'Command=Email.Create' \
+  -d 'APIKey=your-api-key'
+
+# Response: {"Success": true, "ErrorCode": 0, "EmailID": 301}
+
+# Set the content for Variation A
+curl -X POST https://example.com/api.php \
+  -d 'ResponseFormat=JSON' \
+  -d 'Command=Email.Update' \
+  -d 'APIKey=your-api-key' \
+  -d 'EmailID=301' \
+  -d 'ValidateScope=Campaign' \
+  -d 'EmailName=Variation A - Discount Subject' \
+  -d 'Subject=Save 50% Today Only!' \
+  -d 'FromName=My Store' \
+  -d 'FromEmail=deals@mystore.com' \
+  -d 'ReplyToName=My Store' \
+  -d 'ReplyToEmail=deals@mystore.com' \
+  -d 'Mode=Editor' \
+  -d 'HTMLContent=<html><body><h1>Half Price Sale!</h1><p>...</p><p><a href="%Link:Unsubscribe%">Unsubscribe</a></p></body></html>'
+
+# --- Variation B ---
+# Create the second email
+curl -X POST https://example.com/api.php \
+  -d 'ResponseFormat=JSON' \
+  -d 'Command=Email.Create' \
+  -d 'APIKey=your-api-key'
+
+# Response: {"Success": true, "ErrorCode": 0, "EmailID": 302}
+
+# Set the content for Variation B
+curl -X POST https://example.com/api.php \
+  -d 'ResponseFormat=JSON' \
+  -d 'Command=Email.Update' \
+  -d 'APIKey=your-api-key' \
+  -d 'EmailID=302' \
+  -d 'ValidateScope=Campaign' \
+  -d 'EmailName=Variation B - Urgency Subject' \
+  -d 'Subject=Last Chance: Sale Ends at Midnight' \
+  -d 'FromName=My Store' \
+  -d 'FromEmail=deals@mystore.com' \
+  -d 'ReplyToName=My Store' \
+  -d 'ReplyToEmail=deals@mystore.com' \
+  -d 'Mode=Editor' \
+  -d 'HTMLContent=<html><body><h1>Sale Ending Soon!</h1><p>...</p><p><a href="%Link:Unsubscribe%">Unsubscribe</a></p></body></html>'
+```
+
+```bash [Step 3: Configure & Send]
+# Update the campaign with A/B testing, audience, and schedule
+curl -X POST https://example.com/api.php \
+  -d 'ResponseFormat=JSON' \
+  -d 'Command=Campaign.Update' \
+  -d 'APIKey=your-api-key' \
+  -d 'CampaignID=200' \
+  -d 'CampaignStatus=Ready' \
+  -d 'ScheduleType=Immediate' \
+  -d 'RulesJsonBundle={"operator":"and","criteria":[{"list_id":1,"operator":"and","rules":[[{"type":"fields","field_id":"EmailAddress","operator":"is_not_empty","value":""}]]}]}' \
+  -d 'ABTesting[Variations][0][emailid]=301' \
+  -d 'ABTesting[Variations][0][weight]=1' \
+  -d 'ABTesting[Variations][1][emailid]=302' \
+  -d 'ABTesting[Variations][1][weight]=1'
+
+# Response: {"Success": true, "ErrorCode": 0}
+# With equal weights of 1, each variation receives ~50% of recipients.
+```
+
+```bash [Step 4: View Results]
+# Retrieve campaign with A/B test statistics
+curl -X POST https://example.com/api.php \
+  -d 'ResponseFormat=JSON' \
+  -d 'Command=Campaign.Get' \
+  -d 'APIKey=your-api-key' \
+  -d 'CampaignID=200' \
+  -d 'RetrieveStatistics=true' \
+  -d 'SplitABTestStatistics=true'
+
+# The response includes per-variation stats inside Campaign.Options.ABTesting.Variations:
+# Each variation object includes: EmailID, Weight, Distribution,
+# TotalRecipient, TotalSent, TotalFailed, UniqueOpens, UniqueClicks,
+# TotalRevenue, TotalUnsubscriptions
+```
+
+:::
+
+### Unequal Weight Distribution
+
+You can assign different weights to send more traffic to a preferred variation:
+
+```bash
+# 75% to Variation A, 25% to Variation B
+-d 'ABTesting[Variations][0][emailid]=301'
+-d 'ABTesting[Variations][0][weight]=3'
+-d 'ABTesting[Variations][1][emailid]=302'
+-d 'ABTesting[Variations][1][weight]=1'
+
+# Three variations: 50% / 25% / 25%
+-d 'ABTesting[Variations][0][emailid]=301'
+-d 'ABTesting[Variations][0][weight]=2'
+-d 'ABTesting[Variations][1][emailid]=302'
+-d 'ABTesting[Variations][1][weight]=1'
+-d 'ABTesting[Variations][2][emailid]=303'
+-d 'ABTesting[Variations][2][weight]=1'
+```
+
+### Retrieving A/B Test Statistics
+
+When retrieving a campaign with `SplitABTestStatistics=true`, the response includes per-variation performance metrics:
+
+```json
+{
+  "Success": true,
+  "Campaign": {
+    "CampaignID": 200,
+    "CampaignName": "A/B Test: Subject Line Comparison",
+    "CampaignStatus": "Sent",
+    "RelEmailID": 0,
+    "Options": {
+      "ABTesting": {
+        "Variations": [
+          {
+            "EmailID": 301,
+            "Weight": 1,
+            "Distribution": 50,
+            "TotalRecipient": 5000,
+            "TotalSent": 4980,
+            "TotalFailed": 20,
+            "UniqueOpens": 1200,
+            "UniqueClicks": 350,
+            "TotalRevenue": 15000,
+            "TotalUnsubscriptions": 5
+          },
+          {
+            "EmailID": 302,
+            "Weight": 1,
+            "Distribution": 50,
+            "TotalRecipient": 5000,
+            "TotalSent": 4975,
+            "TotalFailed": 25,
+            "UniqueOpens": 1450,
+            "UniqueClicks": 420,
+            "TotalRevenue": 18500,
+            "TotalUnsubscriptions": 3
+          }
+        ]
+      }
+    },
+    "OpenStatistics": { ... },
+    "ClickStatistics": { ... }
+  }
+}
+```
+
+When `SplitABTestStatistics=true`, the `OpenStatistics`, `ClickStatistics`, `ConversionStatistics`, and `UnsubscriptionStatistics` objects also include per-variation breakdowns grouped by `RelEmailID`.
+
+### Disabling A/B Testing
+
+To remove A/B testing from a campaign and revert to a single email, pass an empty `ABTesting` parameter and set `RelEmailID`:
+
+```bash
+curl -X POST https://example.com/api.php \
+  -d 'ResponseFormat=JSON' \
+  -d 'Command=Campaign.Update' \
+  -d 'APIKey=your-api-key' \
+  -d 'CampaignID=200' \
+  -d 'ABTesting=' \
+  -d 'RelEmailID=301'
+```
+
+### Copying an A/B Test Campaign
+
+Use `Campaign.Copy` to duplicate an A/B test campaign. All email variations are automatically duplicated with new Email IDs, and the A/B testing configuration is preserved in the copy.
+
+---
+
+## Create a Split Test (Legacy)
+
+::: warning Legacy API
+This endpoint uses the older split test system where a test portion of recipients receive different email variations, the campaign pauses to wait for results, then the winning variation is sent to the remaining audience. For the modern A/B testing approach where all recipients are distributed across variations simultaneously, see [Create an A/B Split Test Campaign](#create-an-a-b-split-test-campaign) above.
+:::
 
 <Badge type="info" text="POST" /> `/api.php` (legacy)
 
@@ -1084,8 +1312,8 @@ curl -X POST https://example.com/api.php \
 | APIKey        | String  | No       | API key for authentication                                     |
 | CampaignID    | Integer | Yes      | ID of the campaign to create split test for                    |
 | TestSize      | Integer | Yes      | Percentage of recipients to include in test (e.g., 20 for 20%) |
-| TestDuration  | Integer | Yes      | Duration of the test in hours before sending to remaining recipients |
-| Winner        | String  | Yes      | Winner selection criteria for the split test                   |
+| TestDuration  | Integer | Yes      | Duration in seconds to wait before selecting the winner        |
+| Winner        | String  | Yes      | Winner criteria: `Highest Open Rate` or `Most Unique Clicks`  |
 
 ::: code-group
 
@@ -1097,8 +1325,8 @@ curl -X POST https://example.com/api.php \
     "SessionID": "your-session-id",
     "CampaignID": 12345,
     "TestSize": 20,
-    "TestDuration": 24,
-    "Winner": "highest_open_rate"
+    "TestDuration": 86400,
+    "Winner": "Highest Open Rate"
   }'
 ```
 
