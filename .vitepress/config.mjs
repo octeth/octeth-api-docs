@@ -191,6 +191,7 @@ export default defineConfig({
                                 {text: 'Settings', link: '/v5.8.1/api-reference/settings'},
                                 {text: 'Event Tracking', link: '/v5.8.1/api-reference/eventtracking'},
                                 {text: 'System', link: '/v5.8.1/api-reference/system'},
+                                {text: 'Monitoring', link: '/v5.8.1/api-reference/monitoring'},
                                 {text: 'Users', link: '/v5.8.1/api-reference/users'},
                                 {text: 'Segments', link: '/v5.8.1/api-reference/segments'},
                                 {text: 'Subscribers', link: '/v5.8.1/api-reference/subscribers'},
