@@ -882,7 +882,7 @@ curl -X POST https://example.com/api/v1/admin.events.search \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
-Authenticates an administrator and creates a session. This endpoint supports both username/password authentication and Admin API Key authentication. Optional CAPTCHA and 2FA (Two-Factor Authentication) verification are supported based on system configuration.
+Authenticates an administrator and creates a session. This endpoint supports both username/password authentication and Admin API Key authentication. Optional 2FA (Two-Factor Authentication) verification is supported based on system configuration.
 
 **Request Body Parameters:**
 
@@ -891,10 +891,8 @@ Authenticates an administrator and creates a session. This endpoint supports bot
 | Command       | String  | Yes      | API command: `admin.login`                                                                       |
 | Username      | String  | Yes*     | Administrator username (*required unless using AdminAPIKey)                                      |
 | Password      | String  | Yes*     | Administrator password (*required unless using AdminAPIKey)                                      |
-| Captcha       | String  | Conditional | CAPTCHA code (required if ADMIN_CAPTCHA is enabled and DisableCaptcha is not set)            |
 | TFACode       | String  | Conditional | Two-Factor Authentication code (required if 2FA is enabled for the admin account)             |
 | AdminAPIKey   | String  | No       | Admin API Key for alternative authentication (bypasses username/password when valid)             |
-| DisableCaptcha| Boolean | No       | Set to true to disable CAPTCHA verification for this request                                     |
 | Disable2FA    | Boolean | No       | Set to true to disable 2FA verification for this request                                         |
 
 ::: code-group
@@ -968,8 +966,6 @@ curl -X POST https://example.com/api.php \
 username: Missing required parameter username
 password: Missing required parameter password
 3: Invalid username or password
-captcha: Missing required parameter captcha
-5: Invalid CAPTCHA code
 101: Invalid 2FA code
 ```
 

@@ -4543,28 +4543,6 @@ Select the language that will be used throughout Octeth's public-facing sections
 If you're running a multilingual operation, individual users can still choose their preferred language in their account settings. This setting only controls the default.
 :::
 
-**Admin CAPTCHA**
-
-Choose whether to display CAPTCHA verification on the administrator login screen.
-
-- **Enabled**: Shows CAPTCHA challenges when administrators attempt to log in, adding an extra layer of security against automated login attempts
-- **Disabled**: Allows administrators to log in without CAPTCHA verification
-
-::: warning
-Enabling CAPTCHA on the admin login screen significantly improves security by preventing brute-force login attempts. Unless you have a specific reason to disable it, keeping this enabled is highly recommended.
-:::
-
-**User CAPTCHA**
-
-Choose whether to display CAPTCHA verification on the user area login screen.
-
-- **Enabled**: Shows CAPTCHA challenges when users attempt to log in, protecting user accounts from automated attacks
-- **Disabled**: Allows users to log in without CAPTCHA verification
-
-::: info
-If you notice unusual login activity or suspect automated attacks on user accounts, enabling this setting can help protect your users' accounts.
-:::
-
 **User Password Reset**
 
 Control whether users can reset their passwords through the self-service password reset feature.
@@ -4774,7 +4752,7 @@ After configuring your preferences, click the **Update Preferences** button at t
 [[SCREENSHOT: Update Preferences button at bottom of form]]
 
 ::: tip
-Changes to security settings (like CAPTCHA and password reset options) take effect immediately for new login attempts. Users who are already logged in will not be affected until they log out and log back in.
+Changes to security settings (like password reset options) take effect immediately for new login attempts. Users who are already logged in will not be affected until they log out and log back in.
 :::
 
 ## Rebranding

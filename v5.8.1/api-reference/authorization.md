@@ -34,8 +34,7 @@ curl https://your-domain.com/api.php \
   -F "ResponseFormat=JSON" \
   -F "Command=User.Login" \
   -F "Username=user@example.com" \
-  -F "Password=password" \
-  -F "DisableCaptcha=true"
+  -F "Password=password"
 
 # Returns: {"SessionID": "abc123..."}
 
@@ -66,8 +65,7 @@ curl https://your-domain.com/api.php \
   -F "ResponseFormat=JSON" \
   -F "Command=User.Login" \
   -F "Username=user@example.com" \
-  -F "Password=password" \
-  -F "DisableCaptcha=true"
+  -F "Password=password"
 
 # With API key (skip password)
 curl https://your-domain.com/api.php \
@@ -81,8 +79,7 @@ curl https://your-domain.com/api.php \
   -F "Command=User.Login" \
   -F "Username=user@example.com" \
   -F "Password=password" \
-  -F "tfacode=123456" \
-  -F "DisableCaptcha=true"
+  -F "tfacode=123456"
 ```
 
 ### Admin Scope
@@ -102,8 +99,7 @@ curl https://your-domain.com/api.php \
   -F "ResponseFormat=JSON" \
   -F "Command=Admin.Login" \
   -F "Username=admin" \
-  -F "Password=admin-password" \
-  -F "DisableCaptcha=true"
+  -F "Password=admin-password"
 
 # With admin API key (if ADMIN_API_KEY configured)
 curl https://your-domain.com/api.php \
@@ -123,8 +119,7 @@ curl https://your-domain.com/api.php \
   -F "Command=User.Login" \
   -F "Username=user@example.com" \
   -F "Password=password" \
-  -F "tfacode=123456" \
-  -F "DisableCaptcha=true"
+  -F "tfacode=123456"
 
 # Using recovery code (disables 2FA)
 curl https://your-domain.com/api.php \
@@ -132,8 +127,7 @@ curl https://your-domain.com/api.php \
   -F "Command=User.Login" \
   -F "Username=user@example.com" \
   -F "Password=password" \
-  -F "tfarecoverycode=XXXX-XXXX-XXXX" \
-  -F "DisableCaptcha=true"
+  -F "tfarecoverycode=XXXX-XXXX-XXXX"
 ```
 
 ## Response Format
@@ -173,7 +167,6 @@ curl https://your-domain.com/api.php \
 | 1 | Missing username |
 | 2 | Missing password |
 | 3 | Invalid credentials |
-| 5 | Invalid captcha |
 | 6 | Invalid 2FA code |
 | 101 | 2FA required |
 
@@ -191,7 +184,6 @@ All login parameters are **lowercase**:
 | `adminapikey` | Admin API key | `XXXX-XXXX-XXXX` |
 | `tfacode` | 2FA verification code | `123456` |
 | `tfarecoverycode` | 2FA recovery code | `XXXX-XXXX-XXXX` |
-| `disablecaptcha` | Skip captcha validation | `true` |
 
 ### API Call Parameters
 

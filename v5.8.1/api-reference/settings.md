@@ -131,8 +131,6 @@ All parameters are optional. Only provide the settings you want to update.
 | PaymentTaxPercent | Number | No | Tax percentage for payments |
 | PaymentReceiptEmailSubject | String | No | Payment receipt email subject |
 | PaymentReceiptEmailMessage | String | No | Payment receipt email message |
-| AdminCaptcha | String | No | Enable admin captcha: `true` or `false` |
-| UserCaptcha | String | No | Enable user captcha: `true` or `false` |
 | EnabledPlugins | String | No | Comma-separated list of enabled plugins |
 | SendMethod | String | No | Email sending method: `SMTP`, `LocalMTA`, `PHPMail`, `PowerMTA`, or `SaveToDisk` |
 | SendMethodLocalMTAPath | String | No | Local MTA path |
@@ -226,7 +224,7 @@ curl -X POST https://example.com/api.php \
     "SendMethodSMTPUsername": "smtp-user@example.com",
     "SendMethodSMTPPassword": "smtp-password",
     "UserSignupEnabled": "true",
-    "AdminCaptcha": "true"
+    "UserSignupEnabled": "true"
   }'
 ```
 
@@ -247,7 +245,7 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 1: Invalid email address
-2: Invalid enum value (MediaUploadMethod, S3Enabled, LoadBalanceStatus, PMEUsageType, UserSignupEnabled, UserSignupReputation, AdminCaptcha, UserCaptcha, SendMethod, SendMethodSMTPSecure, SendMethodSMTPAuth, MailEngine, or RunCronInUserArea)
+2: Invalid enum value (MediaUploadMethod, S3Enabled, LoadBalanceStatus, PMEUsageType, UserSignupEnabled, UserSignupReputation, SendMethod, SendMethodSMTPSecure, SendMethodSMTPAuth, MailEngine, or RunCronInUserArea)
 3: PreviewMyEmail API connection error
 6: POP3/IMAP connection failed (check EmailSettingsErrorMessage for details)
 7: Default opt-in email body missing required %Link:Confirm% tag

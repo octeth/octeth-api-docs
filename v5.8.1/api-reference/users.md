@@ -124,8 +124,6 @@ curl -X POST https://example.com/api.php \
 | Username | String | Conditional | Username or email address (required if not using APIKey) |
 | Password | String | Conditional | User's password (required if not using APIKey) |
 | PasswordEncrypted | Boolean | No | Set to true if password is already MD5 hashed |
-| Captcha | String | Conditional | CAPTCHA value (required if CAPTCHA is enabled) |
-| DisableCaptcha | Boolean | No | Set to true to disable CAPTCHA requirement |
 | TFACode | String | Conditional | Two-factor authentication code (required if 2FA is enabled) |
 | TFARecoveryCode | String | No | Two-factor authentication recovery code |
 | Disable2FA | Boolean | No | Set to true to disable 2FA verification |
@@ -172,8 +170,6 @@ curl -X POST https://example.com/api.php \
 1: Missing Username parameter
 2: Missing Password parameter
 3: Invalid login information
-4: Missing Captcha parameter
-5: Invalid CAPTCHA value
 6: Invalid 2FA code or recovery code
 ```
 

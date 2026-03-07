@@ -37,7 +37,6 @@ Error codes can be single values or arrays:
 | 99998 | Invalid API key or session | Check your authentication credentials |
 | 99999 | Session expired | Re-authenticate to get a new session |
 | 3 | Invalid login credentials | Verify username and password |
-| 5 | Invalid captcha | Pass `DisableCaptcha=true` or valid captcha |
 | 6 | Invalid 2FA code | Check your authenticator app |
 | 101 | 2FA required | Include `tfacode` parameter |
 
@@ -292,7 +291,6 @@ function createSubscriber($email, $listId) {
 | 1 | Missing username |
 | 2 | Missing password |
 | 3 | Invalid credentials |
-| 5 | Invalid captcha |
 | 6 | Invalid 2FA code |
 
 ### List.Create
