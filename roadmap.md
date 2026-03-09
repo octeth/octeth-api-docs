@@ -9,7 +9,7 @@ description: Track Octeth version releases, development status, and upcoming fea
 This roadmap shows all past and upcoming Octeth releases. Use this page to track version history, plan upgrades, and see what's coming next.
 
 ::: tip Current Version
-The latest stable release is **v5.8.0** (released February 15th, 2026). [View changelog](./changelog) to see what's new.
+The latest stable release is **v5.8.1** (released March 8th, 2026). [View changelog](./changelog) to see what's new.
 :::
 
 ## Understanding Version Numbers
@@ -54,12 +54,13 @@ Each version has a status badge indicating its current state:
 | v5.7.2  |           <Badge type="tip" text="Released" />           | Dec 29th, 2025 | Multi-tag journey triggers, critical security fixes  |
 | v5.7.3  |           <Badge type="tip" text="Released" />           | Jan 3rd, 2026  | Stuck campaign detector, security hardening          |
 | v5.8.0  |           <Badge type="tip" text="Released" />           | Feb 15th, 2026 | Redesigned campaign creation, Caddy TLS, natural language segments |
-| v5.8.1  |    <Badge type="warning" text="Under Development" />     | March 2026     | TBA                                                  |
+| v5.8.1  |           <Badge type="tip" text="Released" />           | Mar 8th, 2026  | Email gateway performance, custom headers/footers, Prometheus monitoring |
+| v5.8.2  |    <Badge type="warning" text="Under Development" />     | Late March 2026 | TBA                                                  |
 | v5.9.0  | <Badge type="warning" text="Collecting User Feedback" /> | TBA            | TBA                                                  |
 | v6.0.0  | <Badge type="warning" text="Collecting User Feedback" /> | TBA            | Major architecture updates                           |
 
 ::: info What's Next?
-**v5.8.1** is currently under development with new features and improvements planned.
+**v5.8.2** is currently under development with new features and improvements planned.
 
 **v5.9.0** and **v6.0.0** are collecting user feedback to shape upcoming releases.
 :::

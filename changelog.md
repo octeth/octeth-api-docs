@@ -12,27 +12,56 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Changelog will be updated upon release.
+Released March 8, 2026 after 21 days of development. Performance-focused release featuring email gateway batch processing with Redis spool storage, custom email headers and footers at list and user group levels, Prometheus API monitoring, and new RabbitMQ management CLI commands.
 
 ### New Features
 
-- (To be documented)
+- **Email Gateway Performance Improvements** - Batch processing, Redis spool storage, caching, and inline MIME parsing for dramatically improved email delivery throughput
+- **List-Level Email Header/Footer** - Add custom email headers and footers at the mailing list level for per-list branding and compliance
+- **User Group Custom SMTP Headers** - Add custom SMTP email headers at the user group level for organization-wide header management
+- **API Response Time Histogram** - New Prometheus metric for monitoring API endpoint response times and performance trends
+- **RabbitMQ Queue Health Monitoring** - Queue health checks integrated into the system.health.check API endpoint
+- **Supervisor Process Scaling CLI** - New octeth.sh commands for scaling supervisor worker processes up and down
+- **RabbitMQ Queue Management CLI** - New CLI commands for listing, purging, and deleting RabbitMQ queues
+- **Elasticsearch Init CLI Command** - New elasticsearch:init CLI command replacing the admin UI initialization page
+- **Config Migration CLI Command** - New config:migrate command for migrating old configuration files to the new format with Docker support
 
 ### Enhancements
 
-- (To be documented)
+- **Personalization in Email Headers/Footers** - Personalization tags now processed in email headers and footers
+- **Email Header Insertion Order** - Corrected header insertion order so group-level headers wrap outermost
+- **Email Gateway Stress Test Tool** - New benchmark test with help documentation and uniqueness checks
+- **Increased File Descriptor Limits** - Raised nofile ulimits on reverse proxy containers to handle higher traffic volumes
+- **Proxy Header Improvements** - Added identification headers to HAProxy configuration for improved request routing
 
 ### Bug Fixes
 
-- (To be documented)
+- **Email Delivery Performance** - Improved email delivery reliability for journey send email actions and email gateway
+- **Scheduled Campaigns Sending Early** - Prevented future scheduled campaigns from sending immediately
+- **Campaign Search 500 Error** - Fixed server error when searching campaigns with plain text queries
+- **Journey Stats Not Updating** - Removed redundant dedup check that prevented journey statistics from updating in real time
+- **Database Connection Stability** - Improved database connection handling in long-running worker processes
+- **Webhook Chart Sorting** - Fixed webhook statistics chart x-axis to sort in ascending date order
+- **Checkbox State on Validation Error** - Preserved checkbox state on validation error in user group forms
+- **SSL Domain Verifier** - Fixed domain verification to check root domains and custom subdomains
+- **Configuration Constant Loading** - Fixed configuration constant loading for consistent access across the application
+- **Plugin Enable/Disable Toast** - Added toast notification when enabling or disabling plugins
+- **Missing Users Object in CLI** - Added missing users object loading in cli/opens.php
+- **Spam Check Resilience** - Improved error handling when spam checking services are unavailable
+- **PHP 8.x Compatibility** - Resolved MIME parser compatibility issues with PHP 8.x
 
 ### Security Patches
 
-- (To be documented)
+- **Input Sanitization** - Strengthened input escaping and validation across database queries and URL parameters
+- **HTTP Status Code Compliance** - Corrected rate limiting responses to use standard HTTP 429 status code
+- **API Metric Hardening** - Improved sanitization of metric labels to prevent unexpected data patterns
 
 ### Deprecations
 
-None
+- **Legacy CAPTCHA** - Removed legacy CAPTCHA functionality in favor of modern alternatives
+- **Web Cron Files** - Retired web-accessible cron files in favor of CLI-based scheduling
+- **Legacy Admin Pages** - Removed outdated admin UI pages replaced by CLI commands
+- **Database Optimization Queries** - Removed legacy table optimization queries from the codebase
 
 ## v5.8.0
 
