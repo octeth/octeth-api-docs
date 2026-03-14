@@ -1908,9 +1908,10 @@ curl -X POST https://example.com/api.php \
 | Command   | String | Yes      | API command: `subscriber.journey.trigger` |
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
+| JourneyID | Integer/Array | Yes | ID of the journey to trigger, or an array of journey IDs |
 | ListID    | Integer| Yes      | ID of the subscriber list             |
 | SubscriberID | Integer | Yes   | ID of the subscriber                  |
-| JourneyID | Integer| Yes      | ID of the journey to trigger          |
+| BypassJourneyStatusCheck | Boolean | No | If `true`, triggers the journey even if it is disabled. Default: `false` |
 
 ::: code-group
 
@@ -1920,34 +1921,65 @@ curl -X POST https://example.com/api/v1/subscriber.journey.trigger \
   -d '{
     "Command": "subscriber.journey.trigger",
     "SessionID": "your-session-id",
+    "JourneyID": 789,
     "ListID": 123,
-    "SubscriberID": 456,
-    "JourneyID": 789
+    "SubscriberID": 456
   }'
 ```
 
 ```json [Success Response]
 {
   "Success": true,
-  "ErrorCode": 0
+  "JourneyIDs": [789],
+  "ListID": 123,
+  "SubscriberID": 456
+}
+```
+
+```json [Partial Success Response]
+{
+  "Success": true,
+  "JourneyIDs": [789],
+  "ListID": 123,
+  "SubscriberID": 456,
+  "SkippedJourneys": [
+    {
+      "JourneyID": 790,
+      "Reason": "Journey is disabled"
+    }
+  ]
 }
 ```
 
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": 1
+  "Errors": [
+    {
+      "Code": 7,
+      "Message": "Journey not found"
+    }
+  ],
+  "SkippedJourneys": [
+    {
+      "JourneyID": 789,
+      "Reason": "Journey not found"
+    }
+  ]
 }
 ```
 
 ```txt [Error Codes]
 0: Success
-1: Missing ListID parameter
-2: Missing SubscriberID parameter
-3: Missing JourneyID parameter
-4: Invalid ListID
-5: Invalid SubscriberID
-6: Invalid JourneyID
+1: Missing JourneyID parameter
+2: Missing ListID parameter
+3: Missing SubscriberID parameter
+4: Invalid JourneyID parameter
+5: Invalid ListID parameter
+6: Invalid SubscriberID parameter
+7: Journey not found (all journeys skipped)
+8: List not found
+9: Subscriber not found
 ```
 
 :::
@@ -1970,9 +2002,9 @@ curl -X POST https://example.com/api/v1/subscriber.journey.trigger \
 | Command   | String | Yes      | API command: `subscriber.journey.remove` |
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
+| JourneyID | Integer/Array | Yes | ID of the journey, or an array of journey IDs |
 | ListID    | Integer| Yes      | ID of the subscriber list             |
 | SubscriberID | Integer | Yes   | ID of the subscriber                  |
-| JourneyID | Integer| Yes      | ID of the journey                     |
 
 ::: code-group
 
@@ -1982,34 +2014,65 @@ curl -X POST https://example.com/api/v1/subscriber.journey.remove \
   -d '{
     "Command": "subscriber.journey.remove",
     "SessionID": "your-session-id",
+    "JourneyID": 789,
     "ListID": 123,
-    "SubscriberID": 456,
-    "JourneyID": 789
+    "SubscriberID": 456
   }'
 ```
 
 ```json [Success Response]
 {
   "Success": true,
-  "ErrorCode": 0
+  "JourneyIDs": [789],
+  "ListID": 123,
+  "SubscriberID": 456
+}
+```
+
+```json [Partial Success Response]
+{
+  "Success": true,
+  "JourneyIDs": [789],
+  "ListID": 123,
+  "SubscriberID": 456,
+  "SkippedJourneys": [
+    {
+      "JourneyID": 790,
+      "Reason": "Journey not found"
+    }
+  ]
 }
 ```
 
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": 1
+  "Errors": [
+    {
+      "Code": 7,
+      "Message": "Journey not found"
+    }
+  ],
+  "SkippedJourneys": [
+    {
+      "JourneyID": 789,
+      "Reason": "Journey not found"
+    }
+  ]
 }
 ```
 
 ```txt [Error Codes]
 0: Success
-1: Missing ListID parameter
-2: Missing SubscriberID parameter
-3: Missing JourneyID parameter
-4: Invalid ListID
-5: Invalid SubscriberID
-6: Invalid JourneyID
+1: Missing JourneyID parameter
+2: Missing ListID parameter
+3: Missing SubscriberID parameter
+4: Invalid JourneyID parameter
+5: Invalid ListID parameter
+6: Invalid SubscriberID parameter
+7: Journey not found (all journeys skipped)
+8: List not found
+9: Subscriber not found
 ```
 
 :::
@@ -2032,9 +2095,9 @@ curl -X POST https://example.com/api/v1/subscriber.journey.remove \
 | Command   | String | Yes      | API command: `subscriber.journey.exit` |
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
+| JourneyID | Integer| Yes      | ID of the journey                     |
 | ListID    | Integer| Yes      | ID of the subscriber list             |
 | SubscriberID | Integer | Yes   | ID of the subscriber                  |
-| JourneyID | Integer| Yes      | ID of the journey                     |
 
 ::: code-group
 
@@ -2044,34 +2107,42 @@ curl -X POST https://example.com/api/v1/subscriber.journey.exit \
   -d '{
     "Command": "subscriber.journey.exit",
     "SessionID": "your-session-id",
+    "JourneyID": 789,
     "ListID": 123,
-    "SubscriberID": 456,
-    "JourneyID": 789
+    "SubscriberID": 456
   }'
 ```
 
 ```json [Success Response]
 {
-  "Success": true,
-  "ErrorCode": 0
+  "JourneyID": 789,
+  "ListID": 123,
+  "SubscriberID": 456
 }
 ```
 
 ```json [Error Response]
 {
-  "Success": false,
-  "ErrorCode": 1
+  "Errors": [
+    {
+      "Code": 7,
+      "Message": "Journey not found"
+    }
+  ]
 }
 ```
 
 ```txt [Error Codes]
 0: Success
-1: Missing ListID parameter
-2: Missing SubscriberID parameter
-3: Missing JourneyID parameter
-4: Invalid ListID
-5: Invalid SubscriberID
-6: Invalid JourneyID
+1: Missing JourneyID parameter
+2: Missing ListID parameter
+3: Missing SubscriberID parameter
+4: Invalid JourneyID parameter
+5: Invalid ListID parameter
+6: Invalid SubscriberID parameter
+7: Journey not found
+8: List not found
+9: Subscriber not found
 ```
 
 :::
@@ -2112,13 +2183,13 @@ curl -X POST https://example.com/api/v1/subscriber.journey.list \
 
 ```json [Success Response]
 {
-  "Success": true,
-  "ErrorCode": 0,
+  "ListID": 123,
+  "SubscriberID": 456,
   "Journeys": [
     {
       "JourneyID": 789,
       "JourneyName": "Welcome Series",
-      "Status": "Active",
+      "Status": "Enabled",
       "JoinedAt": "2025-01-01 12:00:00"
     }
   ]
@@ -2127,17 +2198,23 @@ curl -X POST https://example.com/api/v1/subscriber.journey.list \
 
 ```json [Error Response]
 {
-  "Success": false,
-  "ErrorCode": 1
+  "Errors": [
+    {
+      "Code": 8,
+      "Message": "List not found"
+    }
+  ]
 }
 ```
 
 ```txt [Error Codes]
 0: Success
-1: Missing ListID parameter
-2: Missing SubscriberID parameter
-3: Invalid ListID
-4: Invalid SubscriberID
+2: Missing ListID parameter
+3: Missing SubscriberID parameter
+5: Invalid ListID parameter
+6: Invalid SubscriberID parameter
+8: List not found
+9: Subscriber not found
 ```
 
 :::

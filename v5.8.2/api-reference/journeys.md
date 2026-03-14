@@ -137,20 +137,17 @@ curl -X POST https://example.com/api/v1/journey.clone \
 
 ```json [Success Response]
 {
-  "JourneyID": "789",
-  "JourneyName": "Welcome Series Copy",
-  "Trigger": "ListSubscription",
-  "TriggerParameters": {
-    "ListID": 123
+  "Journey": {
+    "JourneyID": "789",
+    "JourneyName": "Welcome Series Copy",
+    "Trigger": "ListSubscription",
+    "TriggerParameters": {
+      "ListID": 123
+    },
+    "Status": "Disabled",
+    "Notes": "Copy of journey Welcome Series"
   },
-  "Status": "Disabled",
-  "Notes": "Copy of journey Welcome Series",
-  "JourneyStats": {
-    "ActiveSubscribers": "0",
-    "TotalSubscribers": "0",
-    "AggregatedEmailActions": "0",
-    "AggregatedLast30DaysEmailActions": "0"
-  }
+  "Actions": []
 }
 ```
 
@@ -171,6 +168,96 @@ curl -X POST https://example.com/api/v1/journey.clone \
 2: Missing JourneyID parameter
 3: Journey not found
 4: Journey not cloned successfully
+```
+
+:::
+
+## Copy Journey to Another User
+
+<Badge type="info" text="POST" /> `/api/v1/journey.copytouser`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- This is an admin-only endpoint
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+::: info Resource Handling
+When copying a journey to another user:
+- **Email templates** referenced in `SendEmail` actions are automatically copied to the target user. Duplicate emails are only copied once.
+- **Other user-specific resources** (lists, tags, custom fields, sender domains, SMS gateways, journey references) are reset to `0`. The target user must configure these in the Journey Builder.
+- **Journey trigger** is always reset to `Manual`. The target user must configure the trigger.
+- **Journey status** is always set to `Disabled`.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                           |
+|-----------|---------|----------|---------------------------------------|
+| Command   | String  | Yes      | API command: `journey.copytouser`     |
+| AdminAPIKey | String | Yes     | Admin API key for authentication      |
+| JourneyID | Integer | Yes      | ID of the source journey to copy      |
+| SourceUserID | Integer | Yes   | ID of the user who owns the source journey |
+| TargetUserID | Integer | Yes   | ID of the user to copy the journey to |
+| NewJourneyName | String | No   | Name for the copied journey. Defaults to "Copy of {original name}" |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/journey.copytouser \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "journey.copytouser",
+    "AdminAPIKey": "your-admin-api-key",
+    "JourneyID": 456,
+    "SourceUserID": 1,
+    "TargetUserID": 2,
+    "NewJourneyName": "Welcome Series for User 2"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "JourneyID": 789,
+  "EmailsCopied": [
+    {
+      "SourceEmailID": 123,
+      "NewEmailID": 456
+    }
+  ],
+  "ResourcesReset": [
+    "SenderDomainID",
+    "TargetListID"
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "Errors": [
+    {
+      "Code": 9,
+      "Message": "Journey not found for source user"
+    }
+  ]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing JourneyID parameter
+2: Missing SourceUserID parameter
+3: Missing TargetUserID parameter
+4: Invalid JourneyID (non-numeric)
+5: Invalid SourceUserID (non-numeric)
+6: Invalid TargetUserID (non-numeric)
+7: Source user not found
+8: Target user not found
+9: Journey not found for source user
+10: Failed to create journey
 ```
 
 :::
@@ -670,7 +757,7 @@ curl -X GET https://example.com/api/v1/journey.disable \
 ## Update Journey Actions
 
 ::: tip Journey Action Types
-For detailed documentation of each action type and its parameters, see [Journey Actions](/v5.8.0/api-reference/journey-actions).
+For detailed documentation of each action type and its parameters, see [Journey Actions](/v5.8.2/api-reference/journey-actions).
 :::
 
 <Badge type="info" text="PATCH" /> `/api/v1/journey.actions`
@@ -854,7 +941,7 @@ curl -X PATCH https://example.com/api/v1/journey.actions.published \
 | JourneyID | Integer | Yes      | ID of the journey                     |
 | ActionID  | Integer | Yes      | ID of the action                      |
 | FilterJSON | String | No       | JSON array of filter items. Each item should be one of: `opened`, `clicked`, `converted`, `browser_viewed`, `forwarded`, `unsubscribed`, `bounced`, `spam_complaint` |
-| Operator  | String  | No       | Filter operator. Possible values: `AND`, `OR` |
+| Operator  | String  | No       | Filter operator. Possible values: `AND`, `OR`. Only used when `FilterJSON` is provided |
 | RecordsPerRequest | Integer | No | Number of records per page (default: 25) |
 | RecordsFrom | Integer | No     | Starting record offset (default: 0)   |
 | OrderField | String | No      | Field to order by (default: EmailAddress) |
@@ -911,8 +998,15 @@ curl -X GET https://example.com/api/v1/journey.action.subscribers \
 2: Missing ActionID parameter
 3: Invalid JourneyID parameter
 4: Invalid ActionID parameter
-5: Journey not found (invalid journey ID or FilterJSON)
-6: Action not found
+5: Invalid FilterJSON parameter (invalid JSON)
+6: Invalid FilterJSON value (unrecognized filter item)
+7: Invalid Operator value
 ```
+
+::: info
+After validation, the following business logic errors may also be returned:
+- `5`: Journey not found (HTTP 404)
+- `6`: Action not found (HTTP 404)
+:::
 
 :::

@@ -262,7 +262,7 @@ This action adds a tag to the subscriber.
 
 ## `RemoveTag`
 
-This action will halt all journeys except the current one for the subscriber.
+This action removes a tag from the subscriber.
 
 ```json
 {
@@ -342,7 +342,7 @@ This action will implement a decision with a criteria and set of actions for bot
 | Action           | Set this parameter to `Decision`.                                                                     |
 | Published        | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`       |
 | CriteriaOperator | It can be set as `and`, `or`. Default value is `and`                                                  |
-| Criteria         | The array of criteria. [Please refer to the criteria object below](/v5.8.0/api-reference/criteria-syntax).   |
+| Criteria         | The array of criteria. [Please refer to the criteria object below](/v5.8.2/api-reference/criteria-syntax).   |
 | Actions          | The array of action objects in case `True` and `False` cases.                                         |
 
 ## `SendEmail`
@@ -382,7 +382,7 @@ This action sends the email to the subscriber.
 | Parameter      | Description                                                                                                      |
 |----------------|------------------------------------------------------------------------------------------------------------------|
 | ActionID       | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
-| Action         | Set this parameter to `AddTag`.                                                                                  |
+| Action         | Set this parameter to `SendEmail`.                                                                               |
 | Published      | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                  |
 | EmailID        | The ID of the target email content.                                                                              |
 | SenderDomainID | The ID of the email gateway sender domain to use when sending the email.                                         |
@@ -390,3 +390,82 @@ This action sends the email to the subscriber.
 | Reply-To       | `ReplyTo.Name` and `ReplyTo.Email` parameters to set as `Reply-To` header of the email.                          |
 | CC             | The array with `Name` and `Email` parameters to set as `CC` header of the email.                                 |
 | BCC            | The array with `Name` and `Email` parameters to set as `BCC` header of the email.                                |
+
+## `SendSMS`
+
+This action sends an SMS message to the subscriber.
+
+```json
+{
+  "ActionID": 1,
+  "Action": "SendSMS",
+  "message": "Hello {{EmailAddress}}, check out our latest offers!",
+  "gateway_id": 5,
+  "sender_id": "+15551234567",
+  "skip_if_no_phone": true,
+  "max_retry_attempts": 3,
+  "priority": "normal",
+  "delivery_window_enabled": false,
+  "delivery_window": {
+    "timezone": "UTC",
+    "start_time": "09:00",
+    "end_time": "18:00",
+    "days": ["mon", "tue", "wed", "thu", "fri"]
+  },
+  "include_link": false,
+  "link_url": "",
+  "link_expiry_hours": 72,
+  "link_utm_source": "",
+  "link_utm_medium": "",
+  "link_utm_campaign": "",
+  "Notes": "Administrative note"
+}
+```
+
+| Parameter              | Description                                                                                                      |
+|------------------------|------------------------------------------------------------------------------------------------------------------|
+| ActionID               | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
+| Action                 | Set this parameter to `SendSMS`.                                                                                 |
+| Published              | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                  |
+| message                | The SMS message body. Supports personalization tags (e.g., `{{EmailAddress}}`).                                  |
+| gateway_id             | The ID of the SMS gateway to use for sending.                                                                    |
+| sender_id              | The sender ID or phone number to use. If not set, the gateway default is used.                                   |
+| skip_if_no_phone       | If `true`, skips the SMS if the subscriber has no phone number. Default: `true`.                                 |
+| max_retry_attempts     | Maximum number of retry attempts for failed deliveries. Default: system setting.                                 |
+| priority               | Delivery priority. Values: `normal`, `high`. Default: `normal`.                                                  |
+| delivery_window_enabled| If `true`, SMS will only be sent within the configured delivery window. Default: `false`.                        |
+| delivery_window        | Delivery window configuration object with `timezone` (string), `start_time` (HH:MM), `end_time` (HH:MM), and `days` (array of day abbreviations: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`). |
+| include_link           | If `true`, includes a trackable link in the SMS. Default: `false`.                                               |
+| link_url               | The URL to include when `include_link` is `true`.                                                                |
+| link_expiry_hours      | Number of hours before the tracking link expires. Default: `72`.                                                 |
+| link_utm_source        | UTM source parameter for link tracking.                                                                          |
+| link_utm_medium        | UTM medium parameter for link tracking.                                                                          |
+| link_utm_campaign      | UTM campaign parameter for link tracking.                                                                        |
+| Notes                  | The administrative note for the journey action.                                                                   |
+
+## `Debug`
+
+::: warning
+This action is for internal debugging and development purposes only. Do not use in production journeys.
+:::
+
+This action pauses the journey for a specified number of seconds and logs a debug message. It is intended for testing and troubleshooting journey execution.
+
+```json
+{
+  "ActionID": 1,
+  "Action": "Debug",
+  "SleepSeconds": 5,
+  "DebugMessage": "Checkpoint reached",
+  "Notes": "Administrative note"
+}
+```
+
+| Parameter    | Description                                                                                                      |
+|--------------|------------------------------------------------------------------------------------------------------------------|
+| ActionID     | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
+| Action       | Set this parameter to `Debug`.                                                                                   |
+| Published    | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                  |
+| SleepSeconds | Number of seconds to pause the journey execution. Default: `0`.                                                  |
+| DebugMessage | A debug message to log during execution.                                                                         |
+| Notes        | The administrative note for the journey action.                                                                   |
