@@ -186,6 +186,7 @@ export default defineConfig({
                                 {text: 'Re-Branding', link: '/v5.8.2/api-reference/rebranding'},
                                 {text: 'Clients', link: '/v5.8.2/api-reference/clients'},
                                 {text: 'Emails', link: '/v5.8.2/api-reference/emails'},
+                                {text: 'User Email Templates', link: '/v5.8.2/api-reference/user-email-templates'},
                                 {text: 'Media Library', link: '/v5.8.2/api-reference/medialibrary'},
                                 {text: 'SSO', link: '/v5.8.2/api-reference/sso'},
                                 {text: 'Suppression Lists', link: '/v5.8.2/api-reference/suppression'},
