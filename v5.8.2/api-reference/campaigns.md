@@ -540,6 +540,7 @@ curl -X POST https://example.com/api.php \
 23: Missing required fields in A/B variation (EmailID, Weight)
 24: Invalid EmailID or Weight in A/B variation
 25: A/B variation distribution percentage below 1%
+26: Auto-resend cannot be used with repeating (recursive) campaigns
 ```
 
 :::
