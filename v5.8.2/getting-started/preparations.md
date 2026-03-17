@@ -37,17 +37,17 @@ If you plan to use the Link Proxy add-on, you'll need a separate server:
 
 Download the latest Octeth package from the [Octeth Client Area](https://my.octeth.com/):
 
-- File format: ZIP archive (e.g., `oempro-rel-v5.7.3.zip`)
+- File format: ZIP archive (e.g., `oempro-rel-v5.8.2.zip`)
 - Size: Approximately 200-300 MB
-- Version: 5.7.3 or newer
+- Version: 5.8.2 or newer
 
-### License File
+### License Key
 
-Obtain a valid license file from the [Octeth Client Area](https://my.octeth.com/):
+Obtain a valid license key from the [Octeth Client Area](https://my.octeth.com/):
 
-- File: `license.dat`
+- Format: A string like `XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX`
 - Must be active and not expired
-- Required for installation
+- You will be prompted to enter it during installation (can also be added later in `.oempro_env`)
 
 ## Additional Requirements
 
@@ -86,7 +86,7 @@ Once you have all prerequisites ready:
 Before proceeding, ensure you have:
 - [ ] Ubuntu 24.04 server(s) with root access
 - [ ] Octeth software package downloaded
-- [ ] Valid license file obtained
+- [ ] Valid license key obtained
 - [ ] Domain name ready (optional)
 - [ ] SMTP server access configured
 :::

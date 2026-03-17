@@ -279,6 +279,6 @@ Success response confirms authentication is working:
 
 ## Next Steps
 
-- [API Reference →](/v5.7.2/api-reference/subscribers)
-- [Error Handling →](/v5.7.2/error-handling)
-- [Getting Started →](/v5.7.2/getting-started)
+- [API Reference →](/v5.8.2/api-reference/subscribers)
+- [Error Handling →](/v5.8.2/error-handling)
+- [Getting Started →](/v5.8.2/getting-started)

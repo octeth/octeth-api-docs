@@ -10,17 +10,27 @@ This guide covers common issues you may encounter when setting up or running Oct
 
 ### Installation Fails with "License Invalid" Error
 
-**Problem:** The installer rejects your license key
+**Problem:** The system rejects your license key
+
+**Check License Key:**
+```bash
+grep LICENSE_KEY /opt/octeth/.oempro_env
+```
 
 **Solutions:**
-1. Verify the license file is correctly formatted:
+1. Verify the license key is correctly set in `/opt/octeth/.oempro_env` (no extra spaces or quotes)
+2. Log in to the [Octeth Client Area](https://my.octeth.com/) and copy a fresh license key
+3. Update the `LICENSE_KEY` value in `.oempro_env`:
    ```bash
-   cat /opt/octeth/data/license.dat
+   vi /opt/octeth/.oempro_env
+   # Set LICENSE_KEY=your-license-key
    ```
-2. Ensure there are no extra spaces or line breaks
-3. Download a fresh license file from [Octeth Client Area](https://my.octeth.com/)
 4. Check that your license is active and not expired
-5. Contact support if the issue persists
+5. Restart containers after updating:
+   ```bash
+   /opt/octeth/cli/octeth.sh docker:restart
+   ```
+6. Contact support if the issue persists
 
 ### Docker Services Won't Start
 

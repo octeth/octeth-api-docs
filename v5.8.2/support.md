@@ -24,10 +24,10 @@ Browse our knowledge base for guides, tutorials, and FAQs:
 
 ### 1. Check the Documentation
 
-- [Getting Started Guide](/v5.7.2/getting-started) - Quick setup and first API calls
-- [API Reference](/v5.7.2/api-reference/subscribers) - Complete endpoint documentation
-- [Error Handling](/v5.7.2/error-handling) - Common error codes and solutions
-- [Authorization](/v5.7.2/authorization) - Authentication methods and troubleshooting
+- [Getting Started Guide](/v5.8.2/getting-started) - Quick setup and first API calls
+- [API Reference](/v5.8.2/api-reference/subscribers) - Complete endpoint documentation
+- [Error Handling](/v5.8.2/error-handling) - Common error codes and solutions
+- [Authorization](/v5.8.2/authorization) - Authentication methods and troubleshooting
 
 ### 2. Verify Your Setup
 

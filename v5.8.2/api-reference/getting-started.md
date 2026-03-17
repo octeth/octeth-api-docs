@@ -339,16 +339,16 @@ const subscriber = await api.call('Subscriber.Create', {
 
 ## Next steps
 
-- **[API Reference →](/v5.7.3/api-reference/subscribers)**
+- **[API Reference →](/v5.8.2/api-reference/subscribers)**
   Complete documentation for all endpoints
 
-- **[Authentication →](/v5.7.3/authorization)**
+- **[Authentication →](/v5.8.2/authorization)**
   API keys, sessions, and 2FA
 
-- **[Error Handling →](/v5.7.3/error-handling)**
+- **[Error Handling →](/v5.8.2/error-handling)**
   Error codes and troubleshooting
 
-- **[Advanced Filtering →](/v5.7.3/api-reference/criteria-syntax)**
+- **[Advanced Filtering →](/v5.8.2/api-reference/criteria-syntax)**
   RulesJson syntax for segmentation
 
 ## Support

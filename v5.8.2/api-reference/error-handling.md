@@ -403,6 +403,6 @@ def api_call_with_logging(command, data):
 
 ## Next Steps
 
-- [Getting Started →](/v5.7.2/getting-started)
-- [Authorization →](/v5.7.2/authorization)
-- [API Reference →](/v5.7.2/api-reference/subscribers)
+- [Getting Started →](/v5.8.2/getting-started)
+- [Authorization →](/v5.8.2/authorization)
+- [API Reference →](/v5.8.2/api-reference/subscribers)

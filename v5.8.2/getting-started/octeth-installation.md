@@ -8,33 +8,13 @@ On the server, create the Octeth directory and unzip the Octeth package:
 
 ```bash
 mkdir -p /opt/octeth
-unzip /opt/oempro-rel-v5.7.3.zip -d /opt/octeth
+unzip /opt/oempro-rel-v5.8.2.zip -d /opt/octeth
 ```
 
 Make installation tool executable:
 
 ```bash
 chmod +x /opt/octeth/cli/octeth.sh
-```
-
-Create `license.dat` file which can be created and downloaded from [Octeth Client Area](https://my.octeth.com/)
-
-```bash
-tee /opt/octeth/data/license.dat > /dev/null << 'EOF'
--------------------------------BEGIN LICENSE KEY--------------------------------
-3sebEsyWGsrakl0SXVSYjN1M2NJTEliR2VB***********************YbWxxNnVsbWNXOG9teHNjM
-1dvcTRGb2liU0VsRmkwMW41NmdXT0ZsY1YxbFpUT2pYZUhmc0c2Zm5kM3FwV0R3YWUrcysyc2o2bndXM
-0hDcUlHTGJZMmdkMzk3WklKZm**********WW9TYWlJaVplblpxbUpCMWdJZG1wNUtNcFplemhwcVBjN
-ng3akp0M2VIQ2R0RzF0Ylp5R203SzR2TE8wYVgrdmdYTncxSkNoYlZlUHBiNmN4SmpMd1hGdW43T1FkW
-Uc2ZTNlT2szaml4czY4dEhoL3VZRjFlb0dTcEcrUWNvdDVyM1YxZXE1bmI0aVFpTXB0bko1OWFKeWN0S
-lRJeXFUTXR0bC91TUc**********UdoMnFMdWFDVHJjN2Z5ZS9Md205dDVvaDRqR3hXbXN1a21LU20zN
-GF2dWEzRnFZcW91S3RwZlo2Ymc1cHVxSHgxZTRGemVNZXZzWitiM2FtcHA3dTJzN25rVnE2NnA0V0EwY
-mVBZUhhQWFjUEFpcVdseTdE***********************************NTExvTlM4M25hN3ZjaXUwc
-nRTZExlSGVJUFJwcTJlazQrcXc2YTh3S**************************yaDZmbldNbXBTUWliYXZvc
-2JFM1ZWd3RYNTJnWE5WbE1HSmFuQ2J3cFNPbDZDUXA1TnY1cE9paldpaXJiUzh2R2lDNDYxb2luNTdwT
-XFQbEtQTmZvaWl0NXlsVmFiZGZYdUVXWVZaaDRSbWpZUGlyZz09
---------------------------------END LICENSE KEY---------------------------------
-EOF
 ```
 
 Run installation tool:
@@ -51,6 +31,7 @@ The installer will check server requirements and then ask you a few questions:
 - Username: admin
 - Password: YourSecurePassword123
 - EULA Agree: Y
+- License Key: XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX (can be left blank and added later in `.oempro_env`)
 
 Once you confirm, installation utility will start installing Octeth on your server.
 
