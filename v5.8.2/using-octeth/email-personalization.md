@@ -98,10 +98,13 @@ Subscriber tags insert data from the recipient's subscriber record. These are th
 | Tag | Description |
 |---|---|
 | <code v-pre>{{ Subscriber:EmailAddress }}</code> | The subscriber's email address. |
+| <code v-pre>{{ Subscriber:FirstName }}</code> | The subscriber's first name. |
+| <code v-pre>{{ Subscriber:LastName }}</code> | The subscriber's last name. |
+| <code v-pre>{{ Subscriber:SubscriberID }}</code> | The unique numeric identifier for the subscriber. |
+| <code v-pre>{{ Subscriber:Status }}</code> | The subscriber's subscription status. |
 | <code v-pre>{{ Subscriber:SubscriptionDate }}</code> | The date the subscriber was added to the list. |
 | <code v-pre>{{ Subscriber:SubscriptionIP }}</code> | The IP address recorded when the subscriber joined. |
 | <code v-pre>{{ Subscriber:OptInDate }}</code> | The date the subscriber confirmed their subscription (double opt-in). |
-| <code v-pre>{{ Subscriber:SubscriberID }}</code> | The unique numeric identifier for the subscriber. |
 | <code v-pre>{{ Subscriber:HashedSubscriberID }}</code> | An MD5 hash of the subscriber ID, useful for generating unique URLs. |
 
 ### Custom Field Tags
@@ -121,32 +124,52 @@ Hi {{ Subscriber:FirstName }}, thank you for being a subscriber since {{ Subscri
 Assign a meaningful merge tag alias to every custom field you plan to use in emails. A tag like <code v-pre>{{ Subscriber:FirstName }}</code> is much easier to read than <code v-pre>{{ Subscriber:CustomField42 }}</code>.
 :::
 
+### Using Subscriber Tags in URLs
+
+When placing subscriber data inside a link URL, use the `urlEncode` helper to prevent broken links caused by special characters like `@`, `+`, and `&`:
+
+```html
+<a href="https://example.com/profile?email={{urlEncode Subscriber:EmailAddress}}">
+  View Profile
+</a>
+```
+
+::: warning
+Without URL encoding, special characters in subscriber data can break your links. Always use `urlEncode` when inserting personalization tags into URL parameters.
+:::
+
 ## User (Sender) Tags
 
 User tags insert data from the account that owns the subscriber list. These are useful for including sender information such as company name and contact details.
 
+::: info
+User tags use the legacy percent syntax only. The modern handlebars <code v-pre>{{ }}</code> syntax is not supported for User tags.
+:::
+
 | Tag | Description |
 |---|---|
-| <code v-pre>{{ User:FirstName }}</code> | The account owner's first name. |
-| <code v-pre>{{ User:LastName }}</code> | The account owner's last name. |
-| <code v-pre>{{ User:EmailAddress }}</code> | The account owner's email address. |
-| <code v-pre>{{ User:CompanyName }}</code> | The company name. |
-| <code v-pre>{{ User:Website }}</code> | The company website URL. |
-| <code v-pre>{{ User:Street }}</code> | Street address. |
-| <code v-pre>{{ User:City }}</code> | City. |
-| <code v-pre>{{ User:State }}</code> | State or province. |
-| <code v-pre>{{ User:Zip }}</code> | Postal or ZIP code. |
-| <code v-pre>{{ User:Country }}</code> | Country. |
-| <code v-pre>{{ User:Phone }}</code> | Phone number. |
-| <code v-pre>{{ User:Fax }}</code> | Fax number. |
-| <code v-pre>{{ User:TimeZone }}</code> | The account's time zone. |
+| `%User:FirstName%` | The account owner's first name. |
+| `%User:LastName%` | The account owner's last name. |
+| `%User:EmailAddress%` | The account owner's email address. |
+| `%User:CompanyName%` | The company name. |
+| `%User:Website%` | The company website URL. |
+| `%User:Street%` | Street address. |
+| `%User:City%` | City. |
+| `%User:State%` | State or province. |
+| `%User:Zip%` | Postal or ZIP code. |
+| `%User:Country%` | Country. |
+| `%User:Phone%` | Phone number. |
+| `%User:Fax%` | Fax number. |
+| `%User:TimeZone%` | The account's time zone. |
 
 **Example — adding a physical mailing address to comply with anti-spam regulations:**
 
-```
-{{ User:CompanyName }}
-{{ User:Street }}, {{ User:City }}, {{ User:State }} {{ User:Zip }}
-{{ User:Country }}
+```html
+<p style="font-size: 12px; color: #999;">
+  %User:CompanyName%<br>
+  %User:Street%, %User:City%, %User:State% %User:Zip%<br>
+  %User:Country%
+</p>
 ```
 
 ## List Tags
@@ -265,8 +288,8 @@ Helper functions transform the output of a personalization tag. Place the helper
 
 | Helper | Description | Example Input | Example Output |
 |---|---|---|---|
-| `uppercase` | Converts to uppercase. | `sarah connor` | `SARAH CONNOR` |
-| `lowercase` | Converts to lowercase. | `SARAH CONNOR` | `sarah connor` |
+| `uppercase` / `upcase` | Converts to uppercase. | `sarah connor` | `SARAH CONNOR` |
+| `lowercase` / `downcase` | Converts to lowercase. | `SARAH CONNOR` | `sarah connor` |
 | `capitalize` | Capitalizes the first letter. | `sarah connor` | `Sarah connor` |
 | `capitalizeAll` | Capitalizes the first letter of each word. | `sarah connor` | `Sarah Connor` |
 | `titleize` | Same as `capitalizeAll`. | `sarah connor` | `Sarah Connor` |
@@ -396,25 +419,47 @@ Conditional content lets you show or hide sections of your email based on subscr
 
 ### Modern Conditional Syntax
 
-Use the `{{ if }}` block to conditionally display content:
+Use the `{{ if }}` block to conditionally display content. The following comparison operators are supported:
+
+| Operator | Meaning | Example |
+|---|---|---|
+| `=` | Equals | `Subscriber:Country=United States` |
+| `!=` | Not equals | `Subscriber:Country!=US` |
+| `>` | Greater than | `Subscriber:PurchaseCount>5` |
+| `<` | Less than | `Subscriber:Age<30` |
+| `>=` | Greater than or equal | `Subscriber:Score>=100` |
+| `<=` | Less than or equal | `Subscriber:OrderTotal<=50` |
+| `<>` | Not empty (no value after operator) | `Subscriber:FirstName<>` |
+
+**Checking if a field is not empty:**
 
 ```
-{{ if Subscriber:City }}
-  We have a local event in {{ Subscriber:City }} coming up!
+{{ if Subscriber:FirstName<> }}
+  Hi {{ Subscriber:FirstName }}, great to see you!
 {{ else }}
-  Check out our upcoming events near you!
+  Hi there, great to see you!
 {{ endif }}
 ```
 
-**Comparing values:**
+The `<>` operator checks whether the field has a value. It does not compare against a specific value.
 
-Use the `<>` operator to compare a field against a specific value:
+**Comparing against a specific value:**
+
+Use the `=` operator to check if a field matches a specific value:
 
 ```
-{{ if Subscriber:Country<>United States }}
+{{ if Subscriber:Country=United States }}
   Free shipping on all US orders this week!
 {{ else }}
   International shipping rates apply.
+{{ endif }}
+```
+
+**Numeric comparisons:**
+
+```
+{{ if Subscriber:PurchaseCount>5 }}
+  Thank you for being a loyal customer!
 {{ endif }}
 ```
 
@@ -457,7 +502,7 @@ The `[ELSE]` block is optional. If omitted, nothing is displayed when the expres
 ```
 
 ```
-{{ if Subscriber:MembershipLevel<>Gold }}
+{{ if Subscriber:MembershipLevel=Gold }}
   As a Gold member, you get exclusive early access.
 {{ else }}
   Upgrade to Gold for early access to all new products.
@@ -560,6 +605,27 @@ You can include subscriber personalization tags in the remote content URL. Subsc
 Remote content URLs must be accessible from the Octeth server at send time. If the URL is unreachable or returns an error, the tag is replaced with an empty string.
 :::
 
+## Other Special Tags
+
+| Tag | Description |
+|---|---|
+| `%MFROMDomain%` | The domain of the envelope sender (MAIL FROM address). Useful for inserting domain-specific content or tracking parameters. |
+
+## Pre-Header Text
+
+Pre-header text is the preview snippet that appears in email clients (Gmail, Outlook, Apple Mail) next to or below the subject line. It is configured in the email campaign settings, not as a merge tag in the body.
+
+The system automatically:
+
+- Inserts the pre-header as a hidden `<div>` element after the `<body>` tag.
+- Pads the text with invisible characters to prevent email clients from pulling in body content as the preview.
+
+Pre-header text supports all the same personalization tags as the email body, including subscriber tags, fallback values, and helper functions.
+
+::: tip
+Keep pre-header text under 100 characters for best display across email clients. Longer text may be truncated differently by each email client.
+:::
+
 ## HTML Encoding Behavior
 
 Understanding when to use double braces versus triple braces is important for rendering your content correctly.
@@ -606,6 +672,78 @@ Order ID: {{ Event:Property:orderId }}
 Event data tags are only available in journey email templates. They are not available in regular campaigns or autoresponders.
 :::
 
+## Common Mistakes
+
+### Missing Closing Braces
+
+```
+<!-- Wrong -->
+{{ Subscriber:FirstName }
+
+<!-- Correct -->
+{{ Subscriber:FirstName }}
+```
+
+### Spaces in Percent Tags
+
+Percent tags must not contain spaces around the tag name:
+
+```
+<!-- Wrong — spaces break percent tags -->
+% Subscriber:FirstName %
+
+<!-- Correct -->
+%Subscriber:FirstName%
+```
+
+### Fallback Value Without Quotes
+
+Fallback values must be enclosed in double quotes:
+
+```
+<!-- Wrong -->
+{{ Subscriber:FirstName | Friend }}
+
+<!-- Correct -->
+{{ Subscriber:FirstName | "Friend" }}
+```
+
+### Using Double Braces for HTML Content
+
+Double braces HTML-encode the output, which turns HTML tags into visible text. Use triple braces when the field contains HTML:
+
+```
+<!-- Wrong — HTML will be encoded and displayed as text -->
+{{ Subscriber:HTMLSignature }}
+
+<!-- Correct — triple braces for raw HTML -->
+{{{ Subscriber:HTMLSignature }}}
+```
+
+### Forgetting URL Encoding in Links
+
+Special characters in subscriber data (like `@` and `&`) can break URLs if not encoded:
+
+```html
+<!-- Wrong — will break if the email contains special characters -->
+<a href="https://example.com?email=%Subscriber:EmailAddress%">
+
+<!-- Correct -->
+<a href="https://example.com?email={{urlEncode Subscriber:EmailAddress}}">
+```
+
+### Spaces in Date Format Strings
+
+The `dateFormat` helper does not allow spaces in the format string. Use underscores instead:
+
+```
+<!-- Wrong — spaces not allowed in dateFormat -->
+{{ dateFormat-F j, Y Subscriber:JoinDate }}
+
+<!-- Correct — use underscores for spaces -->
+{{ dateFormat-F_j,_Y Subscriber:JoinDate }}
+```
+
 ## Tips and Best Practices
 
 ::: tip Always Use Fallback Values
@@ -626,6 +764,26 @@ If subscriber data is entered inconsistently (mixed case names, for example), us
 
 ::: tip Set Merge Tag Aliases on Custom Fields
 When creating [custom fields](./custom-fields), always set a merge tag alias. Writing <code v-pre>{{ Subscriber:FirstName }}</code> is clearer and less error-prone than <code v-pre>{{ Subscriber:CustomField12 }}</code>.
+:::
+
+::: tip URL-Encode Values in Links
+When inserting personalization tags into URL parameters, always use the `urlEncode` helper to prevent broken links:
+```html
+<!-- Wrong -->
+<a href="https://example.com?email={{ Subscriber:EmailAddress }}">
+
+<!-- Correct -->
+<a href="https://example.com?email={{ urlEncode Subscriber:EmailAddress }}">
+```
+:::
+
+::: tip Combine Spinners with Personalization
+Use content spinning together with personalization tags for natural, varied emails:
+```
+[[Hey|Hi|Hello]] {{ capitalize Subscriber:FirstName | "there" }},
+[[We noticed|We saw|Looks like]] you've been
+[[checking out|browsing|exploring]] our [[latest|newest|recent]] products.
+```
 :::
 
 ::: tip Include Required Footer Links
