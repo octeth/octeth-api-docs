@@ -443,8 +443,8 @@ curl -X POST https://example.com/api.php \
 | CampaignStatusReason         | String  | No       | Reason for status change                                          |
 | RelEmailID                   | Integer | No       | ID of the email content to use                                    |
 | ScheduleType                 | String  | No       | Schedule type (Not Scheduled, Immediate, Future, Recursive)       |
-| SendDate                     | String  | No       | Send date (YYYY-MM-DD format) - required if ScheduleType=Future  |
-| SendTime                     | String  | No       | Send time (HH:MM:SS format) - required if ScheduleType=Future    |
+| SendDate                     | String  | No       | Send date (YYYY-MM-DD format) - required if ScheduleType=Future. Must be a valid future date (not `0000-00-00`) |
+| SendTime                     | String  | No       | Send time (HH:MM:SS format) - required if ScheduleType=Future. Combined with SendDate and SendTimeZone, the scheduled datetime must be in the future |
 | SendTimeZone                 | String  | No       | Timezone for scheduled send                                       |
 | ScheduleRecDaysOfWeek        | String  | No       | Days of week for recurring campaigns                              |
 | ScheduleRecDaysOfMonth       | String  | No       | Days of month for recurring campaigns                             |
@@ -522,7 +522,7 @@ curl -X POST https://example.com/api.php \
 3: Invalid campaign status
 4: Email not found or doesn't belong to user
 5: Invalid schedule type
-6: Missing SendDate for Future schedule
+6: Missing or invalid SendDate for Future schedule (empty, null, or 0000-00-00)
 7: Missing SendTime for Future schedule
 8: Missing ScheduleRecDaysOfWeek or ScheduleRecDaysOfMonth for Recursive schedule
 9: Missing ScheduleRecMonths for Recursive schedule
@@ -541,6 +541,7 @@ curl -X POST https://example.com/api.php \
 24: Invalid EmailID or Weight in A/B variation
 25: A/B variation distribution percentage below 1%
 26: Auto-resend cannot be used with repeating (recursive) campaigns
+27: Scheduled send date and time is in the past
 ```
 
 :::
