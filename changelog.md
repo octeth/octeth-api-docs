@@ -12,27 +12,52 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Changelog will be updated upon release.
+Released March 21, 2026 after 12 days of development. Stability and usability release featuring polished campaign management UX, a terminal-based monitoring dashboard for system admins, comprehensive recurring campaign fixes, and improved send engine reliability.
 
 ### New Features
 
-- (To be documented)
+- **Campaign Post-Save UX** - Success feedback toasts for all save actions, smart redirects to campaign overview for committed campaigns, and schedule countdown timer on the campaign dashboard
+- **Terminal Monitoring Dashboard** - Real-time service status monitoring, queue health, and scrollable log viewer for system administrators
+- **Per-User Revenue Tracking Toggle** - Admins can disable revenue tracking parameters in email links on a per-user basis
+- **List Filter on Activity Chart** - Filter campaign overview activity chart by mailing list for granular analysis
+- **Email Template Management API** - New API endpoints for creating, reading, updating, and deleting user email templates
+- **Journey Copy-to-User API** - Copy journeys between user accounts via admin API endpoint
+- **Health Check Timing** - Per-check timing output in health check API and CLI for performance diagnostics
+- **Project Configuration Init** - New CLI command to create project-specific configuration directories
+- **Admin Password Change CLI** - Secure password management via CLI command
 
 ### Enhancements
 
-- (To be documented)
+- **Modern Merge Tag Syntax** - Handlebar-style merge tags replace legacy syntax across the UI, with parser support for custom email headers
+- **Custom Email Header Preservation** - Custom headers preserved across both API and SMTP delivery paths
+- **Safer Upgrade Process** - Built-in backup protection replaces aggressive file synchronization during upgrades
+- **Increased Local Development Capacity** - Higher message limits for local development email testing
 
 ### Bug Fixes
 
-- (To be documented)
+- **Campaign Counter Accuracy** - Improved counter recalculation to prevent drift after retry operations
+- **Scheduled Campaign Timing** - Prevented campaigns with invalid schedule data from bypassing their intended send time
+- **Recurring Campaign Reliability** - Eight targeted fixes addressing scheduling, cloning, delivery, and state management for recurring campaigns
+- **Send Engine Worker Management** - Improved worker allocation, more resilient process spawning, and dynamic container discovery
+- **Queue Processing Stability** - Resolved exchange configuration mismatches that could cause queue processing errors
+- **Global Custom Fields in Journeys** - Fixed global custom fields missing from Journey Decision node and subscriber detail page
+- **Advanced Targeting Estimates** - Recalculate estimated recipients when advanced targeting operators change
+- **Tracking URL Reliability** - Improved tracking URL generation in opt-in confirmation emails
+- **Log File Permissions** - Resolved log file permission errors in containerized environments
+- **Database Migration Stability** - Fixed errors in migrations and cache operations
+- **Legacy Segment Compatibility** - Allow saving segments that use the older rule format
+- **Campaign Events Query Accuracy** - Properly grouped conditions in campaign events query builder
+- **Email Attachment Handling** - Fixed empty attachment content in file parsing
+- **UTF-8 Data Integrity** - Script improvements for repairing double-encoded characters, with emoji and special character support
 
 ### Security Patches
 
-- (To be documented)
+- **Password Handling** - Improved password passing to prevent process list exposure
+- **Input Validation** - Strengthened input validation across database operations
 
 ### Deprecations
 
-None
+- **Legacy SMS Code** - Removed unused legacy SMS code paths
 
 ## v5.8.1
 
