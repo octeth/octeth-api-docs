@@ -9,10 +9,10 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /v5.8.2/getting-started
+      link: /v5.8.3/getting-started
     - theme: alt
       text: API Reference
-      link: /v5.8.2/api-reference/administrators
+      link: /v5.8.3/api-reference/administrators
 ---
 
 <script setup>
@@ -25,7 +25,7 @@ onMounted(() => {
 
   // Find the current version from config
   const versionNav = theme.value.nav?.find(item => item.items?.some(i => i.text.includes('Current')))
-  let currentVersionPath = '/v5.8.2/' // Fallback
+  let currentVersionPath = '/v5.8.3/' // Fallback
 
   if (versionNav?.items) {
     const currentItem = versionNav.items.find(item => item.text.includes('(Current)'))
