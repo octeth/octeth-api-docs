@@ -1765,3 +1765,131 @@ curl -X GET "https://example.com/api/v1/admin.database.stats?APIKey=your-admin-a
 
 :::
 
+## List Stuck Journey Entries
+
+<Badge type="info" text="GET" /> `/api/v1/admin.journeys.stuck`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns a list of journeys that have stuck entries. An entry is considered "stuck" when a journey worker picked it up (set `ActionUpdatedAt`) but the worker process was terminated before completing the action, leaving `SnoozedUntil` as `NULL`. Stuck entries are identified as those with `ActionUpdatedAt` older than 5 minutes and `SnoozedUntil` being `NULL`.
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `admin.journeys.stuck`   |
+| SessionID | String | No       | Session ID obtained from login        |
+| APIKey    | String | No       | API key for authentication            |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET https://example.com/api/v1/admin.journeys.stuck \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.journeys.stuck",
+    "APIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalStuckEntries": 15,
+  "Journeys": [
+    {
+      "JourneyID": 42,
+      "JourneyName": "Welcome Series",
+      "RelUserID": 1,
+      "StuckCount": 10
+    },
+    {
+      "JourneyID": 87,
+      "JourneyName": "Re-engagement Flow",
+      "RelUserID": 1,
+      "StuckCount": 5
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Database query failed"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Database query failed
+```
+
+:::
+
+## Unstick Stuck Journey Entries
+
+<Badge type="info" text="POST" /> `/api/v1/admin.journeys.unstuck`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Resets stuck journey entries by setting `ActionUpdatedAt` to `NULL` so they get picked up again by the journey worker on its next iteration. Can target all stuck entries or entries for a specific journey.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                 |
+|-----------|---------|----------|-----------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `admin.journeys.unstuck`                                       |
+| SessionID | String  | No       | Session ID obtained from login                                              |
+| APIKey    | String  | No       | API key for authentication                                                  |
+| JourneyID | Integer | No       | If provided, only unstick entries for this journey. If omitted, unstick all. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.journeys.unstuck \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.journeys.unstuck",
+    "APIKey": "your-admin-api-key",
+    "JourneyID": 42
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "EntriesReset": 5,
+  "Message": "5 stuck journey entry(ies) have been reset."
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "No stuck entries found"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Journey not found (when JourneyID is provided but invalid)
+2: No stuck entries found
+3: Database error during unstuck operation
+```
+
+:::
