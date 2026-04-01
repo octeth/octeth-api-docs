@@ -1893,3 +1893,70 @@ curl -X POST https://example.com/api/v1/admin.journeys.unstuck \
 ```
 
 :::
+
+## Get Pending Journey Entry Count
+
+<Badge type="info" text="GET" /> `/api/v1/admin.journeys.pending`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the total number of journey entries waiting to be picked up by journey workers, with a per-user breakdown. This helps identify bottlenecks when workers cannot keep up with incoming entries. A "pending" entry matches the same criteria as the worker picking query: the journey must be enabled, the entry must have an action assigned, and the entry must be either fresh (never picked), snoozed and ready, or stuck.
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                             |
+|-----------|--------|----------|-----------------------------------------|
+| Command   | String | Yes      | API command: `admin.journeys.pending`   |
+| SessionID | String | No       | Session ID obtained from login          |
+| APIKey    | String | No       | API key for authentication              |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET https://example.com/api/v1/admin.journeys.pending \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.journeys.pending",
+    "APIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalPendingEntries": 1523,
+  "Users": [
+    {
+      "UserID": 1,
+      "Username": "john",
+      "PendingCount": 1200
+    },
+    {
+      "UserID": 2,
+      "Username": "jane",
+      "PendingCount": 323
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Database query failed"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Database query failed
+```
+
+:::
