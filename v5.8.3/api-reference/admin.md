@@ -2190,3 +2190,84 @@ curl -X GET "https://example.com/api/v1/admin.journey.queue.position?AdminAPIKey
 ```
 
 :::
+
+## Audit Journey Action
+
+<Badge type="info" text="GET" /> `/api/v1/admin.journey.action.audit`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns comprehensive diagnostic data for a specific journey action: action metadata, queue state breakdown, subscription status breakdown, bounce type breakdown, and completion count. Designed for diagnosing stuck entries at a particular action step.
+
+**Request Body Parameters:**
+
+| Parameter   | Type    | Required | Description                                    |
+|-------------|---------|----------|------------------------------------------------|
+| Command     | String  | Yes      | API command: `admin.journey.action.audit`      |
+| AdminAPIKey | String  | Yes      | Admin API key for authentication               |
+| ActionID    | Integer | Yes      | The journey action ID to audit                 |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/admin.journey.action.audit?AdminAPIKey=your-admin-api-key&ActionID=47"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ActionMeta": {
+    "ActionID": 47,
+    "ActionType": "SendEmail",
+    "OrderNo": 3,
+    "JourneyID": 42,
+    "JourneyName": "Welcome Series",
+    "JourneyStatus": "Enabled"
+  },
+  "QueueState": {
+    "TotalAtAction": 500,
+    "NeverTouched": 200,
+    "WaitingForNextPass": 300,
+    "OverdueCount": 280,
+    "SnoozedCount": 15,
+    "InProgressCount": 5
+  },
+  "SubscriptionBreakdown": {
+    "Subscribed": 420,
+    "Unsubscribed": 50,
+    "OptInPending": 10,
+    "OptOutPending": 5,
+    "SubscriberNotFound": 15
+  },
+  "BounceBreakdown": {
+    "NotBounced": 400,
+    "Hard": 60,
+    "Soft": 25,
+    "SubscriberNotFound": 15
+  },
+  "CompletionCount": 3500
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Action not found"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing or invalid action_id parameter
+2: Action not found
+3: Database query failed
+```
+
+:::
