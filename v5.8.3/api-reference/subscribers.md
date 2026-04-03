@@ -1146,6 +1146,7 @@ curl -X POST https://example.com/api.php \
 8: Required custom field missing
 9: Custom field value is not unique
 10: Invalid custom field value
+11: Unknown custom field ID(s) - ErrorCustomFieldIDs lists the invalid IDs
 ```
 
 :::
