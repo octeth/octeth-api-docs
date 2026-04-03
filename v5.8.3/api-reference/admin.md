@@ -2053,6 +2053,7 @@ Returns a paginated list of journey queue entries with subscriber details, actio
 | JourneyID         | Integer | No       | Filter to a specific journey                                                                                                   |
 | ActionID          | Integer | No       | Filter to a specific action                                                                                                    |
 | Status            | String  | No       | Queue status filter. Possible values: `all`, `overdue`, `snoozed`, `never_touched`, `waiting`. Default: `all`                  |
+| SearchKeyword     | String  | No       | Filter by subscriber email address (partial match). LIKE wildcards `%` and `_` in input are treated as literal characters       |
 | RecordsPerRequest | Integer | No       | Page size (default: 25, max: 500)                                                                                              |
 | RecordsFrom       | Integer | No       | Offset for pagination (default: 0)                                                                                             |
 | OrderField        | String  | No       | Sort field. Possible values: `EntryID`, `CreatedAt`, `SnoozedUntil`. Default: `EntryID`                                       |
