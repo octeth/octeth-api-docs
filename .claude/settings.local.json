@@ -45,7 +45,8 @@
       "Bash(npm run docs:build:*)",
       "WebFetch(domain:github.com)",
       "Bash(pkill:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(git:*)"
     ],
     "deny": [],
     "ask": []

@@ -1960,3 +1960,233 @@ curl -X GET https://example.com/api/v1/admin.journeys.pending \
 ```
 
 :::
+
+## Get Journey Queue Overview
+
+<Badge type="info" text="GET" /> `/api/v1/admin.journeys.overview`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns queue state counts, throughput metrics, and worker health for monitoring journey queue backlogs and processing performance. Useful for dashboards, incident response, and integration with external monitoring tools.
+
+**Request Body Parameters:**
+
+| Parameter   | Type    | Required | Description                                      |
+|-------------|---------|----------|--------------------------------------------------|
+| Command     | String  | Yes      | API command: `admin.journeys.overview`            |
+| AdminAPIKey | String  | Yes      | Admin API key for authentication                  |
+| JourneyID   | Integer | No       | Filter stats to a specific journey                |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/admin.journeys.overview?AdminAPIKey=your-admin-api-key&JourneyID=42"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "QueueStats": {
+    "TotalActive": 1523,
+    "NeverTouched": 500,
+    "WaitingForNextPass": 1023,
+    "SnoozedCount": 200,
+    "OverdueCount": 823,
+    "StuckCount": 15,
+    "InProgressCount": 485,
+    "EstimatedDrainMinutes": 45.2
+  },
+  "Throughput": {
+    "PerMinute": 18.2,
+    "PerSecond": 0.3,
+    "MeasurementWindowMinutes": 5,
+    "CompletionsInWindow": 91
+  },
+  "Workers": {
+    "Total": 3,
+    "Healthy": 2,
+    "Unhealthy": 1
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Invalid journey_id parameter"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Database query failed
+2: Invalid journey_id parameter
+```
+
+:::
+
+## List Journey Queue Entries
+
+<Badge type="info" text="GET" /> `/api/v1/admin.journeys.queue`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns a paginated list of journey queue entries with subscriber details, action information, touch state, and due timestamps. Supports filtering by journey, action, and queue status.
+
+**Request Body Parameters:**
+
+| Parameter         | Type    | Required | Description                                                                                                                   |
+|-------------------|---------|----------|-------------------------------------------------------------------------------------------------------------------------------|
+| Command           | String  | Yes      | API command: `admin.journeys.queue`                                                                                            |
+| AdminAPIKey       | String  | Yes      | Admin API key for authentication                                                                                               |
+| JourneyID         | Integer | No       | Filter to a specific journey                                                                                                   |
+| ActionID          | Integer | No       | Filter to a specific action                                                                                                    |
+| Status            | String  | No       | Queue status filter. Possible values: `all`, `overdue`, `snoozed`, `never_touched`, `waiting`. Default: `all`                  |
+| RecordsPerRequest | Integer | No       | Page size (default: 25, max: 500)                                                                                              |
+| RecordsFrom       | Integer | No       | Offset for pagination (default: 0)                                                                                             |
+| OrderField        | String  | No       | Sort field. Possible values: `EntryID`, `CreatedAt`, `SnoozedUntil`. Default: `EntryID`                                       |
+| OrderType         | String  | No       | Sort direction. Possible values: `ASC`, `DESC`. Default: `ASC`                                                                 |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/admin.journeys.queue?AdminAPIKey=your-admin-api-key&JourneyID=42&Status=overdue&RecordsPerRequest=10&RecordsFrom=0"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalQueueEntries": 1523,
+  "QueueEntries": [
+    {
+      "EntryID": 101,
+      "RelUserID": 1,
+      "RelJourneyID": 42,
+      "JourneyName": "Welcome Series",
+      "RelListID": 5,
+      "RelSubscriberID": 999,
+      "EmailAddress": "user@example.com",
+      "RelActionID": 7,
+      "ActionType": "SendEmail",
+      "ActionOrderNo": 3,
+      "TouchState": "NeverTouched",
+      "DueAt": "2026-04-03 10:00:00",
+      "CreatedAt": "2026-04-03 09:55:00",
+      "ActionUpdatedAt": null,
+      "SnoozedUntil": null
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Invalid status parameter. Allowed values: all, overdue, snoozed, never_touched, waiting"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Database query failed
+2: Invalid parameter value
+```
+
+:::
+
+## Get Subscriber Queue Position
+
+<Badge type="info" text="GET" /> `/api/v1/admin.journey.queue.position`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Given a subscriber identifier (entry ID, subscriber ID, or email address), returns the position in the processing queue, estimated time until processing, and current action details. At least one lookup parameter (`EntryID`, `SubscriberID`, or `Email`) must be provided.
+
+**Request Body Parameters:**
+
+| Parameter    | Type    | Required | Description                                                                                        |
+|--------------|---------|----------|----------------------------------------------------------------------------------------------------|
+| Command      | String  | Yes      | API command: `admin.journey.queue.position`                                                        |
+| AdminAPIKey  | String  | Yes      | Admin API key for authentication                                                                   |
+| EntryID      | Integer | No       | Direct lookup by queue entry ID                                                                    |
+| SubscriberID | Integer | No       | Lookup by subscriber ID                                                                            |
+| Email        | String  | No       | Lookup by email address (requires `ListID`)                                                        |
+| ListID       | Integer | No       | Narrow scope for subscriber or email lookup. Required when using `Email`                           |
+| JourneyID    | Integer | No       | Filter to a specific journey                                                                       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/admin.journey.queue.position?AdminAPIKey=your-admin-api-key&Email=user@example.com&ListID=5"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Entries": [
+    {
+      "EntryID": 101,
+      "RelJourneyID": 42,
+      "JourneyName": "Welcome Series",
+      "RelListID": 5,
+      "RelSubscriberID": 999,
+      "EmailAddress": "user@example.com",
+      "Position": 347,
+      "EstimatedMinutesUntilProcessed": 19.1,
+      "TouchState": "NeverTouched",
+      "DueAt": "2026-04-03 10:00:00",
+      "CurrentAction": {
+        "ActionID": 7,
+        "Action": "SendEmail",
+        "OrderNo": 3
+      },
+      "CreatedAt": "2026-04-03 09:55:00",
+      "ActionUpdatedAt": null,
+      "SnoozedUntil": null
+    }
+  ],
+  "Throughput": {
+    "PerMinute": 18.2,
+    "PerSecond": 0.3
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "list_id is required when searching by email"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: No lookup parameter provided (must supply EntryID, SubscriberID, or Email)
+2: Entry or subscriber not found in queue
+3: ListID required when searching by Email
+4: Database query failed
+5: Invalid parameter value
+```
+
+:::
