@@ -9,7 +9,7 @@ description: Track Octeth version releases, development status, and upcoming fea
 This roadmap shows all past and upcoming Octeth releases. Use this page to track version history, plan upgrades, and see what's coming next.
 
 ::: tip Current Version
-The latest stable release is **v5.8.2** (released March 21st, 2026). [View changelog](http://localhost:5173/changelog#v5-8-2) to see what's new.
+The latest stable release is **v5.8.3** (released April 5th, 2026). [View changelog](http://localhost:5173/changelog#v5-8-3) to see what's new.
 :::
 
 ## Understanding Version Numbers
@@ -56,12 +56,12 @@ Each version has a status badge indicating its current state:
 | v5.8.0  |           <Badge type="tip" text="Released" />           | Feb 15th, 2026 | Redesigned campaign creation, Caddy TLS, natural language segments |
 | v5.8.1  |           <Badge type="tip" text="Released" />           | Mar 8th, 2026  | Email gateway performance, custom headers/footers, Prometheus monitoring |
 | v5.8.2  |           <Badge type="tip" text="Released" />           | Mar 21st, 2026 | Campaign UX polish, terminal dashboard, recurring campaign stability |
-| v5.8.3  | <Badge type="warning" text="Under Development" />        | Mid-April 2026 | TBA                                                  |
+| v5.8.3  |           <Badge type="tip" text="Released" />           | Apr 5th, 2026  | Journey auto-recovery, log observer, scheduled triggers, delivery retries |
 | v5.9.0  | <Badge type="warning" text="Collecting User Feedback" /> | Late May 2026  | TBA                                                  |
 | v6.0.0  | <Badge type="warning" text="Collecting User Feedback" /> | Q3 2026        | Major architecture updates                           |
 
 ::: info What's Next?
-**v5.8.3** is under active development targeting mid-April 2026. **v5.9.0** is planned for late May 2026, and **v6.0.0** with major architecture updates is targeted for Q3 2026.
+**v5.9.0** is planned for late May 2026, and **v6.0.0** with major architecture updates is targeted for Q3 2026.
 :::
 
 ## Release Schedule

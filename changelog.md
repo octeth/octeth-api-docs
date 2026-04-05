@@ -12,27 +12,50 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Changelog will be updated upon release.
+Released April 5, 2026 after 15 days of focused development. Reliability and observability release featuring automatic journey recovery, real-time system monitoring, scheduled journey triggers, email delivery retry mechanism, and comprehensive journey queue monitoring APIs.
 
 ### New Features
 
-- (To be documented)
+- **Journey Stuck Entry Auto-Recovery** - Automatically detects and restarts journey entries that become orphaned when worker processes terminate, eliminating the need for manual recovery
+- **ScheduledPull Journey Trigger** - New trigger type that pulls subscribers into journeys on a configurable schedule for time-based automation like weekly re-engagement or daily onboarding
+- **Log Observer and System Health Check** - New admin area tools for viewing and filtering system logs in real-time and monitoring overall installation health without server access
+- **Journey Queue Monitoring APIs** - New admin API endpoints for monitoring journey queue status, depth, processing rates, and auditing action execution
+- **Journey Pending API and CLI** - Monitor pending journey entries via API or the new `journey:pending` CLI command
+- **Subscriber Browse in Journey Actions** - Browse and select subscribers directly within journey action node configuration
+- **Restart Active Journey** - Restart an active journey for a specific subscriber for testing or re-running flows
+- **Duplicate Conversion Prevention** - Conversion events are deduplicated to prevent inflated metrics, with revenue attribution tracking tied to originating campaigns or journeys
+- **Multi-List Subscriber Export** - Export subscribers from multiple lists simultaneously from the list browse page
+- **Email Gateway Retry Mechanism** - Automatic retry for transient delivery failures such as server timeouts and temporary rate limits
+- **MySQL Connection Management CLI** - New `mysql:set-max-connections` and `mysql:connections` commands for managing database connection pools
 
 ### Enhancements
 
-- (To be documented)
+- **Timezone-Aware Date Display** - All dates in the user area now display in the user's configured timezone
+- **Disabled Sender Domain Warning** - Journey email delivery warns and skips gracefully when the configured sender domain is not enabled
+- **Email Search in Journey Queue** - Search for specific subscribers by email address within journey queue monitoring
+- **Fee Calculator Category Grouping** - Category-based grouping in fee calculator report for better organization
+- **Frequency Cap Index Optimization** - Improved database index ordering for better query performance on scheduled triggers
 
 ### Bug Fixes
 
-- (To be documented)
+- **Link tracking scope** - Tracking now only processes http/https URLs, leaving tel:, sms:, and other protocol links unchanged
+- **Double opt-in enforcement** - Opt-in settings properly respected during CSV and ESP subscriber imports
+- **Subscriber API validation** - API now rejects requests with unknown custom field IDs and validates field normalization
+- **Email delivery status handling** - Improved handling for mailing-list and permanent failure response paths
+- **SSL certificate renewal** - Improved routing for domain verification challenges in containerized environments
+- **Redis spool cleanup** - Prevented orphaned spool files that could gradually consume disk space
+- **Sentinel date handling** - Properly handles placeholder dates in subscriber browse view
+- **Confirmation email logic** - Uses computed subscription status for opt-in confirmation flag
+- Plus 47 additional bug fixes across journeys, APIs, infrastructure, and system stability
 
 ### Security Patches
 
-- (To be documented)
+- **Admin API error handling** - Removed error message leaks in admin journey API responses
+- **Input validation** - Strengthened validation across subscriber update and journey queue endpoints
 
 ### Deprecations
 
-None
+- **Website subscription form generator** - Removed from list dashboard UI
 
 ## v5.8.2
 
