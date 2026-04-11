@@ -1280,6 +1280,12 @@ curl -X DELETE https://example.com/api/v1/webhooks \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
+::: info Cross-domain queries
+`DomainID` is optional. When a `DomainID` is supplied, events are scoped to that single domain and ownership is verified against the authenticated user. When `DomainID` is omitted, the query spans every sender domain owned by the authenticated user. Tenant isolation is inherent: events are indexed per-user in Elasticsearch (`eg-events-u<UserID>-<date>`) and the query always filters by `user-id` regardless of whether a `DomainID` is provided.
+
+Note that the public variant (`emailgateway.getevents.public`) still requires `DomainID` because it is authenticated by a domain-scoped API key.
+:::
+
 **Request Body Parameters:**
 
 | Parameter     | Type    | Required | Description                                              |
@@ -1287,7 +1293,7 @@ curl -X DELETE https://example.com/api/v1/webhooks \
 | Command       | String  | Yes      | API command: `emailgateway.getevents`                    |
 | SessionID     | String  | No       | Session ID obtained from login                           |
 | APIKey        | String  | No       | API key for authentication                               |
-| DomainID      | Integer | Yes      | Sender domain ID                                         |
+| DomainID      | Integer | No       | Sender domain ID to scope the query to. Omit to return events across all of the authenticated user's sender domains. |
 | StartFrom     | Integer | Yes      | Starting record index for pagination                     |
 | RetrieveCount | Integer | Yes      | Number of records to retrieve (max 100)                  |
 | StartDate     | String  | No       | Start date filter (Y-m-d format)                         |
@@ -1297,13 +1303,25 @@ curl -X DELETE https://example.com/api/v1/webhooks \
 
 ::: code-group
 
-```bash [Example Request]
+```bash [Example Request — Single Domain]
 curl -X POST https://example.com/api.php \
   -H "Content-Type: application/json" \
   -d '{
     "Command": "emailgateway.getevents",
     "SessionID": "your-session-id",
     "DomainID": 123,
+    "StartFrom": 0,
+    "RetrieveCount": 50,
+    "Event": "delivery"
+  }'
+```
+
+```bash [Example Request — All Domains]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "emailgateway.getevents",
+    "SessionID": "your-session-id",
     "StartFrom": 0,
     "RetrieveCount": 50,
     "Event": "delivery"
@@ -1340,8 +1358,7 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
-1: Missing required parameter (DomainID)
-2: Domain not found or access denied
+2: Domain not found or access denied (only when DomainID is supplied)
 4: Missing required parameter (StartFrom)
 5: Missing required parameter (RetrieveCount)
 ```
