@@ -12,27 +12,40 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Changelog will be updated upon release.
+Released April 13, 2026 after 8 days of focused development. Feature-rich release introducing built-in A/B campaign testing, a completely redesigned Email Gateway interface, a new List Freshness Report for proactive deliverability management, and automatic SSL certificate provisioning.
 
 ### New Features
 
-- (To be documented)
+- **A/B Campaign Testing** - Create multiple content variations within a single campaign, preview them side by side, and let Octeth automatically identify the winning version before sending to your full list
+- **Email Gateway UI Redesign** - Completely rebuilt Email Gateway interface with an account-level dashboard, cross-domain event log, and dedicated user-area section for faster infrastructure management
+- **List Freshness Report** - New report that monitors subscriber list health by tracking engagement freshness across a 90-day rolling window, helping identify stale segments before they impact deliverability
+- **Automatic SSL Certificate Management** - Automatic SSL certificate provisioning with on-demand TLS, replacing the previous manual certificate renewal process
+- **Error Log Analysis CLI** - New command-line tool for deduplicating and analyzing error logs, making production troubleshooting faster
 
 ### Enhancements
 
-- (To be documented)
+- **Queue Status Display** - Improved queue monitoring with formatted table output for better operational visibility
+- **Cross-Domain Event Tracking** - Trace delivery events across all domains from a single unified view
+- **Event Filtering Accuracy** - Event filters now match precisely what your system tracks
 
 ### Bug Fixes
 
-- (To be documented)
+- **A/B Winner Detection** - Improved accuracy of winner detection scoring to ensure the correct variation is selected every time
+- **A/B Variation Management** - Fixed save and content type toggle issues when managing campaign variations
+- **API Key Management** - Resolved a failure when creating API keys after a previous key was deleted
+- **Email Gateway Event Mapping** - Corrected event field mapping and bounce categorization for accurate delivery reporting
+- **Email Gateway Index Performance** - Expanded event index windows for more reliable event retrieval
+- **Infrastructure Health Monitoring** - Fixed health check reliability for link proxy services
+- **List Freshness Threshold Handling** - Hardened threshold calculations against incomplete or missing configuration data
+- **Domain Comparison** - Normalized domain matching for more reliable SSL certificate provisioning
 
 ### Security Patches
 
-- (To be documented)
+- **Webhook Protection** - Strengthened webhook endpoint security with improved request validation
 
 ### Deprecations
 
-None
+- **Manual SSL Certificate Management** - The previous certbot-based SSL system has been replaced by automatic on-demand TLS. Existing certbot configurations should be migrated to the new system.
 
 ## v5.8.3
 
