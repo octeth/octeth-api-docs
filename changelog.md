@@ -45,7 +45,7 @@ Released April 13, 2026 after 8 days of focused development. Feature-rich releas
 
 ### Deprecations
 
-- **Manual SSL Certificate Management** - The previous certbot-based SSL system has been replaced by automatic on-demand TLS. Existing certbot configurations should be migrated to the new system.
+- **Manual SSL Certificate Management** - The previous manual SSL certificate system has been replaced by automatic on-demand TLS. Existing manual certificate configurations should be migrated to the new automatic system.
 
 ## v5.8.3
 
