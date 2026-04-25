@@ -219,7 +219,7 @@ curl -X POST https://example.com/api/v1/user.webhook \
 
 ## Update a Webhook
 
-<Badge type="info" text="PUT" /> `/api/v1/user.webhook`
+<Badge type="info" text="PATCH" /> `/api/v1/user.webhook`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key
@@ -241,12 +241,12 @@ The `HashedID` is preserved across updates, so any external system already calli
 | Name           | String  | Yes      | New display name for the webhook                                                                             |
 | RelListID      | Integer | Yes      | New target subscriber list ID. The list must be owned by the calling user                                    |
 | Event          | String  | Yes      | New event for the webhook. Possible values: `Subscription`, `Unsubscription`                                 |
-| UnsubscribeAll | Boolean | No       | When `Event=Unsubscription` and this is `true`, unsubscribes the contact from every list owned by the user. Default: `false` |
+| UnsubscribeAll | Boolean | No       | When `Event=Unsubscription` and this is `true`, unsubscribes the contact from every list owned by the user. Omitted: the currently stored value is preserved (the field is not reset to `false`) |
 
 ::: code-group
 
 ```bash [Example Request]
-curl -X PUT https://example.com/api/v1/user.webhook \
+curl -X PATCH https://example.com/api/v1/user.webhook \
   -H "Content-Type: application/json" \
   -d '{
     "Command": "user.webhook.update",
@@ -296,6 +296,7 @@ curl -X PUT https://example.com/api/v1/user.webhook \
 5: Event must be one of: Subscription, Unsubscription
 6: Webhook not found (also returned when the webhook exists but is owned by another user)
 7: Target subscriber list not found (or not owned by the calling user)
+8: Webhook could not be retrieved after update (returned with HTTP 500)
 ```
 
 :::
