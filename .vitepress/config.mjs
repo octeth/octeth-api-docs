@@ -191,6 +191,7 @@ export default defineConfig({
                                 {text: 'Emails', link: '/v5.9.1/api-reference/emails'},
                                 {text: 'User Email Templates', link: '/v5.9.1/api-reference/user-email-templates'},
                                 {text: 'User Webhooks', link: '/v5.9.1/api-reference/user-webhooks'},
+                                {text: 'User Sender Domains', link: '/v5.9.1/api-reference/user-senderdomains'},
                                 {text: 'Media Library', link: '/v5.9.1/api-reference/medialibrary'},
                                 {text: 'SSO', link: '/v5.9.1/api-reference/sso'},
                                 {text: 'Suppression Lists', link: '/v5.9.1/api-reference/suppression'},
