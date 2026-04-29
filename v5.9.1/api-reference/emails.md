@@ -1408,3 +1408,72 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+## Convert HTML to Plain Text
+
+<Badge type="info" text="POST" /> `/api/v1/email.html2text`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Rate limit: 1000 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Stateless utility endpoint that converts an HTML email body into its plain-text equivalent. Useful when generating the `PlainContent` variant of a campaign email programmatically — e.g., during automated campaign creation or before sending through `email.render`.
+
+Internally calls the same `Soundasleep\Html2Text` library used by the campaign-create UI's "Generate plain text from HTML" button, the email model's auto-conversion (when `PlainContentAutoConvert` is enabled), and the queue worker. Conversion options are hard-coded to match the UI verbatim (`ignore_errors=true`, `drop_links=false`), so the output is byte-for-byte identical to what users see in the in-app editor.
+
+**Behavior details:**
+
+- Link URLs are preserved inline (e.g. `<a href="https://example.com">Click</a>` becomes `Click [https://example.com]`).
+- Merge tags such as `[SUBSCRIBER_FIRSTNAME]` are preserved verbatim — the library only strips HTML markup, and merge tags live in text nodes.
+- Malformed HTML is tolerated; the library returns partial output rather than throwing.
+- An empty `HTMLContent` value returns an empty `PlainContent`.
+- Character encoding is auto-detected via `mb_detect_encoding`; UTF-8 is handled safely.
+- The endpoint performs no database access and has no per-user resource ownership — it is purely a stateless transform of the request payload.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                                |
+|-------------|--------|----------|------------------------------------------------------------|
+| Command     | String | Yes      | API command: `email.html2text`                             |
+| SessionID   | String | No       | Session ID obtained from login                             |
+| APIKey      | String | No       | API key for authentication                                 |
+| HTMLContent | String | Yes      | The HTML to convert. Empty string is allowed and returns an empty `PlainContent`. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/email.html2text \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "email.html2text",
+    "APIKey": "your-api-key",
+    "HTMLContent": "<h1>Hello</h1><p>Visit <a href=\"https://example.com\">our site</a> for details.</p>"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "PlainContent": "HELLO\n\nVisit our site [https://example.com] for details."
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    {
+      "Code": 1,
+      "Message": "Missing HTMLContent parameter"
+    }
+  ]
+}
+```
+
+```txt [Error Codes]
+1: Missing HTMLContent parameter (returned with HTTP 422)
+2: HTML conversion failed (returned with HTTP 500 — defensive catch for the rare case the library throws despite ignore_errors=true)
+```
+
+:::
