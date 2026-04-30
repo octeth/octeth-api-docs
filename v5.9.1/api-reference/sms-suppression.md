@@ -50,7 +50,7 @@ Phone numbers must be in E.164 format with a leading `+` (e.g. `+15551234567`). 
 | Level | String | No | Suppression level to query. One of `user` (default), `list`. |
 | ListID | Integer | No* | List ID. Required when `Level=list`. The list must belong to the authenticated user. |
 | Reason | String | No | Filter by `Reason` ENUM value. |
-| SearchPattern | String | No | Search pattern that matches against `PhoneNumber` and `Notes` (supports `*` wildcard, converted to SQL `LIKE`). |
+| SearchPattern | String | No | Substring match against `PhoneNumber` and `Notes` (always a contains search; no wildcard syntax — pass the literal value to look for). |
 | IsPattern | Integer | No | When `1`, only return wildcard pattern entries. When `0`, only return exact-match entries. |
 | StartFrom | Integer | No | Starting record index for pagination (default: `0`). |
 | RetrieveCount | Integer | No | Number of records to retrieve (default: `100`, max: `1000`). |
@@ -71,7 +71,7 @@ curl -X POST https://example.com/api.php \
     "APIKey": "your-api-key",
     "Level": "user",
     "Reason": "bounce",
-    "SearchPattern": "+1555*",
+    "SearchPattern": "+1555",
     "StartFrom": 0,
     "RetrieveCount": 50
   }'
@@ -218,7 +218,7 @@ Accepts a single phone number or a bulk payload. Phone numbers may be exact (e.g
 | PhoneNumbers | String | No* | JSON-encoded array of phone numbers, **or** newline-separated phone numbers. |
 | Level | String | No | One of `user` (default), `list`. Admin auth may also pass `system`. |
 | UserID | Integer | No* | Target user ID. Required when admin-authed and `Level` is `user` or `list`. Ignored for user-authed calls (always the authenticated user). |
-| ListID | Integer | No* | List ID. Required when `Level=list`. For user-authed calls, the list must belong to the authenticated user. |
+| ListID | Integer | No* | List ID. Required when `Level=list`. The list must belong to the target user (this applies to both user and admin auth — the list's `RelOwnerUserID` must equal the supplied or authenticated `UserID`). |
 | Reason | String | No | One of the `Reason` ENUM values. Defaults to `manual`. |
 | Source | String | No | One of the `Source` ENUM values. Defaults to `api`. |
 | Notes | String | No | Free-text notes attached to the entry. |
@@ -296,11 +296,12 @@ curl -X POST https://example.com/api.php \
 2: Invalid Level value (or Level=system attempted with user auth)
 3: Missing UserID (admin-authed only, when Level is user or list)
 4: Missing ListID when Level=list
-5: ListID does not belong to the target user (user auth only)
+5: ListID does not belong to the target user (or does not exist)
 6: Invalid Reason value
 7: Invalid Source value
 8: Add failed (single path — see server log; typically an invalid phone number)
 9: PhoneNumbers parsed to an empty list
+10: Target UserID does not exist (admin-authed only)
 ```
 
 :::
@@ -485,7 +486,7 @@ Adds a single wildcard pattern entry. The class auto-detects pattern entries by 
 | PhoneNumber | String | Yes | Pattern (e.g. `+1555*`). |
 | Level | String | No | One of `user` (default), `list`. Admin auth may also pass `system`. |
 | UserID | Integer | No* | Target user ID. Required when admin-authed and `Level` is `user` or `list`. |
-| ListID | Integer | No* | List ID. Required when `Level=list`. |
+| ListID | Integer | No* | List ID. Required when `Level=list`. The list must belong to the target user (applies to both user and admin auth). |
 | Source | String | No | One of the `Source` ENUM values. Defaults to `api`. |
 | Notes | String | No | Free-text notes attached to the entry. |
 
@@ -527,9 +528,10 @@ curl -X POST https://example.com/api.php \
 2: Invalid Level value (or Level=system attempted with user auth)
 3: Missing UserID (admin-authed only, when Level is user or list)
 4: Missing ListID when Level=list
-5: ListID does not belong to the target user (user auth only)
+5: ListID does not belong to the target user (or does not exist)
 6: Invalid Source value
 7: Add failed (see server log; typically an invalid pattern format)
+8: Target UserID does not exist (admin-authed only)
 ```
 
 :::
