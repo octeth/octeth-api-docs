@@ -533,13 +533,22 @@ curl -X POST https://example.com/api/v1/user.stats \
 
 ```json [Success Response]
 {
-  "TotalCampaigns": 150,
-  "TotalEmails": 50000,
-  "Stats": {
-    "2024-01": {
-      "Campaigns": 10,
-      "Emails": 3000
-    }
+  "NumberOfLists": 12,
+  "TotalActiveLists": 9,
+  "TotalActiveSubscribers": 15234,
+  "TotalSegments": 28,
+  "AvgOpenRate30dWeighted": 0.2418,
+  "New Subscribers": {
+    "2024-01-01": 12,
+    "2024-01-02": 18
+  },
+  "Sent Emails": {
+    "2024-01-01": 250,
+    "2024-01-02": 300
+  },
+  "Opens": {
+    "2024-01-01": 80,
+    "2024-01-02": 95
   }
 }
 ```
@@ -561,6 +570,20 @@ curl -X POST https://example.com/api/v1/user.stats \
 ```
 
 :::
+
+**Top-level overall fields**
+
+The response is the merge of two payloads: a stat-strip header (the five overall fields below) plus the time-series breakdown for each metric (keyed by metric title — `New Subscribers`, `Sent Emails`, `Opens`, etc).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `NumberOfLists` | Integer | Total lists owned by the user, **including archived**. Back-compat with pre-v5.9.x consumers. |
+| `TotalActiveLists` | Integer | Lists with `ArchivedAt IS NULL`. |
+| `TotalActiveSubscribers` | Integer | Sum of `ActiveSubscriberCount` (denormalized) across non-archived lists. Defines "active" as `Subscribed` AND `BounceType != 'Hard'`, matching the count `lists.get` displays. |
+| `TotalSegments` | Integer | Sum of `SegmentCount` (denormalized) across non-archived lists. |
+| `AvgOpenRate30dWeighted` | Float \| null | Subscriber-weighted average 30-day open rate across non-archived lists, computed as `Σ(ActiveSubscriberCount × UniqueOpens) / Σ(ActiveSubscriberCount × TotalSent)`. `null` when no list in the user's active set had any sends in the 30-day window. |
+
+**Migration note (v5.9.x):** `TotalActiveSubscribers` previously summed across **all** lists (including archived) using a slightly stricter criterion (`BounceType = 'Not Bounced'`, excluding soft bounces). Both changes were intentional: the new value (a) excludes archived lists — matching the lists.get browse display — and (b) uses `BounceType != 'Hard'` to align with `Subscribers::GetActiveTotal`. For a user with no archived lists and a clean deliverability footprint the difference is negligible. For users with many archived lists or noticeable soft-bounce volume the value will shift; treat the new figure as the canonical "subscribers I currently market to."
 
 ## Switch to User Account
 

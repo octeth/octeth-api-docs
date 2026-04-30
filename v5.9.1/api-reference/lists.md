@@ -24,6 +24,7 @@ List management endpoints for creating, updating, and managing email subscriber 
 | SessionID             | String | No       | Session ID obtained from login                 |
 | APIKey                | String | No       | API key for authentication                     |
 | SubscriberListName    | String | Yes      | Name of the subscriber list to create          |
+| Description           | String | No       | Optional human-readable description for the list |
 
 ::: code-group
 
@@ -33,7 +34,8 @@ curl -X POST https://example.com/api.php \
   -d '{
     "Command": "list.create",
     "SessionID": "your-session-id",
-    "SubscriberListName": "My New List"
+    "SubscriberListName": "My New List",
+    "Description": "Customers who signed up via the spring 2026 promotion"
   }'
 ```
 
@@ -145,6 +147,7 @@ curl -X POST https://example.com/api.php \
 | APIKey                                          | String  | No       | API key for authentication                                   |
 | SubscriberListID                                | Integer | Yes      | ID of the list to update                                     |
 | Name                                            | String  | No       | New name for the list                                        |
+| Description                                     | String  | No       | Description for the list. Pass an empty string to clear it.  |
 | SenderName                                      | String  | No       | Default sender name for campaigns                            |
 | SenderEmailAddress                              | String  | No       | Default sender email address                                 |
 | SenderCompany                                   | String  | No       | Sender company name                                          |
@@ -235,6 +238,120 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## Archive a List
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Update`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Marks a list as archived by setting its `ArchivedAt` timestamp. Archived lists are hidden from `lists.get` by default (use `Archived=true` or `Archived=all` to retrieve them). Idempotent: re-archiving a list keeps the original `ArchivedAt` timestamp untouched.
+
+**Request Body Parameters:**
+
+| Parameter        | Type    | Required | Description                              |
+|------------------|---------|----------|------------------------------------------|
+| Command          | String  | Yes      | API command: `list.archive`              |
+| SessionID        | String  | No       | Session ID obtained from login           |
+| APIKey           | String  | No       | API key for authentication               |
+| SubscriberListID | Integer | Yes      | ID of the list to archive                |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.archive",
+    "SessionID": "your-session-id",
+    "SubscriberListID": 123
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": ""
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Invalid subscriber list id"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing subscriber list id
+2: Invalid subscriber list id (not found or not owned by the authenticated user)
+```
+
+:::
+
+## Unarchive a List
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Update`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Clears the `ArchivedAt` timestamp on a list, restoring it to active state.
+
+**Request Body Parameters:**
+
+| Parameter        | Type    | Required | Description                              |
+|------------------|---------|----------|------------------------------------------|
+| Command          | String  | Yes      | API command: `list.unarchive`            |
+| SessionID        | String  | No       | Session ID obtained from login           |
+| APIKey           | String  | No       | API key for authentication               |
+| SubscriberListID | Integer | Yes      | ID of the list to unarchive              |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.unarchive",
+    "SessionID": "your-session-id",
+    "SubscriberListID": 123
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": ""
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Invalid subscriber list id"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing subscriber list id
+2: Invalid subscriber list id (not found or not owned by the authenticated user)
+```
+
+:::
+
 ## Get All Lists
 
 <Badge type="info" text="POST" /> `/api.php`
@@ -245,6 +362,8 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
+Returns the authenticated user's subscriber lists with full per-row metadata. Supports pagination, free-text search across `Name` and `Description`, and filtering by archive state.
+
 **Request Body Parameters:**
 
 | Parameter          | Type    | Required | Description                                          |
@@ -254,8 +373,30 @@ curl -X POST https://example.com/api.php \
 | APIKey             | String  | No       | API key for authentication                           |
 | RecordsPerRequest  | Integer | No       | Number of records per page (default: 0 = all)        |
 | RecordsFrom        | Integer | No       | Starting record offset (default: 0)                  |
-| OrderField         | String  | No       | Field to order by (default: "ListID")                |
-| OrderType          | String  | No       | Sort direction: "ASC" or "DESC" (default: "ASC")     |
+| OrderField         | String  | No       | Field to order by (default: `ListID`). Possible values: `ListID`, `Name`, `CreatedOn`, `ArchivedAt`, `ActiveSubscriberCount`, `SegmentCount`, `LastActivityAt`. Any other value falls back to the default. |
+| OrderType          | String  | No       | Sort direction: `ASC` or `DESC` (default: `ASC`). Any other value falls back to the default. |
+| Search             | String  | No       | Case-insensitive substring match against `Name` and `Description`. Empty string disables the filter. |
+| Archived           | String  | No       | Archive-state filter (default: `false`). Possible values: `false` (only active lists), `true` (only archived lists), `all` (no filter). |
+
+**Response Shape**
+
+Each row returned in `Lists` includes every column from `oempro_subscriber_lists` (`ListID`, `Name`, `Description`, `OptInMode`, `CreatedOn`, `ArchivedAt`, `ActiveSubscriberCount`, `SegmentCount`, `LastActivityAt`, sender fields, sync fields, opt-in/opt-out URLs, etc.) plus the following computed fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `SubscriberCount` | Integer | Active subscribers (Subscribed, non-Hard-bounced). 5-minute Redis cache. Identical to `ActiveSubscriberCount` for sort consistency, kept for backwards compatibility. |
+| `ActiveSubscriberCount` | Integer | Denormalized active subscriber count (column on the list row). Maintained via write-through on `Subscribers::GetActiveTotal` cache miss. Eventually consistent within the 5-minute Redis cache TTL. Sortable. |
+| `SegmentCount` | Integer | Denormalized segment count. Maintained atomically by `Segments::Create` / `Segments::Delete`. Sortable. |
+| `LastActivityAt` | String \| null | Most recent list activity timestamp (subscription, unsubscription, import, bounce, send). Maintained at the `Statistics::UpdateListActivityStatistics` chokepoint. Null until the first activity. Sortable. |
+| `EncryptedSaltedListID` | String | `md5(MD5_SALT . ListID)` – useful for read-only public links. |
+| `SyncLastDateTime` | String | Localized "Never" placeholder substituted when the underlying value is `0000-00-00 00:00:00`. |
+| `EventListTrackerID` | String | Hashids-encoded list ID for the website event tracker. |
+| `EventUserTrackerID` | String | Hashids-encoded user ID for the website event tracker. |
+| `EventTrackerVariables` | Object | Configuration object for the website event tracker JS. |
+| `EventTrackerJS` | String | Pre-rendered `<script>…</script>` block for the website event tracker. |
+| `Options` | Object \| null | Decoded JSON of list-level options (e.g. `PlainEmailHeader`, `HTMLEmailFooter`, `DoNotSendEmailCampaignIfRecipientIsEnrolledInJourneyOrAutoresponder`). Returned as a decoded object, matching the `list.get` response. |
+
+`TotalListCount` reflects the **filtered** total (i.e. it respects `Search` and `Archived`), so paginated callers can use it as the basis for page counts.
 
 ::: code-group
 
@@ -268,7 +409,9 @@ curl -X POST https://example.com/api.php \
     "RecordsPerRequest": 20,
     "RecordsFrom": 0,
     "OrderField": "Name",
-    "OrderType": "ASC"
+    "OrderType": "ASC",
+    "Search": "newsletter",
+    "Archived": "false"
   }'
 ```
 
@@ -281,13 +424,132 @@ curl -X POST https://example.com/api.php \
   "Lists": [
     {
       "ListID": 123,
-      "Name": "My List",
+      "Name": "Spring Newsletter",
+      "Description": "Customers from the spring 2026 promotion",
+      "ArchivedAt": null,
       "RelOwnerUserID": 1,
+      "OptInMode": "Single",
+      "CreatedOn": "2026-04-01 09:12:33",
+      "SubscriberCount": 12345,
+      "Options": {
+        "DoNotSendEmailCampaignIfRecipientIsEnrolledInJourneyOrAutoresponder": false
+      },
       "EncryptedSaltedListID": "abc123...",
       "EventListTrackerID": "xyz789",
       "EventUserTrackerID": "def456",
       "EventTrackerVariables": {},
       "EventTrackerJS": "..."
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": []
+}
+```
+
+```txt [Error Codes]
+0: Success
+```
+
+:::
+
+**Migration note:** prior to v5.9.1 the `Options` field was returned as a raw JSON-encoded string. It is now returned as a decoded object/array, matching `list.get`. Callers that parsed the string client-side must remove that step.
+
+## Get Per-List Statistics
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Lists.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns aggregate per-list statistics over a configurable lookback window. Designed for the "Lists browse" page stat strip and per-row metrics — one round-trip across `oempro_subscriber_lists` joined with the pre-aggregated `oempro_stats_list_daily_aggregated` (opens / clicks) and `oempro_stats_activity` (sent / subscriptions / unsubscriptions / imports / hard bounces) sources. Archived lists are excluded.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                 |
+|-----------|---------|----------|-----------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `lists.stats`                                                  |
+| SessionID | String  | No       | Session ID obtained from login                                              |
+| APIKey    | String  | No       | API key for authentication                                                  |
+| Days      | Integer | No       | Lookback window in days. Default `30`. Clamped to `[1, 365]`.               |
+| ListIDs   | String  | No       | Optional comma-separated list of `ListID` values to scope the response to.  |
+
+**Per-row response shape**
+
+| Field                    | Type         | Description |
+|--------------------------|--------------|-------------|
+| `ListID`                 | Integer      | List identifier |
+| `Name`                   | String       | List name |
+| `ActiveSubscriberCount`  | Integer      | Denormalized active subscriber count (PR #1910 phase 2a) |
+| `SegmentCount`           | Integer      | Denormalized segment count |
+| `LastActivityAt`         | String\|null | Most recent recorded list activity timestamp |
+| `UniqueOpens`            | Integer      | Sum of `UniqueOpens` over the window |
+| `UniqueClicks`           | Integer      | Sum of `UniqueClicks` over the window |
+| `TotalSent`              | Integer      | Sum of `TotalSentEmail` over the window |
+| `NetGrowth`              | Integer      | `subscriptions + imports - unsubscriptions - hard_bounces` over the window |
+| `OpenRate`               | Float\|null  | `UniqueOpens / TotalSent` (industry-standard convention). `null` when `TotalSent == 0`. |
+| `ClickRate`              | Float\|null  | `UniqueClicks / TotalSent`. `null` when `TotalSent == 0`. |
+
+**Top-level fields**
+
+- `Days` — the actual window applied (echoed back after clamping).
+- `TotalListCount` — number of lists included in the response.
+- `WeightedAvgOpenRate` — subscriber-weighted average of `OpenRate` across the response set, weighted by `ActiveSubscriberCount * TotalSent`. `null` when no list in the response had any sends in the window.
+- `Lists` — array of per-list stat rows.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "lists.stats",
+    "SessionID": "your-session-id",
+    "Days": 30
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Days": 30,
+  "TotalListCount": 2,
+  "WeightedAvgOpenRate": 0.21,
+  "Lists": [
+    {
+      "ListID": 11,
+      "Name": "Buyers List",
+      "ActiveSubscriberCount": 1250,
+      "SegmentCount": 5,
+      "LastActivityAt": "2026-04-29 14:33:01",
+      "UniqueOpens": 312,
+      "UniqueClicks": 41,
+      "TotalSent": 1250,
+      "NetGrowth": 18,
+      "OpenRate": 0.2496,
+      "ClickRate": 0.0328
+    },
+    {
+      "ListID": 313,
+      "Name": "MOCK DATA",
+      "ActiveSubscriberCount": 1000,
+      "SegmentCount": 0,
+      "LastActivityAt": "2026-04-30 20:00:43",
+      "UniqueOpens": 0,
+      "UniqueClicks": 0,
+      "TotalSent": 0,
+      "NetGrowth": -1,
+      "OpenRate": null,
+      "ClickRate": null
     }
   ]
 }
