@@ -552,6 +552,8 @@ curl -X POST https://example.com/api/v1/useremailtemplate.preview \
 2: Invalid EmailTemplateID. Must be a numeric value.
 3: Email template not found
 4: Invalid SampleData. Must be an object.
+5: Invalid SampleData values. All values must be scalar (string, number, boolean) or null.
+6: Invalid IncludeBranding. Must be a boolean value.
 ```
 
 :::
