@@ -484,3 +484,74 @@ curl -X POST https://example.com/api/v1/useremailtemplate.copytouser \
 ```
 
 :::
+
+## Preview a User Email Template
+
+<Badge type="info" text="POST" /> `/api/v1/useremailtemplate.preview`
+
+Renders a user email template the way a subscriber would actually receive it: branding header/footer applied, merge tags resolved. Composes the existing personalization primitives behind a preview-safe entry point — no Campaign / Subscriber / EmailQueue context is required, so this is suitable for headless frontends and external preview UIs.
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `EmailTemplates.Manage`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `useremailtemplate.preview` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| EmailTemplateID | Integer | Yes | ID of the user-owned email template to preview. Must belong to the authenticated user. |
+| SampleData | Object | No | Map of merge-tag values to use during personalization (e.g. `{"FirstName": "Jane", "Email": "jane@example.com"}`). When omitted, sensible defaults are used so unfilled tags don't render as raw `%Subscriber:Foo%` strings. Caller-supplied values override the defaults. |
+| IncludeBranding | Boolean | No | When `true` (default), wraps the template via the user's configured email header/footer (set via `useremail.header.set` / `useremail.footer.set` and the user-group's branding). When `false`, returns the personalized body only. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/useremailtemplate.preview \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "useremailtemplate.preview",
+    "APIKey": "your-api-key",
+    "EmailTemplateID": 42,
+    "SampleData": {
+      "FirstName": "Jane",
+      "Email": "jane@example.com"
+    },
+    "IncludeBranding": true
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "HTMLContent": "<html><body>...header...<p>Hello Jane, welcome.</p>...footer...</body></html>",
+  "PlainContent": "...header...\nHello Jane, welcome.\n...footer..."
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "Errors": [
+    {
+      "Code": 3,
+      "Message": "Email template not found"
+    }
+  ]
+}
+```
+
+```txt [Error Codes]
+1: Missing EmailTemplateID parameter
+2: Invalid EmailTemplateID. Must be a numeric value.
+3: Email template not found
+4: Invalid SampleData. Must be an object.
+```
+
+:::
