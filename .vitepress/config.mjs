@@ -196,6 +196,7 @@ export default defineConfig({
                                 {text: 'Media Library', link: '/v5.9.1/api-reference/medialibrary'},
                                 {text: 'SSO', link: '/v5.9.1/api-reference/sso'},
                                 {text: 'Suppression Lists', link: '/v5.9.1/api-reference/suppression'},
+                                {text: 'SMS Suppression Lists', link: '/v5.9.1/api-reference/sms-suppression'},
                                 {text: 'Settings', link: '/v5.9.1/api-reference/settings'},
                                 {text: 'Event Tracking', link: '/v5.9.1/api-reference/eventtracking'},
                                 {text: 'System', link: '/v5.9.1/api-reference/system'},
