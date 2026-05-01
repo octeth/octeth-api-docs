@@ -14,6 +14,7 @@ List management endpoints for creating, updating, and managing email subscriber 
 - Authentication required: User API Key
 - Required permissions: `List.Create`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- The endpoint is **additive and backwards-compatible**. Callers passing only `SubscriberListName` continue to receive the original response shape (no `ConfirmationEmailID` field present).
 :::
 
 **Request Body Parameters:**
@@ -25,10 +26,35 @@ List management endpoints for creating, updating, and managing email subscriber 
 | APIKey                | String | No       | API key for authentication                     |
 | SubscriberListName    | String | Yes      | Name of the subscriber list to create          |
 | Description           | String | No       | Optional human-readable description for the list |
+| OptInMode             | String | No       | `Single` (default) or `Double`. Auto-promoted to `Double` when `ConfirmationEmail` is supplied or when the user group has `ForceOptInList` enabled. |
+| SenderName            | String | No       | List-level default sender name                 |
+| SenderEmailAddress    | String | No       | List-level default sender email address        |
+| SenderCompany         | String | No       | List-level default sender company              |
+| SenderAddress         | String | No       | List-level default sender postal address       |
+| ConfirmationEmail     | Object | No       | Optional confirmation-email block. When supplied, the handler atomically creates the email row, links it to the list via `RelOptInConfirmationEmailID`, and returns the new `ConfirmationEmailID` in the response. `OptInMode` is auto-promoted to `Double`. See sub-fields below. **Sending this key with an empty object/array opts you into the bundled flow and surfaces a missing-required-field error — it does NOT silently fall back to the legacy single-parameter behavior.** |
+
+**`ConfirmationEmail` sub-fields:**
+
+| Sub-field      | Type   | Required When Present                                              | Description |
+|----------------|--------|--------------------------------------------------------------------|-------------|
+| Subject        | String | Yes                                                                | Email subject line |
+| FromName       | String | Yes                                                                | Sender name |
+| FromEmail      | String | Yes                                                                | Sender email address |
+| ContentType    | String | Yes                                                                | One of `HTML`, `Plain`, or `Both` |
+| HTMLContent    | String | Yes when `ContentType` is `HTML` or `Both`                         | HTML body |
+| PlainContent   | String | Yes when `ContentType` is `Plain` or `Both`                        | Plain-text body |
+| ReplyToName    | String | No                                                                 | Reply-to display name |
+| ReplyToEmail   | String | No                                                                 | Reply-to email address |
+| PreHeaderText  | String | No                                                                 | Inbox preview text |
+| EmailName      | String | No                                                                 | Internal email label. Defaults to `Confirmation email: {ListID}` |
+| Mode           | String | No                                                                 | One of `Editor`, `Stripo`, `Unlayer`, `Empty`, `Template`, `Import`. Defaults to `Empty`. |
+| RelTemplateID  | Integer | Required when `Mode` is `Template`                                | Existing email-template ID to base the confirmation email on. |
+
+**Atomicity:** When the bundled path is used and any step fails (validation, email creation, link update), the handler rolls back: it deletes the new email row, deletes the new list row, and drops the dynamic `oempro_subscribers_<ListID>` table. The caller sees an error response with no orphaned rows.
 
 ::: code-group
 
-```bash [Example Request]
+```bash [Example: Single Opt-In (legacy)]
 curl -X POST https://example.com/api.php \
   -H "Content-Type: application/json" \
   -d '{
@@ -39,12 +65,48 @@ curl -X POST https://example.com/api.php \
   }'
 ```
 
-```json [Success Response]
+```bash [Example: Atomic Double Opt-In]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.create",
+    "SessionID": "your-session-id",
+    "SubscriberListName": "Newsletter — Double Opt-In",
+    "Description": "Subscribers who must confirm via email before receiving campaigns",
+    "OptInMode": "Double",
+    "SenderName": "Acme Marketing",
+    "SenderEmailAddress": "marketing@acme.example",
+    "SenderCompany": "Acme Inc.",
+    "SenderAddress": "123 Main St, Anytown",
+    "ConfirmationEmail": {
+      "Subject": "Please confirm your subscription",
+      "FromName": "Acme Marketing",
+      "FromEmail": "marketing@acme.example",
+      "ContentType": "Both",
+      "HTMLContent": "<p>Hi, click <a href=\"%Link:Confirm%\">here</a> to confirm.</p>",
+      "PlainContent": "Hi, click %Link:Confirm% to confirm your subscription.",
+      "PreHeaderText": "Confirm your newsletter signup",
+      "Mode": "Editor"
+    }
+  }'
+```
+
+```json [Success Response (legacy single-parameter call)]
 {
   "Success": true,
   "ErrorCode": 0,
   "ErrorText": "",
   "ListID": 123
+}
+```
+
+```json [Success Response (bundled create)]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ListID": 124,
+  "ConfirmationEmailID": 567
 }
 ```
 
@@ -56,9 +118,17 @@ curl -X POST https://example.com/api.php \
 ```
 
 ```txt [Error Codes]
-0: Success
-1: Missing subscriber list name
-3: User has exceeded maximum number of subscriber lists allowed by their user group
+0:  Success
+1:  Missing subscriber list name
+3:  User has exceeded maximum number of subscriber lists allowed by their user group
+20: Invalid optinmode (must be Single or Double)
+21: Missing required confirmationemail sub-field (subject, fromname, fromemail, or contenttype)
+22: Invalid confirmationemail.contenttype (must be HTML, Plain, or Both)
+23: confirmationemail.htmlcontent is required when contenttype is HTML or Both
+24: confirmationemail.plaincontent is required when contenttype is Plain or Both
+25: Invalid confirmationemail.mode (must be Editor, Stripo, Unlayer, Empty, Template, or Import)
+26: confirmationemail.reltemplateid is required when confirmationemail.mode is Template
+30: Confirmation email creation failed; list and email were rolled back
 ```
 
 :::
