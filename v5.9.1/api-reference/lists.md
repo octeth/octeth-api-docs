@@ -252,7 +252,7 @@ curl -X POST https://example.com/api.php \
 | OptOutUnsubscribeFrom                           | Integer | No       | List ID to unsubscribe from on unsubscription                |
 | OptInSubscribeTo                                | Integer | No       | List ID to subscribe to on subscription                      |
 | OptInUnsubscribeFrom                            | Integer | No       | List ID to unsubscribe from on subscription                  |
-| Options                                         | Object  | No       | Additional list options (JSON object). Supported keys: `DoNotSendEmailCampaignIfRecipientIsEnrolledInJourneyOrAutoresponder` (Boolean), `PlainEmailHeader` (String), `PlainEmailFooter` (String), `HTMLEmailHeader` (String), `HTMLEmailFooter` (String). Email header/footer options override user-level settings for emails sent to this list. |
+| Options                                         | Object  | No       | Additional list options (JSON object). Supported keys: `DoNotSendEmailCampaignIfRecipientIsEnrolledInJourneyOrAutoresponder` (Boolean), `PlainEmailHeader` (String), `PlainEmailFooter` (String), `HTMLEmailHeader` (String), `HTMLEmailFooter` (String). Inner keys are matched case-insensitively, but values are always persisted under the canonical CamelCase keys shown here. Partial updates merge with the row's existing Options — keys you don't include in the payload are preserved. Email header/footer options override user-level settings for emails sent to this list. |
 
 ::: code-group
 
