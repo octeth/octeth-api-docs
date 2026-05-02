@@ -422,6 +422,93 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## Clone a List
+
+<Badge type="info" text="POST" /> `/api/v1/list.clone`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Create`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Duplicates an existing subscriber list, including its full custom-field schema. The new list is seeded from every settings column on the source row except identity, denormalized counters, and the confirmation-email link.
+
+**What is cloned**
+
+- All list configuration columns (sender info, sync settings, opt-out behavior, redirection URLs, etc.).
+- All custom fields on the source list, with the complete column set (including `Option1`–`Option5`, `MergeTagAlias`, and `Meta`). Set `IncludeCustomFields=false` to skip custom-field replication.
+
+**What is not cloned**
+
+- `ListID`, `CreatedOn`, `LastActivityAt`, `ArchivedAt` (auto-managed).
+- `ActiveSubscriberCount`, `SegmentCount` (denormalized counters; the new list starts empty).
+- `RelOptInConfirmationEmailID` (left unset on the new list — call `list.update` afterwards if you need to attach a confirmation email).
+- Subscribers (the new list's subscriber table is created empty).
+
+`OptInMode` is carried over from the source list. If the user's group has `ForceOptInList=Enabled`, `OptInMode` is overridden to `Double`, matching `list.create`.
+
+**Atomicity**
+
+If any custom-field replication fails, the new list is deleted (along with its dynamic subscribers and tags tables) and `ErrorCode: [4]` is returned. When `IncludeCustomFields=false`, the call degenerates to a single list creation with no rollback path.
+
+**Plug-in hook**
+
+`Plugins::HookListener('Action', 'List.Create.Post', ...)` fires for the new list with the same payload shape as `list.create`.
+
+**Request Body Parameters:**
+
+| Parameter            | Type    | Required | Description                                                              |
+|----------------------|---------|----------|--------------------------------------------------------------------------|
+| Command              | String  | Yes      | API command: `list.clone`                                                |
+| SessionID            | String  | No       | Session ID obtained from login                                           |
+| APIKey               | String  | No       | API key for authentication                                               |
+| SubscriberListID     | Integer | Yes      | ID of the source list to clone                                           |
+| Name                 | String  | Yes      | Name for the new (cloned) list                                           |
+| IncludeCustomFields  | Boolean | No       | Replicate the source list's custom fields. Default: `true`               |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.clone",
+    "SessionID": "your-session-id",
+    "SubscriberListID": 123,
+    "Name": "My cloned list",
+    "IncludeCustomFields": true
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ListID": 456,
+  "CustomFieldsCloned": 7
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Invalid subscriber list id"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing source subscriber list id
+2: Missing new list name (or invalid source list — not found or not owned by the authenticated user)
+3: Subscriber list quota exceeded (LimitLists group setting)
+4: Failed to clone the list (e.g. custom-field replication failed; the new list has been rolled back)
+```
+
+:::
+
 ## Get All Lists
 
 <Badge type="info" text="POST" /> `/api.php`
