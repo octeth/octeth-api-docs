@@ -186,6 +186,7 @@ export default defineConfig({
                                 {text: 'Journeys', link: '/v5.9.1/api-reference/journeys'},
                                 {text: 'Journey Actions', link: '/v5.9.1/api-reference/journey-actions'},
                                 {text: 'Lists', link: '/v5.9.1/api-reference/lists'},
+                                {text: 'Personalization', link: '/v5.9.1/api-reference/personalization'},
                                 {text: 'Re-Branding', link: '/v5.9.1/api-reference/rebranding'},
                                 {text: 'Clients', link: '/v5.9.1/api-reference/clients'},
                                 {text: 'Emails', link: '/v5.9.1/api-reference/emails'},
