@@ -32,6 +32,7 @@ The `SuppressionSource` column is a fixed enumeration. The valid values are:
 | APIKey    | String | No       | API key for authentication            |
 | SearchPattern | String | No   | Search pattern for filtering email addresses (supports `*` wildcard). When supplied, `TotalRecords` reflects the filtered count. |
 | SuppressionSource | String | No | Restrict results to one or more sources. Comma-separated list of `SuppressionSource` ENUM values (e.g. `Hard Bounced,SPAM complaint`). |
+| ListID | Integer | No | Scope the browse to a single subscriber list. When omitted or `0`, returns the user-wide global suppression list (today's default behavior). When non-zero, the list must be owned by the authenticated user; otherwise the call fails with `ErrorCode: 4`. |
 | StartFrom | Integer | No      | Starting record index for pagination (default: 0) |
 | RetrieveCount | Integer | No  | Number of records to retrieve (default: 100) |
 
@@ -82,6 +83,7 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 1: Invalid SuppressionSource value
+4: Invalid ListID — list does not exist or is not owned by the authenticated user
 ```
 
 :::
@@ -106,6 +108,7 @@ Returns the total suppression count and a per-source breakdown for the authentic
 | APIKey    | String | No       | API key for authentication            |
 | SearchPattern | String | No   | Optional pattern for filtering by email (supports `*` wildcard). |
 | SuppressionSource | String | No | Optional comma-separated list of `SuppressionSource` ENUM values. When supplied, `Total` and `BySource` only reflect those sources. |
+| ListID | Integer | No | Scope the counts to a single subscriber list. When omitted or `0`, counts the user-wide global suppression list (today's default behavior). When non-zero, the list must be owned by the authenticated user; otherwise the call fails with `ErrorCode: 4`. |
 
 ::: code-group
 
@@ -143,6 +146,7 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 1: Invalid SuppressionSource value
+4: Invalid ListID — list does not exist or is not owned by the authenticated user
 ```
 
 :::
@@ -168,6 +172,7 @@ Accepts either a single address (legacy) or a bulk payload. The bulk path return
 | EmailAddress | String | No*   | Single email address to remove (legacy single-delete path). |
 | EmailAddresses | String | No* | JSON-encoded array of email addresses (bulk path). |
 | EmailAddressesBulk | String | No* | Newline-separated email addresses (bulk path). |
+| ListID | Integer | No | Scope the delete to a single subscriber list. When omitted or `0`, only rows on the user-wide global suppression list are removed (today's default behavior). When non-zero, only rows with matching `RelListID` are removed; the same address suppressed on other scopes is left untouched. The list must be owned by the authenticated user; otherwise the call fails with `ErrorCode: 4`. |
 
 \* At least one of `EmailAddress`, `EmailAddresses`, or `EmailAddressesBulk` is required. When any of the bulk parameters is set, the legacy single-address validation is skipped and the response uses the bulk shape (with `TotalDeleted`, `TotalFailed`, `FailedEmailAddresses`).
 
@@ -222,6 +227,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing input — none of EmailAddress, EmailAddresses, or EmailAddressesBulk was provided
 2: Invalid email address (single path), email not in suppression list (single path), or invalid JSON in EmailAddresses
+4: Invalid ListID — list does not exist or is not owned by the authenticated user
 ```
 
 :::
@@ -246,6 +252,7 @@ curl -X POST https://example.com/api.php \
 | EmailAddressesBulk | String | No* | Newline-separated list of email addresses to import |
 | SuppressionSource | String | No | Override the source recorded for imported rows. Must be one of the `SuppressionSource` ENUM values. Defaults to `User`. |
 | Reason | String | No | Override the reason recorded for imported rows. Capped at 250 characters. Defaults to `Suppression List Import`. |
+| ListID | Integer | No | Write imported rows scoped to a single subscriber list. When omitted or `0`, imports go to the user-wide global suppression list (`RelListID = 0`, today's default behavior). When non-zero, the list must be owned by the authenticated user; otherwise the call fails with `ErrorCode: 4` and no rows are written. Applies to both `EmailAddresses` and `EmailAddressesBulk` paths. |
 
 \* **Note:** Either `EmailAddresses` or `EmailAddressesBulk` must be provided. Both can be provided simultaneously.
 
@@ -286,6 +293,7 @@ curl -X POST https://example.com/api.php \
 1: Missing EmailAddresses parameter
 2: Missing EmailAddressesBulk parameter or invalid EmailAddresses format (both parameters are missing or EmailAddresses JSON is invalid)
 3: Invalid SuppressionSource value
+4: Invalid ListID — list does not exist or is not owned by the authenticated user
 ```
 
 :::
