@@ -116,7 +116,7 @@ curl -X POST https://example.com/api.php \
 
 :::
 
-## Get Emails List
+## Get Emails (List or Bulk by IDs)
 
 <Badge type="info" text="POST" /> `/api.php`
 
@@ -125,6 +125,23 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
+This endpoint operates in two modes:
+
+- **Legacy list mode** (no `EmailIDs` parameter) — returns every email the
+  calling user owns. Per-row shape is the raw database row: `Options` is a
+  JSON string, no `Attachments` key. Default order: `EmailName ASC`.
+- **Bulk-by-IDs mode** (with `EmailIDs` parameter) — returns only the
+  requested rows that the calling user owns. Per-row shape mirrors
+  `email.get`: `Options` is JSON-decoded into an object, and `Attachments`
+  is attached when the full shape is requested OR when `Attachments` is
+  explicitly listed in `Fields`. Soft-deleted rows are excluded. Response
+  order is **not guaranteed** — re-key by `EmailID` if order matters.
+  Non-owned and non-existent IDs are silently dropped (compare input length
+  vs. response length to detect drops).
+
+The optional `Fields` parameter is honored in both modes — additive
+projection that restricts which keys appear on each returned row.
+
 **Request Body Parameters:**
 
 | Parameter | Type   | Required | Description                           |
@@ -132,10 +149,12 @@ curl -X POST https://example.com/api.php \
 | Command   | String | Yes      | API command: `emails.get`             |
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
+| EmailIDs  | String | No       | Comma-separated list of email IDs (e.g. `9101,9102,9103`). When omitted, returns all emails owned by the user (legacy mode). When set, switches to bulk-by-IDs mode: blank/non-numeric entries are silently dropped, hard-capped at **100 valid IDs** per call. |
+| Fields    | String | No       | Comma-separated allow-list of fields to project per row. Possible values: `EmailID`, `RelUserID`, `EmailName`, `FromName`, `FromEmail`, `ReplyToName`, `ReplyToEmail`, `ContentType`, `Mode`, `FetchURL`, `FetchPlainURL`, `Subject`, `PlainContent`, `HTMLContent`, `ExtraContent1`, `ExtraContent2`, `ImageEmbedding`, `RelTemplateID`, `PreHeaderText`, `Options`, `IsEmailTemplate`, `CreatedAt`, `UpdatedAt`, `DeletedAt`, `Attachments`. Unknown field names are silently dropped. `EmailID` is always re-added so callers can re-key. |
 
 ::: code-group
 
-```bash [Example Request]
+```bash [Example Request — Legacy List Mode]
 curl -X POST https://example.com/api.php \
   -H "Content-Type: application/json" \
   -d '{
@@ -144,17 +163,37 @@ curl -X POST https://example.com/api.php \
   }'
 ```
 
+```bash [Example Request — Bulk by IDs]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "emails.get",
+    "SessionID": "your-session-id",
+    "EmailIDs": "9101,9102,9103",
+    "Fields": "EmailID,Subject,Mode,ContentType,UpdatedAt"
+  }'
+```
+
 ```json [Success Response]
 {
   "Success": true,
   "ErrorCode": 0,
   "ErrorText": "",
-  "TotalEmailCount": 10,
+  "TotalEmailCount": 2,
   "Emails": [
     {
-      "EmailID": 12345,
-      "EmailName": "Newsletter",
-      "Subject": "Monthly Update"
+      "EmailID": 9101,
+      "Subject": "Welcome aboard",
+      "Mode": "Editor",
+      "ContentType": "Both",
+      "UpdatedAt": "2026-05-02 18:11:07"
+    },
+    {
+      "EmailID": 9102,
+      "Subject": "Day-3 tips",
+      "Mode": "Stripo",
+      "ContentType": "Both",
+      "UpdatedAt": "2026-05-03 09:12:14"
     }
   ]
 }
@@ -163,12 +202,15 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": []
+  "ErrorCode": [3],
+  "ErrorText": ["Too many ids; max 100"]
 }
 ```
 
 ```txt [Error Codes]
 0: Success
+1: EmailIDs was provided but contained no valid (numeric, non-blank) entries
+3: EmailIDs contained more than 100 valid entries (cap exceeded)
 ```
 
 :::
