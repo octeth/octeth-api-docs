@@ -30,6 +30,8 @@ Segment management endpoints for creating, updating, and managing subscriber seg
 | SegmentRuleOperator | Array | No | Array of rule operators (old style) |
 | SegmentRuleFilter | Array | No | Array of rule filter values (old style) |
 | RulesJson | String | No | Segment rules in JSON format |
+| Randomness | Boolean | No | Pick a random audience matching the segment rules. Accepts `true`/`false`/`yes`/`no`/`1`/`0`. Defaults to `false`. Persisted as the `Randomness` key inside the segment's `Options` JSON blob (round-trips via `Segments.Get`). |
+| RandomnessAudienceSize | Integer | No | Maximum number of subscribers to pick when `Randomness` is enabled. Non-numeric values silently coerce to `0`. Defaults to `0`. Persisted as the `RandomnessAudienceSize` key inside the segment's `Options` JSON blob. |
 
 ::: code-group
 
@@ -42,7 +44,9 @@ curl -X POST https://example.com/api.php \
     "SubscriberListID": 123,
     "SegmentName": "Active Subscribers",
     "SegmentOperator": "and",
-    "RulesJson": "{\"rules\":[{\"field\":\"status\",\"operator\":\"equals\",\"value\":\"active\"}]}"
+    "RulesJson": "{\"rules\":[{\"field\":\"status\",\"operator\":\"equals\",\"value\":\"active\"}]}",
+    "Randomness": true,
+    "RandomnessAudienceSize": 500
   }'
 ```
 
@@ -98,6 +102,8 @@ curl -X POST https://example.com/api.php \
 | SegmentRuleOperator | Array | No | Array of rule operators (old style) |
 | SegmentRuleFilter | Array | No | Array of rule filter values (old style) |
 | RulesJson | String | No | Segment rules in JSON format |
+| Randomness | Boolean | No | Pick a random audience matching the segment rules. Accepts `true`/`false`/`yes`/`no`/`1`/`0`. **When this parameter is omitted (or sent as an empty string) along with `RandomnessAudienceSize`, the segment's existing `Options` value is preserved as-is.** When at least one of the two randomness params is provided, the missing one is read from the segment's existing `Options` blob (no silent reset to defaults). |
+| RandomnessAudienceSize | Integer | No | Maximum number of subscribers to pick when `Randomness` is enabled. Non-numeric values silently coerce to `0`. **When this parameter is omitted (or sent as an empty string) along with `Randomness`, the segment's existing `Options` value is preserved as-is.** When at least one of the two randomness params is provided, the missing one is read from the segment's existing `Options` blob. |
 
 ::: code-group
 
@@ -109,7 +115,9 @@ curl -X POST https://example.com/api.php \
     "SessionID": "your-session-id",
     "SegmentID": 456,
     "SegmentName": "Updated Active Subscribers",
-    "SegmentOperator": "or"
+    "SegmentOperator": "or",
+    "Randomness": true,
+    "RandomnessAudienceSize": 500
   }'
 ```
 
