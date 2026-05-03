@@ -452,6 +452,128 @@ curl -X GET https://example.com/api/v1/journeys \
 
 :::
 
+## List SendEmail Actions Across Journeys
+
+<Badge type="info" text="GET" /> `/api/v1/journey.sendemailactions`
+
+Returns a flat list of every `SendEmail` journey action belonging to the authenticated user, optionally narrowed to a single journey. Designed for segment rule-builder pickers (rule type `journey-email-action`) that need every choosable email-send action in a single round trip — replacing the legacy N+1 of `Journey.List` plus per-journey `Journey.Get`.
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Campaign.Create`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command   | String  | Yes | API command: `journey.sendemailactions` |
+| SessionID | String  | No  | Session ID obtained from login |
+| APIKey    | String  | No  | API key for authentication |
+| JourneyID | Integer | No  | Narrow the result to a single journey. When omitted (or empty string), all of the user's journeys are scanned. A `JourneyID` belonging to a different user silently returns `Actions: []` (not an error). |
+| IncludeDisabled    | Boolean | No | When truthy (`1`, `true`, `yes`), actions belonging to journeys with `Status='Disabled'` are included. Default: `false`. Empty string is treated as absent. |
+| IncludeUnpublished | Boolean | No | When truthy, actions whose own `Published` flag is `false` are included. Default: `false`. Empty string is treated as absent. |
+
+::: tip Filter Defaults
+By default the endpoint returns only actions that are **(a)** of type `SendEmail`, **(b)** belonging to a journey whose `Status` is `Enabled`, and **(c)** themselves `Published='true'` — matching what the legacy segment rule-builder picker shows today. The two `Include*` flags are escape hatches for admin or debugging tooling.
+
+Boolean coercion uses `filter_var(FILTER_VALIDATE_BOOLEAN)`, so `1` / `true` / `yes` / `on` opt in. Anything outside that allow-list (including `2`, `foo`, empty string) falls back to the conservative default.
+:::
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET https://example.com/api/v1/journey.sendemailactions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "journey.sendemailactions",
+    "SessionID": "your-session-id"
+  }'
+```
+
+```bash [Single Journey]
+curl -X GET https://example.com/api/v1/journey.sendemailactions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "journey.sendemailactions",
+    "SessionID": "your-session-id",
+    "JourneyID": 18
+  }'
+```
+
+```bash [Include Disabled & Unpublished]
+curl -X GET https://example.com/api/v1/journey.sendemailactions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "journey.sendemailactions",
+    "SessionID": "your-session-id",
+    "IncludeDisabled": 1,
+    "IncludeUnpublished": 1
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "Actions": [
+    {
+      "ActionID": 412,
+      "JourneyID": 18,
+      "JourneyName": "Welcome Series",
+      "EmailName": "Day 1 — Welcome",
+      "Subject": "Welcome to Acme",
+      "OrderNo": 1,
+      "Published": true
+    },
+    {
+      "ActionID": 415,
+      "JourneyID": 18,
+      "JourneyName": "Welcome Series",
+      "EmailName": "Day 3 — Tips",
+      "Subject": "Three quick tips to get started",
+      "OrderNo": 2,
+      "Published": true
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    {
+      "Code": 1,
+      "Message": "Invalid JourneyID parameter"
+    }
+  ]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Invalid JourneyID parameter
+```
+
+:::
+
+**Per-row fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| ActionID    | Integer | Primary key from `oempro_journeys_actions`. This is the value the segment rule-builder writes into `rule.value` for the `journey-email-action` rule type. |
+| JourneyID   | Integer | Owning journey. |
+| JourneyName | String  | Owning journey's name (HTML-decoded). |
+| EmailName   | String  | The referenced email's name. Empty string when the email row is missing (orphan action). |
+| Subject     | String  | The referenced email's subject line. Empty string when the email row is missing. |
+| OrderNo     | Integer | Action ordering within its parent branch. Useful for ordering choices within a journey, but not globally unique across journeys. |
+| Published   | Boolean | Whether the action itself is published on the journey canvas. |
+
+::: warning EmailName / Subject orphans
+The endpoint joins to `oempro_emails` via the `EmailID` stored in the action's `ActionParameters`. If the referenced email row no longer exists (manually deleted, mid-rebuild, etc.) the action is still returned with `EmailName: ""` and `Subject: ""` — the picker should display a fallback label rather than dropping the row.
+:::
+
 ## Update a Journey
 
 <Badge type="info" text="PATCH" /> `/api/v1/journey`
