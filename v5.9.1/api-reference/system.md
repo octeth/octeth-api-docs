@@ -243,3 +243,104 @@ curl -X POST https://example.com/api/v1/process_pmta_log_file \
 - Processes events in batch for improved performance
 - Returns processing results with success/error counts
 - Failed events within a batch do not cause the entire batch to fail
+
+## Get System Settings
+
+<Badge type="info" text="GET" /> `/api/v1/system-settings`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (or logged-in admin session)
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns a unified snapshot of every Octeth configuration value the running instance can see. Settings are grouped by source so callers can drill into a specific layer without merging four separate views themselves.
+
+The endpoint surfaces four sources:
+
+1. **`ConfigFiles`** — every `*.php` file under `config/global/` (each returns an array). The `app.php` file is intentionally skipped because it declares the `SystemConfig` class and has side effects; its values are already represented in `EnvSettings.octeth` and `DefinedConstants`.
+2. **`EnvSettings`** — `SystemConfig::$Config`, populated from the six `.oempro_*_env` files: `octeth`, `mysql`, `redis`, `rabbitmq`, `clickhouse`, `supervisor`.
+3. **`RuntimeOptions`** — every row in the `oempro_options` table (the runtime-editable options used by `OemproOptions::get()`/`set()`). JSON-encoded values are decoded automatically when they are arrays.
+4. **`DefinedConstants`** — `get_defined_constants(true)['user']`: every constant registered by `ConfigLoader` plus library `define()` calls.
+
+**Sensitive value redaction:** any key whose name contains a known secret substring (case-insensitive: `PASSWORD`, `PASSWD`, `_PASS`, `SECRET`, `SALT`, `TOKEN`, `API_KEY`, `APIKEY`, `CLIENT_SECRET`, `ENCRYPTION_KEY`, `HMAC`, `ERLANG_COOKIE`, `LICENSE_KEY`, `AUTH_CODE`, `BUGSNAG_API`, `SENTRY_API`, `PRIVATE_KEY`, `WEBHOOK_SECRET`) has its value replaced with the literal string `"***REDACTED***"`. The key itself remains visible. Empty values pass through untouched so callers can distinguish "configured but blank" from "configured with a value, redacted".
+
+**Request Parameters:**
+
+| Parameter   | Type   | Required | Description                                                                                                            |
+|-------------|--------|----------|------------------------------------------------------------------------------------------------------------------------|
+| Command     | String | Yes      | API command: `system.getsettings` (only for legacy endpoint)                                                            |
+| AdminAPIKey | String | No       | Admin API key for authentication (alternative to logged-in admin session). Sent as `adminapikey` query parameter.       |
+| Section     | String | No       | Restrict the response to a single source. Possible values: `ConfigFiles`, `EnvSettings`, `RuntimeOptions`, `DefinedConstants`. If omitted, all four sections are returned. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/system-settings?adminapikey=YOUR_ADMIN_API_KEY"
+```
+
+```bash [Example Request (Legacy)]
+curl -X GET "https://example.com/api.php?Command=System.GetSettings&adminapikey=YOUR_ADMIN_API_KEY"
+```
+
+```bash [Example Request (Filtered)]
+curl -X GET "https://example.com/api/v1/system-settings?Section=EnvSettings&adminapikey=YOUR_ADMIN_API_KEY"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "Settings": {
+    "ConfigFiles": {
+      "email_delivery": { "EMAIL_DELIVERY_BATCH_SIZE": 100 },
+      "sms": { "SMS_GATEWAY_TIMEOUT": 30 }
+    },
+    "EnvSettings": {
+      "octeth": {
+        "APP_URL": "https://example.com/",
+        "PRODUCT_VERSION": "5.9.1",
+        "MYSQL_PASSWORD": "***REDACTED***",
+        "LICENSE_KEY": "***REDACTED***",
+        "OEMPRO_PASSWORD_SALT": "***REDACTED***"
+      },
+      "mysql":      { "MYSQL_HOST": "oempro_mysql", "MYSQL_PASSWORD": "***REDACTED***" },
+      "redis":      { "REDIS_HOST": "oempro_redis" },
+      "rabbitmq":   { "RABBITMQ_DEFAULT_USER": "oempro", "RABBITMQ_DEFAULT_PASS": "***REDACTED***" },
+      "clickhouse": { "CLICKHOUSE_HOST": "oempro_clickhouse" },
+      "supervisor": { "SUPERVISOR_USERNAME": "admin" }
+    },
+    "RuntimeOptions": {
+      "FailedWebhookHandler": "email",
+      "DisableUserPasswordReset": ""
+    },
+    "DefinedConstants": {
+      "APP_PATH": "/var/www/html",
+      "CHARSET": "utf-8",
+      "OEMPRO_DEBUG": true,
+      "PRODUCT_VERSION": "5.9.1",
+      "ADMIN_API_KEY": "***REDACTED***"
+    }
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorMessage": "Invalid Section. Allowed: ConfigFiles, EnvSettings, RuntimeOptions, DefinedConstants"
+}
+```
+
+```txt [Error Codes]
+1: Invalid Section value (must be one of ConfigFiles, EnvSettings, RuntimeOptions, DefinedConstants)
+99998: Authentication required - missing or invalid admin credentials
+```
+
+:::
+
+**Use cases:**
+
+- Diagnosing configuration drift between environments
+- Support escalations where the operator needs to share a redacted config snapshot
+- Verifying that a setting (env var, runtime option, or constant) is actually present and reaching the application
+- Auditing which secrets are configured without exposing their values
