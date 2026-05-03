@@ -691,9 +691,23 @@ curl -X POST https://example.com/api.php \
 {
   "Success": true,
   "ErrorCode": 0,
-  "ErrorText": [],
+  "ErrorText": "",
   "RecipientsAttempted": 2,
-  "RecipientsAccepted": 2
+  "RecipientsAccepted": 2,
+  "RecipientFailures": []
+}
+```
+
+```json [Partial Failure Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "RecipientsAttempted": 3,
+  "RecipientsAccepted": 2,
+  "RecipientFailures": [
+    { "Recipient": "broken@bad-domain.example", "Error": "SMTP connect failed" }
+  ]
 }
 ```
 
@@ -713,8 +727,22 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Error Response - All Recipients Failed]
+{
+  "Success": false,
+  "ErrorCode": [11],
+  "ErrorText": ["All recipients failed delivery"],
+  "RecipientsAttempted": 2,
+  "RecipientsAccepted": 0,
+  "RecipientFailures": [
+    { "Recipient": "broken1@example.invalid", "Error": "SMTP connect failed" },
+    { "Recipient": "broken2@example.invalid", "Error": "SMTP connect failed" }
+  ]
+}
+```
+
 ```txt [Error Codes]
-0: Success
+0: Success (Success=true; per-recipient failures, if any, are listed in RecipientFailures)
 1: Missing required parameter autoresponderid
 2: Missing required parameter recipients
 3: Invalid auto responder id (not found or access denied)
@@ -725,7 +753,7 @@ curl -X POST https://example.com/api.php \
 8: Invalid recipient email address
 9: No recipients provided
 10: Too many recipients (max 5 per call)
-11: One or more recipients failed delivery
+11: All recipients failed delivery (returned only when zero recipients were accepted)
 99: NOT AVAILABLE IN DEMO MODE
 ```
 
@@ -883,7 +911,8 @@ curl -X POST https://example.com/api.php \
     "TotalClicks": 1240,
     "UniqueClicks": 1004,
     "TotalUnsubscriptions": 32,
-    "TotalBounces": 105
+    "TotalHardBounces": 18,
+    "TotalSoftBounces": 87
   },
   "LastSentAt": "2026-05-03 09:12:14",
   "NextScheduledAt": "2026-05-03 13:30:00"
