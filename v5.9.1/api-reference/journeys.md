@@ -359,6 +359,15 @@ curl -X GET https://example.com/api/v1/journey \
 | APIKey    | String | No       | API key for authentication            |
 | StatsStartDate | String | No  | Start date for stats (YYYY-MM-DD)     |
 | StatsEndDate | String | No    | End date for stats (YYYY-MM-DD)       |
+| SkipStats | Boolean | No      | When truthy (`1`, `true`, `yes`), the per-row `JourneyStats` block is omitted entirely. Default: `false` (full stats are returned). Empty string is treated as absent. |
+
+::: tip About `SkipStats`
+This flag is intended for callers that only need the flat list of journeys (e.g. dropdown pickers in segment rule-builders) and don't display stats. When set, the endpoint skips four `JourneyStats` queries per journey plus the per-row stats join, so it's substantially cheaper for users with many journeys.
+
+When `SkipStats=1`, consumers must check `array_key_exists('JourneyStats', $row)` rather than reading `$row['JourneyStats']` — the key is **omitted**, not set to `null` or `[]`.
+
+Date validation (`StatsStartDate`, `StatsEndDate`) still runs even with `SkipStats=1`, so malformed dates are rejected the same way they would be without the flag.
+:::
 
 ::: code-group
 
@@ -370,6 +379,16 @@ curl -X GET https://example.com/api/v1/journeys \
     "SessionID": "your-session-id",
     "StatsStartDate": "2025-01-01",
     "StatsEndDate": "2025-01-31"
+  }'
+```
+
+```bash [Example (SkipStats)]
+curl -X GET https://example.com/api/v1/journeys \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "journey.list",
+    "SessionID": "your-session-id",
+    "SkipStats": 1
   }'
 ```
 
@@ -392,6 +411,22 @@ curl -X GET https://example.com/api/v1/journeys \
         "TotalRevenue": 0,
         "DaysRevenue": []
       }
+    }
+  ]
+}
+```
+
+```json [SkipStats=1 Response]
+{
+  "Journeys": [
+    {
+      "JourneyID": "456",
+      "JourneyName": "Welcome Series",
+      "Trigger": "ListSubscription",
+      "TriggerParameters": {
+        "ListID": 123
+      },
+      "Status": "Enabled"
     }
   ]
 }
