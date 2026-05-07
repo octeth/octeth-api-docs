@@ -17,7 +17,7 @@ Endpoints for working with the personalization-tag catalog (subscriber fields, l
 
 Returns the personalization tag catalog for a given list, grouped by category. The Subscriber category includes the list's custom fields. This is the API equivalent of the dropdown rendered on the legacy List Settings screen and is intended for modern frontend clients that need the catalog dynamically rather than hard-coding a snapshot.
 
-The handler is a thin wrapper over the `Personalization::*` static methods. The `Tag` value is returned exactly as the underlying method emits it — Handlebars syntax (`{{ Subscriber:Field }}`) for subscriber fields and the legacy `%Tag%` syntax for everything else. No syntax normalization is performed.
+The handler is a thin wrapper over the `Personalization::*` static methods. The `Tag` value is returned exactly as the underlying method emits it — Handlebars syntax (<code v-pre>{{ Subscriber:Field }}</code>) for subscriber fields and the legacy `%Tag%` syntax for everything else. No syntax normalization is performed.
 
 **Request Body Parameters:**
 
