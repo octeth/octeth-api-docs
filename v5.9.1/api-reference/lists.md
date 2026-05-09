@@ -818,8 +818,7 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
-1: List ID must be a positive integer
-99997: Subscriber list does not exist or is not owned by the authenticated user
+99997: Subscriber list does not exist or is not owned by the authenticated user (also returned when ListID is missing, non-numeric, or non-positive)
 99998: Authentication failure or session expired
 99999: User does not have the required permission (List.Get)
 ```
