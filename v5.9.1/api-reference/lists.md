@@ -725,6 +725,107 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## Get List Activity Series
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns a daily series of subscription / unsubscription activity for a single list over a configurable lookback window. Designed for the Reports tab → Overview growth chart and the per-list "net growth" KPI. Reads pre-aggregated rows from `oempro_stats_activity` (one row per list / owner / day) and gap-fills missing dates with zeros so the consumer always receives exactly `Days` ordered entries ending today.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                  |
+|-----------|---------|----------|------------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `list.getactivityseries`                                        |
+| SessionID | String  | No       | Session ID obtained from login                                               |
+| APIKey    | String  | No       | API key for authentication                                                   |
+| ListID    | Integer | Yes      | Subscriber list to query. Must be owned by the authenticated user.           |
+| Days      | Integer | No       | Lookback window in days. Default `30`. Clamped to `[1, 365]`. Values `<= 0` fall back to the default. |
+
+**Per-day entry shape (one entry per element in `Series`)**
+
+| Field             | Type    | Description |
+|-------------------|---------|-------------|
+| `Date`            | String  | Calendar date in `YYYY-MM-DD` format (UTC). |
+| `Subscriptions`   | Integer | New subscriptions added on that day (`oempro_stats_activity.TotalSubscriptions`). |
+| `Unsubscriptions` | Integer | Unsubscriptions on that day (`TotalUnsubscriptions`). |
+| `Imports`         | Integer | Subscribers added via import (`TotalImport`). |
+| `SoftBounces`     | Integer | Soft bounces (`TotalSoftBounce`). Returned for completeness but **not** included in `NetGrowth`. |
+| `HardBounces`     | Integer | Hard bounces (`TotalHardBounce`). |
+| `NetGrowth`       | Integer | `Subscriptions + Imports - Unsubscriptions - HardBounces` for the day. Same formula as `lists.stats`. |
+
+**Top-level fields**
+
+- `ListID` — the list the series describes (echoed back).
+- `Days` — the actual window applied after clamping.
+- `Series` — array of exactly `Days` daily entries, ascending by `Date`, ending on today.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.getactivityseries",
+    "SessionID": "your-session-id",
+    "ListID": 123,
+    "Days": 30
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ListID": 123,
+  "Days": 30,
+  "Series": [
+    {
+      "Date": "2026-04-10",
+      "Subscriptions": 42,
+      "Unsubscriptions": 5,
+      "Imports": 0,
+      "SoftBounces": 1,
+      "HardBounces": 2,
+      "NetGrowth": 35
+    },
+    {
+      "Date": "2026-04-11",
+      "Subscriptions": 0,
+      "Unsubscriptions": 0,
+      "Imports": 0,
+      "SoftBounces": 0,
+      "HardBounces": 0,
+      "NetGrowth": 0
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99997,
+  "ErrorText": "Subscriber list does not exist or is not owned by the authenticated user"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: List ID must be a positive integer
+99997: Subscriber list does not exist or is not owned by the authenticated user
+99998: Authentication failure or session expired
+99999: User does not have the required permission (List.Get)
+```
+
+:::
+
 ## Delete Lists
 
 <Badge type="info" text="POST" /> `/api.php`
