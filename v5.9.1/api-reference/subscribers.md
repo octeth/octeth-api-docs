@@ -42,6 +42,8 @@ Subscriber management endpoints for managing email list subscribers, including c
 | UpdateStatistics | Boolean | No | Update list statistics (default: false) |
 | TriggerWebServices | Boolean | No | Trigger web service integrations (default: false) |
 | TriggerAutoResponders | Boolean | No | Trigger autoresponders (default: false) |
+| Source    | String | No       | Acquisition source bucket persisted on the subscriber row. Possible values: `CSVImport`, `API`, `Webhook`, `Manual`, `Other`, `Unknown`. Defaults to `API` for this endpoint. Anything outside this set is coerced to `Unknown`. |
+| SourceRef | String | No       | Optional free-text source reference (e.g., a custom label or integration id). Truncated server-side to 64 characters. |
 
 ::: code-group
 
@@ -56,6 +58,8 @@ curl -X POST https://example.com/api/v1/subscriber.create \
     "Status": "Subscribed",
     "SubscriptionDate": "2025-01-01 12:00:00",
     "SubscriptionIP": "192.168.1.1",
+    "Source": "API",
+    "SourceRef": "campaign-abc-2025",
     "CustomFields": {
       "1": "John",
       "2": "Doe"
@@ -143,6 +147,8 @@ curl -X POST https://example.com/api/v1/subscriber.create \
 | EmailAddress | String | Yes   | Email address of the subscriber       |
 | IPAddress | String | Yes      | IP address of the subscriber          |
 | CustomFieldN | String | No    | Custom field values (N = CustomFieldID) |
+| Source    | String | No       | Acquisition source bucket persisted on the subscriber row. Possible values: `CSVImport`, `API`, `Webhook`, `Manual`, `Other`, `Unknown`. Defaults to `API` for this endpoint. Anything outside this set is coerced to `Unknown`. |
+| SourceRef | String | No       | Optional free-text source reference (e.g., a custom label or integration id). Truncated server-side to 64 characters. |
 
 ::: code-group
 
@@ -154,6 +160,8 @@ curl -X POST https://example.com/api.php \
     "ListID": "123",
     "EmailAddress": "subscriber@example.com",
     "IPAddress": "192.168.1.1",
+    "Source": "API",
+    "SourceRef": "campaign-abc-2025",
     "CustomField1": "John",
     "CustomField2": "Doe"
   }'

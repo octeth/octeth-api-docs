@@ -626,7 +626,7 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
-Returns aggregate per-list statistics over a configurable lookback window. Designed for the "Lists browse" page stat strip and per-row metrics — one round-trip across `oempro_subscriber_lists` joined with the pre-aggregated `oempro_stats_list_daily_aggregated` (opens / clicks) and `oempro_stats_activity` (sent / subscriptions / unsubscriptions / imports / hard bounces) sources. Archived lists are excluded.
+Returns aggregate per-list statistics over a configurable lookback window. Designed for the "Lists browse" page stat strip and per-row metrics — one round-trip across `oempro_subscriber_lists` joined with the pre-aggregated `oempro_stats_list_daily_aggregated` (opens / clicks / forwards / browser-views) and `oempro_stats_activity` (sent / subscriptions / unsubscriptions / imports / hard bounces) sources. Archived lists are excluded.
 
 **Request Body Parameters:**
 
@@ -649,17 +649,28 @@ Returns aggregate per-list statistics over a configurable lookback window. Desig
 | `LastActivityAt`         | String\|null | Most recent recorded list activity timestamp |
 | `UniqueOpens`            | Integer      | Sum of `UniqueOpens` over the window |
 | `UniqueClicks`           | Integer      | Sum of `UniqueClicks` over the window |
+| `UniqueForwards`         | Integer      | Sum of `UniqueForwards` over the window (added in v5.9.1, issue #1960) |
+| `UniqueBrowserViews`     | Integer      | Sum of `UniqueBrowserViews` over the window (added in v5.9.1, issue #1960) |
 | `TotalSent`              | Integer      | Sum of `TotalSentEmail` over the window |
 | `NetGrowth`              | Integer      | `subscriptions + imports - unsubscriptions - hard_bounces` over the window |
 | `OpenRate`               | Float\|null  | `UniqueOpens / TotalSent` (industry-standard convention). `null` when `TotalSent == 0`. |
 | `ClickRate`              | Float\|null  | `UniqueClicks / TotalSent`. `null` when `TotalSent == 0`. |
+| `ForwardRate`            | Float\|null  | `UniqueForwards / TotalSent`. `null` when `TotalSent == 0`. |
+| `BrowserViewRate`        | Float\|null  | `UniqueBrowserViews / TotalSent`. `null` when `TotalSent == 0`. |
+| `CTOR`                   | Float\|null  | Click-To-Open Rate: `UniqueClicks / UniqueOpens`. `null` when `UniqueOpens == 0`. Measures engagement **among openers** — the denominator is opens, not sends. |
 
 **Top-level fields**
 
 - `Days` — the actual window applied (echoed back after clamping).
 - `TotalListCount` — number of lists included in the response.
 - `WeightedAvgOpenRate` — subscriber-weighted average of `OpenRate` across the response set, weighted by `ActiveSubscriberCount * TotalSent`. `null` when no list in the response had any sends in the window.
+- `WeightedAvgClickRate` — subscriber-weighted average of `ClickRate`. Same weighting basis as open rate. `null` when no sends. (Added in v5.9.1, issue #1960.)
+- `WeightedAvgCTOR` — subscriber-weighted average of `CTOR`. **Different denominator basis**: weighted by `ActiveSubscriberCount * UniqueOpens` (lists with zero opens are skipped, not zero-weighted). `null` when no opens. (Added in v5.9.1, issue #1960.)
+- `WeightedAvgForwardRate` — subscriber-weighted average of `ForwardRate`. Same weighting basis as open rate. (Added in v5.9.1, issue #1960.)
+- `WeightedAvgBrowserViewRate` — subscriber-weighted average of `BrowserViewRate`. Same weighting basis as open rate. (Added in v5.9.1, issue #1960.)
 - `Lists` — array of per-list stat rows.
+
+**Migration note (v5.9.1):** the per-row `ClickRate` started returning meaningful non-zero values in v5.9.1 alongside the new metrics. Prior to this release the underlying `UniqueClicks` daily aggregate was never populated, so `ClickRate` was always `0`. Consumers that special-cased the zero value should remove that workaround.
 
 ::: code-group
 
@@ -681,6 +692,10 @@ curl -X POST https://example.com/api.php \
   "Days": 30,
   "TotalListCount": 2,
   "WeightedAvgOpenRate": 0.21,
+  "WeightedAvgClickRate": 0.027,
+  "WeightedAvgCTOR": 0.146,
+  "WeightedAvgForwardRate": 0.001,
+  "WeightedAvgBrowserViewRate": 0.012,
   "Lists": [
     {
       "ListID": 11,
@@ -690,10 +705,15 @@ curl -X POST https://example.com/api.php \
       "LastActivityAt": "2026-04-29 14:33:01",
       "UniqueOpens": 312,
       "UniqueClicks": 41,
+      "UniqueForwards": 2,
+      "UniqueBrowserViews": 14,
       "TotalSent": 1250,
       "NetGrowth": 18,
       "OpenRate": 0.2496,
-      "ClickRate": 0.0328
+      "ClickRate": 0.0328,
+      "ForwardRate": 0.0016,
+      "BrowserViewRate": 0.0112,
+      "CTOR": 0.1314
     },
     {
       "ListID": 313,
@@ -703,10 +723,15 @@ curl -X POST https://example.com/api.php \
       "LastActivityAt": "2026-04-30 20:00:43",
       "UniqueOpens": 0,
       "UniqueClicks": 0,
+      "UniqueForwards": 0,
+      "UniqueBrowserViews": 0,
       "TotalSent": 0,
       "NetGrowth": -1,
       "OpenRate": null,
-      "ClickRate": null
+      "ClickRate": null,
+      "ForwardRate": null,
+      "BrowserViewRate": null,
+      "CTOR": null
     }
   ]
 }
@@ -819,6 +844,465 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 99997: Subscriber list does not exist or is not owned by the authenticated user (also returned when ListID is missing, non-numeric, or non-positive)
+99998: Authentication failure or session expired
+99999: User does not have the required permission (List.Get)
+```
+
+:::
+
+## Get Subscriber Status Breakdown
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns per-status subscriber counts for a single list in one round trip — designed for the Reports tab → Overview composition donut. Replaces the legacy six-call workaround of invoking `subscribers.get` repeatedly with different `subscribersegment` values.
+
+Each subscriber in the per-list shard is placed in **exactly one** in-shard bucket via the precedence ladder below. Two additional buckets (`Complained`, `Suppressed`) are sourced from `oempro_suppression_list`. The endpoint is backed by a 5-minute Redis cache (`subscriber_status_breakdown_<ListID>`) — bucket counts may lag real-time changes by up to that window, matching the staleness budget of the existing per-list counters (`GetActiveTotal`, `GetOptInPendingTotal`).
+
+**Bucketing rules (in-shard, disjoint partition):**
+
+| Shard row state                         | Bucket          |
+|-----------------------------------------|-----------------|
+| `Subscribed` + `Not Bounced`            | `Active`        |
+| `Subscribed` + `Soft`                   | `SoftBounced`   |
+| `Subscribed` + `Hard`                   | `HardBounced`   |
+| `Unsubscribed` + (any `BounceType`)     | `Unsubscribed`  |
+| `Opt-In Pending` + (any `BounceType`)   | `OptInPending`  |
+| `Opt-Out Pending` + (any `BounceType`)  | _excluded_ (deprecated status, intentionally not counted) |
+
+**Suppression buckets (from `oempro_suppression_list`, scoped by `RelListID`):**
+
+| Source                                  | Bucket          |
+|-----------------------------------------|-----------------|
+| `SuppressionSource = 'SPAM complaint'`  | `Complained`    |
+| Any `SuppressionSource` for the list    | `Suppressed`    |
+
+::: warning Complained is a subset of Suppressed
+A `'SPAM complaint'` suppression row is counted **once in `Complained` and once in `Suppressed`** (and therefore twice in `Total`). This is intentional — `Suppressed` is the full size of the suppression list and `Complained` is the subset attributable to spam complaints, so a donut/stacked-bar visual can break out the share without losing the total. If you need a non-overlapping count, use `Suppressed - Complained` for "suppressed for reasons other than spam complaints."
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                  |
+|-----------|---------|----------|------------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `list.getsubscriberstatusbreakdown`                             |
+| SessionID | String  | No       | Session ID obtained from login                                               |
+| APIKey    | String  | No       | API key for authentication                                                   |
+| ListID    | Integer | Yes      | Subscriber list to query. Must be owned by the authenticated user.           |
+
+**Response shape**
+
+- `ListID` — the list the breakdown describes (echoed back).
+- `Counts` — object with the seven buckets below, all integers.
+- `Total` — arithmetic sum of all seven `Counts` values. This is **not** equal to `COUNT(*)` of the per-list shard: it pulls in `Complained` and `Suppressed` from `oempro_suppression_list`, excludes any deprecated `Opt-Out Pending` rows, and (because `Complained` is a subset of `Suppressed`) double-counts every spam-complaint suppression row.
+
+**Counts fields**
+
+| Field            | Type    | Description |
+|------------------|---------|-------------|
+| `Active`         | Integer | Subscribed and not bounced. |
+| `OptInPending`   | Integer | Awaiting double opt-in confirmation. |
+| `SoftBounced`    | Integer | Currently subscribed but with a soft bounce flag. |
+| `HardBounced`    | Integer | Currently subscribed but with a hard bounce flag. |
+| `Unsubscribed`   | Integer | All rows with `SubscriptionStatus = Unsubscribed`, regardless of bounce status. |
+| `Complained`     | Integer | Suppression entries for this list with `SuppressionSource = 'SPAM complaint'`. Subset of `Suppressed`. |
+| `Suppressed`     | Integer | All suppression entries for this list (any `SuppressionSource`, **including** `'SPAM complaint'` — the same rows are also counted in `Complained`). |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.getsubscriberstatusbreakdown",
+    "SessionID": "your-session-id",
+    "ListID": 123
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ListID": 123,
+  "Counts": {
+    "Active": 12345,
+    "OptInPending": 67,
+    "SoftBounced": 23,
+    "HardBounced": 89,
+    "Unsubscribed": 412,
+    "Complained": 8,
+    "Suppressed": 154
+  },
+  "Total": 13098
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99997,
+  "ErrorText": "Subscriber list does not exist or is not owned by the authenticated user"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99997: Subscriber list does not exist or is not owned by the authenticated user (also returned when ListID is missing, non-numeric, or non-positive)
+99998: Authentication failure or session expired
+99999: User does not have the required permission (List.Get)
+```
+
+:::
+
+## Get Bounce Trend
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns a weekly trend of hard-bounce, soft-bounce, and spam-complaint percentages for a single list. Designed for the bounce-trend bar chart on the Reports tab → Overview. Reads bounce numerators and the sent denominator from `oempro_stats_activity` (already split per-list — multi-list campaigns do not bias attribution) and complaint counts from `oempro_fbl_reports`. Backed by a 5-minute Redis cache keyed by `(ListID, UserID, Weeks)`.
+
+Week buckets are **ISO-8601 Monday-start**. The most recent entry covers Monday-of-this-week through today inclusive (current partial week is shown so the chart never lags); older entries cover full Mon–Sun weeks. The series is gap-filled to exactly `Weeks` entries.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                  |
+|-----------|---------|----------|------------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `list.getbouncetrend`                                           |
+| SessionID | String  | No       | Session ID obtained from login                                               |
+| APIKey    | String  | No       | API key for authentication                                                   |
+| ListID    | Integer | Yes      | Subscriber list to query. Must be owned by the authenticated user.           |
+| Weeks     | Integer | No       | Lookback window in weeks. Default `6`. Clamped to `[1, 26]`. Values `<= 0` fall back to the default. |
+
+**Per-week entry shape (one entry per element in `Series`)**
+
+| Field            | Type         | Description |
+|------------------|--------------|-------------|
+| `WeekStart`      | String       | Monday of the week, in `YYYY-MM-DD` format (ISO-8601 weekday 1). |
+| `TotalSent`      | Integer      | Sum of `oempro_stats_activity.TotalSentEmail` over the week (denominator for all three percentages). |
+| `HardBounces`    | Integer      | Sum of `oempro_stats_activity.TotalHardBounce` over the week. |
+| `SoftBounces`    | Integer      | Sum of `oempro_stats_activity.TotalSoftBounce` over the week. |
+| `Complaints`     | Integer      | `COUNT(*)` of `oempro_fbl_reports` rows for the list in the week. |
+| `HardBouncePct`  | Float\|null  | `HardBounces * 100 / TotalSent`, rounded to 2 decimals. **Percent number** (e.g. `0.42` = 0.42 %). `null` when `TotalSent == 0`. |
+| `SoftBouncePct`  | Float\|null  | `SoftBounces * 100 / TotalSent`, rounded to 2 decimals. `null` when `TotalSent == 0`. |
+| `ComplaintPct`   | Float\|null  | `Complaints * 100 / TotalSent`, rounded to 2 decimals. `null` when `TotalSent == 0`. |
+
+::: warning Pct vs Rate convention
+The `*Pct` fields here are **percent numbers** (`0.42` means 0.42 %), distinct from the `*Rate` fields on `lists.stats` which are **fractions in [0, 1]** (`0.0042` would mean 0.42 %). Both follow their respective field-name conventions.
+:::
+
+**Top-level fields**
+
+- `ListID` — the list the trend describes (echoed back).
+- `Weeks` — the actual window applied after clamping.
+- `Series` — array of exactly `Weeks` weekly entries, ascending by `WeekStart`, ending on the Monday of the current week.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.getbouncetrend",
+    "SessionID": "your-session-id",
+    "ListID": 123,
+    "Weeks": 6
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ListID": 123,
+  "Weeks": 6,
+  "Series": [
+    {
+      "WeekStart": "2026-04-06",
+      "TotalSent": 12500,
+      "HardBounces": 53,
+      "SoftBounces": 22,
+      "Complaints": 4,
+      "HardBouncePct": 0.42,
+      "SoftBouncePct": 0.18,
+      "ComplaintPct": 0.03
+    },
+    {
+      "WeekStart": "2026-04-13",
+      "TotalSent": 0,
+      "HardBounces": 0,
+      "SoftBounces": 0,
+      "Complaints": 0,
+      "HardBouncePct": null,
+      "SoftBouncePct": null,
+      "ComplaintPct": null
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99997,
+  "ErrorText": "Subscriber list does not exist or is not owned by the authenticated user"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99997: Subscriber list does not exist or is not owned by the authenticated user (also returned when ListID is missing, non-numeric, or non-positive)
+99998: Authentication failure or session expired
+99999: User does not have the required permission (List.Get)
+```
+
+:::
+
+## Get Engagement Tiers
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns RFM-style engagement tier counts for a single list — six mutually-exclusive buckets (Champions, Engaged, Passive, Lapsed, Dormant, NeverEngaged) over the list's *deliverable* subscribers (`SubscriptionStatus='Subscribed' AND BounceType='Not Bounced'`). Designed for the Reports tab → Engagement panel. Reads recency signal from `oempro_subscriber_lastactivities` (per-subscriber `LastEmailOpenedAt` / `LastLinkClickedAt`, maintained in real time by the open/click ingestion path) joined to the per-list shard. Backed by a 5-minute Redis cache keyed by `(ListID, all five overrides)` so custom-cutoff calls do not collide with default-cutoff cache.
+
+The default tier cutoffs match the issue spec:
+
+| Tier         | Default rule                                                         |
+|--------------|----------------------------------------------------------------------|
+| Champions    | Opened **and** clicked in the last 14 days                           |
+| Engaged      | Opened in the last 30 days, but not a Champion                       |
+| Passive      | Last open between 30 and 60 days ago                                 |
+| Lapsed       | Last open between 60 and 120 days ago                                |
+| Dormant      | Last open more than 120 days ago                                     |
+| NeverEngaged | Never opened, joined more than 30 days ago                           |
+
+Each cutoff can be overridden per request. Out-of-range values fall back to their per-key default; an ordering violation (e.g. `ChampionDays > EngagedDays`) restores the entire override set to defaults rather than producing tier predicates that overlap or invert. The actual values applied — after clamping and the monotonicity guard — are echoed back in the `Overrides` field so the caller can detect when a request was clamped.
+
+::: warning Excluded subscribers
+Recent never-openers (joined less than `NeverEngagedJoinedDays` days ago, never opened) are intentionally excluded from every tier — they have not yet had time to register engagement signal. The `Total` field reflects only counted rows, so callers can reconcile against `lists.stats.ActiveSubscriberCount` to derive the excluded count. Hard-bounced, soft-bounced, unsubscribed, and Opt-In Pending subscribers are also excluded regardless of recent activity.
+:::
+
+**Request Body Parameters:**
+
+| Parameter                | Type    | Required | Description                                                                                                                                          |
+|--------------------------|---------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Command                  | String  | Yes      | API command: `list.getengagementtiers`                                                                                                               |
+| SessionID                | String  | No       | Session ID obtained from login                                                                                                                       |
+| APIKey                   | String  | No       | API key for authentication                                                                                                                           |
+| ListID                   | Integer | Yes      | Subscriber list to query. Must be owned by the authenticated user.                                                                                   |
+| ChampionDays             | Integer | No       | Champion lookback in days. Default `14`. Clamped to `[1, 365]`. Out-of-range or non-numeric values fall back to the default.                         |
+| EngagedDays              | Integer | No       | Engaged lookback in days. Default `30`. Clamped to `[1, 365]`. Must be `>= ChampionDays` after clamping or all overrides revert to defaults.         |
+| PassiveEndDays           | Integer | No       | Upper bound (in days ago) for the Passive bucket. Default `60`. Clamped to `[1, 730]`. Must be `>= EngagedDays` after clamping or overrides revert.  |
+| LapsedEndDays            | Integer | No       | Upper bound (in days ago) for the Lapsed bucket. Default `120`. Clamped to `[1, 1825]`. Must be `>= PassiveEndDays` after clamping or overrides revert. |
+| NeverEngagedJoinedDays   | Integer | No       | Minimum age (in days) of subscription before a never-opener can be classified as NeverEngaged. Default `30`. Clamped to `[1, 365]`.                  |
+
+**Top-level response fields:**
+
+| Field       | Type    | Description                                                                                                                                                          |
+|-------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ListID`    | Integer | The list the tiers describe (echoed back).                                                                                                                           |
+| `AsOf`      | String  | ISO-8601 timestamp (UTC) of when the underlying counts were computed. Frozen for the lifetime of the cache entry, so two calls within the cache TTL share an `AsOf`. |
+| `Overrides` | Object  | The cutoffs actually used after clamping and the monotonicity guard. Compare against the request to detect clamped values.                                           |
+| `Tiers`     | Object  | Tier counts as a strict partition (each subscriber lands in exactly one bucket).                                                                                     |
+| `Total`     | Integer | Sum of the six tier counts. Excludes recent never-openers and ineligible (bounced/unsubscribed/opt-in-pending) subscribers.                                          |
+
+**`Tiers` object shape:**
+
+| Field          | Type    | Description                                                                                  |
+|----------------|---------|----------------------------------------------------------------------------------------------|
+| `Champions`    | Integer | Opened **and** clicked within the last `ChampionDays` days.                                  |
+| `Engaged`      | Integer | Opened within the last `EngagedDays` days, but not a Champion.                               |
+| `Passive`      | Integer | Last open between `EngagedDays` and `PassiveEndDays` days ago.                               |
+| `Lapsed`       | Integer | Last open between `PassiveEndDays` and `LapsedEndDays` days ago.                             |
+| `Dormant`      | Integer | Has at least one open on record, but the last one was more than `LapsedEndDays` days ago.    |
+| `NeverEngaged` | Integer | Never opened, and joined more than `NeverEngagedJoinedDays` days ago.                        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.getengagementtiers",
+    "SessionID": "your-session-id",
+    "ListID": 123
+  }'
+```
+
+```bash [Example Request With Overrides]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.getengagementtiers",
+    "SessionID": "your-session-id",
+    "ListID": 123,
+    "ChampionDays": 7,
+    "EngagedDays": 21,
+    "PassiveEndDays": 45,
+    "LapsedEndDays": 90,
+    "NeverEngagedJoinedDays": 14
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ListID": 123,
+  "AsOf": "2026-05-09T14:32:01+00:00",
+  "Overrides": {
+    "ChampionDays": 14,
+    "EngagedDays": 30,
+    "PassiveEndDays": 60,
+    "LapsedEndDays": 120,
+    "NeverEngagedJoinedDays": 30
+  },
+  "Tiers": {
+    "Champions": 1234,
+    "Engaged": 4567,
+    "Passive": 890,
+    "Lapsed": 234,
+    "Dormant": 56,
+    "NeverEngaged": 78
+  },
+  "Total": 7059
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99997,
+  "ErrorText": "Subscriber list does not exist or is not owned by the authenticated user"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99997: Subscriber list does not exist or is not owned by the authenticated user (also returned when ListID is missing, non-numeric, or non-positive)
+99998: Authentication failure or session expired
+99999: User does not have the required permission (List.Get)
+```
+
+:::
+
+## Get Send Time Heatmap
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns a 7×24 grid of event counts (opens or clicks) for a single list, grouped by Monday-first day-of-week and hour-of-day, over the last `Days` days. Designed for the Reports tab → Engagement send-time heatmap. Reads from `oempro_stats_open` (when `Event="open"`) or `oempro_stats_link` (when `Event="click"`), both of which expose a generated stored DOW column (`OpenDatew` / `ClickDatew`) and a covering index (`idx_list_owner_datew_covering`) so the WHERE filter and GROUP BY are answered from the index leaves alone — `HOUR(OpenDate)` / `HOUR(ClickDate)` is computed on the fly without extra row lookups. Backed by a 5-minute Redis cache keyed by `(ListID, UserID, Days, Event)`.
+
+::: warning Day-of-week ordering
+The `Grid` response uses **Monday-first** ordering: `Grid[0]` is Monday, `Grid[6]` is Sunday. This matches the ISO-8601 weekday convention used elsewhere in Octeth's per-list reporting (e.g. `List.GetBounceTrend` week buckets). Hours are 0..23 in the application timezone (UTC in the default Docker deployment); transform to the viewer's local timezone client-side.
+:::
+
+::: warning Event values
+`Event` is **strictly validated**. An unrecognized value (e.g. `"opens"`, `"clicked"`) returns a validation-error envelope rather than silently falling back to `"open"`, so a typo never returns the wrong dataset. Currently supported: `open`, `click`.
+:::
+
+**Request Body Parameters:**
+
+| Parameter  | Type    | Required | Description                                                                                                                                  |
+|------------|---------|----------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| Command    | String  | Yes      | API command: `list.getsendtimeheatmap`                                                                                                       |
+| SessionID  | String  | No       | Session ID obtained from login                                                                                                               |
+| APIKey     | String  | No       | API key for authentication                                                                                                                   |
+| ListID     | Integer | Yes      | Subscriber list to query. Must be owned by the authenticated user.                                                                           |
+| Days       | Integer | No       | Lookback window in days. Default `90`. Clamped to `[1, 365]`. Out-of-range or non-numeric values fall back to the default.                   |
+| Event      | String  | No       | Event to bucket. Default `open`. Possible values: `open`, `click`. Unrecognized values return a validation-error envelope.                   |
+
+**Top-level response fields:**
+
+| Field    | Type    | Description                                                                                                                                                              |
+|----------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ListID` | Integer | The list the grid describes (echoed back).                                                                                                                               |
+| `Days`   | Integer | The lookback window actually used (after clamping). Compare against the request to detect clamped values.                                                                |
+| `Event`  | String  | The event actually used (after lowercase normalization).                                                                                                                 |
+| `AsOf`   | String  | ISO-8601 timestamp (UTC) of when the underlying counts were computed. Frozen for the lifetime of the cache entry, so two calls within the cache TTL share an `AsOf`.     |
+| `Grid`   | Array   | 7×24 array of integers. `Grid[d][h]` is the count of events on day `d` (Monday=0..Sunday=6) at hour `h` (0..23, UTC). Empty buckets are `0`, never missing from the response. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.getsendtimeheatmap",
+    "SessionID": "your-session-id",
+    "ListID": 123
+  }'
+```
+
+```bash [Example Request With Days and Event]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.getsendtimeheatmap",
+    "SessionID": "your-session-id",
+    "ListID": 123,
+    "Days": 30,
+    "Event": "click"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ListID": 123,
+  "Days": 90,
+  "Event": "open",
+  "AsOf": "2026-05-09T14:32:01+00:00",
+  "Grid": [
+    [12, 8, 5, 3, 2, 1, 1, 4, 18, 42, 67, 81, 79, 65, 58, 49, 41, 33, 27, 22, 18, 14, 11, 9],
+    [45, 32, 18, 9, 5, 4, 6, 12, 38, 71, 102, 118, 110, 95, 84, 73, 62, 50, 41, 34, 27, 22, 17, 12],
+    [40, 28, 16, 8, 4, 3, 5, 11, 35, 68, 98, 113, 105, 90, 80, 70, 59, 47, 39, 32, 26, 21, 16, 11],
+    [38, 26, 15, 7, 4, 3, 5, 11, 34, 65, 94, 109, 102, 87, 77, 67, 56, 45, 37, 31, 25, 20, 15, 10],
+    [35, 24, 14, 7, 3, 3, 4, 10, 31, 60, 87, 100, 94, 80, 71, 62, 52, 42, 35, 28, 23, 18, 14, 10],
+    [22, 15, 9, 5, 3, 2, 3, 6, 19, 38, 56, 65, 60, 51, 45, 39, 33, 27, 22, 18, 14, 11, 9, 7],
+    [10, 7, 4, 3, 1, 1, 1, 3, 9, 20, 30, 36, 33, 28, 24, 20, 17, 14, 11, 9, 7, 6, 4, 3]
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99997,
+  "ErrorText": "Subscriber list does not exist or is not owned by the authenticated user"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: ListID is missing (returned in the ErrorCode array as [1] by the required-field validator)
+2: Unsupported Event value (returned in the ErrorCode array as [2]; the offending field name is also surfaced in ErrorText). Allowed values: open, click
+99997: Subscriber list does not exist or is not owned by the authenticated user (also returned when ListID is non-numeric or non-positive)
 99998: Authentication failure or session expired
 99999: User does not have the required permission (List.Get)
 ```
@@ -1329,6 +1813,472 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 1: Missing subscriber list ID
+```
+
+:::
+
+## Get Tenure Distribution
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns a tenure-bucketed snapshot of subscriber counts for a single list — six mutually-exclusive buckets keyed off `SubscriptionDate` over the list's *deliverable* subscribers (`SubscriptionStatus='Subscribed' AND BounceType='Not Bounced'`). Designed for the Reports tab → Engagement (net new) panel. Reads from the per-list shard `oempro_subscribers_<ListID>`, whose `SubscriptionDate` column is backed by the composite index `idx_subscription_date_id (SubscriptionDate, SubscriberID)` (added 2025-10-25). Backed by a 5-minute Redis cache keyed by `ListID`.
+
+The bucket boundaries are fixed:
+
+| Bucket    | Range                                              |
+|-----------|----------------------------------------------------|
+| `0_30d`   | Subscribed within the last 30 days                 |
+| `1_3mo`   | Subscribed between 30 and 90 days ago              |
+| `3_6mo`   | Subscribed between 90 and 180 days ago             |
+| `6_12mo`  | Subscribed between 180 and 365 days ago            |
+| `1_2y`    | Subscribed between 365 and 730 days ago            |
+| `2y_plus` | Subscribed more than 730 days ago                  |
+
+::: warning Boundary semantics & excluded subscribers
+Boundaries are **right-open** — a subscriber whose `SubscriptionDate` lands exactly on a cutoff (e.g. exactly 30 days ago to the second) falls into the *older* bucket. This matches the `>= newer / < older` convention `list.getengagementtiers` uses, so each subscriber lands in exactly one bucket and `Total` equals the sum of the six bucket counts. Hard-bounced, soft-bounced, unsubscribed, and Opt-In Pending subscribers are excluded from every bucket regardless of subscription date — `Total` reflects deliverable subscribers only and can be reconciled against `lists.stats.ActiveSubscriberCount`.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                  |
+|-----------|---------|----------|------------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `list.gettenuredistribution`                                    |
+| SessionID | String  | No       | Session ID obtained from login                                               |
+| APIKey    | String  | No       | API key for authentication                                                   |
+| ListID    | Integer | Yes      | Subscriber list to query. Must be owned by the authenticated user.           |
+
+**Top-level response fields:**
+
+| Field     | Type    | Description                                                                                                                                                          |
+|-----------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ListID`  | Integer | The list the distribution describes (echoed back).                                                                                                                   |
+| `AsOf`    | String  | ISO-8601 timestamp (UTC) of when the underlying counts were computed. Frozen for the lifetime of the cache entry, so two calls within the cache TTL share an `AsOf`. |
+| `Buckets` | Object  | The six tenure buckets as a strict partition (each deliverable subscriber lands in exactly one bucket).                                                              |
+| `Total`   | Integer | Sum of the six bucket counts. Excludes ineligible (bounced/unsubscribed/opt-in-pending) subscribers.                                                                 |
+
+**`Buckets` object shape:**
+
+| Field       | Type    | Description                                                                                  |
+|-------------|---------|----------------------------------------------------------------------------------------------|
+| `0_30d`     | Integer | Deliverable subscribers who joined within the last 30 days.                                  |
+| `1_3mo`     | Integer | Deliverable subscribers who joined between 30 and 90 days ago.                               |
+| `3_6mo`     | Integer | Deliverable subscribers who joined between 90 and 180 days ago.                              |
+| `6_12mo`    | Integer | Deliverable subscribers who joined between 180 and 365 days ago.                             |
+| `1_2y`      | Integer | Deliverable subscribers who joined between 365 and 730 days ago.                             |
+| `2y_plus`   | Integer | Deliverable subscribers who joined more than 730 days ago.                                   |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.gettenuredistribution",
+    "SessionID": "your-session-id",
+    "ListID": 123
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ListID": 123,
+  "AsOf": "2026-05-09T14:32:01+00:00",
+  "Buckets": {
+    "0_30d": 234,
+    "1_3mo": 567,
+    "3_6mo": 890,
+    "6_12mo": 1234,
+    "1_2y": 2345,
+    "2y_plus": 3456
+  },
+  "Total": 8726
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99997,
+  "ErrorText": "Subscriber list does not exist or is not owned by the authenticated user"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing subscriber list ID
+99997: Subscriber list does not exist or is not owned by the authenticated user
+```
+
+:::
+
+## Get ESP Breakdown
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns the domain-level distribution of subscribers, openers, clickers, or opt-outs for a single list. One call per sub-tab in the Reports tab → ESP breakdown view, replacing four separate legacy `/app/user/list/espbreakdown/<id>` page-side calls into `Statistics::RetrieveDomainBreakdownForAList`. Results are scoped to the list's *deliverable* subscribers (`SubscriptionStatus='Subscribed' AND BounceType='Not Bounced'`) and counted as `COUNT(DISTINCT RelSubscriberID)` so a single contact who opens or clicks repeatedly contributes to its domain bucket exactly once. Backed by a 5-minute Redis cache keyed by `(ListID, UserID, Event, Top)`.
+
+The data source switches per `Event`:
+
+| Event             | Source                                                                                |
+|-------------------|---------------------------------------------------------------------------------------|
+| `subscribers`     | Per-list shard `oempro_subscribers_<ListID>` only — no stats join                     |
+| `opens`           | `oempro_stats_open` JOIN `oempro_subscribers_<ListID>` on `SubscriberID`              |
+| `clicks`          | `oempro_stats_link` JOIN `oempro_subscribers_<ListID>` on `SubscriberID`              |
+| `unsubscriptions` | `oempro_stats_unsubscription` JOIN `oempro_subscribers_<ListID>` on `SubscriberID`    |
+
+::: warning Top-N collapsing
+Domains beyond rank `Top` are summed into a single `Other` bucket appended to the end of `Domains`. The `Other` bucket is omitted entirely when its count is zero (i.e. when the named-domain list already covers every contributor). `Top` is clamped to `[1, 1000]`; missing, non-numeric, or non-positive values silently fall back to the default `30`.
+:::
+
+::: warning Event values
+`Event` is **required** and **strictly validated**. Unlike `list.getsendtimeheatmap`, missing or unrecognized values (e.g. `"open"` singular, `"opened"`) return a validation-error envelope rather than silently defaulting, so a caller never receives the wrong dataset on a typo. Allowed values: `subscribers`, `opens`, `clicks`, `unsubscriptions`.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                                                                                                                            |
+|-----------|---------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `list.getespbreakdown`                                                                                                                                                    |
+| SessionID | String  | No       | Session ID obtained from login                                                                                                                                                         |
+| APIKey    | String  | No       | API key for authentication                                                                                                                                                             |
+| ListID    | Integer | Yes      | Subscriber list to query. Must be owned by the authenticated user.                                                                                                                     |
+| Event     | String  | Yes      | Which event to break down by domain. Possible values: `subscribers`, `opens`, `clicks`, `unsubscriptions`. Missing or unrecognized values return a validation-error envelope.          |
+| Top       | Integer | No       | Number of top-ranking domains to keep before collapsing the tail into `Other`. Default `30`. Clamped to `[1, 1000]`. Out-of-range or non-numeric values fall back to the default.      |
+
+**Top-level response fields:**
+
+| Field     | Type    | Description                                                                                                                                                          |
+|-----------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ListID`  | Integer | The list the breakdown describes (echoed back).                                                                                                                      |
+| `Event`   | String  | The event actually used (after lowercase normalization).                                                                                                             |
+| `Top`     | Integer | The top-N cutoff actually used (after clamping). Compare against the request to detect clamped values.                                                               |
+| `AsOf`    | String  | ISO-8601 timestamp (UTC) of when the underlying counts were computed. Frozen for the lifetime of the cache entry, so two calls within the cache TTL share an `AsOf`. |
+| `Total`   | Integer | Sum of all `Count` values across `Domains` (including `Other` if present).                                                                                           |
+| `Domains` | Array   | Numerically-indexed list of `{Domain, Count, Pct}` objects, sorted by `Count` descending. The `Other` bucket (when present) is always the last element.              |
+
+**`Domains[]` object shape:**
+
+| Field    | Type            | Description                                                                                                            |
+|----------|-----------------|------------------------------------------------------------------------------------------------------------------------|
+| `Domain` | String          | Email domain (e.g. `gmail.com`), or the literal string `Other` for the collapsed tail bucket.                          |
+| `Count`  | Integer         | `COUNT(DISTINCT RelSubscriberID)` for that domain after the eligibility filter.                                        |
+| `Pct`    | Number\|null    | `round(Count * 100 / Total, 2)` as a percentage. `null` when `Total` is zero (matches the `OpenRate` / `ClickRate` convention used elsewhere). |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.getespbreakdown",
+    "SessionID": "your-session-id",
+    "ListID": 123,
+    "Event": "opens"
+  }'
+```
+
+```bash [Example Request With Top]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.getespbreakdown",
+    "SessionID": "your-session-id",
+    "ListID": 123,
+    "Event": "subscribers",
+    "Top": 10
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ListID": 123,
+  "Event": "opens",
+  "Top": 30,
+  "AsOf": "2026-05-09T14:32:01+00:00",
+  "Total": 9700,
+  "Domains": [
+    { "Domain": "gmail.com",   "Count": 5000, "Pct": 51.55 },
+    { "Domain": "outlook.com", "Count": 3200, "Pct": 32.99 },
+    { "Domain": "yahoo.com",   "Count": 1500, "Pct": 15.46 }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": "Unsupported Event value. Allowed: subscribers, opens, clicks, unsubscriptions"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: ListID is missing (returned in the ErrorCode array as [1] by the required-field validator)
+2: Unsupported Event value (returned in the ErrorCode array as [2]; the offending field name is also surfaced in ErrorText). Allowed values: subscribers, opens, clicks, unsubscriptions
+99997: Subscriber list does not exist or is not owned by the authenticated user (also returned when ListID is non-numeric or non-positive)
+99998: Authentication failure or session expired
+99999: User does not have the required permission (List.Get)
+```
+
+:::
+
+## Get CTR Retention Matrix
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns a per-campaign clicker cohort matrix for a single list. For each of the list's most-recently sent campaigns, the response reports the number of distinct subscribers who clicked at least once (`BaseClickers`) and the percentage of those same subscribers who *also* clicked each subsequent campaign in the chronological pool (`Retention`). One call powers the Reports tab → CTR retention view, replacing the legacy `/app/user/list/ctrretention/<id>` page-side call into `Statistics::CTRRetentionByCohort`. Results are scoped to campaigns the authenticated user owns and counted as `COUNT(DISTINCT RelSubscriberID)` so a contact who clicks a single campaign multiple times still contributes to the cohort exactly once. Backed by a 5-minute Redis cache keyed by `(ListID, UserID, LastNCampaigns, CohortDepth)`.
+
+::: warning Retention shape
+`Retention[0]` is always `100.0` (the campaign vs. itself) when `BaseClickers > 0`, and `0.0` when `BaseClickers == 0`. Subsequent values are clicker-overlap percentages rounded to **one decimal place** — the share of `BaseClickers` who also clicked the campaign at that subsequent position. Each row's `Retention` array is **trimmed to `min(CohortDepth, n - rowIndex)`**, so newer rows have shorter arrays (the newest campaign's `Retention` is just `[100.0]` because no subsequent campaigns exist yet). Iterate by `count($row['Retention'])` rather than assuming a fixed length.
+:::
+
+::: warning Defense-in-depth
+Every SQL clause that touches `oempro_stats_link` and `oempro_campaigns` is scoped by `RelOwnerUserID` so a click row owned by a different tenant pointing at the same `(ListID, CampaignID)` cannot leak into another user's matrix. The user-facing tenant guard is `Lists::RetrieveList`; this is the SQL-level fallback.
+:::
+
+**Request Body Parameters:**
+
+| Parameter      | Type    | Required | Description                                                                                                                  |
+|----------------|---------|----------|------------------------------------------------------------------------------------------------------------------------------|
+| Command        | String  | Yes      | API command: `list.getctrretentionmatrix`                                                                                    |
+| SessionID      | String  | No       | Session ID obtained from login                                                                                               |
+| APIKey         | String  | No       | API key for authentication                                                                                                   |
+| ListID         | Integer | Yes      | Subscriber list to query. Must be owned by the authenticated user.                                                           |
+| LastNCampaigns | Integer | No       | How many of the list's most-recently sent campaigns to include as rows. Default `10`, clamped to `[1, 50]`. Missing / non-numeric / non-positive collapses to the default. |
+| CohortDepth    | Integer | No       | How many campaigns (including each row's own campaign at index `0`) the `Retention` array tracks at most. Default `7`, clamped to `[1, 50]`. Missing / non-numeric / non-positive collapses to the default. |
+
+**Top-level response fields:**
+
+| Field            | Type    | Description                                                                                                                                                          |
+|------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ListID`         | Integer | The list the matrix describes (echoed back).                                                                                                                         |
+| `LastNCampaigns` | Integer | The clamped value the model actually used. Echo this rather than the raw input — `LastNCampaigns: 9999` will return `50`.                                            |
+| `CohortDepth`    | Integer | The clamped value the model actually used.                                                                                                                           |
+| `AsOf`           | String  | ISO-8601 timestamp (UTC) of when the underlying counts were computed. Frozen for the lifetime of the cache entry, so two calls within the cache TTL share an `AsOf`. |
+| `Campaigns`      | Array   | Per-campaign rows in chronological ascending order (oldest first) by `SendProcessStartedOn`. Empty array when the list has no `Sent` campaigns.                      |
+
+**`Campaigns[]` row shape:**
+
+| Field          | Type    | Description                                                                                                                                                                              |
+|----------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `CampaignID`   | Integer | The row's campaign.                                                                                                                                                                      |
+| `CampaignName` | String  | Campaign name as stored in `oempro_campaigns`.                                                                                                                                           |
+| `SentAt`       | String  | `SendProcessStartedOn` value (`YYYY-MM-DD HH:MM:SS`, application timezone).                                                                                                              |
+| `BaseClickers` | Integer | Distinct subscribers who clicked at least one link in this campaign. The denominator for every percentage in `Retention`.                                                                |
+| `Retention`    | Array   | Floats, length `min(CohortDepth, n - rowIndex)`. `Retention[0]` is `100.0` when `BaseClickers > 0`, else `0.0`. `Retention[i]` for `i > 0` is `cohort_overlap_count / BaseClickers * 100`. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.getctrretentionmatrix",
+    "SessionID": "your-session-id",
+    "ListID": 123,
+    "LastNCampaigns": 10,
+    "CohortDepth": 7
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ListID": 123,
+  "LastNCampaigns": 10,
+  "CohortDepth": 7,
+  "AsOf": "2026-05-09T14:32:01+00:00",
+  "Campaigns": [
+    {
+      "CampaignID": 4567,
+      "CampaignName": "April Newsletter",
+      "SentAt": "2026-04-01 10:00:00",
+      "BaseClickers": 2500,
+      "Retention": [100.0, 72.0, 48.0, 31.0, 22.0, 15.0, 10.0]
+    },
+    {
+      "CampaignID": 4571,
+      "CampaignName": "April Promo",
+      "SentAt": "2026-04-08 10:00:00",
+      "BaseClickers": 1800,
+      "Retention": [100.0, 65.0, 41.0, 28.0, 19.0, 12.0]
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99997,
+  "ErrorText": "Subscriber list does not exist or is not owned by the authenticated user"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: ListID is missing (returned in the ErrorCode array as [1] by the required-field validator)
+99997: Subscriber list does not exist or is not owned by the authenticated user (also returned when ListID is non-numeric or non-positive)
+99998: Authentication failure or session expired
+99999: User does not have the required permission (List.Get)
+```
+
+:::
+
+## Get Source Breakdown
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns the acquisition-source distribution for a single list — total counts grouped by `SubscriptionSource` plus a 12-month rolling time series keyed by month and source. Designed for the Reports tab → Sources panel introduced by issue #1965. Counts cover the entire row population (provenance is independent of deliverability — bounced and unsubscribed rows still came from somewhere). The series filters rows whose `SubscriptionDate` falls inside the last 12 months. Backed by a 5-minute Redis cache keyed by `ListID`.
+
+Source values are the `SubscriptionSource` ENUM:
+
+| Bucket      | Set by                                                                                                                          |
+|-------------|---------------------------------------------------------------------------------------------------------------------------------|
+| `CSVImport` | All bulk import paths (CSV file, MySQL query, Mailchimp/ActiveCampaign/Drip pulls). The provider name lives in `SubscriptionSourceRef`. |
+| `API`       | `subscriber.create`, `subscriber.subscribe` (when no integration context), Journey "Subscribe to list" action.                  |
+| `Webhook`   | Wufoo integration, Campaign Monitor migrator, scheduled MySQL sync. The integration id lives in `SubscriptionSourceRef`.        |
+| `Manual`    | Admin/user "Add subscriber" UI in the dashboard.                                                                                |
+| `Other`     | Free-text custom source — the label lives in `SubscriptionSourceRef`.                                                           |
+| `Unknown`   | Default for backfilled historical rows and any unspecified writes.                                                              |
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                  |
+|-----------|---------|----------|------------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `list.getsourcebreakdown`                                       |
+| SessionID | String  | No       | Session ID obtained from login                                               |
+| APIKey    | String  | No       | API key for authentication                                                   |
+| ListID    | Integer | Yes      | Subscriber list to query. Must be owned by the authenticated user.           |
+
+**Top-level response fields:**
+
+| Field       | Type    | Description                                                                                                                                                          |
+|-------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ListID`    | Integer | The list the breakdown describes (echoed back).                                                                                                                      |
+| `AsOf`      | String  | ISO-8601 timestamp (UTC) of when the underlying counts were computed. Frozen for the lifetime of the cache entry, so two calls within the cache TTL share an `AsOf`. |
+| `Buckets`   | Object  | One integer per `SubscriptionSource` ENUM value — every value is present even when the count is 0, so clients can render a stable bucket list.                        |
+| `Total`     | Integer | Sum of every bucket count. Covers the entire row population (no deliverability filter).                                                                              |
+| `Series`    | Array   | 12-month rolling time series. One entry per (`Month`, `SubscriptionSource`) pair that has at least one row. Sorted by `Month` ASC then `SubscriptionSource` ASC.     |
+| `OtherRefs` | Array   | Top 10 `SubscriptionSourceRef` values within the `Other` bucket, sorted by `Count` DESC then `Ref` ASC. Empty array when `Buckets.Other` is 0. See entry shape below.  |
+
+**`Buckets` object shape:**
+
+| Field       | Type    | Description                                                                                  |
+|-------------|---------|----------------------------------------------------------------------------------------------|
+| `CSVImport` | Integer | Subscribers acquired through the bulk import pipeline.                                       |
+| `API`       | Integer | Subscribers acquired through programmatic API calls.                                          |
+| `Webhook`   | Integer | Subscribers acquired through push integrations / scheduled pulls.                             |
+| `Manual`    | Integer | Subscribers manually added via the admin/user UI.                                             |
+| `Other`     | Integer | Subscribers tagged with a free-text custom source (label in `SubscriptionSourceRef`).         |
+| `Unknown`   | Integer | Backfilled historical rows or rows whose source wasn't supplied at insert time.               |
+
+**`Series` entry shape:**
+
+| Field                | Type    | Description                                                                  |
+|----------------------|---------|------------------------------------------------------------------------------|
+| `Month`              | String  | YYYY-MM bucket; covers the last 12 months including the current month-to-date. |
+| `SubscriptionSource` | String  | One of the `Buckets` keys.                                                   |
+| `Count`              | Integer | New subscriber rows in that month with that source.                          |
+
+**`OtherRefs` entry shape:**
+
+| Field   | Type    | Description                                                                                                                                                                  |
+|---------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Ref`   | String  | The `SubscriptionSourceRef` label as stored on the row. Empty string (`""`) is a valid value (the column is `VARCHAR(64) NOT NULL DEFAULT ''`) and is returned verbatim — clients typically render it as "(no label)". Empty refs are not aggregated with non-empty refs. |
+| `Count` | Integer | Number of `Other`-source rows on the list with that exact `Ref` value.                                                                                                       |
+
+The list is capped at the **top 10** entries by `Count` DESC. Ties on `Count` break by `Ref` ASC so two calls with the same underlying data return byte-identical responses (the 5-minute Redis cache relies on this). The rank-11+ tail is silently dropped — there is no "Other" sentinel entry. When `Buckets.Other` is `0`, the array is `[]` and no query is issued.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.getsourcebreakdown",
+    "SessionID": "your-session-id",
+    "ListID": 123
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ListID": 123,
+  "AsOf": "2026-05-09T14:32:01+00:00",
+  "Buckets": {
+    "CSVImport": 5230,
+    "API": 1840,
+    "Webhook": 210,
+    "Manual": 45,
+    "Other": 12,
+    "Unknown": 8861
+  },
+  "Total": 16198,
+  "Series": [
+    { "Month": "2025-06", "SubscriptionSource": "API",       "Count": 120 },
+    { "Month": "2025-06", "SubscriptionSource": "CSVImport", "Count": 450 },
+    { "Month": "2025-07", "SubscriptionSource": "API",       "Count": 95 },
+    { "Month": "2025-07", "SubscriptionSource": "Webhook",   "Count": 12 }
+  ],
+  "OtherRefs": [
+    { "Ref": "podcast-listeners", "Count": 142 },
+    { "Ref": "trade-show-2026",   "Count": 89 },
+    { "Ref": "",                  "Count": 31 }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99997,
+  "ErrorText": "Subscriber list does not exist or is not owned by the authenticated user"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: ListID is missing (returned in the ErrorCode array as [1] by the required-field validator)
+99997: Subscriber list does not exist or is not owned by the authenticated user (also returned when ListID is non-numeric or non-positive)
+99998: Authentication failure or session expired
+99999: User does not have the required permission (List.Get)
 ```
 
 :::

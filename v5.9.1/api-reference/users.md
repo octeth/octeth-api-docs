@@ -538,6 +538,10 @@ curl -X POST https://example.com/api/v1/user.stats \
   "TotalActiveSubscribers": 15234,
   "TotalSegments": 28,
   "AvgOpenRate30dWeighted": 0.2418,
+  "AvgClickRate30dWeighted": 0.0327,
+  "AvgCTOR30dWeighted": 0.1352,
+  "AvgForwardRate30dWeighted": 0.0014,
+  "AvgBrowserViewRate30dWeighted": 0.0119,
   "New Subscribers": {
     "2024-01-01": 12,
     "2024-01-02": 18
@@ -573,7 +577,7 @@ curl -X POST https://example.com/api/v1/user.stats \
 
 **Top-level overall fields**
 
-The response is the merge of two payloads: a stat-strip header (the five overall fields below) plus the time-series breakdown for each metric (keyed by metric title — `New Subscribers`, `Sent Emails`, `Opens`, etc).
+The response is the merge of two payloads: a stat-strip header (the overall fields below) plus the time-series breakdown for each metric (keyed by metric title — `New Subscribers`, `Sent Emails`, `Opens`, etc).
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -582,6 +586,10 @@ The response is the merge of two payloads: a stat-strip header (the five overall
 | `TotalActiveSubscribers` | Integer | Sum of `ActiveSubscriberCount` (denormalized) across non-archived lists. Defines "active" as `Subscribed` AND `BounceType != 'Hard'`, matching the count `lists.get` displays. |
 | `TotalSegments` | Integer | Sum of `SegmentCount` (denormalized) across non-archived lists. |
 | `AvgOpenRate30dWeighted` | Float \| null | Subscriber-weighted average 30-day open rate across non-archived lists, computed as `Σ(ActiveSubscriberCount × UniqueOpens) / Σ(ActiveSubscriberCount × TotalSent)`. `null` when no list in the user's active set had any sends in the 30-day window. |
+| `AvgClickRate30dWeighted` | Float \| null | Subscriber-weighted average 30-day click rate. Same shape and weighting basis as `AvgOpenRate30dWeighted` but with `UniqueClicks` in the numerator. `null` when no sends. (Added in v5.9.1, issue #1960.) |
+| `AvgCTOR30dWeighted` | Float \| null | Subscriber-weighted average 30-day Click-To-Open Rate, computed as `Σ(ActiveSubscriberCount × UniqueClicks) / Σ(ActiveSubscriberCount × UniqueOpens)`. **Different denominator basis** from the other rates: lists with zero opens are skipped (not zero-weighted) so they don't drag the average to zero. `null` when no opens. (Added in v5.9.1, issue #1960.) |
+| `AvgForwardRate30dWeighted` | Float \| null | Subscriber-weighted average 30-day forward rate. Same shape as `AvgOpenRate30dWeighted` with `UniqueForwards` in the numerator. (Added in v5.9.1, issue #1960.) |
+| `AvgBrowserViewRate30dWeighted` | Float \| null | Subscriber-weighted average 30-day "view in browser" rate. Same shape as `AvgOpenRate30dWeighted` with `UniqueBrowserViews` in the numerator. (Added in v5.9.1, issue #1960.) |
 
 **Migration note (v5.9.x):** `TotalActiveSubscribers` previously summed across **all** lists (including archived) using a slightly stricter criterion (`BounceType = 'Not Bounced'`, excluding soft bounces). Both changes were intentional: the new value (a) excludes archived lists — matching the lists.get browse display — and (b) uses `BounceType != 'Hard'` to align with `Subscribers::GetActiveTotal`. For a user with no archived lists and a clean deliverability footprint the difference is negligible. For users with many archived lists or noticeable soft-bounce volume the value will shift; treat the new figure as the canonical "subscribers I currently market to."
 
