@@ -1220,7 +1220,32 @@ curl -X POST https://example.com/api.php \
     }
   ],
   "SubscriberSegments": [],
-  "SubscriberJourneys": [],
+  "SubscriberJourneys": {
+    "InProgress": [
+      {
+        "JourneyID": 7,
+        "JourneyName": "Welcome series",
+        "EntryID": 42,
+        "RelActionID": 13,
+        "SnoozedUntil": null,
+        "EnrolledAt": "2026-03-12 09:00:00",
+        "CurrentStep": 3,
+        "TotalSteps": 7
+      }
+    ],
+    "Completed": [
+      {
+        "JourneyID": 9,
+        "JourneyName": "Onboarding",
+        "EntryID": 21,
+        "RelActionID": 0,
+        "EnrolledAt": "2026-02-14 11:30:00",
+        "CompletedAt": "2026-02-28 11:30:00",
+        "CurrentStep": 4,
+        "TotalSteps": 4
+      }
+    ]
+  },
   "SubscriberWebsiteEvents": [],
   "SubscriberActivity": [],
   "TotalRevenue": 0
@@ -1242,6 +1267,21 @@ curl -X POST https://example.com/api.php \
 4: Invalid ListID
 429: Too many requests (rate limit exceeded)
 ```
+
+::: info SubscriberJourneys fields
+
+When `IncludeJourneys` is true and the subscriber is enrolled in at least one journey, the `SubscriberJourneys` object contains two buckets: `InProgress` and `Completed`. Each entry exposes:
+
+- `JourneyID`, `JourneyName` — journey metadata
+- `EntryID` — the per-subscriber enrollment row id
+- `RelActionID` — the action the entry is currently parked on (0 on Completed entries)
+- `SnoozedUntil` — Wait gate, if any (InProgress only)
+- `EnrolledAt` — when the subscriber entered the journey
+- `CompletedAt` — when the enrollment finished (Completed bucket only)
+- `CurrentStep` — 1-based position in the journey's linearized execution path
+- `TotalSteps` — length of the journey's longest linearized path; useful for rendering "Step k of n" UIs
+
+`CurrentStep` and `TotalSteps` count only published actions. On Completed entries, `CurrentStep` equals `TotalSteps`.
 
 :::
 
