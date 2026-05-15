@@ -293,17 +293,33 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
+Returns every sender domain owned by the caller. By default the response shape is byte-for-byte identical to the pre-#1996 endpoint — useful for the legacy dashboard.
+
+When `WithCounts=1` is supplied, each row is additionally enriched with **per-row API-key / SMTP / webhook counts** (one SQL aggregation) and **7-day Sent / BounceRate / LastActivityAt stats from ES** (one ES terms aggregation). This replaces the legacy 4×N pattern of calling `emailgateway.getapis` + `emailgateway.getsmtps` + `emailgateway.getwebhooks` + `emailgateway.domainstats` once per domain, which made the Overview unusable past ~20 domains.
+
 **Request Body Parameters:**
 
-| Parameter | Type   | Required | Description                            |
-|-----------|--------|----------|----------------------------------------|
-| Command   | String | Yes      | API command: `emailgateway.getdomains` |
-| SessionID | String | No       | Session ID obtained from login         |
-| APIKey    | String | No       | API key for authentication             |
+| Parameter  | Type    | Required | Description                                                                                                                                                                                                                                          |
+|------------|---------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Command    | String  | Yes      | API command: `emailgateway.getdomains`                                                                                                                                                                                                              |
+| SessionID  | String  | No       | Session ID obtained from login                                                                                                                                                                                                                       |
+| APIKey     | String  | No       | API key for authentication                                                                                                                                                                                                                            |
+| WithCounts | Mixed   | No       | When truthy (`1`, `'1'`, `'true'`, `'yes'`, `true`), each domain row is enriched with `APIKeyCount`, `SMTPCount`, `WebhookCount`, `Sent7d`, `BounceRate7d`, `LastActivityAt`. Any other value (missing, `0`, `'false'`, garbage) → no enrichment, legacy shape preserved. |
+
+**Enrichment field reference (only present when `WithCounts=1`):**
+
+| Field            | Type           | Source | Definition                                                                            |
+|------------------|----------------|--------|---------------------------------------------------------------------------------------|
+| `APIKeyCount`    | Integer        | SQL    | Count of `oempro_eg_api_keys` rows for this domain with `Status='Enabled'`            |
+| `SMTPCount`      | Integer        | SQL    | Count of `oempro_eg_smtp_credentials` rows for this domain with `Status='Enabled'`    |
+| `WebhookCount`   | Integer        | SQL    | Count of `oempro_eg_webhooks` rows for this domain with `Status='Enabled'`            |
+| `Sent7d`         | Integer        | ES     | Count of `accepted-by-oempro` events for this domain in the last 7 days               |
+| `BounceRate7d`   | Float (2dp)    | computed | `Bounced / Sent × 100`. Returns `0` when `Sent7d` is 0 (no divide-by-zero NaN)      |
+| `LastActivityAt` | String or null | ES     | `MAX(logged-at)` within the 7-day window as ISO 8601 UTC; `null` if no events         |
 
 ::: code-group
 
-```bash [Example Request]
+```bash [Example Request (without counts — legacy shape)]
 curl -X POST https://example.com/api.php \
   -H "Content-Type: application/json" \
   -d '{
@@ -312,29 +328,53 @@ curl -X POST https://example.com/api.php \
   }'
 ```
 
-```json [Success Response]
+```bash [Example Request (with overview counts)]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "emailgateway.getdomains",
+    "SessionID": "your-session-id",
+    "WithCounts": 1
+  }'
+```
+
+```json [Success Response (without WithCounts — legacy shape)]
 {
   "Success": true,
-  "ErrorCode": 0,
   "Domains": [
     {
-      "DomainID": 123,
-      "SenderDomain": "example.com",
-      "Status": "Enabled"
-    },
-    {
-      "DomainID": 124,
-      "SenderDomain": "another.com",
-      "Status": "Approval Pending"
+      "DomainID": "123",
+      "SenderDomain": "mail.apex.com",
+      "CreatedAt": "2026-04-01 10:00:00",
+      "Status": "Enabled",
+      "VerificationMeta": {"DNSRecords": []},
+      "PolicyMeta": [],
+      "Options": {"LinkTracking": 1, "OpenTracking": 1, "UnsubscribeLink": 0}
     }
   ]
 }
 ```
 
-```json [Error Response]
+```json [Success Response (with WithCounts=1 — enriched)]
 {
-  "Success": false,
-  "ErrorCode": []
+  "Success": true,
+  "Domains": [
+    {
+      "DomainID": "123",
+      "SenderDomain": "mail.apex.com",
+      "CreatedAt": "2026-04-01 10:00:00",
+      "Status": "Enabled",
+      "VerificationMeta": {"DNSRecords": []},
+      "PolicyMeta": [],
+      "Options": {"LinkTracking": 1, "OpenTracking": 1, "UnsubscribeLink": 0},
+      "APIKeyCount": 1,
+      "SMTPCount": 2,
+      "WebhookCount": 2,
+      "Sent7d": 184320,
+      "BounceRate7d": 1.00,
+      "LastActivityAt": "2026-05-15T18:42:11Z"
+    }
+  ]
 }
 ```
 
