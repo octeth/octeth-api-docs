@@ -2008,3 +2008,76 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+## Export Events as CSV
+
+<Badge type="info" text="GET" /> `/api.php` &nbsp; <Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `EmailGateway.ManageDomain`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Response is `text/csv; charset=utf-8` (streamed), not JSON. The dispatcher's JSON wrapping is bypassed.
+:::
+
+Streams the email-gateway event log as CSV. Accepts the same filters as [`emailgateway.getevents`](#get-email-gateway-events) but bypasses the 100-row browse cap (hard cap at 10,000 rows). Designed to be embedded directly in a browser download link — when the user clicks "Export CSV", the browser streams the file to disk.
+
+Data is fetched from Elasticsearch in chunks of 1,000 rows; each chunk is flushed to the client immediately, so the loop is cancelable mid-download (closing the browser tab terminates the export before the next ES round-trip).
+
+**Response headers:**
+
+- `Content-Type: text/csv; charset=utf-8`
+- `Content-Disposition: attachment; filename="transactional-events-YYYY-MM-DD.csv"`
+- `X-Octeth-Export-Total: <int>` — total matching events reported by ES.
+- `X-Octeth-Export-Truncated: 1` — present only when `Total > 10000`; the CSV body contains the first 10,000 rows.
+- `X-Octeth-Export-Limit: 10000` — present only when truncated.
+
+**CSV columns:** `Time` (ISO 8601 UTC), `Event`, `MessageID`, `From`, `To`, `Subject`, `Domain`, `SMTPCode`. The file begins with a UTF-8 BOM so Excel opens it with the correct encoding. Address-like cells starting with `=`, `+`, `-`, `@`, tab, or carriage return are prefixed with a single quote to neutralize spreadsheet formula injection.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                                                                            |
+|-----------|---------|----------|----------------------------------------------------------------------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `emailgateway.exportevents`                                                                                               |
+| SessionID | String  | No       | Session ID obtained from login                                                                                                         |
+| APIKey    | String  | No       | API key for authentication                                                                                                             |
+| DomainID  | Integer | No       | Scope to a single sender domain. Omit (or pass `0`) to export across all of the caller's gateway domains                               |
+| Event     | String  | No       | Filter by event type. Possible values: same as [`emailgateway.getevents`](#get-email-gateway-events) — `accepted`, `rejected`, `delivered`, `bounced`, `opened`, `clicked`, `unsubscribed`, `complained`, `accepted-by-oempro`, `accepted-by-mta`, `rejected-by-oempro`, `rejected-by-mta` |
+| MessageID | String  | No       | Filter by message-id (takes precedence over `Query` when both are supplied)                                                            |
+| Query     | String  | No       | Free-text search across message metadata (subject, from, to, IP, MX host, SMTP response, etc.). Ignored when `MessageID` is supplied   |
+| StartDate | String  | No       | Start date (`Y-m-d` strict). Defaults to 30 days ago. Invalid formats fall back to the default                                         |
+| EndDate   | String  | No       | End date (`Y-m-d` strict). Defaults to today. Clamped to `>= StartDate`                                                                |
+
+::: code-group
+
+```bash [Example Request]
+# Browser-friendly GET — drop this into an <a href> or window.location:
+curl -OJ -G https://example.com/api.php \
+  --data-urlencode 'Command=emailgateway.exportevents' \
+  --data-urlencode 'SessionID=your-session-id' \
+  --data-urlencode 'DomainID=123' \
+  --data-urlencode 'Event=bounced' \
+  --data-urlencode 'StartDate=2026-01-01' \
+  --data-urlencode 'EndDate=2026-01-31'
+```
+
+```text [Success Response (CSV body)]
+Time,Event,MessageID,From,To,Subject,Domain,SMTPCode
+2026-01-31T18:42:11Z,bounced,bb1a701c-dcf0-4948-81eb-62726da0d67d,sender@apex.com,"Recipient <recipient@example.com>","Welcome to Apex",example.com,550
+2026-01-31T18:41:55Z,bounced,162a101e-0c78-491a-9403-94dad8a3e1ca,sender@apex.com,"recipient2@example.org",,example.org,553
+...
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2
+}
+```
+
+```txt [Error Codes]
+0: Success (CSV streamed)
+2: DomainID supplied but not owned by the caller
+```
+
+:::
