@@ -2182,3 +2182,92 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+## List Top Recipient Domains for a Sender Domain
+
+<Badge type="info" text="POST" /> `/api.php` &nbsp; <Badge type="info" text="GET" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `EmailGateway.ManageDomain`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns a leaderboard of the recipient domains (e.g. `gmail.com`, `yahoo.com`, `outlook.com`) for emails sent from a single sender domain over a date range. Built as a single ES terms aggregation on `message.to-domain` with per-bucket Sent / Failed / Sending counts and SMTP-session delivery-time statistics. New capability — the legacy `domain_recipients.php` view required the user to type a recipient domain manually before any data was shown.
+
+Counts semantics:
+
+- **Sent** = events where `event = "accepted-by-mta"` (recipient MTA acknowledged the message)
+- **Failed** = events where `event ∈ {"bounced", "rejected-by-mta", "rejected-by-oempro"}`
+- **Sending** = `max(Total − Sent − Failed, 0)`, where `Total` is the count of `accepted-by-oempro` events. Represents messages that entered the gateway but haven't reached a terminal state yet.
+
+Delivery-time fields (`AvgDeliverySec`, `MinDeliverySec`, `MaxDeliverySec`) come from `delivery-status.session-seconds` on `accepted-by-mta` events — the SMTP session duration recorded per delivery. Returns `null` when the bucket has no `accepted-by-mta` events. Rows are sorted by `Sent` desc.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                                                  |
+|-----------|---------|----------|--------------------------------------------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `emailgateway.listrecipientdomains`                                                             |
+| SessionID | String  | No       | Session ID obtained from login                                                                               |
+| APIKey    | String  | No       | API key for authentication                                                                                   |
+| DomainID  | Integer | Yes      | Sender domain ID. Must be owned by the caller                                                                |
+| StartDate | String  | No       | Start date (`Y-m-d` strict). Defaults to 30 days ago. Invalid formats fall back to the default               |
+| EndDate   | String  | No       | End date (`Y-m-d` strict). Defaults to today. Clamped to `>= StartDate`                                      |
+| Limit     | Integer | No       | Maximum number of recipient-domain rows. Default `50`, clamped to `[1, 1000]`                                |
+
+::: code-group
+
+```bash [Example Request]
+curl -G https://example.com/api.php \
+  --data-urlencode 'Command=emailgateway.listrecipientdomains' \
+  --data-urlencode 'SessionID=your-session-id' \
+  --data-urlencode 'DomainID=123' \
+  --data-urlencode 'StartDate=2026-04-01' \
+  --data-urlencode 'EndDate=2026-04-30' \
+  --data-urlencode 'Limit=20'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "StartDate": "2026-04-01 00:00:00",
+  "EndDate": "2026-04-30 23:59:59",
+  "Limit": 20,
+  "RecipientDomains": [
+    {
+      "Domain": "gmail.com",
+      "Sent": 11554,
+      "Failed": 172,
+      "Sending": 3,
+      "AvgDeliverySec": 0.05,
+      "MinDeliverySec": 0,
+      "MaxDeliverySec": 1.0
+    },
+    {
+      "Domain": "yahoo.com",
+      "Sent": 4881,
+      "Failed": 64,
+      "Sending": 0,
+      "AvgDeliverySec": 0.08,
+      "MinDeliverySec": 0,
+      "MaxDeliverySec": 2.0
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing required parameter (DomainID)
+2: Domain not found or not owned by the caller
+```
+
+:::
