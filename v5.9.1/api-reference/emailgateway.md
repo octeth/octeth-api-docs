@@ -2081,3 +2081,63 @@ Time,Event,MessageID,From,To,Subject,Domain,SMTPCode
 ```
 
 :::
+
+## Regenerate the Webhook Signing Key for a Domain
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `EmailGateway.ManageDomain`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Generates a fresh per-domain HMAC-SHA256 signing key, stores it atomically against the domain row, and returns it once. Subsequent calls to [`emailgateway.getwebhooks`](#get-domain-webhooks) for the same domain return the new key, and outgoing webhook payloads from that domain are signed with it.
+
+**Backwards compatibility:** until you call this endpoint for a given domain, that domain continues to sign and verify webhooks with the legacy installation-wide secret (`md5(OEMPRO_PASSWORD_SALT . LICENSE_KEY)`, formatted as `XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX`). Existing integrations that haven't rotated are entirely unaffected by the rollout of this endpoint. Once you rotate a domain, the consumer of *that* domain's webhooks must update its verification key — every other domain's consumer keeps working unchanged.
+
+The new key format is a 64-character uppercase hex string (256 bits of entropy from `random_bytes(32)`). It's shown once in the response and stored in the `SigningKey` column of the sender-domain row. There's no way to retrieve it later other than via `getwebhooks` for the same domain.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                            |
+|-----------|---------|----------|--------------------------------------------------------|
+| Command   | String  | Yes      | API command: `emailgateway.regeneratesigningkey`       |
+| SessionID | String  | No       | Session ID obtained from login                         |
+| APIKey    | String  | No       | API key for authentication                             |
+| DomainID  | Integer | Yes      | The sender domain to rotate. Must be owned by the caller |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "emailgateway.regeneratesigningkey",
+    "SessionID": "your-session-id",
+    "DomainID": 123
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "SigningKey": "7F94D1EF4F798E4E1F306F06DC3DF317424D60C91B2C4DC7F11D13A8D1B1C5FC"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing required parameter (DomainID)
+2: Domain not found or not owned by the caller
+```
+
+:::
