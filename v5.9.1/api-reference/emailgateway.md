@@ -2138,6 +2138,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing required parameter (DomainID)
 2: Domain not found or not owned by the caller
+3: Rotation failed — the UPDATE matched zero rows (typically because the domain was deleted between the ownership check and the rotation). No key was persisted; safe to retry.
 ```
 
 :::
