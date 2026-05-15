@@ -526,6 +526,103 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## Get Account-Wide Statistics
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `EmailGateway.ManageDomain`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns cross-domain aggregate statistics (Sent / Delivered / Bounced / Opened / Clicked + rates) for the caller's email gateway domains in a single call. Replaces the N+1 pattern of looping `emailgateway.domainstats` once per sender domain. Per-domain rows are ordered by `Sent` descending; domains with no events in the period are zero-filled. The `ComparisonTotals` window is the same length as the requested period, ending the second before `StartDate`.
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                                                                                                            |
+|-----------|--------|----------|------------------------------------------------------------------------------------------------------------------------|
+| Command   | String | Yes      | API command: `emailgateway.accountstats`                                                                               |
+| SessionID | String | No       | Session ID obtained from login                                                                                         |
+| APIKey    | String | No       | API key for authentication                                                                                             |
+| StartDate | String | No       | Start date (`Y-m-d` format, default: 30 days ago)                                                                      |
+| EndDate   | String | No       | End date (`Y-m-d` format, default: today). Clamped to `>= StartDate`                                                   |
+| DomainIDs | String | No       | Comma-separated list of sender domain IDs to scope the result to. IDs not owned by the caller are silently ignored. Omit to include all of the caller's gateway domains |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "emailgateway.accountstats",
+    "SessionID": "your-session-id",
+    "StartDate": "2024-01-01",
+    "EndDate": "2024-01-31",
+    "DomainIDs": "1,2,3"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "StartDate": "2024-01-01 00:00:00",
+  "EndDate": "2024-01-31 23:59:59",
+  "Totals": {
+    "Sent": 232530,
+    "Delivered": 226115,
+    "Bounced": 1931,
+    "Opened": 90636,
+    "Clicked": 14261,
+    "DeliveryRate": 97.24,
+    "OpenRate": 38.99,
+    "ClickRate": 6.14,
+    "BounceRate": 0.83
+  },
+  "ComparisonTotals": {
+    "Sent": 198400,
+    "Delivered": 192100,
+    "Bounced": 1820,
+    "Opened": 74500,
+    "Clicked": 11020,
+    "DeliveryRate": 96.83,
+    "OpenRate": 37.55,
+    "ClickRate": 5.55,
+    "BounceRate": 0.92
+  },
+  "PerDomain": [
+    {
+      "DomainID": 1,
+      "SenderDomain": "mail.apex.com",
+      "Sent": 184320,
+      "Delivered": 178224,
+      "Bounced": 1520,
+      "Opened": 71890,
+      "Clicked": 11420,
+      "DeliveryRate": 96.69,
+      "BounceRate": 0.82,
+      "OpenRate": 39.0,
+      "ClickRate": 6.19
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998
+}
+```
+
+```txt [Error Codes]
+0: Success
+99998: Authentication failure or session expired
+```
+
+:::
+
 ## Create API Key for Domain
 
 <Badge type="info" text="POST" /> `/api.php`
