@@ -2271,3 +2271,77 @@ curl -G https://example.com/api.php \
 ```
 
 :::
+
+## Atomically Replace a Domain API Key
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `EmailGateway.ManageDomain`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Atomically rotates the API key for a sender domain. Hard-deletes every prior row for the `(UserID, DomainID)` slot and inserts a new `Enabled` key — all inside a single MySQL transaction.
+
+Kills the race the legacy "delete then create" flow had against the `uk_user_domain_status (UserID, DomainID, Status)` unique constraint, which would occasionally fail with "the slot may still be reserved in the database" when the two calls overlapped. Response shape mirrors [`emailgateway.addapi`](#create-api-key-for-domain) exactly, so callers can migrate by changing the `Command` name only. If the domain has no existing key the DELETE is a no-op and behaviour is identical to `addapi`.
+
+Trade-off — the prior key row (including its `Description` and `CreatedAt`) is removed entirely, not soft-deleted. Audit-trail callers that need history should record it externally before invoking this endpoint.
+
+**Request Body Parameters:**
+
+| Parameter   | Type    | Required | Description                                                                |
+|-------------|---------|----------|----------------------------------------------------------------------------|
+| Command     | String  | Yes      | API command: `emailgateway.replaceapi`                                     |
+| SessionID   | String  | No       | Session ID obtained from login                                             |
+| APIKey      | String  | No       | API key for authentication                                                 |
+| DomainID    | Integer | Yes      | Sender domain ID. Must be owned by the caller                              |
+| Description | String  | Yes      | Description for the new key (same semantics as `emailgateway.addapi`)      |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "emailgateway.replaceapi",
+    "SessionID": "your-session-id",
+    "DomainID": 123,
+    "Description": "Rotated 2026-05-16"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "NewAPIKeyID": 92,
+  "APIKey": {
+    "APIKeyID": "92",
+    "UserID": "1",
+    "DomainID": "123",
+    "CreatedAt": "2026-05-16 04:26:31",
+    "APIKey": "4D196964-B909FDD7-134A4E29-6B0E923E",
+    "Description": "Rotated 2026-05-16",
+    "Status": "Enabled",
+    "Options": []
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing required parameter (Description)
+2: Missing required parameter (DomainID)
+3: Domain not found or not owned by the caller
+4: Atomic rotate failed — the transaction rolled back; no key was persisted. Safe to retry.
+```
+
+:::
