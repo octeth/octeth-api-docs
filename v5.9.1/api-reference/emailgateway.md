@@ -1083,16 +1083,18 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
+The `WebhookURL` is validated to prevent SSRF attacks: the scheme must be `http` or `https`, and the host cannot be `localhost`, `127.0.0.1`, `::1`, or end in `.local`. These checks live in the API itself (since #1999) so direct API callers can't bypass them by skipping the legacy UI flow.
+
 **Request Body Parameters:**
 
-| Parameter  | Type    | Required | Description                                                    |
-|------------|---------|----------|----------------------------------------------------------------|
-| Command    | String  | Yes      | API command: `emailgateway.addwebhook`                         |
-| SessionID  | String  | No       | Session ID obtained from login                                 |
-| APIKey     | String  | No       | API key for authentication                                     |
-| DomainID   | Integer | Yes      | Sender domain ID                                               |
-| Event      | String  | Yes      | Event type: delivery, bounce, open, click, unsubscribe, complaint |
-| WebhookURL | String  | Yes      | Webhook URL to receive event notifications                     |
+| Parameter  | Type    | Required | Description                                                                                                                          |
+|------------|---------|----------|--------------------------------------------------------------------------------------------------------------------------------------|
+| Command    | String  | Yes      | API command: `emailgateway.addwebhook`                                                                                               |
+| SessionID  | String  | No       | Session ID obtained from login                                                                                                       |
+| APIKey     | String  | No       | API key for authentication                                                                                                           |
+| DomainID   | Integer | Yes      | Sender domain ID                                                                                                                     |
+| Event      | String  | Yes      | Event type. Possible values: `delivery`, `bounce`, `open`, `click`, `unsubscribe`, `complaint`                                       |
+| WebhookURL | String  | Yes      | Webhook URL to receive event notifications. Must be an `http`/`https` URL whose host is not `localhost` / `127.0.0.1` / `::1` / `*.local` |
 
 ::: code-group
 
@@ -1116,10 +1118,11 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```json [Error Response]
+```json [Error Response — invalid URL scheme]
 {
   "Success": false,
-  "ErrorCode": [3]
+  "ErrorCode": 6,
+  "ErrorMessage": "Webhook URL must be a valid HTTP or HTTPS URL."
 }
 ```
 
@@ -1130,6 +1133,8 @@ curl -X POST https://example.com/api.php \
 3: Invalid event type
 4: Domain not found or access denied
 5: Missing required parameter (WebhookURL)
+6: WebhookURL is not a valid HTTP or HTTPS URL (e.g. ftp:// or malformed)
+7: WebhookURL host is forbidden (localhost, 127.0.0.1, ::1, or *.local)
 ```
 
 :::
