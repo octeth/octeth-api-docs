@@ -1290,6 +1290,101 @@ curl -X GET "https://example.com/api/v1/journey.stats.byisp?JourneyID=123&StartD
 
 :::
 
+## Get Per-Action Engagement Stats for a Journey
+
+<Badge type="info" text="GET" /> `/api/v1/journey.stats.byaction`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Campaign.Create`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns per-`SendEmail`-action engagement stats for a journey, optionally scoped by date range, single email (`EmailID`), and/or ISP domain. Closes the scoping triangle alongside `journey.stats.byisp` (issue #2007) and the `journey.get` filters (issue #2019) — the web UI's per-step overview cards render the same data filtered, this endpoint exposes it to API consumers.
+
+Each row contains a lifetime-style `Stats` block for the requested window plus a `DailyStats` time series zero-filled across every date in the window (consumers can chart a continuous x-axis without gap-fill logic).
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                                                                                |
+|-----------|---------|----------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `journey.stats.byaction`                                                                                                      |
+| SessionID | String  | No       | Session ID obtained from login                                                                                                             |
+| APIKey    | String  | No       | API key for authentication                                                                                                                 |
+| JourneyID | Integer | Yes      | Journey ID. Must be a positive integer and owned by the caller.                                                                            |
+| StartDate | String  | No       | Range start in `YYYY-MM-DD` format. Defaults to 30 days ago.                                                                               |
+| EndDate   | String  | No       | Range end in `YYYY-MM-DD` format. Defaults to today.                                                                                       |
+| EmailID   | Integer | No       | Restrict the response to a single `SendEmail` action's `ActionID`. Must reference an action with `Action='SendEmail'` on this journey.    |
+| ISP       | String  | No       | Scope all returned rows to one ISP domain. Must match `/^[a-zA-Z0-9.-]+$/`. When set, reads the per-action × per-ISP cache.                |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/journey.stats.byaction?JourneyID=123&StartDate=2026-04-17&EndDate=2026-05-17&ISP=gmail.com" \
+  -H "APIKey: your-api-key"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "Actions": [
+    {
+      "ActionID": 501,
+      "Action": "SendEmail",
+      "EmailID": 95,
+      "EmailName": "Welcome Email",
+      "OrderNo": 1,
+      "Stats": {
+        "SendCount": 1000,
+        "DeliveryCount": 950,
+        "OpenCount": 400,
+        "ClickCount": 80,
+        "BounceCount": 25,
+        "UnsubscribeCount": 5,
+        "SpamComplaintCount": 1,
+        "TotalRevenue": 123.45
+      },
+      "DailyStats": [
+        { "Date": "2026-04-17", "SendCount": 0, "OpenCount": 0, "ClickCount": 0, "TotalRevenue": 0.0 },
+        { "Date": "2026-04-18", "SendCount": 100, "OpenCount": 40, "ClickCount": 8, "TotalRevenue": 12.34 }
+      ]
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    { "Code": 3, "Message": "Journey not found" }
+  ]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing JourneyID parameter
+2: Invalid JourneyID parameter (must be a positive integer)
+3: Journey not found (HTTP 404)
+4: Invalid StartDate format
+5: Invalid EndDate format
+6: StartDate must be before EndDate
+7: Invalid EmailID parameter (not a positive integer, or not a SendEmail action on this journey)
+8: Invalid ISP parameter (must match /^[a-zA-Z0-9.-]+$/)
+```
+
+:::
+
+::: info Field semantics
+- **`Stats`** is a lifetime aggregate for the requested window (same window applied across all returned actions).
+- **`DailyStats`** is a per-day series. Days with no activity are zero-filled so consumers can chart a continuous x-axis. `TotalRevenue` on both `Stats` and `DailyStats` is in currency units (cents/100), matching `journey.get`'s `AggregatedEmailActions.TotalRevenue` shape.
+- **`EmailID`** in each row is the underlying `oempro_emails.EmailID` extracted from the action's `ActionParameters.EmailID`. Note that the input parameter also called `EmailID` refers to the journey **action's** `ActionID` (consistent with `journey.get` from issue #2019), not the underlying email's ID.
+- **`Action`** is always `"SendEmail"` — non-SendEmail actions (Wait, Decision, AddTag, etc.) are excluded since they don't produce engagement data.
+- When `EmailID` is omitted, every `SendEmail` action on the journey is returned, ordered by `OrderNo` ascending.
+- An empty journey (no `SendEmail` actions) returns `Actions: []` with `Success: true`.
+:::
+
 ## Get Account-Level Journey Benchmark
 
 <Badge type="info" text="GET" /> `/api/v1/account.journey.benchmark`
