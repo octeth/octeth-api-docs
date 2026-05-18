@@ -283,6 +283,7 @@ curl -X POST https://example.com/api/v1/journey.copytouser \
 | JourneyID | Integer | Yes      | ID of the journey to retrieve         |
 | StartDate | String  | No       | Start date for stats (YYYY-MM-DD)     |
 | EndDate   | String  | No       | End date for stats (YYYY-MM-DD)       |
+| IncludeActivityCounters | Boolean | No | When truthy (`1`, `true`, `yes`, `on`), the `JourneyStats` block also includes `LastTriggeredAt`, `LastActivityAt`, and `TotalEnrolledLifetime`. Defaults to `false` so existing consumers see the same shape they do today. |
 
 ::: code-group
 
@@ -315,6 +316,29 @@ curl -X GET https://example.com/api/v1/journey \
   }
 }
 ```
+
+::: info Optional activity counters
+When `IncludeActivityCounters=1` is passed, the `JourneyStats` block also includes:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `LastTriggeredAt` | string or null | Most recent enrollment (`MAX(oempro_journeys_entries.CreatedAt)`), `Y-m-d H:i:s` format. `null` when the journey has never been triggered. |
+| `LastActivityAt` | string or null | Most recent log row of any kind (`MAX(oempro_journeys_logs.CreatedAt)`), same format. `null` when no activity has been recorded. |
+| `TotalEnrolledLifetime` | int | `COUNT(DISTINCT RelSubscriberID)` of subscribers who have ever been enrolled. Distinct from `TotalSubscribers` (which counts every enrollment row — a subscriber re-enrolled twice contributes 2 to `TotalSubscribers` but 1 to `TotalEnrolledLifetime`). |
+
+These counters require two extra index-driven queries (one on `journeys_entries`, one on `journeys_logs`) and are off by default to keep the existing latency profile.
+:::
+
+::: info Per-action revenue fields (issue #2010)
+Each `SendEmail` entry in the `Actions` array also exposes two top-level revenue fields, sourced from the same daily cache that powers the existing `Stats.TotalRevenue` and `DailyStats[].TotalRevenue`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `Revenue` | float | Total revenue attributed to this action over the response window, in currency units (dollars). Same scale as `JourneyStats.TotalRevenue`. |
+| `DaysRevenue` | array | Daily revenue series: `[{ "Date": "YYYY-MM-DD", "Amount": 0.0 }, ...]` sorted ascending by `Date`. Zero-amount days are included so consumers can chart a continuous x-axis without gap-fill logic. |
+
+Non-`SendEmail` actions (`Wait`, `Decision`, `AddTag`, etc.) do not have these fields — consistent with how `Stats` and `DailyStats` already behave for non-revenue-generating actions. No extra queries are required to produce the fields; they reuse data the response already computes.
+:::
 
 ```json [Error Response]
 {
@@ -360,6 +384,7 @@ curl -X GET https://example.com/api/v1/journey \
 | StatsStartDate | String | No  | Start date for stats (YYYY-MM-DD)     |
 | StatsEndDate | String | No    | End date for stats (YYYY-MM-DD)       |
 | SkipStats | Boolean | No      | When truthy (`1`, `true`, `yes`), the per-row `JourneyStats` block is omitted entirely. Default: `false` (full stats are returned). Empty string is treated as absent. |
+| IncludeActivityCounters | Boolean | No | When truthy, each row's `JourneyStats` block gains `LastTriggeredAt`, `LastActivityAt`, and `TotalEnrolledLifetime` (see the `journey.get` reference for definitions). Batched in two queries total regardless of journey count. When combined with `SkipStats=1`, the entire `JourneyStats` block stays suppressed — counters are not produced standalone. Default: `false`. |
 
 ::: tip About `SkipStats`
 This flag is intended for callers that only need the flat list of journeys (e.g. dropdown pickers in segment rule-builders) and don't display stats. When set, the endpoint skips four `JourneyStats` queries per journey plus the per-row stats join, so it's substantially cheaper for users with many journeys.
@@ -1166,4 +1191,441 @@ After validation, the following business logic errors may also be returned:
 - `6`: Action not found (HTTP 404)
 :::
 
+:::
+
+## Get Per-ISP Engagement Stats for a Journey
+
+<Badge type="info" text="GET" /> `/api/v1/journey.stats.byisp`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Campaign.Create`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the per-ISP engagement rollup for a single journey within an optional date range. Mirrors the data the web UI's "By ISP" tab renders on the journey overview page. Reads the daily-cached ISP-level stats populated by the journey delivery pipeline.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                                  |
+|-----------|---------|----------|----------------------------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `journey.stats.byisp`                                                           |
+| SessionID | String  | No       | Session ID obtained from login                                                               |
+| APIKey    | String  | No       | API key for authentication                                                                   |
+| JourneyID | Integer | Yes      | Journey ID to fetch ISP-level stats for. Must be a positive integer and owned by the caller. |
+| StartDate | String  | No       | Range start in `YYYY-MM-DD` format. Defaults to 30 days ago.                                 |
+| EndDate   | String  | No       | Range end in `YYYY-MM-DD` format. Defaults to today.                                         |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/journey.stats.byisp?JourneyID=123&StartDate=2026-04-17&EndDate=2026-05-17" \
+  -H "APIKey: your-api-key"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ByISP": [
+    {
+      "Domain": "gmail.com",
+      "Sent": 1000,
+      "Delivered": 950,
+      "Opened": 400,
+      "Clicked": 80,
+      "Bounced": 25,
+      "Unsubscribed": 5,
+      "Complained": 1
+    },
+    {
+      "Domain": "yahoo.com",
+      "Sent": 500,
+      "Delivered": 480,
+      "Opened": 180,
+      "Clicked": 30,
+      "Bounced": 12,
+      "Unsubscribed": 2,
+      "Complained": 0
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    { "Code": 3, "Message": "Journey not found" }
+  ]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing JourneyID parameter
+2: Invalid JourneyID parameter (must be a positive integer)
+3: Journey not found (HTTP 404)
+4: Invalid StartDate format
+5: Invalid EndDate format
+6: StartDate must be before EndDate
+```
+
+:::
+
+## Get Account-Level Journey Benchmark
+
+<Badge type="info" text="GET" /> `/api/v1/account.journey.benchmark`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Campaign.Create`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns Sent-weighted engagement averages aggregated across every journey owned by the calling user within an optional date range. Parallels `emailgateway.accountstats` but for the journey module. Useful for showing a "your average vs this journey" benchmark in dashboards.
+
+All rates are **weighted by `SendCount`** (a 9 000-send journey contributes proportionally more than a 100-send journey) — a naive arithmetic mean would over-weight low-volume journeys.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                |
+|-----------|---------|----------|----------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `account.journey.benchmark`                                   |
+| SessionID | String  | No       | Session ID obtained from login                                             |
+| APIKey    | String  | No       | API key for authentication                                                 |
+| StartDate | String  | No       | Range start in `YYYY-MM-DD` format. Defaults to 30 days ago.               |
+| EndDate   | String  | No       | Range end in `YYYY-MM-DD` format. Defaults to today.                       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/account.journey.benchmark?StartDate=2026-04-17&EndDate=2026-05-17" \
+  -H "APIKey: your-api-key"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "StartDate": "2026-04-17",
+  "EndDate": "2026-05-17",
+  "Benchmark": {
+    "OpenRate": 0.5055,
+    "ClickRate": 0.0825,
+    "ClickToOpenRate": 0.1632,
+    "BounceRate": 0.0125,
+    "UnsubscribeRate": 0.0021,
+    "ComplaintRate": 0.0001,
+    "RevenuePerSubscriber": 0.42,
+    "JourneyCount": 7,
+    "TotalSent": 18420
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    { "Code": 3, "Message": "StartDate must not be after EndDate" }
+  ]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Invalid StartDate format
+2: Invalid EndDate format
+3: StartDate must not be after EndDate
+```
+
+:::
+
+::: info
+Rates are returned as decimal proportions, not percentages. For example, `OpenRate: 0.5055` means 50.55%. Multiply by 100 for display. `JourneyCount` reflects journeys that had at least one send in the window — journeys with zero sends do not contribute. `RevenuePerSubscriber` is denominated in the same currency the journey was stored in (cents on the wire are converted to currency units server-side).
+:::
+
+::: warning Strict date validation (differs from `emailgateway.accountstats`)
+This endpoint **rejects** invalid date inputs (`StartDate=2026-02-30`, wrong separator, etc.) with error codes 1/2. The sibling `emailgateway.accountstats` endpoint silently coerces invalid dates back to its defaults instead of erroring. If you target both endpoints, validate input client-side before calling to keep behavior consistent.
+:::
+
+## Bulk Enable Journeys
+
+<Badge type="info" text="POST" /> `/api/v1/journeys.enable`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Campaign.Create`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Flips status to `Enabled` for each owned journey currently in `Disabled` state. Per-ID processing — skipped IDs (cross-tenant, not found, already-Enabled status conflict) land in `FailedJourneyIDs` rather than failing the whole call.
+
+**Request Body Parameters:**
+
+| Parameter  | Type   | Required | Description                                                                |
+|------------|--------|----------|----------------------------------------------------------------------------|
+| Command    | String | Yes      | API command: `journeys.enable`                                             |
+| SessionID  | String | No       | Session ID obtained from login                                             |
+| APIKey     | String | No       | API key for authentication                                                 |
+| JourneyIDs | String | Yes      | Comma-separated list of positive integer JourneyIDs (e.g. `12,34,56`)      |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST "https://example.com/api/v1/journeys.enable" \
+  -H "APIKey: your-api-key" \
+  -d "JourneyIDs=12,34,56"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ProcessedJourneyIDs": [12, 34],
+  "FailedJourneyIDs": [56]
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    { "Code": 1, "Message": "Missing JourneyIDs parameter" }
+  ]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing JourneyIDs parameter
+2: Invalid JourneyIDs parameter (no positive integers after parsing)
+```
+
+:::
+
+## Bulk Disable Journeys
+
+<Badge type="info" text="POST" /> `/api/v1/journeys.disable`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Campaign.Create`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Mirror of `journeys.enable` but flips status from `Enabled` to `Disabled`. Skipped IDs (cross-tenant, not found, already-Disabled status conflict) land in `FailedJourneyIDs`.
+
+**Request Body Parameters:**
+
+| Parameter  | Type   | Required | Description                                                                |
+|------------|--------|----------|----------------------------------------------------------------------------|
+| Command    | String | Yes      | API command: `journeys.disable`                                            |
+| SessionID  | String | No       | Session ID obtained from login                                             |
+| APIKey     | String | No       | API key for authentication                                                 |
+| JourneyIDs | String | Yes      | Comma-separated list of positive integer JourneyIDs                        |
+
+Response shape and error codes are identical to `journeys.enable`.
+
+## Bulk Clone Journeys
+
+<Badge type="info" text="POST" /> `/api/v1/journeys.clone`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Campaign.Create`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Creates a `Disabled` copy of each owned source journey, including all actions (parent-child relationships preserved). Email templates and resource IDs are **not** copied — the clones reference the same underlying resources as the originals. (Use `journey.copytouser` for cross-tenant cloning with full resource duplication.)
+
+**Request Body Parameters:**
+
+| Parameter  | Type   | Required | Description                                                                |
+|------------|--------|----------|----------------------------------------------------------------------------|
+| Command    | String | Yes      | API command: `journeys.clone`                                              |
+| SessionID  | String | No       | Session ID obtained from login                                             |
+| APIKey     | String | No       | API key for authentication                                                 |
+| JourneyIDs | String | Yes      | Comma-separated list of positive integer JourneyIDs to clone               |
+| NameSuffix | String | No       | Suffix appended to source name with a leading space. Defaults to `(copy)` — output name: `"Original Name (copy)"`. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST "https://example.com/api/v1/journeys.clone" \
+  -H "APIKey: your-api-key" \
+  -d "JourneyIDs=12,34&NameSuffix=- backup"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ProcessedJourneyIDs": [12, 34],
+  "FailedJourneyIDs": [],
+  "ClonedJourneys": [
+    { "SourceJourneyID": 12, "NewJourneyID": 1234 },
+    { "SourceJourneyID": 34, "NewJourneyID": 1235 }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    { "Code": 1, "Message": "Missing JourneyIDs parameter" }
+  ]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing JourneyIDs parameter
+2: Invalid JourneyIDs parameter (no positive integers after parsing)
+```
+
+:::
+
+::: info Partial-success contract
+All three endpoints (`journeys.enable`, `journeys.disable`, `journeys.clone`) return `Success: true` whenever the call itself completed — per-ID outcomes are split into `ProcessedJourneyIDs` and `FailedJourneyIDs`. Validation errors (missing or unusable `JourneyIDs`) are the only conditions that fail the whole call with HTTP 422.
+:::
+
+## Submit a Journey CSV Export
+
+<Badge type="info" text="POST" /> `/api/v1/journey.export`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Campaign.Create`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Enqueues an async CSV export of the caller's journeys with rolled-up stats for a given date range and status filter. Mirrors the pattern used by `subscribers.export` — the worker processes the job in the background; callers should poll `journey.export.get` (or use the `download=1` flag once the job has completed).
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `journey.export.submit` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| StatsStartDate | String | No | `YYYY-MM-DD` start of the stats window. Defaults to 30 days ago. |
+| StatsEndDate | String | No | `YYYY-MM-DD` end of the stats window. Defaults to today. |
+| Status | String | No | Filter by journey status. Possible values: `Enabled`, `Disabled`, `all`. Defaults to `all`. |
+| IncludeActions | Boolean | No | When truthy, the CSV includes one row per `SendEmail` action under each journey (mirrors the web UI's expanded view). Defaults to `false`. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST "https://example.com/api/v1/journey.export" \
+  -H "APIKey: your-api-key" \
+  -d "StatsStartDate=2026-04-17&StatsEndDate=2026-05-17&Status=Enabled&IncludeActions=1"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ExportID": 1234
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    { "Code": 3, "Message": "StatsStartDate must not be after StatsEndDate" }
+  ]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Invalid StatsStartDate format
+2: Invalid StatsEndDate format
+3: StatsStartDate must not be after StatsEndDate
+4: Invalid Status value (expected: Enabled, Disabled, or all)
+```
+
+:::
+
+## Poll / Download a Journey CSV Export
+
+<Badge type="info" text="GET" /> `/api/v1/journey.export`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Campaign.Create`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the JSON status of an export job, or streams the CSV file when `download=1` and the job is `Completed`. Cross-tenant or cross-module `ExportID`s are rejected — this endpoint only serves jobs with `Module='JourneyExport'`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `journey.export.get` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| ExportID | Integer | Yes | The export job ID returned by `journey.export.submit` (positive integer) |
+| download | Boolean | No | When truthy and `Status=Completed`, streams the file with `Content-Type: text/csv` and a `Content-Disposition: attachment` header. Otherwise returns the JSON envelope. |
+
+::: code-group
+
+```bash [Example Request — JSON status]
+curl -X GET "https://example.com/api/v1/journey.export?ExportID=1234" \
+  -H "APIKey: your-api-key"
+```
+
+```bash [Example Request — Download]
+curl -X GET "https://example.com/api/v1/journey.export?ExportID=1234&download=1" \
+  -H "APIKey: your-api-key" \
+  -o journey-export.csv
+```
+
+```json [Success Response (JSON mode)]
+{
+  "Success": true,
+  "ExportJob": {
+    "ExportID": 1234,
+    "Module": "JourneyExport",
+    "Status": "Completed",
+    "ExportOptions": {
+      "Command": "ExportJourneys",
+      "StatsStartDate": "2026-04-17",
+      "StatsEndDate": "2026-05-17",
+      "Status": "Enabled",
+      "IncludeActions": true
+    },
+    "SubmittedAt": "2026-05-18 12:00:00",
+    "StartedAt": "2026-05-18 12:00:05",
+    "UpdatedAt": "2026-05-18 12:00:30",
+    "FinishedAt": "2026-05-18 12:00:30",
+    "ExpiresAt": "2026-05-25 12:00:00",
+    "DownloadSize": 4096
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    { "Code": 5, "Message": "Export job is not completed yet" }
+  ]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing ExportID parameter
+2: Invalid ExportID parameter
+3: Export job not found (HTTP 404)
+4: Wrong module (job exists but is not a JourneyExport, HTTP 404)
+5: Download requested but Status is not Completed (HTTP 409)
+```
+
+:::
+
+::: info Async lifecycle
+`Status` flows through `Pending` → `Processing` → `Completed` (or `Failed`). The background export worker picks up `Pending` jobs in submission order. `ExpiresAt` is currently advisory — the export file isn't auto-cleaned up today, so the field is provided for forward-compat with future retention policy.
 :::
