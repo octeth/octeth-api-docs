@@ -351,7 +351,7 @@ When `EmailID` or `ISP` is passed, `JourneyStats.AggregatedEmailActions` is comp
 | `TotalRevenue` | Summed and converted from cents to currency units (matches the unfiltered shape). |
 | `ConversionCount`, `BrowserViewCount`, `ForwardCount` | Always returned as `0` under filter (the per-ISP cache does not track these three counters today). |
 
-The filter respects `StartDate`/`EndDate` if provided, otherwise falls back to the same last-30-days window as `AggregatedDaysEmailActions`. When neither `EmailID` nor `ISP` is set, the response is byte-identical to today's contract.
+**Time window:** the filtered `AggregatedEmailActions` is always an **all-time** aggregate — same semantics as the unfiltered path. `StartDate` and `EndDate` only drive the date-windowed `AggregatedDaysEmailActions` sub-block, never the lifetime summary. When neither `EmailID` nor `ISP` is set, the response is byte-identical to today's contract.
 :::
 
 ```json [Error Response]
