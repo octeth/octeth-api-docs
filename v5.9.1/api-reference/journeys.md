@@ -284,6 +284,8 @@ curl -X POST https://example.com/api/v1/journey.copytouser \
 | StartDate | String  | No       | Start date for stats (YYYY-MM-DD)     |
 | EndDate   | String  | No       | End date for stats (YYYY-MM-DD)       |
 | IncludeActivityCounters | Boolean | No | When truthy (`1`, `true`, `yes`, `on`), the `JourneyStats` block also includes `LastTriggeredAt`, `LastActivityAt`, and `TotalEnrolledLifetime`. Defaults to `false` so existing consumers see the same shape they do today. |
+| EmailID | Integer | No | Scope `JourneyStats.AggregatedEmailActions` to a single `SendEmail` action on this journey (issue #2019). Must reference an action whose `Action='SendEmail'` and that belongs to this journey + caller. Reads the per-action ISP cache. Defaults to unset (journey-wide aggregate, unchanged). |
+| ISP | String | No | Scope `JourneyStats.AggregatedEmailActions` to a single ISP domain (issue #2019). Must match `/^[a-zA-Z0-9.-]+$/`. Defaults to unset. Combine with `EmailID` to intersect (one action × one ISP). |
 
 ::: code-group
 
@@ -340,6 +342,18 @@ Each `SendEmail` entry in the `Actions` array also exposes two top-level revenue
 Non-`SendEmail` actions (`Wait`, `Decision`, `AddTag`, etc.) do not have these fields — consistent with how `Stats` and `DailyStats` already behave for non-revenue-generating actions. No extra queries are required to produce the fields; they reuse data the response already computes.
 :::
 
+::: info Filtered `AggregatedEmailActions` (issue #2019)
+When `EmailID` or `ISP` is passed, `JourneyStats.AggregatedEmailActions` is computed from the per-ISP cache instead of the journey-wide cache. The same 11 keys are returned in both modes for shape stability:
+
+| Field | Behavior under filter |
+|-------|-----------------------|
+| `SendCount`, `DeliveryCount`, `OpenCount`, `ClickCount`, `BounceCount`, `UnsubscribeCount`, `SpamComplaintCount` | Summed across rows matching the filter slice. |
+| `TotalRevenue` | Summed and converted from cents to currency units (matches the unfiltered shape). |
+| `ConversionCount`, `BrowserViewCount`, `ForwardCount` | Always returned as `0` under filter (the per-ISP cache does not track these three counters today). |
+
+The filter respects `StartDate`/`EndDate` if provided, otherwise falls back to the same last-30-days window as `AggregatedDaysEmailActions`. When neither `EmailID` nor `ISP` is set, the response is byte-identical to today's contract.
+:::
+
 ```json [Error Response]
 {
   "Errors": [
@@ -359,6 +373,8 @@ Non-`SendEmail` actions (`Wait`, `Decision`, `AddTag`, etc.) do not have these f
 4: Invalid StartDate format
 5: Invalid EndDate format
 6: StartDate must be before EndDate
+7: Invalid EmailID parameter (not a positive integer, or not a SendEmail action on this journey)
+8: Invalid ISP parameter (must match /^[a-zA-Z0-9.-]+$/)
 ```
 
 :::
@@ -1216,6 +1232,7 @@ Returns the per-ISP engagement rollup for a single journey within an optional da
 | JourneyID | Integer | Yes      | Journey ID to fetch ISP-level stats for. Must be a positive integer and owned by the caller. |
 | StartDate | String  | No       | Range start in `YYYY-MM-DD` format. Defaults to 30 days ago.                                 |
 | EndDate   | String  | No       | Range end in `YYYY-MM-DD` format. Defaults to today.                                         |
+| EmailID   | Integer | No       | Scope the rollup to a single `SendEmail` action on this journey (issue #2019). Must reference an action whose `Action='SendEmail'` and that belongs to this journey + caller. When set, reads `oempro_journeys_actions_daily_cached_data_by_isp` instead of the journey-level cache. Defaults to unset. |
 
 ::: code-group
 
@@ -1268,6 +1285,7 @@ curl -X GET "https://example.com/api/v1/journey.stats.byisp?JourneyID=123&StartD
 4: Invalid StartDate format
 5: Invalid EndDate format
 6: StartDate must be before EndDate
+7: Invalid EmailID parameter (not a positive integer, or not a SendEmail action on this journey)
 ```
 
 :::
