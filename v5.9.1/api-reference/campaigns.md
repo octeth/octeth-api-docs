@@ -857,7 +857,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing required parameter (Tag)
 2: Tag already exists in the system
-3: Invalid tag format (only letters, numbers, spaces, hyphens, underscores and percent signs allowed)
+3: Invalid tag format (only letters, numbers, spaces, hyphens and underscores allowed, and percent signs)
 4: Tag cannot be empty after trimming whitespace
 ```
 
@@ -914,7 +914,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing required parameter (TagID)
 2: Missing required parameter (Tag)
-3: Invalid tag format (only letters, numbers, spaces, hyphens, underscores and percent signs allowed)
+3: Invalid tag format (only letters, numbers, spaces, hyphens and underscores allowed, and percent signs)
 4: Tag cannot be empty after trimming whitespace
 ```
 
