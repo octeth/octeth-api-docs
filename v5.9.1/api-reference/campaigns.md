@@ -823,7 +823,7 @@ curl -X POST https://example.com/api.php \
 | Command   | String | Yes      | API command: `tag.create`             |
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
-| Tag       | String | Yes      | Tag name (letters, numbers, spaces, hyphens, underscores only) |
+| Tag       | String | Yes      | Tag name. Allowed characters: letters, numbers, spaces, hyphens, underscores, percent signs (`%`). Leading and trailing whitespace is trimmed automatically. |
 
 ::: code-group
 
@@ -857,7 +857,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing required parameter (Tag)
 2: Tag already exists in the system
-3: Invalid tag format (only letters, numbers, spaces, hyphens and underscores allowed)
+3: Invalid tag format (only letters, numbers, spaces, hyphens, underscores and percent signs allowed)
 4: Tag cannot be empty after trimming whitespace
 ```
 
@@ -880,7 +880,7 @@ curl -X POST https://example.com/api.php \
 | SessionID | String  | No       | Session ID obtained from login        |
 | APIKey    | String  | No       | API key for authentication            |
 | TagID     | Integer | Yes      | ID of the tag to update               |
-| Tag       | String  | Yes      | New tag name (letters, numbers, spaces, hyphens, underscores only) |
+| Tag       | String  | Yes      | New tag name. Allowed characters: letters, numbers, spaces, hyphens, underscores, percent signs (`%`). Leading and trailing whitespace is trimmed automatically. |
 
 ::: code-group
 
@@ -914,7 +914,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing required parameter (TagID)
 2: Missing required parameter (Tag)
-3: Invalid tag format (only letters, numbers, spaces, hyphens and underscores allowed)
+3: Invalid tag format (only letters, numbers, spaces, hyphens, underscores and percent signs allowed)
 4: Tag cannot be empty after trimming whitespace
 ```
 

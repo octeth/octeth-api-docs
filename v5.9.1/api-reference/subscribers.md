@@ -1754,9 +1754,12 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing ListID parameter
 2: Missing TagName parameter
-3: Invalid ListID
-4: Tag name already exists
+3: Invalid tag format (only letters, numbers, spaces, hyphens, underscores and percent signs allowed)
+4: Invalid ListID
+5: Tag name already exists
 ```
+
+Tag names are trimmed of leading and trailing whitespace and must contain only letters, numbers, spaces, hyphens, underscores, or percent signs (`%`).
 
 :::
 
@@ -1814,10 +1817,12 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing ListID parameter
 2: Missing TagID parameter
-3: Invalid ListID
-4: Invalid TagID
+3: Invalid tag format (only letters, numbers, spaces, hyphens, underscores and percent signs allowed)
+4: Invalid ListID, Invalid TagID, or Tag cannot be empty after trimming whitespace
 5: Tag name already exists
 ```
+
+When provided, the tag name is trimmed of leading and trailing whitespace and must contain only letters, numbers, spaces, hyphens, underscores, or percent signs (`%`).
 
 :::
 
