@@ -231,6 +231,7 @@ curl -X POST https://example.com/api.php \
 | AutoResponderID | Integer | No | ID of the autoresponder (for tracking) |
 | Channel   | String | No       | Unsubscription channel (for tracking) |
 | AddToGlobalSuppression | Boolean | No | Add to global suppression list (default: false) |
+| BypassListSuppressionSettings | Boolean | No | When `true`, skip the list-level `OptOutAddToSuppressionList` and `OptOutAddToGlobalSuppressionList` auto-add (default: `false`). Used by admin-initiated unsubscribe actions in the subscriber edit page so the explicit "Add to suppression list" menu item is the only way an admin action writes suppression rows. End-user opt-outs from email links and journey actions leave this unset and keep honoring the list settings. Gated by the `ADMIN_UNSUBSCRIBE_BYPASSES_LIST_SUPPRESSION_SETTINGS` feature flag; an explicit `AddToGlobalSuppression=true` still adds the global suppression row even when the bypass is on. |
 | Preview   | Integer | No       | Preview mode (1 = don't actually unsubscribe) |
 
 ::: code-group
