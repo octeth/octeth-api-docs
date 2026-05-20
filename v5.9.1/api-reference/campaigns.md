@@ -458,7 +458,7 @@ curl -X POST https://example.com/api.php \
 | AutoResendEnabled            | Boolean | No       | Enable auto-resend to non-openers                                 |
 | AutoResendWaitDays           | Integer | No       | Days to wait before auto-resend - required if AutoResendEnabled=true |
 | AutoResendSubject            | String  | No       | Subject line for auto-resend - required if AutoResendEnabled=true |
-| AutoResendPreHeaderText      | String  | No       | Pre-header text for auto-resend                                   |
+| AutoResendPreHeaderText      | String  | No       | Pre-header text for auto-resend. If omitted or empty, the auto-resend uses the original campaign's pre-header. |
 | OriginalCampaignID           | Integer | No       | ID of original campaign if this is a resend                       |
 | RecipientListsAndSegments    | String  | No       | Comma-separated list (format: ListID:SegmentID)                   |
 | Exclude_RecipientListsAndSegments | String | No  | Comma-separated exclusion list (format: ListID:SegmentID)         |
@@ -531,7 +531,6 @@ curl -X POST https://example.com/api.php \
 12: Missing ScheduleRecSendMaxInstance for Recursive schedule
 14: Missing or invalid AutoResendWaitDays when AutoResendEnabled=true
 15: Missing AutoResendSubject when AutoResendEnabled=true
-16: Missing AutoResendPreHeaderText when AutoResendEnabled=true
 17: Invalid ABTesting parameter format (must be array)
 18: Invalid ABTesting variations format (must be array)
 19: Email variation not found or doesn't belong to user
