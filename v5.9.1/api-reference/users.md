@@ -1155,6 +1155,10 @@ curl -X GET https://example.com/api/v1/users.status \
 | RelThemeID | Integer | Yes | Theme ID |
 | ForceUnsubscriptionLink | String | Yes | 'Enabled' or 'Disabled' |
 | ForceRejectOptLink | String | Yes | 'Enabled' or 'Disabled' |
+| DefaultRateLimits | String | No | JSON-encoded rate limits with `SMS` and `EmailGateway` buckets, each containing `Minute`/`Hour`/`Day`/`Week`/`Month`/`Year` integer counts (`-1` = unlimited). Posted values are deep-merged over the canonical defaults, so a partial payload (only one bucket, or only some intervals) preserves the missing keys at `-1`. Omit to store the full all-`-1` defaults. |
+| CustomEmailHeaders | String | No | JSON-encoded SMTP header overrides for users in this group (e.g. `{"Add":{"X-Header":"value"},"Remove":["X-Other"]}`). |
+| Options | Object | No | JSON object of per-group options (e.g. `TargetDeliveryServerID_Marketing`, `EmailGatewayDNSTemplate`, `DefaultSenderDomain`, `EnableSenderInfo`). Pass as an object — the endpoint JSON-encodes it. |
+| SubscriptionPlan | String | No | Subscription plan identifier for the group. |
 
 ::: code-group
 
@@ -1239,6 +1243,10 @@ curl -X POST https://example.com/api.php \
 | RelThemeID | Integer | Yes | Theme ID |
 | ForceUnsubscriptionLink | String | Yes | 'Enabled' or 'Disabled' |
 | ForceRejectOptLink | String | Yes | 'Enabled' or 'Disabled' |
+| DefaultRateLimits | String | No | JSON-encoded rate limits with `SMS` and `EmailGateway` buckets, each containing `Minute`/`Hour`/`Day`/`Week`/`Month`/`Year` integer counts (`-1` = unlimited). Posted values are deep-merged over the canonical defaults, so a partial payload (only one bucket, or only some intervals) preserves the missing keys at `-1`. Omit the field entirely to keep the existing row's value. |
+| CustomEmailHeaders | String | No | JSON-encoded SMTP header overrides for users in this group (e.g. `{"Add":{"X-Header":"value"},"Remove":["X-Other"]}`). Omit to keep the existing row's value. |
+| Options | Object | No | JSON object of per-group options (e.g. `TargetDeliveryServerID_Marketing`, `EmailGatewayDNSTemplate`, `DefaultSenderDomain`, `EnableSenderInfo`). Pass as an object — the endpoint JSON-encodes it. Omit to keep the existing row's value. |
+| SubscriptionPlan | String | No | Subscription plan identifier for the group. Omit to keep the existing row's value. |
 
 ::: code-group
 
@@ -1258,7 +1266,8 @@ curl -X POST https://example.com/api.php \
     "LimitEmailSendPerDay": 10000,
     "RelThemeID": 1,
     "ForceUnsubscriptionLink": "Enabled",
-    "ForceRejectOptLink": "Enabled"
+    "ForceRejectOptLink": "Enabled",
+    "DefaultRateLimits": "{\"SMS\":{\"Minute\":-1,\"Hour\":-1,\"Day\":-1,\"Week\":-1,\"Month\":-1,\"Year\":-1},\"EmailGateway\":{\"Minute\":100,\"Hour\":5000,\"Day\":-1,\"Week\":-1,\"Month\":-1,\"Year\":-1}}"
   }'
 ```
 
