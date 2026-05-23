@@ -33,7 +33,7 @@ Subscriber management endpoints for managing email list subscribers, including c
 | UnsubscriptionDate | String | Conditional | Required if Status is Unsubscribed or Opt-Out Pending (Y-m-d or Y-m-d H:i:s format) |
 | UnsubscriptionIP | String | Conditional | Required if Status is Unsubscribed or Opt-Out Pending (IP address) |
 | BounceType | String | No      | Bounce type: Not Bounced, Soft, Hard (default: Not Bounced) |
-| CustomFields | Object | No     | Custom field values (key: CustomFieldID, value: field value) |
+| CustomFields | Object | No     | Custom field values (key: CustomFieldID, value: field value). Accepts both list-specific and global custom field IDs. |
 | OptInConfirmationEmailID | Integer | No | Email ID to send for opt-in confirmation |
 | UpdateIfDuplicate | Boolean | No | Update subscriber if email already exists (default: false) |
 | UpdateIfUnsubscribed | Boolean | No | Update subscriber if previously unsubscribed (default: false) |
