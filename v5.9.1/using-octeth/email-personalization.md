@@ -142,35 +142,42 @@ Without URL encoding, special characters in subscriber data can break your links
 
 User tags insert data from the account that owns the subscriber list. These are useful for including sender information such as company name and contact details.
 
-::: info
-User tags use the legacy percent syntax only. The modern handlebars <code v-pre>{{ }}</code> syntax is not supported for User tags.
-:::
-
 | Tag | Description |
 |---|---|
-| `%User:FirstName%` | The account owner's first name. |
-| `%User:LastName%` | The account owner's last name. |
-| `%User:EmailAddress%` | The account owner's email address. |
-| `%User:CompanyName%` | The company name. |
-| `%User:Website%` | The company website URL. |
-| `%User:Street%` | Street address. |
-| `%User:City%` | City. |
-| `%User:State%` | State or province. |
-| `%User:Zip%` | Postal or ZIP code. |
-| `%User:Country%` | Country. |
-| `%User:Phone%` | Phone number. |
-| `%User:Fax%` | Fax number. |
-| `%User:TimeZone%` | The account's time zone. |
+| <code v-pre>{{ User:FirstName }}</code> | The account owner's first name. |
+| <code v-pre>{{ User:LastName }}</code> | The account owner's last name. |
+| <code v-pre>{{ User:EmailAddress }}</code> | The account owner's email address. |
+| <code v-pre>{{ User:CompanyName }}</code> | The company name. |
+| <code v-pre>{{ User:Website }}</code> | The company website URL. |
+| <code v-pre>{{ User:Street }}</code> | Street address. |
+| <code v-pre>{{ User:City }}</code> | City. |
+| <code v-pre>{{ User:State }}</code> | State or province. |
+| <code v-pre>{{ User:Zip }}</code> | Postal or ZIP code. |
+| <code v-pre>{{ User:Country }}</code> | Country. |
+| <code v-pre>{{ User:Phone }}</code> | Phone number. |
+| <code v-pre>{{ User:Fax }}</code> | Fax number. |
+| <code v-pre>{{ User:TimeZone }}</code> | The account's time zone. |
+
+User tags support fallback values and helper functions just like Subscriber tags:
+
+```
+{{ User:CompanyName | "Acme Corp" }}
+{{ uppercase User:State }}
+```
 
 **Example — adding a physical mailing address to comply with anti-spam regulations:**
 
 ```html
 <p style="font-size: 12px; color: #999;">
-  %User:CompanyName%<br>
-  %User:Street%, %User:City%, %User:State% %User:Zip%<br>
-  %User:Country%
+  {{ User:CompanyName }}<br>
+  {{ User:Street }}, {{ User:City }}, {{ User:State }} {{ User:Zip }}<br>
+  {{ User:Country }}
 </p>
 ```
+
+::: info
+The legacy `%User:FieldName%` syntax is still supported for backward compatibility with existing templates, but does not support fallback values or helper functions.
+:::
 
 ## List Tags
 
@@ -209,12 +216,12 @@ These links allow subscribers to manage their subscription:
 
 | Tag | Description |
 |---|---|
-| `%Link:Unsubscribe%` | Inserts an unsubscribe link. When clicked, the subscriber is removed from the list. |
-| `%Link:Suppression%` | Inserts a global suppression link. When clicked, the subscriber's email address is added to the suppression list, preventing emails from all lists. |
-| `%Link:SubscriberArea%` | Inserts a link to the subscriber preference center where subscribers can update their information. |
+| <code v-pre>{{ Link:Unsubscribe }}</code> | Inserts an unsubscribe link. When clicked, the subscriber is removed from the list. |
+| <code v-pre>{{ Link:Suppression }}</code> | Inserts a global suppression link. When clicked, the subscriber's email address is added to the suppression list, preventing emails from all lists. |
+| <code v-pre>{{ Link:SubscriberArea }}</code> | Inserts a link to the subscriber preference center where subscribers can update their information. |
 
 ::: warning
-Including an unsubscribe link in every marketing email is required by most anti-spam regulations (such as CAN-SPAM and GDPR). Always include `%Link:Unsubscribe%` in your email templates.
+Including an unsubscribe link in every marketing email is required by most anti-spam regulations (such as CAN-SPAM and GDPR). Always include <code v-pre>{{ Link:Unsubscribe }}</code> in your email templates.
 :::
 
 ### Campaign Action Links
@@ -223,19 +230,23 @@ These links provide sharing and viewing options:
 
 | Tag | Description |
 |---|---|
-| `%Link:Forward%` | Inserts a "forward to a friend" link that opens a sharing page. |
-| `%Link:WebBrowser%` | Inserts a "view in browser" link that opens the email as a web page. |
-| `%Link:ReportAbuse%` | Inserts a link for reporting the email as abuse. |
-| `%Link:SocialShare:Twitter%` | Inserts a link to share the email on Twitter/X. |
-| `%Link:SocialShare:Facebook%` | Inserts a link to share the email on Facebook. |
+| <code v-pre>{{ Link:Forward }}</code> | Inserts a "forward to a friend" link that opens a sharing page. |
+| <code v-pre>{{ Link:WebBrowser }}</code> | Inserts a "view in browser" link that opens the email as a web page. |
+| <code v-pre>{{ Link:ReportAbuse }}</code> | Inserts a link for reporting the email as abuse. |
+| <code v-pre>{{ Link:SocialShare:Twitter }}</code> | Inserts a link to share the email on Twitter/X. |
+| <code v-pre>{{ Link:SocialShare:Facebook }}</code> | Inserts a link to share the email on Facebook. |
 
 **Example — a standard email footer with management links:**
 
 ```html
-<a href="%Link:WebBrowser%">View in browser</a> |
-<a href="%Link:Forward%">Forward to a friend</a> |
-<a href="%Link:Unsubscribe%">Unsubscribe</a>
+<a href="{{ Link:WebBrowser }}">View in browser</a> |
+<a href="{{ Link:Forward }}">Forward to a friend</a> |
+<a href="{{ Link:Unsubscribe }}">Unsubscribe</a>
 ```
+
+::: info
+Inside an `href` attribute, both <code v-pre>{{ Link:Foo }}</code> and <code v-pre>{{{ Link:Foo }}}</code> produce a working link. The double-brace form HTML-encodes ampersands to `&amp;`, which browsers decode correctly. Use the triple-brace form if you prefer the URL to appear without entity encoding in the HTML source.
+:::
 
 ### Opt-In Confirmation Links
 
@@ -243,11 +254,15 @@ These links are used in double opt-in confirmation emails:
 
 | Tag | Description |
 |---|---|
-| `%Link:Confirm%` | Inserts the confirmation link that subscribers click to verify their subscription. |
-| `%Link:Reject%` | Inserts a link that subscribers can click to reject the subscription. |
+| <code v-pre>{{ Link:Confirm }}</code> | Inserts the confirmation link that subscribers click to verify their subscription. |
+| <code v-pre>{{ Link:Reject }}</code> | Inserts a link that subscribers can click to reject the subscription. |
 
 ::: info
 Opt-in confirmation links are only available in confirmation email templates, not in regular campaigns.
+:::
+
+::: info
+The legacy `%Link:FieldName%` syntax (e.g. `%Link:Unsubscribe%`) is still supported for backward compatibility with existing templates.
 :::
 
 ## Fallback Values
@@ -389,29 +404,35 @@ Helpers can be combined with fallback values. Place the helper before the tag an
 
 ## Date Personalization
 
-You can insert the current date into your emails using the `%Date%` tag with a PHP date format:
+You can insert the current date into your emails using the `Now` tag combined with the `dateFormat` helper. Use underscores (`_`) in place of spaces in the format string.
 
 ```
-%Date=FORMAT%
+{{ dateFormat-FORMAT Now }}
 ```
 
 **Examples:**
 
 | Tag | Output Example |
 |---|---|
-| `%Date=Y-m-d%` | `2024-12-25` |
-| `%Date=F j, Y%` | `December 25, 2024` |
-| `%Date=D, d M Y%` | `Wed, 25 Dec 2024` |
-| `%Date=l%` | `Wednesday` |
-| `%Date=h:i A%` | `02:30 PM` |
+| <code v-pre>{{ dateFormat-Y-m-d Now }}</code> | `2024-12-25` |
+| <code v-pre>{{ dateFormat-F_j,_Y Now }}</code> | `December 25, 2024` |
+| <code v-pre>{{ dateFormat-D,_d_M_Y Now }}</code> | `Wed, 25 Dec 2024` |
+| <code v-pre>{{ dateFormat-l Now }}</code> | `Wednesday` |
+| <code v-pre>{{ dateFormat-h:i_A Now }}</code> | `02:30 PM` |
 
 The date reflects the moment the email is sent, so each delivery batch may show a slightly different time.
 
 ::: tip
-Use the current date tag in time-sensitive content such as daily digests or event reminders. For example: "Here is your daily summary for `%Date=F j, Y%`."
+Use the current date tag in time-sensitive content such as daily digests or event reminders. For example: "Here is your daily summary for <code v-pre>{{ dateFormat-F_j,_Y Now }}</code>."
 :::
 
-To format a **subscriber's date field** (such as a birthday or registration date), use the `dateFormat` helper instead — see [Date Formatting Helper](#date-formatting-helper).
+The same PHP date format characters listed in [Date Formatting Helper](#date-formatting-helper) apply here.
+
+To format a **subscriber's date field** (such as a birthday or registration date) rather than the current time, use the `dateFormat` helper with a subscriber field — see [Date Formatting Helper](#date-formatting-helper).
+
+::: info
+The legacy `%Date=FORMAT%` syntax (e.g. `%Date=F j, Y%`) is still supported for backward compatibility with existing templates.
+:::
 
 ## Conditional Content
 
