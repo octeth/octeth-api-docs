@@ -198,6 +198,11 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+**Response notes:**
+
+- `List.Options` is returned as a decoded JSON object (not a JSON string).
+- When `Options.ClickBankINS` is present (#1897), the at-rest-encrypted secret is redacted on the way out: the encrypted blob is removed and replaced with `SecretKeyMasked` — `"********"` when a secret is set, `""` when not set. Update via `list.update` with `SecretKey: "__unchanged__"` to preserve the existing value.
+
 ## Update a List
 
 <Badge type="info" text="POST" /> `/api.php`
@@ -252,7 +257,8 @@ curl -X POST https://example.com/api.php \
 | OptOutUnsubscribeFrom                           | Integer | No       | List ID to unsubscribe from on unsubscription                |
 | OptInSubscribeTo                                | Integer | No       | List ID to subscribe to on subscription                      |
 | OptInUnsubscribeFrom                            | Integer | No       | List ID to unsubscribe from on subscription                  |
-| Options                                         | Object  | No       | Additional list options (JSON object). Supported keys: `DoNotSendEmailCampaignIfRecipientIsEnrolledInJourneyOrAutoresponder` (Boolean), `PlainEmailHeader` (String), `PlainEmailFooter` (String), `HTMLEmailHeader` (String), `HTMLEmailFooter` (String). Inner keys are matched case-insensitively, but values are always persisted under the canonical CamelCase keys shown here. Partial updates merge with the row's existing Options — keys you don't include in the payload are preserved. Email header/footer options override user-level settings for emails sent to this list. |
+| Options                                         | Object  | No       | Additional list options (JSON object). Supported keys: `DoNotSendEmailCampaignIfRecipientIsEnrolledInJourneyOrAutoresponder` (Boolean), `PlainEmailHeader` (String), `PlainEmailFooter` (String), `HTMLEmailHeader` (String), `HTMLEmailFooter` (String), `ClickBankINS` (Object — see below). Inner keys are matched case-insensitively, but values are always persisted under the canonical CamelCase keys shown here. Partial updates merge with the row's existing Options — keys you don't include in the payload are preserved. Email header/footer options override user-level settings for emails sent to this list. |
+| Options.ClickBankINS                            | Object  | No       | ClickBank INS (Instant Notification Service) integration config for this list (#1897). Supported sub-keys: `Enabled` (Boolean), `SecretKey` (String — exactly 8 chars, or sentinel `__unchanged__` to preserve the existing encrypted secret, or empty string to clear), `TriggerAutomation` (Boolean — fires autoresponders/journeys/web-service hooks on ClickBank-sourced subscribers), `TransactionTypeActions` (Object — map of ClickBank txn type to action; allowed types: `SALE`, `BILL`, `RFND`, `CGBK`, `INSF`, `CANCEL-REBILL`, `UNCANCEL-REBILL`, `TEST`; allowed actions: `subscribe`, `unsubscribe`, `ignore`), `FieldMapping` (Object — map of ClickBank source field to target; each entry is `{ "type": "builtin", "target": "EmailAddress" }` for the email built-in or `{ "type": "customfield", "target": <CustomFieldID> }` for a per-list custom field; allowed source keys: `email`, `firstName`, `lastName`, `receipt`, `productTitle`, `itemNo`, `accountAmount`, `currency`, `phone`, `country`, `city`, `state`, `zip`, `address`, `affiliate`, `transactionType`, `lastTransactionAt`). The secret is encrypted at rest via the Crypto class and never returned by `list.get` (use `__unchanged__` on update to keep the existing value). |
 
 ::: code-group
 
@@ -304,6 +310,9 @@ curl -X POST https://example.com/api.php \
 9: Invalid email address format for ReqByEmailSearchToAddress
 10: Invalid suppression list option
 11: Nothing to update
+20: ClickBank secret key encryption failed
+21: ClickBank secret key must be exactly 8 characters
+22: ClickBank transaction-type action must be one of: subscribe, unsubscribe, ignore
 ```
 
 :::
