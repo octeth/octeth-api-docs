@@ -45,6 +45,7 @@ curl -X GET "https://example.com/api/v1/user.senderdomains?APIKey=your-api-key"
       "UserID": "1",
       "CreatedAt": "2026-04-25 22:54:00",
       "Status": "Enabled",
+      "LastVerifiedAt": "2026-05-23 09:11:00",
       "VerificationMeta": {
         "DNSRecords": {
           "sl.example.com": ["CNAME", "tracking-host.octeth.example.", true]
@@ -58,11 +59,29 @@ curl -X GET "https://example.com/api/v1/user.senderdomains?APIKey=your-api-key"
         "CustomSubdomain": "sl",
         "CustomTrackPrefix": "track",
         "TrackPrefixDisabled": false
-      }
+      },
+      "Volume7d": 184320,
+      "VolumeDelta": "+12%",
+      "Reputation": 96,
+      "ReputationBucket": "excellent",
+      "DeliveryRate": 99.4,
+      "BounceRate": 0.5
     }
   ]
 }
 ```
+
+**Operational fields (issue #1889).** The following fields are derived from `oempro_sender_domain_stats` / `oempro_eg_domain_stats` and are populated on every `List` and `Get` response:
+
+| Field            | Type             | Description |
+|------------------|------------------|-------------|
+| `LastVerifiedAt` | datetime / null  | Updated on every `user.senderdomain.verify` call (regardless of pass/fail). `null` when the domain has never been verified. |
+| `Volume7d`       | integer          | Total attributable sends in the last 7 days. |
+| `VolumeDelta`    | string / null    | Trailing-7-day volume change vs the prior 7-day window — for example `"+12%"`, `"-3%"`, `"new"` (no prior-window data), or `null` (no current-window volume). |
+| `Reputation`     | integer / null   | 0–100 score over the last 30 days. `null` when there's no send volume to score. |
+| `ReputationBucket` | string / null  | One of `excellent` (≥90), `good` (≥70), `fair` (≥50), `poor`. `null` when `Reputation` is `null`. |
+| `DeliveryRate`   | float / null     | Last-30-day delivery percentage. Falls back to `(Sent − Bounced − Complaints) / Sent` when explicit `Delivered` events aren't recorded for the period (non-PMTA installs). |
+| `BounceRate`     | float / null     | Last-30-day bounce percentage. |
 
 ```json [Error Response]
 {
@@ -100,11 +119,18 @@ curl -X GET "https://example.com/api/v1/user.senderdomains?APIKey=your-api-key"
 | SessionID | String  | No       | Session ID obtained from login                                         |
 | APIKey    | String  | No       | API key for authentication                                             |
 | DomainID  | Integer | Yes      | The ID of the sender domain to retrieve. Must be owned by the calling user |
+| days      | Integer | No       | When present, the response also includes a `Stats` map keyed by `Y-m-d` covering the last N days of per-domain activity. Clamped to `1..365` (default `30`). Mirrors `user.webhook.stats`. |
+
+The same operational fields documented under [List User Sender Domains](#list-user-sender-domains) (`LastVerifiedAt`, `Volume7d`, `VolumeDelta`, `Reputation`, `ReputationBucket`, `DeliveryRate`, `BounceRate`) are returned on every `Get` response regardless of whether `days` is supplied.
 
 ::: code-group
 
 ```bash [Example Request]
 curl -X GET "https://example.com/api/v1/user.senderdomain?APIKey=your-api-key&DomainID=12"
+```
+
+```bash [With Daily Stats]
+curl -X GET "https://example.com/api/v1/user.senderdomain?APIKey=your-api-key&DomainID=12&days=30"
 ```
 
 ```json [Success Response]
@@ -116,6 +142,7 @@ curl -X GET "https://example.com/api/v1/user.senderdomain?APIKey=your-api-key&Do
     "UserID": "1",
     "CreatedAt": "2026-04-25 22:54:00",
     "Status": "Enabled",
+    "LastVerifiedAt": "2026-05-23 09:11:00",
     "VerificationMeta": {
       "DNSRecords": {
         "sl.example.com": ["CNAME", "tracking-host.octeth.example.", true]
@@ -129,7 +156,25 @@ curl -X GET "https://example.com/api/v1/user.senderdomain?APIKey=your-api-key&Do
       "CustomSubdomain": "sl",
       "CustomTrackPrefix": "track",
       "TrackPrefixDisabled": false
-    }
+    },
+    "Volume7d": 184320,
+    "VolumeDelta": "+12%",
+    "Reputation": 96,
+    "ReputationBucket": "excellent",
+    "DeliveryRate": 99.4,
+    "BounceRate": 0.5
+  }
+}
+```
+
+```json [With Daily Stats]
+{
+  "Success": true,
+  "SenderDomain": { /* same shape as above */ },
+  "Days": 30,
+  "Stats": {
+    "2026-05-23": { "Period": "2026-05-23", "Sent": 12000, "Delivered": 11940, "Bounced": 60, "Complaints": 0 },
+    "2026-05-22": { "Period": "2026-05-22", "Sent": 11820, "Delivered": 11760, "Bounced": 58, "Complaints": 2 }
   }
 }
 ```
@@ -149,6 +194,8 @@ curl -X GET "https://example.com/api/v1/user.senderdomain?APIKey=your-api-key&Do
 1: Missing DomainID parameter
 2: Sender domain not found (also returned when the domain exists but is owned by another user — to avoid leaking ownership)
 ```
+
+Days with no recorded activity are omitted from `Stats` rather than zero-filled — callers that need a full window should pad client-side.
 
 :::
 
@@ -414,7 +461,7 @@ The endpoint **persists Status** based on the result (mirrors what the UI's edit
 - All records resolve correctly → `Status = 'Enabled'`
 - Any record fails → `Status = 'Approval Pending'`
 
-The latest per-record verified flags are merged into the existing `VerificationMeta` (other keys are preserved) so subsequent `Get` / `DNS` calls reflect the same state shown in the UI. The endpoint short-circuits and skips the database write entirely when neither the Status nor the per-record verified flags have changed since the last probe.
+The latest per-record verified flags are merged into the existing `VerificationMeta` (other keys are preserved) so subsequent `Get` / `DNS` calls reflect the same state shown in the UI. The `Status` and `VerificationMeta` columns are only rewritten when the verified state actually changed, but `LastVerifiedAt` is **always** updated on every call (issue #1889) — this is what powers the "Checked X ago" subtitle in the sender-domain UI.
 
 **Request Body Parameters:**
 
