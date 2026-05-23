@@ -328,6 +328,7 @@ The user must then update their DNS zone with the new records and call `user.sen
 | UseTrackingSubdomain | Boolean | No       | Whether to use a separate tracking subdomain. Internally stored as the inverse `TrackPrefixDisabled` flag                   |
 | CustomSubdomain      | String  | No       | New override for the MFROM/return-path subdomain. Letters, digits, and hyphens only; max 32 chars; no leading/trailing hyphens. **Triggers DNS regeneration** |
 | CustomTrackPrefix    | String  | No       | New override for the tracking subdomain prefix. Same character rules. **Triggers DNS regeneration**                         |
+| status               | String  | No       | Toggle the domain on/off. Accepts `Enabled` or `Disabled` (case-insensitive). `Approval Pending`, `Suspended`, `Deleted` are system-controlled and rejected (issue #1890) |
 
 ::: code-group
 
@@ -387,7 +388,13 @@ curl -X PATCH https://example.com/api/v1/user.senderdomain \
 2: Sender domain not found (also returned when the domain exists but is owned by another user)
 6: Invalid CustomSubdomain or CustomTrackPrefix (letters, digits, and hyphens only; max 32 chars; no leading/trailing hyphens)
 7: Sender domain could not be retrieved after update (returned with HTTP 500)
+9: Invalid Status value. Allowed: Enabled, Disabled (issue #1890)
+10: Cannot enable an unverified domain — run user.senderdomain.verify first (issue #1890)
 ```
+
+::: tip Pausing vs deleting (issue #1890)
+A domain in `Status='Disabled'` keeps its DNS records and stats history, but is filtered out by the send-time resolver (`SenderDomains::ResolveForEmail`) — campaigns and journeys that reference a paused domain fall back to the group's default sender domain until the user flips it back to `Enabled`. The flip is single round-trip: no DNS re-verification, no Redis cache invalidation.
+:::
 
 :::
 
@@ -465,16 +472,17 @@ The latest per-record verified flags are merged into the existing `VerificationM
 
 **Request Body Parameters:**
 
-| Parameter | Type    | Required | Description                                                              |
-|-----------|---------|----------|--------------------------------------------------------------------------|
-| Command   | String  | Yes      | API command: `user.senderdomain.verify`                                  |
-| SessionID | String  | No       | Session ID obtained from login                                           |
-| APIKey    | String  | No       | API key for authentication                                               |
-| DomainID  | Integer | Yes      | The ID of the sender domain to verify. Must be owned by the calling user |
+| Parameter | Type    | Required           | Description                                                              |
+|-----------|---------|--------------------|--------------------------------------------------------------------------|
+| Command   | String  | Yes                | API command: `user.senderdomain.verify`                                  |
+| SessionID | String  | No                 | Session ID obtained from login                                           |
+| APIKey    | String  | No                 | API key for authentication                                               |
+| DomainID  | Integer | Yes (single-domain mode) | The ID of the sender domain to verify. Must be owned by the calling user. Ignored when `verifyall=true` |
+| verifyall | Boolean | No                 | When true, verifies every `Approval Pending` domain owned by the caller in one call (issue #1890). Capped at 25 domains per call; if more are pending, the response carries `Truncated: true` and the caller should re-invoke to process the next batch. `DomainID` is ignored when this is set |
 
 ::: code-group
 
-```bash [Example Request]
+```bash [Single Domain]
 curl -X POST https://example.com/api/v1/user.senderdomain.verify \
   -H "Content-Type: application/json" \
   -d '{
@@ -484,7 +492,17 @@ curl -X POST https://example.com/api/v1/user.senderdomain.verify \
   }'
 ```
 
-```json [Success Response]
+```bash [Bulk]
+curl -X POST https://example.com/api/v1/user.senderdomain.verify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "user.senderdomain.verify",
+    "APIKey": "your-api-key",
+    "verifyall": true
+  }'
+```
+
+```json [Single-Domain Response]
 {
   "Success": true,
   "DomainID": 12,
@@ -494,6 +512,20 @@ curl -X POST https://example.com/api/v1/user.senderdomain.verify \
     "sl.example.com": ["CNAME", "tracking-host.octeth.example.", true],
     "track-sl.example.com": ["CNAME", "tracking-host.octeth.example.", true]
   }
+}
+```
+
+```json [Bulk Response]
+{
+  "Success": true,
+  "VerifyAll": true,
+  "Verified": 18,
+  "Failed": 7,
+  "Truncated": false,
+  "Domains": [
+    {"DomainID": 12, "IsVerified": true,  "Status": "Enabled"},
+    {"DomainID": 13, "IsVerified": false, "Status": "Approval Pending"}
+  ]
 }
 ```
 
@@ -509,10 +541,14 @@ curl -X POST https://example.com/api/v1/user.senderdomain.verify \
 ```
 
 ```txt [Error Codes]
-1: Missing DomainID parameter
+1: Missing DomainID parameter (single-domain mode only; not raised when verifyall=true)
 2: Sender domain not found (also returned when the domain exists but is owned by another user)
 ```
 
+:::
+
+::: tip Bulk verify response shape (issue #1890)
+The bulk path's per-domain entries intentionally omit `DNSRecords` to keep the payload compact on large accounts. Callers that need the full record list for a specific domain should follow up with `user.senderdomain.dns` or `user.senderdomain.get`. The 60-second Redis cache inside the per-domain probe still applies, so a bulk verify that runs shortly after a single-domain verify (or vice versa) reuses the cached probe rather than re-hitting DNS.
 :::
 
 ## Get DNS Records for a Sender Domain
@@ -568,6 +604,148 @@ curl -X GET "https://example.com/api/v1/user.senderdomain.dns?APIKey=your-api-ke
       "IsVerified": null
     }
   }
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    {
+      "Code": 2,
+      "Message": "Sender domain not found"
+    }
+  ]
+}
+```
+
+```txt [Error Codes]
+1: Missing DomainID parameter
+2: Sender domain not found (also returned when the domain exists but is owned by another user)
+```
+
+:::
+
+## Send a Test Email <Badge type="tip" text="New in 5.9.x" />
+
+<Badge type="info" text="POST" /> `/api/v1/user.senderdomain.sendtest`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `User.Update`
+- Rate limit: **10 requests per 5 minutes** (stricter than the rest of the family — this dispatches real outbound mail)
+- Legacy endpoint access via `/api.php` is also supported
+- Not available in demo mode (returns HTTP 403 with code 99)
+:::
+
+Sends a single synthetic test message *from* a specific sender domain so the user can confirm end-to-end deliverability before wiring the domain up to a real campaign or journey. The body renders the three artifacts that matter for sender-domain debugging: the resolved from-address (`<from-prefix>@<SenderDomain>`), the MFROM/return-path subdomain (`SenderDomains::BuildMFROMDomain`), and the tracking subdomain (`SenderDomains::BuildTrackingDomain`). If the recipient opens the message, the user can confirm those resolve correctly outside the campaign send path.
+
+The dispatch goes through `Emails::SendPreviewEmail` (the same engine path as `email.emailpreview` and `autoresponder.sendtest`), so it honors the user's group SendMethod, transactional delivery server (if configured), and tracking domain rewriting.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description |
+|-----------|---------|----------|-------------|
+| Command   | String  | Yes      | API command: `user.senderdomain.sendtest` |
+| SessionID | String  | No       | Session ID obtained from login |
+| APIKey    | String  | No       | API key for authentication |
+| DomainID  | Integer | Yes      | Sender domain to send from. Must be owned by the calling user |
+| to        | String  | Yes      | Recipient address. Any valid email; the 10/5min rate limit is the abuse control |
+| subject   | String  | No       | Override the default subject line. Defaults to `"Sender domain test from <SenderDomain>"` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/user.senderdomain.sendtest \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "user.senderdomain.sendtest",
+    "APIKey": "your-api-key",
+    "DomainID": 12,
+    "to": "ops@example.com"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "DomainID": 12,
+  "SenderDomain": "example.com",
+  "To": "ops@example.com",
+  "Subject": "Sender domain test from example.com",
+  "MessageID": "senderdomaintest_6644a1b2c3d4e.12345678"
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    {
+      "Code": 8,
+      "Message": "Invalid recipient email address"
+    }
+  ]
+}
+```
+
+```txt [Error Codes]
+1: Missing DomainID parameter
+2: Sender domain not found (also returned when the domain exists but is owned by another user)
+3: Missing To parameter
+8: Invalid recipient email address
+11: Test message delivery failed (downstream SMTP/PHPMail/etc. rejected the send; HTTP 502)
+99: Not available in demo mode (HTTP 403)
+```
+
+:::
+
+## Detect DNS Host <Badge type="tip" text="New in 5.9.x" />
+
+<Badge type="info" text="GET" /> `/api/v1/user.senderdomain.dnshost`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `User.Update`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+- Result is cached in Redis for **1 hour** per domain (NS records change rarely)
+:::
+
+Performs a server-side **NS lookup** for the apex of a sender domain and maps the nameservers to a known DNS provider label (`Cloudflare`, `Route 53`, `GoDaddy`, `Namecheap`, `DigitalOcean`, `Gandi`, `OVH`, `Bluehost`, `HostGator`, `eNom`, `Dynadot`, `Azure DNS`, `Google Domains`, `Google Cloud DNS`, `Hover`, `DreamHost`, `Linode`). The raw nameserver list is always returned so the UI can fall back to displaying them verbatim when the mapping is `unknown`.
+
+The endpoint never throws on lookup failure — a resolver error or unmapped nameserver surfaces as `DnsHost='unknown'` with the (possibly empty) raw nameserver list. The "DNS via X" subtitle is a nice-to-have for the user-facing UI, not a hard requirement, so callers can trust they'll always get an HTTP 200 once ownership is verified.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description |
+|-----------|---------|----------|-------------|
+| Command   | String  | Yes      | API command: `user.senderdomain.dnshost` |
+| SessionID | String  | No       | Session ID obtained from login |
+| APIKey    | String  | No       | API key for authentication |
+| DomainID  | Integer | Yes      | Sender domain to inspect. Must be owned by the calling user |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/user.senderdomain.dnshost?APIKey=your-api-key&DomainID=12"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "DomainID": 12,
+  "SenderDomain": "example.com",
+  "DnsHost": "Cloudflare",
+  "Nameservers": ["ns1.cloudflare.com", "ns2.cloudflare.com"]
+}
+```
+
+```json [Unmapped Response]
+{
+  "Success": true,
+  "DomainID": 12,
+  "SenderDomain": "example.com",
+  "DnsHost": "unknown",
+  "Nameservers": ["ns1.boutique-host.example.", "ns2.boutique-host.example."]
 }
 ```
 
