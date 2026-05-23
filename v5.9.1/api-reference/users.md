@@ -807,12 +807,17 @@ curl -X POST https://example.com/api/v1/user.apikey \
 
 ```json [Success Response]
 {
-  "APIKeyID": 5,
+  "Success": true,
+  "APIKeyID": "5",
   "APIKey": {
     "APIKey": "1234-5678-9abc-def0",
     "Note": "Production API key",
+    "IPAddress": "",
     "BoundIPAddress": "",
-    "CreatedAt": "2024-12-28 10:00:00"
+    "CreatedAt": "2026-05-22 20:45:48",
+    "LastUsedAt": null,
+    "LastUsedIP": null,
+    "RequestCount": 0
   }
 }
 ```
@@ -830,6 +835,23 @@ curl -X POST https://example.com/api/v1/user.apikey \
 3: API key create process failed
 4: New API key create process has failed
 ```
+
+**Response Fields (APIKey object):**
+
+| Field          | Type             | Description |
+|----------------|------------------|-------------|
+| APIKey         | String           | The generated API key token. |
+| Note           | String           | Administrative note supplied at creation. |
+| IPAddress      | String           | **Deprecated** — kept for backward compatibility. Same value as `BoundIPAddress`. Prefer `BoundIPAddress` in new integrations. |
+| BoundIPAddress | String           | IP address the key is bound to, or `""` if unbound. |
+| CreatedAt      | String (DATETIME)| Creation timestamp (UTC, `YYYY-MM-DD HH:MM:SS`). |
+| LastUsedAt     | String \| null   | Last time this key was used to authenticate (always `null` for a freshly created key). |
+| LastUsedIP     | String \| null   | Client IP recorded at last use, `null` if never used. |
+| RequestCount   | Integer          | Lifetime number of authentications with this key (always `0` for a freshly created key). |
+
+::: info Counter semantics
+`RequestCount` and `LastUsedAt` are bumped each time the key is used to start a session via `User.Login` (with the `APIKey` parameter). They do **not** count every individual REST request made within a session — once a client has a `SessionID`, subsequent calls authenticate with session credentials and do not re-touch the API key. Treat `RequestCount` as "how many times has this integration checked in?", which is what an operator cares about when answering "is this key still in use anywhere?".
+:::
 
 :::
 
@@ -921,10 +943,14 @@ curl -X GET https://example.com/api/v1/user.apikeys \
   "Success": true,
   "APIKeys": [
     {
-      "APIKeyID": 1,
-      "APIKey": "1234-5678-9abc-def0",
-      "Note": "Production API key",
-      "BoundIPAddress": ""
+      "APIKeyID": 17,
+      "APIKey": "7c7c-0a2b-66e2-3738-d373-5362-7ab9-9a68",
+      "Note": "Shopify sync",
+      "BoundIPAddress": "",
+      "CreatedAt": "2026-02-04 09:12:33",
+      "LastUsedAt": "2026-04-25 14:07:11",
+      "LastUsedIP": "52.14.72.10",
+      "RequestCount": 12840
     }
   ]
 }
@@ -939,6 +965,19 @@ curl -X GET https://example.com/api/v1/user.apikeys \
 ```txt [Error Codes]
 No specific error codes for this endpoint
 ```
+
+**Response Fields (each entry in `APIKeys[]`):**
+
+| Field          | Type             | Description |
+|----------------|------------------|-------------|
+| APIKeyID       | Integer          | Internal numeric ID of the key. |
+| APIKey         | String           | The API key token. |
+| Note           | String           | Administrative note supplied at creation. |
+| BoundIPAddress | String           | IP address the key is bound to, or `""` if unbound. |
+| CreatedAt      | String (DATETIME)| Creation timestamp. Keys that pre-date the usage-tracking migration return the sentinel `"1970-01-01 00:00:00"` — clients should render this as "Unknown". |
+| LastUsedAt     | String \| null   | Last time this key was used to authenticate, or `null` if the key has never been used. |
+| LastUsedIP     | String \| null   | Client IP recorded at last use (IPv4 or IPv6), `null` if never used. |
+| RequestCount   | Integer          | Lifetime number of authentications with this key. See counter semantics on the Create endpoint above. |
 
 :::
 
