@@ -179,6 +179,7 @@ export default defineConfig({
                                 {text: 'Reports', link: '/v5.9.1/api-reference/reports'},
                                 {text: 'Auto Responders', link: '/v5.9.1/api-reference/autoresponders'},
                                 {text: 'Campaigns', link: '/v5.9.1/api-reference/campaigns'},
+                                {text: 'Saved Search Filters', link: '/v5.9.1/api-reference/search'},
                                 {text: 'Custom Fields', link: '/v5.9.1/api-reference/customfields'},
                                 {text: 'Delivery Servers', link: '/v5.9.1/api-reference/deliveryservers'},
                                 {text: 'DNS', link: '/v5.9.1/api-reference/dns'},

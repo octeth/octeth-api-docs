@@ -689,7 +689,7 @@ curl -X POST https://example.com/api.php \
 | SplitABTestStatistics   | Boolean | No       | Include A/B split test statistics (default: false)                   |
 | ExcludeColumns          | Array   | No       | Column names to exclude from SELECT for performance                  |
 | Include_AutoResend      | Boolean | No       | Include auto-resend campaigns (default: false)                       |
-| IncludeTotalRecipients  | Boolean | No       | Include aggregate sums of TotalRecipients, TotalSent, TotalFailed (default: false) |
+| IncludeTotalRecipients  | Boolean | No       | Include aggregate sums over the filtered window: TotalRecipients, TotalSent, TotalDelivered, TotalFailed, TotalOpens, UniqueOpens, TotalClicks, UniqueClicks, TotalHardBounces, TotalSoftBounces, TotalUnsubscriptions (default: false) |
 
 ::: code-group
 

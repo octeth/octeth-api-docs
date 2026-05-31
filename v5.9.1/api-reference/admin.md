@@ -617,7 +617,7 @@ Searches and filters campaigns across all accounts with admin privileges. This e
 | Tags                    | String  | No       | Comma-separated tag IDs to filter by                                                             |
 | SplitABTestStatistics   | Boolean | No       | Include A/B split test statistics (default: false)                                              |
 | ExcludeColumns          | Array   | No       | Column names to exclude from SELECT for performance (e.g., ['Options', 'HTMLContent'])          |
-| IncludeTotalRecipients  | Boolean | No       | Include aggregate sums of TotalRecipients, TotalSent, TotalFailed (default: false)              |
+| IncludeTotalRecipients  | Boolean | No       | Include aggregate sums over the filtered window: TotalRecipients, TotalSent, TotalDelivered, TotalFailed, TotalOpens, UniqueOpens, TotalClicks, UniqueClicks, TotalHardBounces, TotalSoftBounces, TotalUnsubscriptions (default: false) |
 | IncludeBatchStats       | Boolean | No       | Include batch statistics for each campaign (default: false)                                     |
 | IncludeVelocity         | Boolean | No       | Include current sending velocity metrics for each campaign (default: false)                     |
 
@@ -684,7 +684,15 @@ curl -X POST https://example.com/api/v1/admin.campaigns.search \
   "AggregateSums": {
     "TotalRecipients": 250000,
     "TotalSent": 125000,
-    "TotalFailed": 1250
+    "TotalDelivered": 121000,
+    "TotalFailed": 1250,
+    "TotalOpens": 60000,
+    "UniqueOpens": 42000,
+    "TotalClicks": 9800,
+    "UniqueClicks": 7100,
+    "TotalHardBounces": 900,
+    "TotalSoftBounces": 350,
+    "TotalUnsubscriptions": 640
   }
 }
 ```
