@@ -603,7 +603,7 @@ Searches and filters campaigns across all accounts with admin privileges. This e
 | SessionID               | String  | No       | Session ID obtained from login                                                                   |
 | APIKey                  | String  | No       | API key for authentication                                                                       |
 | CampaignStatus          | String  | No       | Filter by status: `Draft`, `Ready`, `Scheduled`, `Sending`, `Sent`, `Paused`. Note: 'Scheduled' is mapped to 'Ready' with ScheduleType='Future' |
-| SearchKeyword           | String  | No       | Search by campaign name (LIKE query)                                                             |
+| SearchKeyword           | String  | No       | Search by campaign name or email subject (LIKE query)                                            |
 | FilterByUserID          | Integer | No       | Filter by account/user ID (empty for all accounts)                                              |
 | CampaignIDs             | String/Array | No  | Filter by specific campaign IDs (comma-separated string or array). Example: "1,2,3" or [1,2,3]  |
 | DateFrom                | String  | No       | Start date for filtering (Y-m-d format). For Sent campaigns, filters by SendProcessFinishedOn; for Scheduled, filters by SendDate |

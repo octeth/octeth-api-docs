@@ -674,7 +674,7 @@ curl -X POST https://example.com/api.php \
 | APIKey                  | String  | No       | API key for authentication                                           |
 | CampaignStatus          | String  | No       | Filter by status (Draft, Ready, Scheduled, Sending, Sent, Paused, Failed, All) |
 | ScheduleType            | String/Array | No  | Filter by schedule type (Not Scheduled, Immediate, Future, Recursive) |
-| SearchKeyword           | String  | No       | Search campaigns by name (LIKE query)                                |
+| SearchKeyword           | String  | No       | Search campaigns by name or email subject (LIKE query)              |
 | FilterByUserID          | Integer | No       | Filter by account/user ID (admin only)                               |
 | CampaignIDs             | String/Array | No  | Filter by specific campaign IDs (comma-separated or array)           |
 | Date_From               | String  | No       | Start date for filtering (YYYY-MM-DD format)                         |
@@ -1419,6 +1419,156 @@ curl -X POST https://example.com/api/v1/admin.campaign.retryfailed \
 4: Queue table does not exist for this campaign
 5: No failed recipients found for this campaign
 6: Database error during retry operation
+```
+
+:::
+
+## Export Campaigns to CSV
+
+<Badge type="info" text="POST" /> `/api/v1/campaigns.export`
+
+Enqueues a background job that exports the campaigns list (past sends plus engagement aggregates) to a CSV file. Accepts the same filter shape as [Get Campaigns List](#get-campaigns-list), so the export matches the equivalent `campaigns.get` query row-for-row (subject to the selected column allow-list). Returns a `JobID` to poll with [Get Campaign Export Status](#get-campaign-export-status).
+
+::: tip API Usage Notes
+- Authentication is done by User API Key
+- Required permissions: `Campaigns.Get`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+**Request Body Parameters:**
+
+| Parameter             | Type         | Required | Description                                                                                                  |
+|-----------------------|--------------|----------|--------------------------------------------------------------------------------------------------------------|
+| Command               | String       | Yes      | API command: `campaigns.export.post`                                                                         |
+| SessionID             | String       | No       | Session ID obtained from login                                                                               |
+| APIKey                | String       | No       | API key for authentication                                                                                   |
+| ExportFormat          | String        | No       | Output format. Possible values: `csv`. (`json` is reserved for a future release and currently rejected.) Defaults to `csv`. |
+| FieldsToExport        | Array        | No       | Columns to include, from the allow-list (see below). Defaults to a standard column set when omitted.          |
+| CampaignStatus        | String       | No       | Filter by status (Draft, Ready, Scheduled, Sending, Sent, Paused, Failed, All)                               |
+| ScheduleType          | String/Array | No       | Filter by schedule type (Not Scheduled, Immediate, Future, Recursive)                                        |
+| SearchKeyword         | String       | No       | Search campaigns by name or email subject (LIKE query)                                                       |
+| CampaignIDs           | String/Array | No       | Filter by specific campaign IDs (comma-separated or array)                                                   |
+| Tags                  | String       | No       | Comma-separated tag IDs to filter by                                                                         |
+| Date_From             | String       | No       | Start date for filtering (YYYY-MM-DD format)                                                                 |
+| Date_To               | String       | No       | End date for filtering (YYYY-MM-DD format)                                                                   |
+| FilterByUserID        | Integer      | No       | Filter by account/user ID (admin only)                                                                       |
+| Include_AutoResend    | Boolean      | No       | Include auto-resend campaigns (default: false)                                                               |
+| SplitABTestStatistics | Boolean      | No       | Emit one row per A/B variation under each parent campaign (default: false)                                   |
+
+**Allowed `FieldsToExport` values:** `CampaignID`, `CampaignName`, `EmailSubject`, `CampaignStatus`, `ScheduleType`, `SendDate`, `SendTime`, `CreateDateTime`, `SendProcessStartedOn`, `SendProcessFinishedOn`, `TotalRecipients`, `TotalSent`, `TotalFailed`, `TotalDelivered`, `TotalOpens`, `UniqueOpens`, `TotalClicks`, `UniqueClicks`, `TotalConversions`, `UniqueConversions`, `TotalForwards`, `UniqueForwards`, `TotalViewsOnBrowser`, `UniqueViewsOnBrowser`, `TotalUnsubscriptions`, `TotalHardBounces`, `TotalSoftBounces`, `TotalRevenue`, `RecipientLists`, `RecipientSegments`.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/campaigns.export \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "campaigns.export.post",
+    "SessionID": "your-session-id",
+    "CampaignStatus": "Sent",
+    "Tags": "5,12",
+    "Date_From": "2026-04-01",
+    "Date_To": "2026-04-30",
+    "ExportFormat": "csv",
+    "FieldsToExport": ["CampaignID", "CampaignName", "EmailSubject", "SendProcessFinishedOn", "TotalRecipients", "TotalSent", "TotalDelivered", "UniqueOpens", "UniqueClicks", "TotalHardBounces", "TotalSoftBounces", "TotalUnsubscriptions"],
+    "SplitABTestStatistics": false,
+    "Include_AutoResend": true
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "JobID": 8421,
+  "ExportID": 8421,
+  "EstimatedRows": 173
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    { "Code": 1, "Message": "Invalid ExportFormat (only \"csv\" is currently supported)" }
+  ]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Invalid ExportFormat (only "csv" is currently supported)
+2: FieldsToExport must be a non-empty array
+3: FieldsToExport contains unknown field(s)
+```
+
+:::
+
+## Get Campaign Export Status
+
+<Badge type="info" text="GET" /> `/api/v1/campaigns.export`
+
+Polls the status of a campaign export job created by [Export Campaigns to CSV](#export-campaigns-to-csv), or streams the produced file. When `Download=1` and the job is finished, the endpoint streams the CSV directly with explicit `Content-Type: text/csv` and `Content-Disposition: attachment` headers (it does not return JSON in that case).
+
+::: tip API Usage Notes
+- Authentication is done by User API Key
+- Required permissions: `Campaigns.Get`
+- Rate limit: 100 requests per 60 seconds
+- A job can only be accessed by its owner, and only as a `CampaignExport` job (a `SubscriberExport`/`JourneyExport` ID owned by the same user returns "not found")
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                                  |
+|-----------|---------|----------|----------------------------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `campaigns.export.get`                                                          |
+| SessionID | String  | No       | Session ID obtained from login                                                               |
+| APIKey    | String  | No       | API key for authentication                                                                   |
+| JobID     | Integer | Yes      | The export job ID returned by `campaigns.export.post` (alias: `ExportID`)                    |
+| Download  | Boolean | No       | When `1` and `Status=Finished`, streams the CSV file instead of returning the JSON envelope  |
+
+::: code-group
+
+```bash [Example Request]
+# Poll status
+curl -X GET "https://example.com/api/v1/campaigns.export?Command=campaigns.export.get&SessionID=your-session-id&JobID=8421"
+
+# Download the finished file
+curl -X GET "https://example.com/api/v1/campaigns.export?Command=campaigns.export.get&SessionID=your-session-id&JobID=8421&Download=1" -o campaigns.csv
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "JobID": 8421,
+  "Status": "Finished",
+  "Progress": 100,
+  "RowCount": 173,
+  "DownloadURL": "api.php?Command=campaigns.export.get&jobid=8421&download=1",
+  "DownloadSize": 28456,
+  "ExpiresAt": "2026-05-07 15:37:58"
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    { "Code": 5, "Message": "Export job is not completed yet" }
+  ]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing JobID parameter
+2: Invalid JobID parameter (not a positive integer)
+3: Export job not found (wrong owner or never existed)
+4: Export job not found (job exists but is not a CampaignExport)
+5: Download requested but the job is not finished yet
 ```
 
 :::

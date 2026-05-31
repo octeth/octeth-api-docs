@@ -3,3 +3,8 @@ node_modules
 .vitepress/dist
 .vitepress/cache
 merged-docs.md
+
+# Stray dirs created when `vitepress dev --host <addr>` treats the host as an output path
+/0.0.0.0/
+/100.69.222.98/
+**/deps_temp_*
