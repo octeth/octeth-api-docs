@@ -683,6 +683,7 @@ curl -X POST https://example.com/api.php \
 | OrderType               | String  | No       | Sort direction (ASC or DESC)                                         |
 | RecordsPerRequest       | Integer | No       | Number of records per page (0 for all, default: 0)                   |
 | RecordsFrom             | Integer | No       | Offset for pagination (default: 0)                                   |
+| CountOnly               | Boolean | No       | Return only `TotalCampaigns` with an empty `Campaigns` array (default: false). Skips the full result-set fetch and all per-row enrichment; takes precedence over `RecordsPerRequest`. Use for cheap count/badge calls. |
 | RetrieveStatistics      | Boolean | No       | Include campaign statistics (default: true)                          |
 | RetrieveTags            | Boolean | No       | Include campaign tags (default: false)                               |
 | Tags                    | String  | No       | Comma-separated tag IDs to filter by                                 |
@@ -735,6 +736,85 @@ curl -X POST https://example.com/api.php \
 {
   "Success": false,
   "ErrorCode": 0
+}
+```
+
+```txt [Error Codes]
+0: Success
+```
+
+:::
+
+## Get Campaign Status Counts
+
+<Badge type="info" text="POST" /> `/api.php` (legacy)
+
+Returns per-status campaign counts in a single `GROUP BY` query — intended for the Campaign Browse sidebar so it can render all status buckets in one round-trip instead of one `campaigns.get` call per status. Owner-scoped to the authenticated user.
+
+The response contains two views of the same data: `Counts` (raw `CampaignStatus` totals) and `Buckets` (the sidebar partition, where the single `Ready` status splits by `ScheduleType` — `Outbox` = `Sending` + `Ready`/`Immediate`, `Scheduled` = `Ready`/`Future`|`Recursive`, `Draft` = `Draft` + `Ready`/`Not Scheduled`). `Counts.Total` always equals `Buckets.Total`.
+
+::: tip API Usage Notes
+- Authentication is done by User API Key
+- Required permissions: `Campaigns.Get`
+- Legacy endpoint access via `/api.php`
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                                                                 |
+|-----------|--------|----------|-----------------------------------------------------------------------------|
+| Command   | String | Yes      | API command: `campaigns.counts`                                             |
+| SessionID | String | No       | Session ID obtained from login                                              |
+| APIKey    | String | No       | API key for authentication                                                  |
+| Tags      | String | No       | CSV of tag IDs to filter by                                                 |
+| date_from | String | No       | Start date (Y-m-d); narrows by `SendDate` (uniform window across statuses)  |
+| date_to   | String | No       | End date (Y-m-d)                                                            |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "campaigns.counts",
+    "APIKey": "your-api-key",
+    "date_from": "2026-04-01",
+    "date_to": "2026-04-30"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Counts": {
+    "Draft": 5,
+    "Ready": 3,
+    "Sending": 0,
+    "Paused": 2,
+    "Pending Approval": 2,
+    "Sent": 14,
+    "Failed": 1,
+    "Total": 27
+  },
+  "Buckets": {
+    "Sent": 14,
+    "Outbox": 1,
+    "Draft": 6,
+    "Scheduled": 1,
+    "Paused": 2,
+    "Pending Approval": 2,
+    "Failed": 1,
+    "Total": 27
+  }
+}
+```
+
+```json [Error Response]
+{
+  "success": "false",
+  "errors": { "code": 99999, "message": "Not enough privileges" }
 }
 ```
 
