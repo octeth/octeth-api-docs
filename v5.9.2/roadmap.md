@@ -9,7 +9,7 @@ description: Track Octeth version releases, development status, and upcoming fea
 This roadmap shows all past and upcoming Octeth releases. Use this page to track version history, plan upgrades, and see what's coming next.
 
 ::: tip Current Version
-The latest stable release is **v5.9.1** (released June 6th, 2026). [View changelog](http://localhost:5173/changelog#v5-9-1) to see what's new.
+The latest stable release is **v5.9.0** (released April 13th, 2026). [View changelog](./changelog) to see what's new.
 :::
 
 ## Understanding Version Numbers
@@ -59,13 +59,36 @@ Each version has a status badge indicating its current state:
 | v5.8.2  |           <Badge type="tip" text="Released" />           | Mar 21st, 2026 | Campaign UX polish, terminal dashboard, recurring campaign stability |
 | v5.8.3  |           <Badge type="tip" text="Released" />           | Apr 5th, 2026  | Journey auto-recovery, log observer, scheduled triggers, delivery retries |
 | v5.9.0  |           <Badge type="tip" text="Released" />           | Apr 13th, 2026 | A/B campaign testing, Email Gateway redesign, List Freshness Report, automatic SSL |
-| v5.9.1  |           <Badge type="tip" text="Released" />           | Jun 6th, 2026  | List Analytics suite, Email Gateway & Journey reporting, faster stats, suppression & autoresponder APIs |
-| v5.9.2  |     <Badge type="warning" text="Under Development" />    | Early July 2026 | TBA                                                 |
+| v5.9.1  |    <Badge type="warning" text="Pre-Release Testing" />   | June 11th, 2026 | TBA                                                 |
 | v6.0.0  | <Badge type="warning" text="Collecting User Feedback" /> | Q3 2026        | Major architecture updates                           |
 
 ::: info What's Next?
-**v5.9.2** is under development, with an estimated release in the first week of July 2026. **v6.0.0** with major architecture updates is targeted for Q3 2026.
+**v5.9.1** has completed development and is now in pre-release testing, scheduled for release on **June 11th, 2026 (Thursday)**.
+
+**v6.0.0** is a major release with significant architecture updates, currently collecting user feedback ahead of its Q3 2026 target.
 :::
+
+## Upgrade Information
+
+::: warning Before You Upgrade
+Always backup your database and review the [changelog](./changelog) before upgrading to a new version.
+:::
+
+### Recommended Upgrade Path
+
+If you're running an older version:
+
+1. **Review the changelog** for all versions between your current and target version
+2. **Check for breaking changes** (clearly marked in release notes)
+3. **Test in a staging environment** before upgrading production
+4. **Follow the upgrade guide** specific to your target version
+
+### Need Help?
+
+- **Upgrade Documentation:** [View upgrade guide](./getting-started/upgrading-octeth)
+- **Installation Guide:** [Getting started](./getting-started/octeth-installation)
+- **Support:** Email support@octeth.com
+- **Help Portal:** [help.octeth.com](https://help.octeth.com/)
 
 ## Release Schedule
 
@@ -74,3 +97,7 @@ Octeth follows this general release cadence:
 - **Patch releases** (v5.7.x) - As needed for bug fixes and minor improvements
 - **Minor releases** (v5.x.0) - Every 3-6 months with new features
 - **Major releases** (v6.0.0) - Annually with significant platform updates
+
+::: tip Stay Updated
+Subscribe to release notifications in your [account settings](https://my.octeth.com/) to get notified when new versions are available.
+:::
