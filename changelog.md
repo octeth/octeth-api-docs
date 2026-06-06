@@ -12,27 +12,46 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Changelog will be updated upon release.
+Released June 6th, 2026, after roughly eight weeks of development. The most API- and reporting-focused release to date: a comprehensive new List Analytics suite, deep Email Gateway and Journey reporting, faster campaign and segment statistics, broader suppression and autoresponder management, and wide-ranging reliability and security hardening.
 
 ### New Features
 
-- (To be documented)
+- **List Analytics Suite** - A new family of list-health reports covering subscriber activity over time, status breakdowns, bounce trends, engagement tiers, best send-time heatmaps, list tenure distribution, mailbox-provider breakdowns, and click-through retention - giving you a far deeper view of how each list is performing
+- **Email Gateway Reporting & Management** - Account-level delivery statistics, exportable event logs, recipient-domain listings with volume counts, signing-key regeneration, and safer webhook configuration
+- **Journey Reporting & Bulk Management** - Performance stats broken down by mailbox provider and by action, per-action revenue tracking, account-wide journey benchmarking, asynchronous journey export, and bulk journey operations
+- **Campaign Reporting & Export** - New campaign export, subject-line search, aggregate engagement metrics, and faster campaign counts
+- **Suppression Management** - Expanded suppression controls, including per-list and SMS suppression management
+- **Autoresponder Management** - Expanded autoresponder management capabilities
+- **Subscription Source Attribution** - See where your new subscribers actually came from
+- **Select All Matching Subscribers** - Act on every subscriber that matches a search or segment, not just the ones on the current page
+- **New Integrations** - Added ClickBank instant notification and PromptEMR integrations
 
 ### Enhancements
 
-- (To be documented)
+- **More Accurate Error Logging** - Expected, routine conditions no longer flood the error log, making genuine issues easier to spot
+- **Faster Reporting** - Heavy campaign and segment statistics now compute in the background, so pages load more quickly
+- **Sender Domain Management** - Smoother sender-domain setup and management experience
+- **Smarter Sending Rate Limits** - Improved rate-limit handling for more consistent throughput
 
 ### Bug Fixes
 
-- (To be documented)
+- **Journey Reliability** - More reliable enabling and saving of journeys, custom-field subscribes, list handling, and sender-address validation
+- **Unsubscribe Handling** - More robust unsubscribe processing, including for subscribers on deleted lists
+- **More Accurate Statistics** - Improved accuracy of list and campaign delivery statistics
+- **Email Header Handling** - Better handling of sender names containing special characters
+- **Import Accuracy** - More accurate import counters
+- **Session Handling** - Improvements for accounts signed in from multiple sessions
+- **Upgrade Reliability** - More robust upgrade and database migration handling
 
 ### Security Patches
 
-- (To be documented)
+- Strengthened input validation across the API
+- Tightened network exposure of internal services
+- Safer webhook URL handling
 
 ### Deprecations
 
-None
+- Removed several legacy third-party integrations and a legacy account-management module. If your workflow depended on these, please migrate before upgrading.
 
 ## v5.9.0
 

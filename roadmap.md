@@ -9,7 +9,7 @@ description: Track Octeth version releases, development status, and upcoming fea
 This roadmap shows all past and upcoming Octeth releases. Use this page to track version history, plan upgrades, and see what's coming next.
 
 ::: tip Current Version
-The latest stable release is **v5.9.0** (released April 13th, 2026). [View changelog](http://localhost:5173/changelog#v5-9-0) to see what's new.
+The latest stable release is **v5.9.1** (released June 6th, 2026). [View changelog](http://localhost:5173/changelog#v5-9-1) to see what's new.
 :::
 
 ## Understanding Version Numbers
@@ -59,11 +59,11 @@ Each version has a status badge indicating its current state:
 | v5.8.2  |           <Badge type="tip" text="Released" />           | Mar 21st, 2026 | Campaign UX polish, terminal dashboard, recurring campaign stability |
 | v5.8.3  |           <Badge type="tip" text="Released" />           | Apr 5th, 2026  | Journey auto-recovery, log observer, scheduled triggers, delivery retries |
 | v5.9.0  |           <Badge type="tip" text="Released" />           | Apr 13th, 2026 | A/B campaign testing, Email Gateway redesign, List Freshness Report, automatic SSL |
-| v5.9.1  |    <Badge type="warning" text="Pre-Release Testing" />   | June 11th, 2026 | TBA                                                 |
+| v5.9.1  |           <Badge type="tip" text="Released" />           | Jun 6th, 2026  | List Analytics suite, Email Gateway & Journey reporting, faster stats, suppression & autoresponder APIs |
 | v6.0.0  | <Badge type="warning" text="Collecting User Feedback" /> | Q3 2026        | Major architecture updates                           |
 
 ::: info What's Next?
-**v5.9.1** has completed development and is now in pre-release testing, scheduled for release on **June 11th, 2026 (Thursday)**. **v6.0.0** with major architecture updates is targeted for Q3 2026.
+**v6.0.0** with major architecture updates is targeted for Q3 2026.
 :::
 
 ## Release Schedule
