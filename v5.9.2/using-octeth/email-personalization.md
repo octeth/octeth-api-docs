@@ -342,6 +342,69 @@ Helper functions transform the output of a personalization tag. Place the helper
 | `decodeURI` | Decodes a URL-encoded value. |
 | `raw` | Outputs the value without HTML encoding (same effect as triple braces). |
 
+### Number Formatting Helper
+
+The `number_format` helper formats a numeric value with thousands separators, using US English conventions (a comma for thousands and a period for the decimal point).
+
+| Helper | Description | Example Input | Example Output |
+|---|---|---|---|
+| `number_format` | Formats the number with no decimal places. | `1234.5` | `1,235` |
+| `number_format-N` | Formats the number with N decimal places. For example, `number_format-2`. | `1234.5` | `1,234.50` |
+
+**Examples:**
+
+```
+Total orders: {{ number_format Subscriber:OrderCount }}
+Account balance: ${{ number_format-2 Subscriber:Balance }}
+```
+
+::: info
+The value is treated as a number before formatting. If the field is empty or not a number, it is treated as `0`.
+:::
+
+### Text Wrapping and Line Break Helpers
+
+These helpers control how text is laid out in the email.
+
+| Helper | Description |
+|---|---|
+| `wordwrap` | Wraps the text so each line is at most 75 characters long. Words longer than the limit are split. |
+| `wordwrap-N` | Wraps the text at N characters per line. For example, `wordwrap-40`. |
+| `nl2br` | Converts line breaks in the text into HTML `<br />` tags so they display as separate lines in an HTML email. |
+
+**Examples:**
+
+```
+{{ wordwrap-60 Subscriber:Notes }}
+
+{{ nl2br Subscriber:Address }}
+```
+
+::: info
+The `nl2br` helper only has a visible effect in the HTML version of your email, where line breaks are otherwise ignored. It has no effect in the plain text version.
+:::
+
+### Hashing Helpers
+
+These helpers convert a value into a hash — a fixed-length string of characters generated from the original value. They are commonly used to build unique identifiers for tracking links or integrations.
+
+| Helper | Description | Example Input | Example Output |
+|---|---|---|---|
+| `md5` | Returns the MD5 hash of the value. | `sarah@example.com` | `5e3eb4f5...` (32 characters) |
+| `sha1` | Returns the SHA-1 hash of the value. | `sarah@example.com` | `a1b2c3d4...` (40 characters) |
+
+**Example — passing a hashed email to an external service:**
+
+```html
+<a href="https://example.com/track?id={{ md5 Subscriber:EmailAddress }}">
+  View your dashboard
+</a>
+```
+
+::: warning
+The `md5` and `sha1` helpers are formatting tools for generating consistent identifiers. They are **not** a security or anonymization measure — do not rely on them to protect sensitive data.
+:::
+
 ### Date Formatting Helper
 
 The `dateFormat` helper formats a date field value using a PHP date format string:
