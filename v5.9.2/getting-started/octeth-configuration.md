@@ -51,7 +51,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
    ```bash
    APP_ENV=local                    # Environment: local, staging, production
    APP_URL=http://203.0.113.10/   # Your Octeth access URL (always end with /)
-   PRODUCT_VERSION=5.7.3            # Octeth version number
+   PRODUCT_VERSION=5.9.2            # Octeth version number
    ```
 
 2. **Database Credentials**
@@ -90,8 +90,8 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
    ```bash
    DEMO_MODE_ENABLED=false                  # Disable email delivery for demo
    DISABLE_LATEST_NEWS=false                # Disable news from Octeth servers
-   HIDE_COMING_SOON_FEATURES=true           # Hide unreleased features
    CREDITS_SYSTEM_ENABLED=true              # Enable credit-based delivery
+   SKIP_SMTP_DELIVERY=false                 # Skip real SMTP delivery (perf testing only)
    ```
 
 7. **Stuck Campaign Detector**
@@ -340,7 +340,7 @@ When moving from staging to production:
 3. Clear caches and restart:
    ```bash
    cd /opt/octeth
-   docker exec oempro_app php /var/www/html/cli/cache-clear.php
+   /opt/octeth/cli/octeth.sh cache:flush '*'
    /opt/octeth/cli/octeth.sh docker:restart
    ```
 
@@ -518,6 +518,7 @@ Files prefixed with `const_` define PHP constants that cannot be changed during 
 | `const_OEMPRO_DNS_LOOKUP_SERVERS.php`     | DNS servers for lookups         |
 | `const_OEMPRO_REDIS_PARAMETERS.php`       | Redis connection parameters     |
 | `const_OEMPRO_SERVICE_HOSTNAMES.php`      | Internal service hostnames      |
+| `const_OPEN_BOT_IP_RANGES.php`            | IP ranges used to flag automated/bot email opens |
 | `const_WEBSITE_EVENT_MAPPING.php`         | Website event type mappings     |
 
 ::: info How Configuration Files Work
@@ -896,11 +897,14 @@ Different debug levels for different environments:
 
 To adjust campaign delivery performance:
 
-1. Edit `/opt/octeth/config/global/email_delivery.php`:
+1. Edit `/opt/octeth/config/global/email_delivery.php` (each key falls back to an
+   `.oempro_env` override via `SystemConfig::Get()`, so you can also set these in
+   `.oempro_env` instead of editing the config file):
    ```php
-   'CAMPAIGN_DELIVERY_BATCH_SIZE' => 500,       // Larger batches
-   'CAMPAIGN_DELIVERY_THROTTLE_MS' => 100,      // Slower sending
-   'BOUNCE_PROCESSING_BATCH_SIZE' => 1000,      // More bounces per batch
+   'BATCH_SIZE' => 100,                  // Recipients processed per queue batch
+   'BATCH_INTERVAL_SIZE' => 100,         // Emails retrieved per interval within a batch
+   'BOUNCE_PROCESSING_THREADS' => 10,    // IMAP threads for bounce/FBL processing
+   'EG_WORKER_BATCH_SIZE' => 50,         // Emails processed per Email Gateway worker batch
    ```
 
 2. Restart backend workers:
