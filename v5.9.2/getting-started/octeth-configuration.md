@@ -219,22 +219,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     CADDY_ACME_EMAIL=support@octeth.com  # Email used for Let's Encrypt ACME registration
     ```
 
-18. **Cold Outreach System**
-
-    Configuration for the Cold Outreach feature (Bring-Your-Own-Mailbox sending, OAuth credential storage, and the dedicated RabbitMQ queue processor). The encryption key and webhook secret should be generated with `openssl rand -hex 32`.
-    ```bash
-    COLD_OUTREACH_ENCRYPTION_KEY=                  # AES-256 key for encrypting stored OAuth tokens / API credentials
-    COLD_OUTREACH_EMAIL_GATEWAY_WEBHOOK_SECRET=    # HMAC-SHA256 secret for verifying Email Gateway event webhooks
-    COLD_OUTREACH_GMAIL_CLIENT_ID=                 # Gmail OAuth client ID (scopes: gmail.send, gmail.readonly, gmail.modify)
-    COLD_OUTREACH_GMAIL_CLIENT_SECRET=             # Gmail OAuth client secret
-    COLD_OUTREACH_GMAIL_REDIRECT_URI=              # Gmail OAuth redirect URI (must match the Google Cloud console)
-    COLD_OUTREACH_QUEUE_NAME=cold_outreach_email_queue  # RabbitMQ queue name for cold outreach emails
-    COLD_OUTREACH_WORKER_PREFETCH=10               # Messages prefetched per worker (higher = more throughput, less fair distribution)
-    COLD_OUTREACH_MAX_RETRIES=3                    # Max retry attempts before a message goes to the dead-letter queue
-    COLD_OUTREACH_RETRY_DELAYS=0,300,1800          # Retry delays in seconds, comma-separated (immediate, 5 min, 30 min)
-    ```
-
-19. **Email Gateway Queue Monitor**
+18. **Email Gateway Queue Monitor**
     ```bash
     EG_QUEUE_MONITOR_ENABLED=true                       # Enable the eg_queue monitor cron (runs every 5 minutes)
     EG_QUEUE_FAILED_RATE_THRESHOLD=0.25                 # Failed/(Failed+Sent+Delivered) ratio (0..1) over the window that triggers a failure-spike alert
@@ -249,31 +234,34 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     The Email Gateway Queue Monitor watches `oempro_eg_queue` for two independent conditions: a **failure-rate spike** (failed deliveries exceeding both the rate threshold *and* the absolute floor within the window) and a **stalled Pending backlog** (overdue Pending rows piling up because workers are down or behind). Both conditions are always written to the log; a webhook is sent only when a URL is configured and the per-type cooldown has elapsed. Alerts include a per-domain and per-user breakdown of the worst offenders.
 
-20. **Campaign Export**
+19. **Campaign Export**
     ```bash
     CAMPAIGN_EXPORT_MAX_ROWS=10000   # Hard cap on rows written per campaigns.export job (protects against runaway memory/time on very large accounts)
     ```
 
-21. **Segment Subscriber Counts**
+20. **Segment Subscriber Counts**
 
     Controls the asynchronous recompute of segment subscriber counts. `Segments.Get` never recomputes inline; stale or never-computed segments are enqueued and recomputed by the `cli/segment_counter.php` worker.
     ```bash
     SEGMENT_COUNT_STALENESS_SECONDS=600     # Age (seconds) after which a persisted segment count is considered stale and queued for recompute (default 10 min)
     SEGMENT_COUNTER_WORKER_BATCH_SIZE=100   # Max segments drained from the recount pending-set per worker run
     SEGMENT_COUNTER_WORKER_TIMEOUT=120      # Inner HTTP timeout (seconds) for the background recompute call (CLI worker only)
+    SEGMENT_COUNTER_WORKER_CONCURRENCY=4    # Parallel segment_counter.php workers per cron tick (via cli/segment_counter_parallel.sh). SPOP atomicity prevents double-processing; only shared cost is concurrent MySQL COUNT(*) load. 1 = single worker, clamped to 16
     ```
 
-22. **Journey Decision Node**
+    The `*/2 * * * *` cron entry runs `cli/segment_counter_parallel.sh`, which launches `SEGMENT_COUNTER_WORKER_CONCURRENCY` copies of the one-shot `cli/segment_counter.php` worker in parallel and uses an `flock` so overlapping ticks never stack beyond that count. The workers self-balance across the shared Redis pending-set.
+
+21. **Journey Decision Node**
     ```bash
     JOURNEY_DECISION_QUERY_TIMEOUT=5   # Total timeout (seconds) for a journey Decision node's segment-query evaluation. On timeout/error the subscriber takes the No branch and an ERROR is logged
     ```
 
-23. **Subscriber Activity Tab**
+22. **Subscriber Activity Tab**
     ```bash
     SUBSCRIBER_ACTIVITY_HUMAN_OPEN_KEEP=5   # Newest human email-opens kept individually per campaign before the rest collapse into a "+X more" summary. Automated (bot/proxy/prefetch) opens always collapse into one flagged item
     ```
 
-24. **Scheduled Sender-Domain Re-Verification**
+23. **Scheduled Sender-Domain Re-Verification**
 
     A traffic-independent hourly cron (`cli/sender_domain_reverify_cron.php`) that sweeps already-approved (`Status='Enabled'`) sender domains and enqueues stale ones onto the existing `sender_domain_verification` queue, so DNS drift (SPF/DKIM/DMARC/tracking) is detected even on idle or campaign-only domains. The existing worker performs the actual DNS check; this cron never auto-disables a domain.
     ```bash
