@@ -52,6 +52,9 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
    APP_ENV=local                    # Environment: local, staging, production
    APP_URL=http://203.0.113.10/   # Your Octeth access URL (always end with /)
    PRODUCT_VERSION=5.9.2            # Octeth version number
+   APP_PROJECT_CONFIG_PATH=         # Optional path whose config files are loaded first (project-specific overrides). Empty = none
+   COMPOSE_FILE=                    # Optional custom docker-compose file path, relative to the project root. Empty = docker-compose.yml
+   OEMPRO_USE_PHPDOTENV=true        # Parse the env files with phpdotenv instead of parse_ini_file (better special-character handling)
    ```
 
 2. **Database Credentials**
@@ -61,6 +64,8 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
    MYSQL_PASSWORD=password          # MySQL database password
    MYSQL_DATABASE=oempro            # MySQL database name
    MYSQL_TABLE_PREFIX=oempro_       # Database table prefix
+   LOG_MYSQL_QUERIES=               # Set to 1 to log every MySQL query (debugging; very verbose). Empty/0 = off
+   LOG_MYSQL_QUERIES_PATH=          # Custom path for the MySQL query log when LOG_MYSQL_QUERIES is enabled (optional)
    ```
 
 3. **Security & Authentication**
@@ -70,6 +75,8 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
    HASH_IDS_SALT=elis9RqKmDLLt3B+Ls5kfC_+fl7IZoO3          # Hash ID salt
    OEMPRO_PASSWORD_SALT=elis9RqKmDLLt3B+Ls5kfC_+fl7IZoO3   # Password encryption salt
    SCRTY_SALT=elis9RqKmDLLt3B+Ls5kfC_+fl7IZoO3             # Security salt
+   OEMPRO_SUPERADMIN_AUTH_CODE=                            # Optional super-admin auth code (enables an extra admin authentication gate). Empty = disabled
+   OEMPRO_SUPERADMIN_AUTH_TIMEOUT=                         # Timeout (seconds) for the super-admin auth session when the code above is set
    ```
 
 4. **Debugging & Logging**
@@ -100,6 +107,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
    STUCK_CAMPAIGN_WEBHOOK_URL=                             # Webhook URL for notifications
    STUCK_CAMPAIGN_WEBHOOK_HMAC_SECRET=                     # HMAC secret for webhook security
    STUCK_CAMPAIGN_NOTIFICATION_COOLDOWN_MINUTES=30         # Cooldown between notifications
+   STUCK_CAMPAIGN_FAILED_RATE_THRESHOLD=10                 # Failed-recipient rate (%) above which a campaign is flagged as stuck
    ```
 
    The Stuck Campaign Detector is an automated monitoring system that runs every 5 minutes to identify campaigns stuck in 'Sending' status. A campaign is considered stuck when it has pending batches but no workers are processing them, all workers are silent (haven't pinged in over 60 seconds), or working batches have lost their worker assignments.
@@ -116,6 +124,8 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
    - **STUCK_CAMPAIGN_NOTIFICATION_COOLDOWN_MINUTES**: How many minutes to wait before sending another notification for the same stuck campaign. Default is 30 minutes. This prevents notification spam if a campaign remains stuck for an extended period.
 
+   - **STUCK_CAMPAIGN_FAILED_RATE_THRESHOLD**: The failed-recipient rate, as a percentage, above which a campaign is flagged as stuck. Default is `10` (10%). A campaign whose failure rate exceeds this value is treated as unhealthy even if batches are otherwise progressing.
+
    ::: tip Managing Stuck Campaigns
    When campaigns are detected as stuck, you can manage them through the admin UI:
    - **Unstuck Action**: Resets stuck batches to Pending status so workers can retry them automatically
@@ -125,6 +135,151 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
    ::: info
    Stuck campaign detection helps maintain delivery reliability by alerting you when campaigns stop progressing. Common causes include worker process crashes, network issues, or system resource constraints. The detection system uses the same health check logic that powers the campaign monitoring dashboard.
    :::
+
+8. **Test Database (PHPUnit)**
+
+   Used only when the automated test suite is running (the `OEMPRO_LARAVEL_TESTS` constant is defined by the PHPUnit bootstrap, or the `X-Octeth-Test-Database` header is sent in the local environment). Ignored during normal operation, so it is safe to point these at a throwaway database.
+   ```bash
+   TEST_MYSQL_HOST=192.168.99.108   # Test MySQL host
+   TEST_MYSQL_USERNAME=oempro       # Test MySQL username
+   TEST_MYSQL_PASSWORD=password     # Test MySQL password
+   TEST_MYSQL_DATABASE=oempro_test  # Test database (keep separate from production data)
+   TEST_MYSQL_TABLE_PREFIX=oempro_  # Test table prefix
+   ```
+
+9. **Error Tracking (Bugsnag / Sentry)**
+   ```bash
+   BUGSNAG_API=                     # Bugsnag API key for error reporting. Empty = disabled
+   SENTRY_API=                      # Sentry DSN for error reporting. Empty = disabled
+   SENTRY_ENV=                      # Environment label reported to Sentry (e.g. production, staging)
+   ```
+
+10. **Local Development Send Engine**
+
+    Routes outbound mail to a local SMTP catcher (e.g. Mailpit/MailHog) during development so no real email leaves the machine. Leave unset / irrelevant in production.
+    ```bash
+    LOCALDEV_SENDENGINE_HOST=192.168.99.102  # Local SMTP catcher host
+    LOCALDEV_SENDENGINE_PORT=1025            # Local SMTP catcher port
+    LOCALDEV_SENDENGINE_USERNAME=            # SMTP username (usually empty for a local catcher)
+    LOCALDEV_SENDENGINE_PASSWORD=            # SMTP password (usually empty for a local catcher)
+    LOCALDEV_SENDENGINE_ENCRYPTION=tls       # Encryption: tls, ssl, or empty for none
+    ```
+
+11. **SMS Delivery Reports**
+    ```bash
+    SMS_DLR_NOTIFY_BASE_URL=         # Public base URL for SMS delivery-report (DLR) callbacks. For debugging via a tunnel; leave EMPTY in production
+    ```
+
+    Used only when debugging SMS delivery receipts locally (e.g. exposing your machine through a tunnel such as `localtunnel`). Production deployments leave this empty so the system uses the live callback URL.
+
+12. **Google Postmaster Tools**
+
+    OAuth credentials for the Google Postmaster Tools integration. See the dedicated *Google Postmaster Integration* guide for the full setup; the redirect URI must be registered in your Google Cloud OAuth client.
+    ```bash
+    GOOGLE_POSTMASTER_CLIENT_ID=        # Google OAuth client ID
+    GOOGLE_POSTMASTER_CLIENT_SECRET=    # Google OAuth client secret
+    GOOGLE_POSTMASTER_REDIRECT_URI=     # OAuth redirect URI (must match the Google Cloud console)
+    ```
+
+13. **Production Remote Commands (`ocdoc --prod`)**
+
+    SSH hostnames and credentials used when running `ocdoc` commands with the `--prod` flag against a remote production server. Leave a host empty to disable production mode for that container type. In most deployments app/system/supervisor point to the same server.
+    ```bash
+    PROD_MYSQL_HOST=                 # Production MySQL server SSH host
+    PROD_APP_HOST=                   # Production app container SSH host
+    PROD_SYSTEM_HOST=                # Production system (Laravel) container SSH host
+    PROD_SUPERVISOR_HOST=            # Production supervisor container SSH host
+    PROD_MYSQL_USERNAME=             # Production MySQL username (optional; password is prompted interactively)
+    PROD_MYSQL_DATABASE=             # Production MySQL database name (optional)
+    ```
+
+14. **RabbitMQ Monitoring**
+    ```bash
+    RABBITMQ_QUEUE_BACKLOG_THRESHOLD=10000   # Queues with more messages_ready than this (and active consumers) trigger a WARNING
+    ```
+
+15. **Admin Unsubscribe Behavior**
+    ```bash
+    ADMIN_UNSUBSCRIBE_BYPASSES_LIST_SUPPRESSION_SETTINGS=true   # When true, admin-initiated unsubscribes skip the list-level suppression auto-add
+    ```
+
+    When `true`, admin-initiated unsubscribe actions ("Unsubscribe from this list" / "Unsubscribe from all lists" on the subscriber edit page) skip the list-level `OptOutAddToSuppressionList` / `OptOutAddToGlobalSuppressionList` auto-add. End-user opt-outs from email links and journey actions are unaffected. Set to `false` to restore the pre-#1954 behavior where admin actions also honored the list-level suppression settings.
+
+16. **Email Gateway Performance**
+    ```bash
+    EMAILGATEWAY_SPOOL_STORAGE=redis     # Spool storage driver: 'filesystem' or 'redis'
+    EG_WORKER_BATCH_SIZE=50              # Number of emails the Email Gateway delivery worker processes per batch
+    ```
+
+17. **Caddy Link Proxy (On-Demand TLS)**
+
+    Settings for the Caddy reverse proxy that provisions TLS certificates on demand for custom tracking/link domains.
+    ```bash
+    CADDY_DOMAIN_VERIFY_CODE=        # Domain-verification code securing the Caddy "ask" endpoint. Value: md5(OEMPRO_PASSWORD_SALT + ADMIN_API_KEY + OEMPRO_PASSWORD_SALT)
+    CADDY_ACME_EMAIL=support@octeth.com  # Email used for Let's Encrypt ACME registration
+    ```
+
+18. **Cold Outreach System**
+
+    Configuration for the Cold Outreach feature (Bring-Your-Own-Mailbox sending, OAuth credential storage, and the dedicated RabbitMQ queue processor). The encryption key and webhook secret should be generated with `openssl rand -hex 32`.
+    ```bash
+    COLD_OUTREACH_ENCRYPTION_KEY=                  # AES-256 key for encrypting stored OAuth tokens / API credentials
+    COLD_OUTREACH_EMAIL_GATEWAY_WEBHOOK_SECRET=    # HMAC-SHA256 secret for verifying Email Gateway event webhooks
+    COLD_OUTREACH_GMAIL_CLIENT_ID=                 # Gmail OAuth client ID (scopes: gmail.send, gmail.readonly, gmail.modify)
+    COLD_OUTREACH_GMAIL_CLIENT_SECRET=             # Gmail OAuth client secret
+    COLD_OUTREACH_GMAIL_REDIRECT_URI=              # Gmail OAuth redirect URI (must match the Google Cloud console)
+    COLD_OUTREACH_QUEUE_NAME=cold_outreach_email_queue  # RabbitMQ queue name for cold outreach emails
+    COLD_OUTREACH_WORKER_PREFETCH=10               # Messages prefetched per worker (higher = more throughput, less fair distribution)
+    COLD_OUTREACH_MAX_RETRIES=3                    # Max retry attempts before a message goes to the dead-letter queue
+    COLD_OUTREACH_RETRY_DELAYS=0,300,1800          # Retry delays in seconds, comma-separated (immediate, 5 min, 30 min)
+    ```
+
+19. **Email Gateway Queue Monitor**
+    ```bash
+    EG_QUEUE_MONITOR_ENABLED=true                       # Enable the eg_queue monitor cron (runs every 5 minutes)
+    EG_QUEUE_FAILED_RATE_THRESHOLD=0.25                 # Failed/(Failed+Sent+Delivered) ratio (0..1) over the window that triggers a failure-spike alert
+    EG_QUEUE_FAILED_MIN_COUNT=50                        # Absolute floor: the rate alert fires only once at least this many rows failed in the window
+    EG_QUEUE_FAILED_WINDOW_MINUTES=15                   # Rolling look-back window (minutes, by ProcessedAt) for the failure-rate check
+    EG_QUEUE_PENDING_STALL_MINUTES=15                   # A Pending row counts as overdue when SendAt is older than this many minutes (future SendAt never counts)
+    EG_QUEUE_PENDING_STALL_MIN_COUNT=1000              # Overdue Pending rows above which a pending-stall alert fires
+    EG_QUEUE_MONITOR_WEBHOOK_URL=                       # Webhook for monitor alerts; empty = log only (alerts are ALWAYS logged)
+    EG_QUEUE_MONITOR_WEBHOOK_HMAC_SECRET=               # HMAC-SHA256 secret for the X-Octeth-Signature header on monitor webhooks
+    EG_QUEUE_MONITOR_NOTIFICATION_COOLDOWN_MINUTES=30   # Per-alert-type cooldown (minutes) between webhook notifications
+    ```
+
+    The Email Gateway Queue Monitor watches `oempro_eg_queue` for two independent conditions: a **failure-rate spike** (failed deliveries exceeding both the rate threshold *and* the absolute floor within the window) and a **stalled Pending backlog** (overdue Pending rows piling up because workers are down or behind). Both conditions are always written to the log; a webhook is sent only when a URL is configured and the per-type cooldown has elapsed. Alerts include a per-domain and per-user breakdown of the worst offenders.
+
+20. **Campaign Export**
+    ```bash
+    CAMPAIGN_EXPORT_MAX_ROWS=10000   # Hard cap on rows written per campaigns.export job (protects against runaway memory/time on very large accounts)
+    ```
+
+21. **Segment Subscriber Counts**
+
+    Controls the asynchronous recompute of segment subscriber counts. `Segments.Get` never recomputes inline; stale or never-computed segments are enqueued and recomputed by the `cli/segment_counter.php` worker.
+    ```bash
+    SEGMENT_COUNT_STALENESS_SECONDS=600     # Age (seconds) after which a persisted segment count is considered stale and queued for recompute (default 10 min)
+    SEGMENT_COUNTER_WORKER_BATCH_SIZE=100   # Max segments drained from the recount pending-set per worker run
+    SEGMENT_COUNTER_WORKER_TIMEOUT=120      # Inner HTTP timeout (seconds) for the background recompute call (CLI worker only)
+    ```
+
+22. **Journey Decision Node**
+    ```bash
+    JOURNEY_DECISION_QUERY_TIMEOUT=5   # Total timeout (seconds) for a journey Decision node's segment-query evaluation. On timeout/error the subscriber takes the No branch and an ERROR is logged
+    ```
+
+23. **Subscriber Activity Tab**
+    ```bash
+    SUBSCRIBER_ACTIVITY_HUMAN_OPEN_KEEP=5   # Newest human email-opens kept individually per campaign before the rest collapse into a "+X more" summary. Automated (bot/proxy/prefetch) opens always collapse into one flagged item
+    ```
+
+24. **Scheduled Sender-Domain Re-Verification**
+
+    A traffic-independent hourly cron (`cli/sender_domain_reverify_cron.php`) that sweeps already-approved (`Status='Enabled'`) sender domains and enqueues stale ones onto the existing `sender_domain_verification` queue, so DNS drift (SPF/DKIM/DMARC/tracking) is detected even on idle or campaign-only domains. The existing worker performs the actual DNS check; this cron never auto-disables a domain.
+    ```bash
+    SENDER_DOMAIN_REVERIFY_STALENESS_HOURS=24   # A domain is re-verified when its LastVerifiedAt is older than this many hours (or never set). Default 24
+    SENDER_DOMAIN_REVERIFY_BATCH_SIZE=100       # Hard cap on stale domains enqueued per hourly cron tick (bounds DNS-resolver load)
+    ```
 
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
