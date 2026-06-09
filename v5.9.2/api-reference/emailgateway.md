@@ -1648,6 +1648,78 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## Get Daily Event Time-Series
+
+<Badge type="info" text="POST" /> `/api.php`
+
+Returns a daily time-series of email-gateway activity sourced from MySQL `eg_queue`, used to render the "Events Over Time" chart on the user dashboard. For each day in the requested range it reports `Sent` (count of rows with `Status='Sent'`), `Bounced`, `Opened`, and `Clicked` counts, bucketed by the day each email was queued (`QueuedAtDay`). When `DomainID` is supplied the series is scoped to that single domain (ownership validated); when omitted it spans all of the caller's sender domains. Days with no activity are omitted from the response — callers zero-fill the date range. The range defaults to the last 30 days when `StartDate`/`EndDate` are not provided.
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `EmailGateway.ManageDomain`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                                                       |
+|-----------|---------|----------|-----------------------------------------------------------------------------------|
+| Command   | String  | Yes      | API command: `emailgateway.dailyseries`                                           |
+| SessionID | String  | No       | Session ID obtained from login                                                    |
+| APIKey    | String  | No       | API key for authentication                                                        |
+| DomainID  | Integer | No       | Sender domain ID. When omitted, the series spans all of the caller's domains      |
+| StartDate | String  | No       | Start date filter (Y-m-d format). Defaults to 30 days before the end date         |
+| EndDate   | String  | No       | End date filter (Y-m-d format). Defaults to today                                 |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "emailgateway.dailyseries",
+    "SessionID": "your-session-id",
+    "DomainID": 123,
+    "StartDate": "2024-01-01",
+    "EndDate": "2024-01-31"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Series": {
+    "2024-01-30": {
+      "Sent": 2453,
+      "Bounced": 0,
+      "Opened": 661,
+      "Clicked": 77
+    },
+    "2024-01-31": {
+      "Sent": 625,
+      "Bounced": 0,
+      "Opened": 4,
+      "Clicked": 2
+    }
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2
+}
+```
+
+```txt [Error Codes]
+0: Success
+2: Domain not found or access denied (only when DomainID is supplied)
+```
+
+:::
+
 ## Send Email via API
 
 <Badge type="info" text="POST" /> `/api/v1/email`
