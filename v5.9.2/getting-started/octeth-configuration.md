@@ -207,9 +207,12 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
 16. **Email Gateway Performance**
     ```bash
+    PHONE_VERIFICATION_REQUIRED_TO_SEND_EG_EMAILS=false   # Require owner phone verification to send via the Email Gateway
     EMAILGATEWAY_SPOOL_STORAGE=redis     # Spool storage driver: 'filesystem' or 'redis'
     EG_WORKER_BATCH_SIZE=50              # Number of emails the Email Gateway delivery worker processes per batch
     ```
+
+    When `PHONE_VERIFICATION_REQUIRED_TO_SEND_EG_EMAILS` is `true`, the owner user's phone must be verified (`PhoneVerified=1`) before email can be sent through the Email Gateway. The requirement is enforced on **both** ingress paths consistently: the HTTP API send endpoint (`EmailGateway.SendEmail`) and the inbound SMTP relay authentication (`EmailGateway.SMTPRelay`). When `false` (the default), the phone-verification gate is skipped on both paths, so a user with `PhoneVerified=0` can still authenticate over SMTP and send via the API.
 
 17. **Caddy Link Proxy (On-Demand TLS)**
 

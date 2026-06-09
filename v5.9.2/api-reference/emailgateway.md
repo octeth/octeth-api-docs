@@ -1918,8 +1918,12 @@ curl -X POST https://example.com/api.php \
 5: Sender domain is not active
 6: Invalid user account
 7: User is not trusted or not enabled
-8: Recipient email address is suppressed
+8: Phone verification required but not completed (auth) / Recipient email address is suppressed (send)
 ```
+
+::: tip Phone verification gate
+On the auth path, error code `8` is returned only when `PHONE_VERIFICATION_REQUIRED_TO_SEND_EG_EMAILS` is `true` and the owner user's `PhoneVerified` is not `1`. When the flag is `false` (default), the phone-verification check is skipped — matching the `Send Email via API` endpoint.
+:::
 
 :::
 
