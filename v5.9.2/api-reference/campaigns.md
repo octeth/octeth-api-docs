@@ -185,6 +185,7 @@ curl -X POST https://example.com/api.php \
 | APIKey                  | String  | No       | API key for authentication                                           |
 | CampaignID              | Integer | Yes      | ID of the campaign to retrieve                                       |
 | RetrieveStatistics      | Boolean | No       | Include campaign statistics (default: false)                         |
+| StatisticsDays          | Integer | No       | Time-series window in days for the per-day statistics blocks (Open/Click/etc.), measured from the campaign send start. Default: 15. Clamped to 1–365. |
 | RetrieveTags            | Boolean | No       | Include campaign tags (default: false)                               |
 | SplitABTestStatistics   | Boolean | No       | Include A/B test statistics (default: false)                         |
 | RetrieveRecipientDomains| Boolean | No       | Include recipient domain statistics (default: true)                  |
@@ -1652,3 +1653,251 @@ curl -X GET "https://example.com/api/v1/campaigns.export?Command=campaigns.expor
 ```
 
 :::
+
+## Get Campaign Link Clicks
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key (or Admin API Key)
+- Required permissions: `Campaign.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns the per-link click ranking ("most clicked links") of a sent campaign, or the per-subscriber click breakdown ("who clicked"), depending on `GroupBy`. Results are ordered by click count (descending) and paginated. Automated/bot clicks are excluded (`IsAutomated=0`), so the numbers match the bundled campaign report. Access is owner-scoped; admins (via Admin API Key) may read any campaign.
+
+**Request Body Parameters:**
+
+| Parameter         | Type    | Required | Description                                                                                  |
+|-------------------|---------|----------|----------------------------------------------------------------------------------------------|
+| Command           | String  | Yes      | API command: `campaign.linkclicks.get`                                                        |
+| SessionID         | String  | No       | Session ID obtained from login                                                               |
+| APIKey            | String  | No       | API key for authentication                                                                   |
+| CampaignID        | Integer | Yes      | The campaign to report on                                                                     |
+| GroupBy           | String  | No       | Grouping mode. Possible values: `Links` (default), `Subscribers`                             |
+| RecordsFrom       | Integer | No       | Pagination offset (default: 0)                                                                |
+| RecordsPerRequest | Integer | No       | Page size (default: 25, hard cap: 1000)                                                       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "campaign.linkclicks.get",
+    "APIKey": "your-api-key",
+    "CampaignID": 7524,
+    "GroupBy": "Links",
+    "RecordsPerRequest": 25
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "CampaignID": 7524,
+  "GroupBy": "Links",
+  "TotalRecords": 12,
+  "Links": [
+    {
+      "LinkTitle": "Read more",
+      "LinkURL": "https://example.com/landing",
+      "TotalClicks": 2771
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorMessage": "Campaign not found or access denied"
+}
+```
+
+```txt [Error Codes]
+0: Success
+2: CampaignID is not numeric
+3: Campaign not found or access denied
+```
+
+:::
+
+When `GroupBy` is `Subscribers`, the response returns a `Subscribers` array instead of `Links`, where each row is `{ "SubscriberID": 62362, "ListID": 47, "EmailAddress": "user@example.com", "TotalClicks": 3 }`. Seed-list recipients (SubscriberID `0`) are returned with an empty `EmailAddress`.
+
+## Get Campaign Recipients Activity
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key (or Admin API Key)
+- Required permissions: `Campaign.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+For a **sent** campaign, returns the per-subscriber engagement breakdown for a single activity type ("who opened", "who clicked", "who bounced", etc.), read from the MySQL `oempro_stats_*` tables. Results are grouped per subscriber (one row per subscriber/list), ordered by most recent activity, and paginated. This is the sent-campaign counterpart to `campaign.recipients.get`, which only previews the audience of unsent campaigns. Automated/bot opens and clicks are excluded (`IsAutomated=0`). Access is owner-scoped.
+
+**Request Body Parameters:**
+
+| Parameter         | Type    | Required | Description                                                                                                       |
+|-------------------|---------|----------|------------------------------------------------------------------------------------------------------------------|
+| Command           | String  | Yes      | API command: `campaign.recipients.activity.get`                                                                   |
+| SessionID         | String  | No       | Session ID obtained from login                                                                                   |
+| APIKey            | String  | No       | API key for authentication                                                                                       |
+| CampaignID        | Integer | Yes      | The campaign to report on                                                                                         |
+| Activity          | String  | Yes      | Activity type. Possible values: `open`, `click`, `bounce`, `unsubscription`, `forward`, `conversion`             |
+| RecordsFrom       | Integer | No       | Pagination offset (default: 0)                                                                                    |
+| RecordsPerRequest | Integer | No       | Page size (default: 25, hard cap: 1000)                                                                           |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "campaign.recipients.activity.get",
+    "APIKey": "your-api-key",
+    "CampaignID": 7524,
+    "Activity": "click",
+    "RecordsPerRequest": 25
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "CampaignID": 7524,
+  "Activity": "click",
+  "TotalRecords": 1488,
+  "Recipients": [
+    {
+      "SubscriberID": 62362,
+      "ListID": 47,
+      "EmailAddress": "user@example.com",
+      "ActivityCount": 2,
+      "LastActivityDate": "2026-05-28 00:33:36"
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorMessage": "Invalid activity. Allowed: open, click, bounce, unsubscription, forward, conversion"
+}
+```
+
+```txt [Error Codes]
+0: Success
+2: CampaignID is not numeric
+3: Campaign not found or access denied
+4: Invalid activity type
+```
+
+:::
+
+For `bounce`, each recipient row additionally includes a `BounceType` field (`Hard` or `Soft`). For `conversion`, each row additionally includes `TotalRevenue` (decimal string; stored internally as integer cents).
+
+## Get Campaign A/B Test & Auto-Resend Uplift
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key (or Admin API Key)
+- Required permissions: `Campaign.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Exposes the per-variation A/B (MVT) statistics and the auto-resend uplift metrics that the bundled campaign report assembles. Per-variation metrics exclude seed-list recipients so the numbers reflect the weighted audience split. The response always contains `ABTest`, `AutoResend`, and `ParentCampaign` keys; `AutoResend` and `ParentCampaign` are `null` when not applicable, and `ABTest.IsABTest` is `false` for non-A/B campaigns. Access is owner-scoped.
+
+**Request Body Parameters:**
+
+| Parameter  | Type    | Required | Description                                |
+|------------|---------|----------|--------------------------------------------|
+| Command    | String  | Yes      | API command: `campaign.abtest.get`         |
+| SessionID  | String  | No       | Session ID obtained from login             |
+| APIKey     | String  | No       | API key for authentication                 |
+| CampaignID | Integer | Yes      | The campaign to report on                  |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "campaign.abtest.get",
+    "APIKey": "your-api-key",
+    "CampaignID": 7524
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "CampaignID": 7524,
+  "ABTest": {
+    "IsABTest": true,
+    "Variations": [
+      {
+        "EmailID": 9001,
+        "EmailName": "Variation A",
+        "Subject": "Subject A",
+        "FromName": "Acme",
+        "FromEmail": "news@acme.com",
+        "ContentType": "HTML",
+        "TotalRecipients": 5000,
+        "TotalSent": 4980,
+        "TotalFailed": 20,
+        "UniqueOpens": 1200,
+        "UniqueClicks": 300,
+        "Unsubscriptions": 5,
+        "Revenue": "120.00",
+        "OpenRate": 24.1,
+        "ClickRate": 6,
+        "CTOR": 25
+      }
+    ],
+    "Winner": {
+      "EmailID": 9001,
+      "EmailName": "Variation A"
+    }
+  },
+  "AutoResend": {
+    "Status": "completed",
+    "CampaignID": 7600,
+    "CampaignName": "Resend to non-openers",
+    "TotalSent": 3000,
+    "UniqueOpens": 400,
+    "UniqueClicks": 90,
+    "OpenRate": 13.3,
+    "ClickRate": 3,
+    "OpenUplift": 33.3,
+    "ClickUplift": 30
+  },
+  "ParentCampaign": null
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorMessage": "Campaign not found or access denied"
+}
+```
+
+```txt [Error Codes]
+0: Success
+2: CampaignID is not numeric
+3: Campaign not found or access denied
+```
+
+:::
+
+`AutoResend.Status` is `completed` when the auto-resend child campaign has been created (uplift fields are populated relative to this parent), or `scheduled` when auto-resend is enabled but not yet sent (in which case it carries `WaitDays`, `Subject`, and `PreHeaderText`). When the requested campaign is itself an auto-resend child, `ParentCampaign` is populated with the parent's headline metrics and `CTOR`.
