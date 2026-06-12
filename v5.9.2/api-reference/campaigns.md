@@ -1748,6 +1748,7 @@ For a **sent** campaign, returns the per-subscriber engagement breakdown for a s
 | APIKey            | String  | No       | API key for authentication                                                                                       |
 | CampaignID        | Integer | Yes      | The campaign to report on                                                                                         |
 | Activity          | String  | Yes      | Activity type. Possible values: `open`, `click`, `bounce`, `unsubscription`, `forward`, `conversion`             |
+| SearchKeyword     | String  | No       | Case-insensitive substring filter on the recipient's email address (`LIKE %keyword%`), applied **before** pagination so `TotalRecords` reflects the filtered count. Empty/absent = no filter. `EmailAddress` is accepted as an alias. |
 | RecordsFrom       | Integer | No       | Pagination offset (default: 0)                                                                                    |
 | RecordsPerRequest | Integer | No       | Page size (default: 25, hard cap: 1000)                                                                           |
 
@@ -1776,6 +1777,7 @@ curl -X POST https://example.com/api.php \
     {
       "SubscriberID": 62362,
       "ListID": 47,
+      "ListName": "Buyers List",
       "EmailAddress": "user@example.com",
       "ActivityCount": 2,
       "LastActivityDate": "2026-05-28 00:33:36"
@@ -1802,6 +1804,8 @@ curl -X POST https://example.com/api.php \
 :::
 
 For `bounce`, each recipient row additionally includes a `BounceType` field (`Hard` or `Soft`). For `conversion`, each row additionally includes `TotalRevenue` (decimal string; stored internally as integer cents).
+
+Each row carries `ListName` (the subscriber's list name) alongside `ListID`. When `SearchKeyword` (or its `EmailAddress` alias) is supplied, the email match is performed server-side across every list the campaign targeted, before pagination — so `TotalRecords` is the filtered total and `RecordsFrom`/`RecordsPerRequest` page through the matches. Seed-list recipients (`SubscriberID` `0`) have no email address and are therefore excluded from search results.
 
 ## Get Campaign A/B Test & Auto-Resend Uplift
 
