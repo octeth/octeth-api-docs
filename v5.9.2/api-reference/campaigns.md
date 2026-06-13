@@ -692,6 +692,18 @@ curl -X POST https://example.com/api.php \
 | ExcludeColumns          | Array   | No       | Column names to exclude from SELECT for performance                  |
 | Include_AutoResend      | Boolean | No       | Include auto-resend campaigns (default: false)                       |
 | IncludeTotalRecipients  | Boolean | No       | Include aggregate sums over the filtered window: TotalRecipients, TotalSent, TotalDelivered, TotalFailed, TotalOpens, UniqueOpens, TotalClicks, UniqueClicks, TotalHardBounces, TotalSoftBounces, TotalUnsubscriptions (default: false) |
+| RetrieveSetupMeta       | Boolean | No       | Opt-in draft setup metadata for the Campaigns "Draft" tab readiness checklist (default: false). When absent the response is unchanged. When `true`, each row in `Campaigns[]` also carries the extra fields listed below. Adds one bulk email query for the page; the main listing query is unchanged. |
+
+When `RetrieveSetupMeta` is `true`, each campaign object additionally includes:
+
+| Field                 | Type    | Description                                                                                          |
+|-----------------------|---------|------------------------------------------------------------------------------------------------------|
+| EmailSubject          | String  | Subject of the linked email (via `RelEmailID`); `""` when no email is linked. For an A/B draft (`RelEmailID == 0`) this is the first variation's subject. |
+| HasHTMLContent        | Boolean | Whether the linked email (or, for A/B, any variation) has a non-empty HTML body. Presence only — the body itself is never returned. |
+| HasPlainContent       | Boolean | Whether the linked email (or, for A/B, any variation) has a non-empty plain-text body. Presence only. |
+| AudienceListCount     | Integer | Number of distinct recipient lists in the audience. Derived from `RulesJsonBundle`, falling back to the legacy `campaign_recipients` data for legacy drafts. |
+| AudienceSegmentCount  | Integer | Number of segments in the audience (criteria with an inline rules filter for modern drafts; rows with a segment ID for legacy drafts). |
+| HasAudience           | Boolean | Convenience flag: `AudienceListCount + AudienceSegmentCount > 0`. |
 
 ::: code-group
 
