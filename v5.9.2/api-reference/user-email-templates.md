@@ -108,11 +108,36 @@ curl -X POST https://example.com/api/v1/useremailtemplate \
 | OrderType | String | No | Sort direction. Possible values: `ASC`, `DESC`. Default: `DESC` |
 | Limit | Integer | No | Number of records to return (1-100). Default: `25` |
 | Offset | Integer | No | Number of records to skip. Default: `0` |
+| fields | String | No | Opt-in, comma-separated allow-list of columns to return per template. When omitted, every column (including the heavy `HTMLContent` / `PlainContent` / `ExtraContent1` / `ExtraContent2` blobs) is returned for backward compatibility. Use this for list/browse views that only need metadata to avoid transferring the content blobs. `EmailID` is always included even if not listed. Unknown field names are silently dropped. Allowed columns: `EmailID`, `RelUserID`, `EmailName`, `FromName`, `FromEmail`, `ReplyToName`, `ReplyToEmail`, `ContentType`, `Mode`, `FetchURL`, `FetchPlainURL`, `Subject`, `PlainContent`, `HTMLContent`, `ExtraContent1`, `ExtraContent2`, `ImageEmbedding`, `RelTemplateID`, `PreHeaderText`, `Options`, `IsEmailTemplate`, `CreatedAt`, `UpdatedAt`, `DeletedAt`. |
 
 ::: code-group
 
 ```bash [Example Request]
 curl -X GET "https://example.com/api/v1/useremailtemplates?SessionID=your-session-id&OrderField=CreatedAt&OrderType=DESC&Limit=10&Offset=0"
+```
+
+```bash [Metadata-only Request]
+# Skip the content blobs — ideal for a template list/browse view.
+curl -X GET "https://example.com/api/v1/useremailtemplates?SessionID=your-session-id&Limit=100&fields=EmailID,EmailName,Subject,ContentType,Mode,CreatedAt,UpdatedAt"
+```
+
+```json [Metadata-only Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "TotalEmailTemplateCount": 25,
+  "EmailTemplates": [
+    {
+      "EmailID": "42",
+      "EmailName": "Welcome Email Template",
+      "Subject": "Welcome to our newsletter!",
+      "ContentType": "HTML",
+      "Mode": "Editor",
+      "CreatedAt": "2025-03-14 10:00:00",
+      "UpdatedAt": "2025-03-14 10:00:00"
+    }
+  ]
+}
 ```
 
 ```json [Success Response]
