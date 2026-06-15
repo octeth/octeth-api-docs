@@ -222,7 +222,20 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     CADDY_ACME_EMAIL=support@octeth.com  # Email used for Let's Encrypt ACME registration
     ```
 
-18. **Email Gateway Queue Monitor**
+18. **App Domain TLS**
+
+    Controls how TLS is terminated for the **app domain** (the host in `APP_URL`).
+    ```bash
+    APP_DOMAIN_TLS_CERT=             # Empty = Caddy on-demand TLS (default). Set to a static PEM path inside the HAProxy container for CDN-fronted app domains.
+    ```
+
+    **Default (empty):** the app domain uses Caddy **on-demand TLS** — a certificate is auto-issued and renewed via ACME. This only works when the app domain resolves **directly to this origin**, so the ACME challenge (HTTP-01 / TLS-ALPN-01) can reach Caddy.
+
+    **Behind Cloudflare / a CDN / any reverse proxy:** origin-side ACME is impossible (the challenge terminates at the edge, never the origin), so on-demand TLS can never obtain a certificate and the app fails its TLS handshake — Cloudflare returns **HTTP 525**. Provide an **operator-supplied static certificate** instead: set `APP_DOMAIN_TLS_CERT` to the path, **inside the HAProxy container**, of a combined PEM (full certificate chain followed by the unencrypted private key). HAProxy then terminates the app domain's TLS directly with that certificate and **bypasses Caddy on-demand for the app domain** — no ACME is attempted at the origin for it. Customer tracking domains continue to use Caddy on-demand unchanged.
+
+    A [Cloudflare Origin CA](https://developers.cloudflare.com/ssl/origin-configuration/origin-ca/) certificate is recommended (15-year validity, no renewal); set the Cloudflare SSL/TLS mode to **Full (strict)** so the edge↔origin hop stays encrypted. Drop the PEM in `_dockerfiles/certs/` (bind-mounted read-only into HAProxy at `/etc/ssl/app`) and set, e.g., `APP_DOMAIN_TLS_CERT=/etc/ssl/app/app.pem`. See `_dockerfiles/certs/README.md`. Restart the HAProxy container to apply; it logs the active strategy on boot. **Never** rely on Cloudflare "Flexible" mode (it leaves edge↔origin traffic unencrypted zone-wide).
+
+19. **Email Gateway Queue Monitor**
     ```bash
     EG_QUEUE_MONITOR_ENABLED=true                       # Enable the eg_queue monitor cron (runs every 5 minutes)
     EG_QUEUE_FAILED_RATE_THRESHOLD=0.25                 # Failed/(Failed+Sent+Delivered) ratio (0..1) over the window that triggers a failure-spike alert
@@ -237,12 +250,12 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     The Email Gateway Queue Monitor watches `oempro_eg_queue` for two independent conditions: a **failure-rate spike** (failed deliveries exceeding both the rate threshold *and* the absolute floor within the window) and a **stalled Pending backlog** (overdue Pending rows piling up because workers are down or behind). Both conditions are always written to the log; a webhook is sent only when a URL is configured and the per-type cooldown has elapsed. Alerts include a per-domain and per-user breakdown of the worst offenders.
 
-19. **Campaign Export**
+20. **Campaign Export**
     ```bash
     CAMPAIGN_EXPORT_MAX_ROWS=10000   # Hard cap on rows written per campaigns.export job (protects against runaway memory/time on very large accounts)
     ```
 
-20. **Segment Subscriber Counts**
+21. **Segment Subscriber Counts**
 
     Controls the asynchronous recompute of segment subscriber counts. `Segments.Get` never recomputes inline; stale or never-computed segments are enqueued and recomputed by the `cli/segment_counter.php` worker.
     ```bash
@@ -254,17 +267,17 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     The `*/2 * * * *` cron entry runs `cli/segment_counter_parallel.sh`, which launches `SEGMENT_COUNTER_WORKER_CONCURRENCY` copies of the one-shot `cli/segment_counter.php` worker in parallel and uses an `flock` so overlapping ticks never stack beyond that count. The workers self-balance across the shared Redis pending-set.
 
-21. **Journey Decision Node**
+22. **Journey Decision Node**
     ```bash
     JOURNEY_DECISION_QUERY_TIMEOUT=5   # Total timeout (seconds) for a journey Decision node's segment-query evaluation. On timeout/error the subscriber takes the No branch and an ERROR is logged
     ```
 
-22. **Subscriber Activity Tab**
+23. **Subscriber Activity Tab**
     ```bash
     SUBSCRIBER_ACTIVITY_HUMAN_OPEN_KEEP=5   # Newest human email-opens kept individually per campaign before the rest collapse into a "+X more" summary. Automated (bot/proxy/prefetch) opens always collapse into one flagged item
     ```
 
-23. **Scheduled Sender-Domain Re-Verification**
+24. **Scheduled Sender-Domain Re-Verification**
 
     A traffic-independent hourly cron (`cli/sender_domain_reverify_cron.php`) that sweeps already-approved (`Status='Enabled'`) sender domains and enqueues stale ones onto the existing `sender_domain_verification` queue, so DNS drift (SPF/DKIM/DMARC/tracking) is detected even on idle or campaign-only domains. The existing worker performs the actual DNS check; this cron never auto-disables a domain.
     ```bash
