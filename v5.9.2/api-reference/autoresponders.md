@@ -137,6 +137,7 @@ autorespondertriggervalue: Missing required parameter autorespondertriggervalue 
 9: Invalid email ID (email not found or does not belong to user)
 10: Invalid status value (must be Enabled or Disabled)
 11: Invalid segment id (segment does not belong to this list / user)
+12: Auto responder could not be created (persistence failed)
 ```
 
 :::
