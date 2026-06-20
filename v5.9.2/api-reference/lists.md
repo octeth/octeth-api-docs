@@ -2291,3 +2291,99 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+## Get Lists Overview (Lists + Custom Fields + Segments)
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Lists.Get`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns all of the authenticated user's subscriber lists in a single response and, optionally, each list's custom fields and segments — eliminating the `1 + 2N` round-trips (`lists.get` followed by per-list `customfields.get` and `segments.get`) that a Decision-node / condition picker would otherwise make. Regardless of how many lists the account has, the endpoint issues a bounded number of queries (≈1 lists + 1 custom fields + 1 segments).
+
+Only the authenticated user's own lists, fields, and segments are returned (ownership is enforced via `RelOwnerUserID`). The response is intentionally lightweight: heavy blob columns (`SegmentRules`, `SegmentRulesJson`, `FieldOptions` raw string, `Option1..5`, `Meta`, `Options`) and per-segment subscriber counts are omitted. Choice-type custom fields carry a parsed `Options` array when custom fields are requested. Global (account-level, `RelListID=0`) custom fields are merged into every list's `CustomFields[]`.
+
+The `CustomFields` and `Segments` keys are present on each list **only** when their corresponding `IncludeCustomFields` / `IncludeSegments` flag is enabled.
+
+**Request Body Parameters:**
+
+| Parameter           | Type    | Required | Description                                                                                                  |
+|---------------------|---------|----------|--------------------------------------------------------------------------------------------------------------|
+| Command             | String  | Yes      | API command: `lists.overview`                                                                                 |
+| SessionID           | String  | No       | Session ID obtained from login (use either SessionID or APIKey)                                               |
+| APIKey              | String  | No       | User API key for authentication (use either SessionID or APIKey)                                              |
+| IncludeCustomFields | Boolean | No       | When `true`, each list carries a `CustomFields[]` array (with parsed `Options` for choice fields). Default: `false` |
+| IncludeSegments     | Boolean | No       | When `true`, each list carries a `Segments[]` array. Default: `false`                                          |
+| Archived            | String  | No       | Archive filter. Possible values: `active` (default — active lists only), `archived` (archived only), `all` (no filter) |
+| Search              | String  | No       | Case-insensitive substring matched against list Name and Description                                          |
+| OrderField          | String  | No       | Sort field. Possible values: `ListID`, `Name`, `CreatedOn`. Default: `Name`                                   |
+| OrderType           | String  | No       | Sort direction: `ASC` or `DESC`. Default: `ASC`                                                               |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "Command=lists.overview" \
+  -d "APIKey=your-user-api-key" \
+  -d "IncludeCustomFields=true" \
+  -d "IncludeSegments=true"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalListCount": 2,
+  "Lists": [
+    {
+      "ListID": 12,
+      "Name": "Newsletter",
+      "CustomFields": [
+        {
+          "CustomFieldID": 3,
+          "RelListID": 12,
+          "FieldName": "First Name",
+          "FieldType": "Single line",
+          "MergeTagAlias": "FirstName",
+          "Options": []
+        }
+      ],
+      "Segments": [
+        {
+          "SegmentID": 7,
+          "RelListID": 12,
+          "SegmentName": "Active 30d",
+          "SegmentOperator": "and"
+        }
+      ]
+    },
+    {
+      "ListID": 15,
+      "Name": "Customers",
+      "CustomFields": [],
+      "Segments": []
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "User does not have the required permission (Lists.Get)"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99998: Authentication failure or session expired
+99999: User does not have the required permission (Lists.Get)
+```
+
+:::
