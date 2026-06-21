@@ -90,6 +90,29 @@ This action unsubscribes the subscriber from the target list.
 | TargetListID | The ID of the target list from which to unsubscribe.                                                             |
 | Published    | If this is set to `true`, the action will be enabled. Values: `true`, `false`                                    |
 
+## `DeleteSubscriber`
+
+This action permanently deletes the subscriber from the source list (the list the journey entry belongs to) and then ends the current journey for that subscriber. This is a destructive action and cannot be undone.
+
+```json
+{
+  "ActionID": 1,
+  "Action": "DeleteSubscriber",
+  "Notes": "Administative note"
+}
+```
+
+| Parameter | Description                                                                                                      |
+|-----------|------------------------------------------------------------------------------------------------------------------|
+| ActionID  | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
+| Action    | Set this parameter to `DeleteSubscriber`.                                                                        |
+| Published | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                  |
+| Notes     | The administrative note for the journey action.                                                                  |
+
+::: warning
+This action removes the subscriber from the source list and exits the current journey. The subscriber record is deleted from that list, so any subsequent actions in the journey will not run for them.
+:::
+
 ## `ExitJourney`
 
 This action stops the specified journey for the subscriber.
