@@ -134,6 +134,10 @@ When `Trigger` is set to `ScheduledPull`:
 
 The time window is evaluated in the journey owner's timezone. The top-level `Run_Criteria` / `Run_Criteria_Operator` (subscriber filtering) and `Rate_Limit_Per_Hour` / `Rate_Limit_Per_Day` parameters also apply to `ScheduledPull` journeys.
 
+::: tip Key casing
+The `TriggerParameters` keys above are **case-insensitive on input** — you may send them in any case (e.g. `intervalValue`, `intervalvalue`, or `IntervalValue`). They are normalized to the canonical PascalCase shown in the table before being stored, and `journey.get` always returns them in PascalCase. Sending the canonical PascalCase keys is recommended.
+:::
+
 ::: code-group
 
 ```bash [Example Request]
