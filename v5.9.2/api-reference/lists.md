@@ -2292,7 +2292,7 @@ curl -X POST https://example.com/api.php \
 
 :::
 
-## Get Lists Overview (Lists + Custom Fields + Segments)
+## Get Lists Overview (Lists + Custom Fields + Segments + Subscriber Tags)
 
 <Badge type="info" text="POST" /> `/api.php`
 
@@ -2302,11 +2302,11 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
-Returns all of the authenticated user's subscriber lists in a single response and, optionally, each list's custom fields and segments — eliminating the `1 + 2N` round-trips (`lists.get` followed by per-list `customfields.get` and `segments.get`) that a Decision-node / condition picker would otherwise make. Regardless of how many lists the account has, the endpoint issues a bounded number of queries (≈1 lists + 1 custom fields + 1 segments).
+Returns all of the authenticated user's subscriber lists in a single response and, optionally, each list's custom fields, segments, and subscriber tags — eliminating the `1 + N` (or `1 + 2N`) round-trips (`lists.get` followed by per-list `customfields.get`, `segments.get`, and `subscriber.tags.get`) that a Decision-node / journey-trigger picker would otherwise make. Regardless of how many lists the account has, the endpoint issues a bounded number of queries (≈1 lists + 1 custom fields + 1 segments + 1 subscriber tags).
 
-Only the authenticated user's own lists, fields, and segments are returned (ownership is enforced via `RelOwnerUserID`). The response is intentionally lightweight: heavy blob columns (`SegmentRules`, `SegmentRulesJson`, `FieldOptions` raw string, `Option1..5`, `Meta`, `Options`) and per-segment subscriber counts are omitted. Choice-type custom fields carry a parsed `Options` array when custom fields are requested. Global (account-level, `RelListID=0`) custom fields are merged into every list's `CustomFields[]`.
+Only the authenticated user's own lists, fields, segments, and tags are returned (ownership is enforced via `RelOwnerUserID` for lists and `UserID` for tags). The response is intentionally lightweight: heavy blob columns (`SegmentRules`, `SegmentRulesJson`, `FieldOptions` raw string, `Option1..5`, `Meta`, `Options`), per-segment subscriber counts, and per-tag subscriber counts are omitted. Choice-type custom fields carry a parsed `Options` array when custom fields are requested. Global (account-level, `RelListID=0`) custom fields are merged into every list's `CustomFields[]`. Subscriber tags are always list-scoped (there is no global tag concept) and are emitted as `{TagID, Tag}` objects ordered by `Tag` ascending.
 
-The `CustomFields` and `Segments` keys are present on each list **only** when their corresponding `IncludeCustomFields` / `IncludeSegments` flag is enabled.
+The `CustomFields`, `Segments`, and `SubscriberTags` keys are present on each list **only** when their corresponding `IncludeCustomFields` / `IncludeSegments` / `IncludeSubscriberTags` flag is enabled.
 
 **Request Body Parameters:**
 
@@ -2317,6 +2317,7 @@ The `CustomFields` and `Segments` keys are present on each list **only** when th
 | APIKey              | String  | No       | User API key for authentication (use either SessionID or APIKey)                                              |
 | IncludeCustomFields | Boolean | No       | When `true`, each list carries a `CustomFields[]` array (with parsed `Options` for choice fields). Default: `false` |
 | IncludeSegments     | Boolean | No       | When `true`, each list carries a `Segments[]` array. Default: `false`                                          |
+| IncludeSubscriberTags | Boolean | No     | When `true`, each list carries a `SubscriberTags[]` array of `{TagID, Tag}` objects (ordered by `Tag` ascending). Default: `false` |
 | Archived            | String  | No       | Archive filter. Possible values: `active` (default — active lists only), `archived` (archived only), `all` (no filter) |
 | Search              | String  | No       | Case-insensitive substring matched against list Name and Description                                          |
 | OrderField          | String  | No       | Sort field. Possible values: `ListID`, `Name`, `CreatedOn`. Default: `Name`                                   |
@@ -2330,7 +2331,8 @@ curl -X POST https://example.com/api.php \
   -d "Command=lists.overview" \
   -d "APIKey=your-user-api-key" \
   -d "IncludeCustomFields=true" \
-  -d "IncludeSegments=true"
+  -d "IncludeSegments=true" \
+  -d "IncludeSubscriberTags=true"
 ```
 
 ```json [Success Response]
@@ -2360,13 +2362,24 @@ curl -X POST https://example.com/api.php \
           "SegmentName": "Active 30d",
           "SegmentOperator": "and"
         }
+      ],
+      "SubscriberTags": [
+        {
+          "TagID": 4,
+          "Tag": "VIP"
+        },
+        {
+          "TagID": 9,
+          "Tag": "Webinar"
+        }
       ]
     },
     {
       "ListID": 15,
       "Name": "Customers",
       "CustomFields": [],
-      "Segments": []
+      "Segments": [],
+      "SubscriberTags": []
     }
   ]
 }
