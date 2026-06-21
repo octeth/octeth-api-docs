@@ -25,7 +25,8 @@ Journey management endpoints for creating, updating, and managing customer journ
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
 | Name      | String | Yes      | Name of the journey                   |
-| Trigger   | String | No       | Journey trigger type (default: `Manual`). Possible values: `Manual`, `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Tag`, `UnTag`, `CustomFieldValueChanged`, `RevenueHit`, `JourneyCompleted`, `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, `WebsiteEvent_conversion` |
+| Trigger   | String | No       | Journey trigger type (default: `Manual`). Possible values: `Manual`, `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Tag`, `UnTag`, `CustomFieldValueChanged`, `RevenueHit`, `JourneyCompleted`, `ScheduledPull`, `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, `WebsiteEvent_conversion`. See [Scheduled Pull Trigger](#scheduled-pull-trigger) for its additional parameters. |
+| TriggerParameters | Object | No | Trigger-specific settings. Required for the `ScheduledPull` trigger (interval, subscriber count, time window, frequency cap). See [Scheduled Pull Trigger](#scheduled-pull-trigger). |
 | Trigger_ListID | Integer | No  | List ID for list-based triggers      |
 | Trigger_EmailID | Integer | No | Email ID for email-based triggers    |
 | Trigger_Value | String/Integer | No | Trigger value for specific triggers |
@@ -97,6 +98,70 @@ curl -X POST https://example.com/api/v1/journey \
 17: Trigger_Value matching record not found (JourneyCompleted)
 18: Invalid rate_limit_per_hour parameter
 19: Invalid rate_limit_per_day parameter
+20: Missing or invalid Trigger_ListID parameter for ScheduledPull trigger
+21: Trigger_ListID matching record not found (ScheduledPull)
+```
+
+:::
+
+### Scheduled Pull Trigger
+
+Unlike event-based triggers (which fire when a subscriber does something), the `ScheduledPull` trigger periodically pulls a batch of random subscribers from a list and enrolls them into the journey on a recurring schedule. It is useful for list warm-up, drip re-engagement, and steady-rate enrollment.
+
+When `Trigger` is set to `ScheduledPull`:
+
+- `Trigger_ListID` is **required** — it is the list subscribers are pulled from (must be a positive list ID owned by the user).
+- All scheduling behavior is supplied via the `TriggerParameters` object. Any keys you omit fall back to the defaults below.
+
+**`TriggerParameters` keys:**
+
+| Key                   | Type    | Default     | Description                                                                                              |
+|-----------------------|---------|-------------|----------------------------------------------------------------------------------------------------------|
+| IntervalValue         | Integer | `60`        | How often the pull runs, combined with `IntervalUnit`.                                                    |
+| IntervalUnit          | String  | `minutes`   | Unit for `IntervalValue`. Values: `minutes`, `hours`, `days`. The effective interval is floored at 60 seconds. |
+| SubscriberCountMode   | String  | `fixed`     | How many subscribers to pull per run. Values: `fixed`, `random`.                                          |
+| SubscriberCountFixed  | Integer | `10`        | Number of subscribers pulled per run when `SubscriberCountMode` is `fixed`.                               |
+| SubscriberCountMin    | Integer | `1`         | Lower bound when `SubscriberCountMode` is `random`.                                                       |
+| SubscriberCountMax    | Integer | `SubscriberCountMin` | Upper bound when `SubscriberCountMode` is `random`.                                              |
+| TimeConstraintEnabled | Boolean | `false`     | When `true`, pulls only run inside the time window defined below. When `false`, pulls run on every due interval. |
+| AllowedDays           | Array   | (none)      | Day-of-week abbreviations when pulls may run. Values: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`. Only applies when `TimeConstraintEnabled` is `true`; an empty list blocks all pulls. |
+| DontSendBefore        | String  | `00:00`     | Earliest time of day a pull may run, `HH:MM`. Only applies when `TimeConstraintEnabled` is `true`.        |
+| DontSendAfter         | String  | `23:59`     | Latest time of day a pull may run, `HH:MM`. Only applies when `TimeConstraintEnabled` is `true`.          |
+| FrequencyCapEnabled   | Boolean | `false`     | When `true`, limits how often the same subscriber can be re-enrolled by this trigger.                     |
+| FrequencyCapCount     | Integer | `0`         | Maximum number of enrollments per subscriber within the frequency-cap period.                             |
+| FrequencyCapPeriod    | Integer | `0`         | Length of the frequency-cap window, combined with `FrequencyCapUnit`.                                     |
+| FrequencyCapUnit      | String  | `days`      | Unit for `FrequencyCapPeriod`. Values: `minutes`, `hours`, `days`.                                        |
+
+The time window is evaluated in the journey owner's timezone. The top-level `Run_Criteria` / `Run_Criteria_Operator` (subscriber filtering) and `Rate_Limit_Per_Hour` / `Rate_Limit_Per_Day` parameters also apply to `ScheduledPull` journeys.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/journey \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "journey.create",
+    "SessionID": "your-session-id",
+    "Name": "List Warm-up",
+    "Trigger": "ScheduledPull",
+    "Trigger_ListID": 123,
+    "TriggerParameters": {
+      "IntervalValue": 1,
+      "IntervalUnit": "hours",
+      "SubscriberCountMode": "random",
+      "SubscriberCountMin": 5,
+      "SubscriberCountMax": 25,
+      "TimeConstraintEnabled": true,
+      "AllowedDays": ["mon", "tue", "wed", "thu", "fri"],
+      "DontSendBefore": "09:00",
+      "DontSendAfter": "17:00",
+      "FrequencyCapEnabled": true,
+      "FrequencyCapCount": 1,
+      "FrequencyCapPeriod": 7,
+      "FrequencyCapUnit": "days"
+    },
+    "Notes": "Pull up to 25 subscribers hourly during business hours"
+  }'
 ```
 
 :::
@@ -636,8 +701,9 @@ The endpoint joins to `oempro_emails` via the `EmailID` stored in the action's `
 | JourneyID | Integer | Yes      | ID of the journey to update           |
 | Name      | String  | No       | Updated journey name                  |
 | Notes     | String  | No       | Updated journey notes                 |
-| Trigger   | String  | No       | Updated trigger type. Possible values: `Manual`, `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Tag`, `UnTag`, `CustomFieldValueChanged`, `RevenueHit`, `JourneyCompleted`, `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, `WebsiteEvent_conversion` |
+| Trigger   | String  | No       | Updated trigger type. Possible values: `Manual`, `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Tag`, `UnTag`, `CustomFieldValueChanged`, `RevenueHit`, `JourneyCompleted`, `ScheduledPull`, `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, `WebsiteEvent_conversion`. See [Scheduled Pull Trigger](#scheduled-pull-trigger) for its additional parameters. |
 | Trigger_ListID | Integer | No  | Updated list ID for triggers         |
+| TriggerParameters | Object | No | Updated trigger-specific settings. For the `ScheduledPull` trigger see [Scheduled Pull Trigger](#scheduled-pull-trigger). |
 | Trigger_EmailID | Integer | No | Updated email ID for triggers        |
 | Trigger_Value | String/Integer | No | Updated trigger value              |
 | Trigger_Criteria | Array | No  | Updated trigger criteria             |
@@ -707,6 +773,8 @@ curl -X PATCH https://example.com/api/v1/journey \
 17: Trigger_Value matching record not found (JourneyCompleted)
 18: Invalid rate_limit_per_hour parameter
 19: Invalid rate_limit_per_day parameter
+20: Missing or invalid Trigger_ListID parameter for ScheduledPull trigger
+21: Trigger_ListID matching record not found (ScheduledPull)
 ```
 
 :::
