@@ -493,6 +493,8 @@ curl -X POST https://example.com/api.php \
 8: Email delivery failed or sender domain not found
 9: Missing required parameter HTMLContent or PlainTextContent
 10: Missing required parameter PlainTextContent
+20: Preview/test-send rate limit exceeded for this account (see EMAIL_PREVIEW_RATE_LIMIT). Response includes a RetryAfter (seconds) field
+21: Recipient address is on the suppression list (globally opted out) and cannot receive preview emails
 ```
 
 :::
