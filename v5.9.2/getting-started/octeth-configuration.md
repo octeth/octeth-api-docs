@@ -285,6 +285,21 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     SENDER_DOMAIN_REVERIFY_BATCH_SIZE=100       # Hard cap on stale domains enqueued per hourly cron tick (bounds DNS-resolver load)
     ```
 
+25. **Email Preview / Test-Send Rate Limit**
+
+    The `email.emailpreview` endpoint accepts an arbitrary recipient by design (users preview to colleagues and seed inboxes), so it cannot restrict *who* receives a preview. To bound abuse of the platform's sending reputation (mass phishing via a valid or stolen API key), it caps preview/test sends per account per rolling window and refuses to deliver to a globally-suppressed recipient. The rate limit is Redis-backed and **fails open** (previews are allowed, with a WARNING logged) if Redis is unavailable.
+    ```bash
+    EMAIL_PREVIEW_RATE_LIMIT=30              # Max preview/test sends per account within the window; 0 disables the limit
+    EMAIL_PREVIEW_RATE_WINDOW_SECONDS=3600   # Rolling window (seconds) for the preview rate limit. Default 3600 (1 hour)
+    ```
+
+26. **Outbound HTTP User-Agent**
+
+    The `User-Agent` sent on outbound HTTP requests made through `Core::DataPostToRemoteURL()` — RSS feed fetches, journey/webhook posts, remote data posts, and ~36 other call sites. The previous hardcoded 2008 `Firefox/3.0.3` string is now rejected with HTTP 403 by many WordPress sites, WAFs and CDNs, which silently broke RSS embedding in recurring campaigns. Leave the modern default unless you have a specific reason to change it.
+    ```bash
+    OUTBOUND_HTTP_USER_AGENT="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+    ```
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::
