@@ -387,9 +387,9 @@ curl -X POST https://example.com/api.php \
 | AvailableCredits | Integer | No | Available credits (admin only) |
 | RelUserGroupID | Integer | No | User group ID (admin only) |
 | ReputationLevel | String | No | Reputation level (admin only) |
-| RateLimits | String | No | JSON string of rate limits |
-| CustomEmailHeaders | String | No | Custom email headers |
-| WhiteListedEmailAddresses | String | No | Whitelisted email addresses |
+| RateLimits | String | No | JSON string of rate limits. Omit to keep the existing row's value; pass an empty string to clear it. |
+| CustomEmailHeaders | String | No | Custom email headers. Omit to keep the existing row's value; pass an empty string to clear it. |
+| WhiteListedEmailAddresses | String | No | Whitelisted email addresses. Omit to keep the existing row's value; pass an empty string to clear it. |
 | Enable2FA | String | No | Set to 'true' to enable 2FA |
 | 2FACode | String | Conditional | 2FA code (required when enabling 2FA) |
 | Cancel2FA | String | No | Set to 'true' to disable 2FA |
