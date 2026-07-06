@@ -779,6 +779,7 @@ curl -X PATCH https://example.com/api/v1/journey \
 19: Invalid rate_limit_per_day parameter
 20: Missing or invalid Trigger_ListID parameter for ScheduledPull trigger
 21: Trigger_ListID matching record not found (ScheduledPull)
+22: A journey cannot be triggered by its own completion (JourneyCompleted)
 ```
 
 :::
