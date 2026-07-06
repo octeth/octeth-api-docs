@@ -2280,3 +2280,72 @@ curl -X GET "https://example.com/api/v1/admin.journey.action.audit?AdminAPIKey=y
 ```
 
 :::
+
+## Search a Subscriber Email Across All Lists
+
+<Badge type="info" text="POST" /> `/api/v1/admin.subscriber.search`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Given one email address, returns every user/list (across all users) where that address is subscribed — the API analogue of the admin-area "Subscriber Email Search" page (issue #2185). When authenticated as an access-limited subadmin, results are restricted to lists owned by users in the admin's allowed user groups; the global Admin API Key is unrestricted.
+
+**Request Body Parameters:**
+
+| Parameter    | Type   | Required | Description                            |
+|--------------|--------|----------|----------------------------------------|
+| Command      | String | Yes      | API command: `admin.subscriber.search` |
+| AdminAPIKey  | String | Yes      | Admin API key for authentication       |
+| EmailAddress | String | Yes      | Exact email address to search for      |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.subscriber.search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.subscriber.search",
+    "AdminAPIKey": "your-admin-api-key",
+    "EmailAddress": "john@example.com"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "EmailAddress": "john@example.com",
+  "TotalLists": 2,
+  "Lists": [
+    {
+      "ListID": 42,
+      "ListName": "Newsletter",
+      "OwnerUserID": 7,
+      "OwnerName": "Acme Inc",
+      "SubscriberID": 1234,
+      "SubscriptionStatus": "Subscribed",
+      "BounceType": "Not Bounced"
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Invalid EmailAddress parameter"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing EmailAddress parameter
+2: Invalid EmailAddress parameter
+```
+
+:::
