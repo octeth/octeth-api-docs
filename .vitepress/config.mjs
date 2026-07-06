@@ -165,7 +165,8 @@ export default defineConfig({
                         {text: 'Google Analytics', link: '/v5.9.2/using-octeth/integrations/google-analytics'},
                         {text: 'Stripo Email Builder', link: '/v5.9.2/using-octeth/integrations/stripo-email-builder'},
                         {text: 'Single Sign On (SSO)', link: '/v5.9.2/using-octeth/integrations/sso'},
-                        {text: 'n8n Integration', link: '/v5.9.2/using-octeth/integrations/n8n-integration'}
+                        {text: 'n8n Integration', link: '/v5.9.2/using-octeth/integrations/n8n-integration'},
+                        {text: 'MCP Server (AI Assistant)', link: '/v5.9.2/using-octeth/integrations/mcp-server'}
                     ]
                 },
                 {
