@@ -300,6 +300,27 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     OUTBOUND_HTTP_USER_AGENT="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
     ```
 
+27. **MySQL Stuck / Long-Running Query Monitor**
+
+    ```bash
+    MYSQL_QUERY_MONITOR_ENABLED=true                        # Enable the stuck-query monitor cron (runs every 5 minutes)
+    MYSQL_QUERY_MONITOR_THRESHOLD_SECONDS=30                # Flag any query whose running time (seconds) is at or above this
+    MYSQL_QUERY_MONITOR_EXCEPTION_PATTERNS=                 # |||-separated regexes for known long runners to suppress (see below)
+    MYSQL_QUERY_MONITOR_MAX_QUERY_LENGTH=500               # Truncate query text to this many chars in the log and webhook payload
+    MYSQL_QUERY_MONITOR_WEBHOOK_URL=                        # Webhook URL for alerts; empty = log only
+    MYSQL_QUERY_MONITOR_WEBHOOK_HMAC_SECRET=               # HMAC-SHA256 secret for the X-Octeth-Signature header
+    MYSQL_QUERY_MONITOR_NOTIFICATION_COOLDOWN_MINUTES=30    # Cooldown between webhook notifications (condition still logged each tick)
+    ```
+
+    The MySQL Query Monitor (`cli/mysql_query_monitor.php`) inspects `information_schema.processlist` every 5 minutes and flags any query running at or beyond `MYSQL_QUERY_MONITOR_THRESHOLD_SECONDS`. Idle/system threads (`Sleep`, `Daemon`, `Binlog Dump`) and the monitor's own connection are always excluded. Breaches are **always** written to the log; a webhook (with optional HMAC signature) is POSTed only when `MYSQL_QUERY_MONITOR_WEBHOOK_URL` is set and the cooldown has elapsed. Query text is truncated to `MYSQL_QUERY_MONITOR_MAX_QUERY_LENGTH` characters to bound leakage of sensitive literals.
+
+    **Exception list:** `MYSQL_QUERY_MONITOR_EXCEPTION_PATTERNS` is a list of case-insensitive regular expressions matched against the query text, separated by `|||` (a triple pipe — a single `|` is a valid regex alternation operator and is *not* treated as a separator). Matching queries (backups, migrations, aggregators) are suppressed. Quote the whole value when any pattern contains a space:
+    ```bash
+    MYSQL_QUERY_MONITOR_EXCEPTION_PATTERNS="mysqldump|||OPTIMIZE TABLE|||ALTER TABLE"
+    ```
+
+    **Visibility note:** Octeth's application MySQL user does not hold the global `PROCESS` privilege, so `information_schema.processlist` only exposes threads authenticated as that user — i.e. Octeth's own queries, which is exactly the runaway-query target. Queries owned by other accounts (e.g. `root`, replication) are not visible unless you grant `PROCESS` to the application user.
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::
