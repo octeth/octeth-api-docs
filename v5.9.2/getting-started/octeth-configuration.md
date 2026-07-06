@@ -321,6 +321,14 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **Visibility note:** Octeth's application MySQL user does not hold the global `PROCESS` privilege, so `information_schema.processlist` only exposes threads authenticated as that user — i.e. Octeth's own queries, which is exactly the runaway-query target. Queries owned by other accounts (e.g. `root`, replication) are not visible unless you grant `PROCESS` to the application user.
 
+27b. **Xdebug (development only)**
+
+    ```bash
+    OEMPRO_XDEBUG_ENABLED=false                             # Load the Xdebug extension in the containers (default: false)
+    ```
+
+    The shipped Docker images install the Xdebug extension for both PHP 5.6 and PHP 8.1, but it is **disabled by default**. Merely *loading* Xdebug installs per-call stack-trace hooks (the "Xdebug tax") that slow every PHP process — most noticeably the long-lived PHP 5.6 supervisor workers and the send engine — even with remote debugging turned off. Set `OEMPRO_XDEBUG_ENABLED=true` **only in local development** to enable step debugging / profiling; leave it `false` (or unset) in production. The flag is applied at container start by `_dockerfiles/xdebug-toggle.sh`, which enables/disables the extension for every PHP version and SAPI via `phpenmod`/`phpdismod`. Restart the containers after changing it.
+
 28. **Export File Retention**
 
     ```bash
