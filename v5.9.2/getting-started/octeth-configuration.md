@@ -337,6 +337,20 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     Completed export result files are written to `data/exports/{ExportID}.export` and were previously never cleaned up, so export storage grew without bound on active accounts. The `cli/export_files_cleanup.php` cron (daily at 04:45 UTC) deletes the result files of **terminal** export jobs (`Completed` or `Failed`) whose completion time is older than `EXPORT_FILE_RETENTION_DAYS`. In-flight jobs (`Pending` / `Processing`) are **never** touched. Only the on-disk file is removed — the export row is preserved for history, so downloading an expired export returns a clear "expired" error (HTTP 410) instead of a broken or empty download. Raise this value to keep exports downloadable for longer.
 
+29. **Long-Running Worker Memory Hygiene**
+
+    ```bash
+    WORKER_MEMORY_RECYCLE_ENABLED=true                      # Master switch for the graceful worker recycle valve (default: true)
+    WORKER_MEMORY_RECYCLE_THRESHOLD=0.85                    # Fraction (0..1) of the PHP memory_limit that triggers a recycle (default: 0.85)
+    WORKER_MEMORY_LOG_ENABLED=false                         # Enable per-iteration memory logging in loop workers (default: false)
+    ```
+
+    The long-running `while(true)` daemon workers — campaign delivery/picker, email gateway delivery, import (both), export, journeys, webhooks, and transactional delivery — share a common memory-hygiene routine (`includes/classes/workermemory.inc.php`). Every loop iteration each worker flushes the DB layer's in-memory query history (`MySqlDatabaseInterface::ClearSQLHistory()`) so it can never grow unbounded, and checks a shared graceful **recycle** valve.
+
+    - **`WORKER_MEMORY_RECYCLE_ENABLED`** — when `true`, a worker whose `memory_get_usage(true)` reaches `WORKER_MEMORY_RECYCLE_THRESHOLD` of the PHP `memory_limit` exits cleanly with status `0` **between units of work** (never mid-batch/transaction). Because every worker runs under supervisord with `autorestart=true`, this is treated as a normal restart — not a counted failure — and the process starts fresh with a clean heap instead of drifting into a fatal out-of-memory error. Set to `false` to disable self-recycling (workers still flush SQL history each iteration).
+    - **`WORKER_MEMORY_RECYCLE_THRESHOLD`** — the trigger fraction. The accepted band is `0.5` to `1.0`; a value outside it falls back to `0.85`. The `0.5` floor is deliberate: the recycle check runs at the top of each worker loop, so a threshold low enough that a worker is already over it at startup would make it exit within ~1s of every start, which supervisord (default `startsecs` 1s, `startretries=10`) escalates to a permanent **FATAL** stop. Keep it conservative (well below `1.0`). When the PHP `memory_limit` is unlimited (`-1`), recycling is disabled regardless of this value.
+    - **`WORKER_MEMORY_LOG_ENABLED`** — when `true`, each worker emits a per-iteration `DEBUG` memory-status line (current/peak/limit MB and usage percent). Off by default to limit log volume; turn it on temporarily when investigating a suspected leak.
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::
