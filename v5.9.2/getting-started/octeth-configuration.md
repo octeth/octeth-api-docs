@@ -321,6 +321,14 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **Visibility note:** Octeth's application MySQL user does not hold the global `PROCESS` privilege, so `information_schema.processlist` only exposes threads authenticated as that user — i.e. Octeth's own queries, which is exactly the runaway-query target. Queries owned by other accounts (e.g. `root`, replication) are not visible unless you grant `PROCESS` to the application user.
 
+28. **Export File Retention**
+
+    ```bash
+    EXPORT_FILE_RETENTION_DAYS=30                           # Days to keep completed/failed export files before cleanup
+    ```
+
+    Completed export result files are written to `data/exports/{ExportID}.export` and were previously never cleaned up, so export storage grew without bound on active accounts. The `cli/export_files_cleanup.php` cron (daily at 04:45 UTC) deletes the result files of **terminal** export jobs (`Completed` or `Failed`) whose completion time is older than `EXPORT_FILE_RETENTION_DAYS`. In-flight jobs (`Pending` / `Processing`) are **never** touched. Only the on-disk file is removed — the export row is preserved for history, so downloading an expired export returns a clear "expired" error (HTTP 410) instead of a broken or empty download. Raise this value to keep exports downloadable for longer.
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::

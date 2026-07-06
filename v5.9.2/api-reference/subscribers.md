@@ -728,8 +728,13 @@ curl -X GET "https://example.com/api/v1/subscribers.export?Command=subscribers.e
 4: List not found
 5: Invalid ExportID parameter
 6: Export job not found
+7: Export file has expired and is no longer available for download (HTTP 410)
 ```
 
+:::
+
+::: warning Export file retention
+Completed export result files are removed automatically after `EXPORT_FILE_RETENTION_DAYS` (default 30 days) by the export cleanup cron. When a `Download` is requested for a `Completed` export whose file has already been cleaned up, this endpoint responds with **HTTP 410 Gone** and error `Code 7`. The export job record itself is preserved, so listing export jobs still returns the (now file-less) row. Re-submit the export to obtain a fresh file.
 :::
 
 ## Import Subscribers (Modern Single-Step)
