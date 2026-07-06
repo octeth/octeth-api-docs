@@ -2304,7 +2304,7 @@ curl -X POST https://example.com/api.php \
 
 Returns all of the authenticated user's subscriber lists in a single response and, optionally, each list's custom fields, segments, and subscriber tags — eliminating the `1 + N` (or `1 + 2N`) round-trips (`lists.get` followed by per-list `customfields.get`, `segments.get`, and `subscriber.tags.get`) that a Decision-node / journey-trigger picker would otherwise make. Regardless of how many lists the account has, the endpoint issues a bounded number of queries (≈1 lists + 1 custom fields + 1 segments + 1 subscriber tags).
 
-Only the authenticated user's own lists, fields, segments, and tags are returned (ownership is enforced via `RelOwnerUserID` for lists and `UserID` for tags). The response is intentionally lightweight: heavy blob columns (`SegmentRules`, `SegmentRulesJson`, `FieldOptions` raw string, `Option1..5`, `Meta`, `Options`), per-segment subscriber counts, and per-tag subscriber counts are omitted. Choice-type custom fields carry a parsed `Options` array when custom fields are requested. Global (account-level, `RelListID=0`) custom fields are merged into every list's `CustomFields[]`. Subscriber tags are always list-scoped (there is no global tag concept) and are emitted as `{TagID, Tag}` objects ordered by `Tag` ascending.
+Only the authenticated user's own lists, fields, segments, and tags are returned (ownership is enforced via `RelOwnerUserID` for lists and `UserID` for tags). The response is intentionally lightweight: heavy blob columns (`SegmentRules`, `SegmentRulesJson`, `FieldOptions` raw string, `Option1..5`, raw `Meta`), per-segment subscriber counts, and per-tag subscriber counts are omitted. Choice-type custom fields carry a parsed `Options` array when custom fields are requested. Each custom field additionally includes `ValidationMethod` and — derived from its `Meta` blob — `SQLDataType` plus `SQLDataTypeValues`: both are `null` for plain fields, while `SQLDataType` is `enum` / `set` (with `SQLDataTypeValues` listing the allowed values) for choice drop-downs and a raw SQL type for custom-typed fields. Together with `ValidationMethod` (e.g. `Numbers` marks a numeric `Single line` field stored as `DOUBLE`), this is enough to derive a field's data type and validation operators from `lists.overview` alone, with no per-list `customfields.get` fan-out. The raw `Meta` blob itself is never exposed. Global (account-level, `RelListID=0`) custom fields are merged into every list's `CustomFields[]` and receive the same metadata enrichment. Subscriber tags are always list-scoped (there is no global tag concept) and are emitted as `{TagID, Tag}` objects ordered by `Tag` ascending.
 
 The `CustomFields`, `Segments`, and `SubscriberTags` keys are present on each list **only** when their corresponding `IncludeCustomFields` / `IncludeSegments` / `IncludeSubscriberTags` flag is enabled.
 
@@ -2315,7 +2315,7 @@ The `CustomFields`, `Segments`, and `SubscriberTags` keys are present on each li
 | Command             | String  | Yes      | API command: `lists.overview`                                                                                 |
 | SessionID           | String  | No       | Session ID obtained from login (use either SessionID or APIKey)                                               |
 | APIKey              | String  | No       | User API key for authentication (use either SessionID or APIKey)                                              |
-| IncludeCustomFields | Boolean | No       | When `true`, each list carries a `CustomFields[]` array (with parsed `Options` for choice fields). Default: `false` |
+| IncludeCustomFields | Boolean | No       | When `true`, each list carries a `CustomFields[]` array — each field with parsed `Options` for choice fields plus `ValidationMethod`, `SQLDataType`, and `SQLDataTypeValues` metadata. Default: `false` |
 | IncludeSegments     | Boolean | No       | When `true`, each list carries a `Segments[]` array. Default: `false`                                          |
 | IncludeSubscriberTags | Boolean | No     | When `true`, each list carries a `SubscriberTags[]` array of `{TagID, Tag}` objects (ordered by `Tag` ascending). Default: `false` |
 | Archived            | String  | No       | Archive filter. Possible values: `active` (default — active lists only), `archived` (archived only), `all` (no filter) |
@@ -2351,8 +2351,25 @@ curl -X POST https://example.com/api.php \
           "RelListID": 12,
           "FieldName": "First Name",
           "FieldType": "Single line",
+          "ValidationMethod": "Disabled",
           "MergeTagAlias": "FirstName",
-          "Options": []
+          "Options": [],
+          "SQLDataType": null,
+          "SQLDataTypeValues": null
+        },
+        {
+          "CustomFieldID": 8,
+          "RelListID": 12,
+          "FieldName": "Membership Tier",
+          "FieldType": "Drop down",
+          "ValidationMethod": "Enum",
+          "MergeTagAlias": "Tier",
+          "Options": [
+            { "label": "Bronze", "value": "bronze", "is_selected": "false" },
+            { "label": "Gold", "value": "gold", "is_selected": "false" }
+          ],
+          "SQLDataType": "enum",
+          "SQLDataTypeValues": ["Bronze", "Gold"]
         }
       ],
       "Segments": [
