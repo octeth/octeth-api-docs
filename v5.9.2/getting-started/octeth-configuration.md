@@ -361,6 +361,25 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     The value was previously hard-coded at `5` seconds, which was too tight for large lists and segments: the unbounded count query — which runs correlated `NOT EXISTS` / `EXISTS` subqueries against the open/journey tables — could exceed it and **time out to a silent `0`**, while the `LIMIT`-bounded listing returned within budget. The result was a page whose badge read "0 / No subscribers found" while a full page of subscriber rows rendered below it. Raising the timeout lets the count complete. If a genuinely huge segment still exceeds it, the count is now reported as *temporarily unavailable* (never a misleading `0`) and the failure is logged, so the badge and the listing can no longer contradict each other.
 
+31. **Proactive Subscriber-Table Rebuild**
+
+    ```bash
+    SUBSCRIBER_TABLE_REBUILD_ENABLED=true                 # Master switch for the nightly rebuild command (default: true)
+    SUBSCRIBER_TABLE_REBUILD_ROW_VERSION_THRESHOLD=48     # Per-list instant-DDL counter at/above which a table is rebuilt (default: 48; clamped to 1..63)
+    SUBSCRIBER_TABLE_REBUILD_BATCH_SIZE=20               # Max tables rebuilt per nightly run (default: 20)
+    SUBSCRIBER_TABLE_REBUILD_TIME_BUDGET_SECONDS=1800   # Wall-clock budget per run in seconds (default: 1800)
+    ```
+
+    Custom fields are stored as real columns on the per-list `oempro_subscribers_<ListID>` tables, added and dropped with *instant* (metadata-only) `ALTER TABLE` statements. InnoDB allows only about **64** accumulated instant-DDL "row versions" per table; once a busy, long-lived list crosses that limit, the **next** custom-field add silently turns into a **full table rebuild** — and because that happens inside the interactive request, on a million-row list it blocks the request and locks the table for tens of seconds.
+
+    The direct signal for this (`information_schema.INNODB_TABLES.TOTAL_ROW_VERSIONS`) requires the MySQL `PROCESS` privilege, which the application's database user does not have. So Octeth tracks the accumulation itself: every instant add/drop/change of a custom-field column increments a per-list counter (`InstantDDLRowVersions` on `oempro_subscriber_lists`), and the scheduled `oempro:rebuild-subscriber-tables` command (nightly, `03:00`) rebuilds any table whose counter has reached `SUBSCRIBER_TABLE_REBUILD_ROW_VERSION_THRESHOLD`, resetting both the counter and InnoDB's real row-version count. Because this runs in the background, the blocking rebuild never lands in a user request.
+
+    - **`SUBSCRIBER_TABLE_REBUILD_ENABLED`** — set to `false` to disable the nightly command entirely (it becomes a no-op).
+    - **`SUBSCRIBER_TABLE_REBUILD_ROW_VERSION_THRESHOLD`** — kept comfortably below the ~64 hard limit so there is headroom for adds between nightly runs. Values outside `1..63` are clamped.
+    - **`SUBSCRIBER_TABLE_REBUILD_BATCH_SIZE`** / **`SUBSCRIBER_TABLE_REBUILD_TIME_BUDGET_SECONDS`** — bound the work per run on large installs; tables not reached this run are picked up the next night.
+
+    The rebuild runs `ALTER TABLE … ENGINE=InnoDB` fully online (`ALGORITHM=INPLACE, LOCK=NONE`) when possible; a table carrying a `FULLTEXT` index (the `ft_email` search index) cannot rebuild in place, so it falls back to `ALGORITHM=COPY, LOCK=SHARED` (reads continue, writes are briefly blocked) — still off the request path. Notes: existing tables start with a counter of `0` (their historical accumulation is unknown without `PROCESS`), so the mechanism protects against **future** accumulation; run `php system/artisan oempro:rebuild-subscriber-tables --dry-run` to preview which tables would be rebuilt.
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::
