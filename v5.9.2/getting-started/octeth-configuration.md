@@ -351,6 +351,16 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     - **`WORKER_MEMORY_RECYCLE_THRESHOLD`** — the trigger fraction. The accepted band is `0.5` to `1.0`; a value outside it falls back to `0.85`. The `0.5` floor is deliberate: the recycle check runs at the top of each worker loop, so a threshold low enough that a worker is already over it at startup would make it exit within ~1s of every start, which supervisord (default `startsecs` 1s, `startretries=10`) escalates to a permanent **FATAL** stop. Keep it conservative (well below `1.0`). When the PHP `memory_limit` is unlimited (`-1`), recycling is disabled regardless of this value.
     - **`WORKER_MEMORY_LOG_ENABLED`** — when `true`, each worker emits a per-iteration `DEBUG` memory-status line (current/peak/limit MB and usage percent). Off by default to limit log volume; turn it on temporarily when investigating a suspected leak.
 
+30. **Subscriber Browse Query Timeout**
+
+    ```bash
+    SUBSCRIBER_BROWSE_QUERY_TIMEOUT=30   # Total timeout (seconds) for the subscriber browse page's count + listing query calls (default: 30)
+    ```
+
+    The subscriber browse page builds its result with two internal HTTP calls to the query builder: one for the total **count** (`COUNT(*)`, no `LIMIT`) and one for the **listing** (bounded by the page size). Both are bounded by this single timeout (applied to both the connection and total execution time).
+
+    The value was previously hard-coded at `5` seconds, which was too tight for large lists and segments: the unbounded count query — which runs correlated `NOT EXISTS` / `EXISTS` subqueries against the open/journey tables — could exceed it and **time out to a silent `0`**, while the `LIMIT`-bounded listing returned within budget. The result was a page whose badge read "0 / No subscribers found" while a full page of subscriber rows rendered below it. Raising the timeout lets the count complete. If a genuinely huge segment still exceeds it, the count is now reported as *temporarily unavailable* (never a misleading `0`) and the failure is logged, so the badge and the listing can no longer contradict each other.
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::
