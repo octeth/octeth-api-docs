@@ -401,6 +401,24 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     - **Trade-off:** a static header is *not* a per-request HMAC. It does **not** stop replay of a captured valid POST, but — unlike a secret placed in the URL — it is **not written to access logs or referrers**, and it closes the unauthenticated-forgery vector entirely.
     - **Rotation:** because the secret derives from `OEMPRO_PASSWORD_SALT` and `ADMIN_API_KEY`, rotating either value changes the secret and requires updating every configured sender with the new header.
 
+33. **Trusted Proxies / Client IP Resolution**
+
+    ```bash
+    TRUSTED_PROXIES=                       # extra trusted reverse proxies (IPv4 / CIDR, comma-separated); loopback is always trusted
+    TRUST_CLOUDFLARE_CONNECTING_IP=false   # set true only when the app domain is served through Cloudflare (proxied DNS)
+    ```
+
+    Octeth always sits behind the internal HAProxy/Caddy reverse proxy (on loopback) and may additionally sit behind an external CDN/reverse proxy. The real client IP is resolved once, at startup, into `REMOTE_ADDR` — the value the admin **Authorized IP Addresses** allow-list, audit/login logs, rate limiting and tracking all consume.
+
+    `X-Forwarded-For` is a comma-separated chain (`client, proxy1, proxy2`) and is **client-controllable**. Earlier versions copied the whole raw chain into `REMOTE_ADDR`, which broke the admin IP allow-list (an admin had to paste the entire chain verbatim, and enabling it turned `system.health.check` red with a 503) and let the header be spoofed.
+
+    The resolver now honours forwarded headers **only when the request's immediate peer is a trusted proxy**:
+
+    - **`TRUSTED_PROXIES`** — loopback (`127.0.0.1` / `::1`) is always trusted (the internal proxy). Add any *additional* reverse proxies in front of the app here, as comma-separated IPv4 addresses and/or IPv4 CIDRs. When the peer is trusted the chain is walked **right-to-left** and the first address that is **not** a trusted proxy is taken as the client IP. Leave empty unless you run an extra proxy that appends to `X-Forwarded-For`. A standard install (app behind the internal HAProxy/Caddy only) needs nothing here — the client IP is recovered automatically.
+    - **`TRUST_CLOUDFLARE_CONNECTING_IP`** — set `true` **only** when the app domain is served through Cloudflare (proxied DNS). The client IP is then read from the `CF-Connecting-IP` header, which Cloudflare sets and overwrites (so it cannot be spoofed past CF). Leaving it `false` (the default) is correct for every non-Cloudflare install; a spurious `true` would let a client behind a trusted proxy forge their IP via that header.
+
+    A direct client (untrusted immediate peer) can never influence `REMOTE_ADDR`, so the admin IP allow-list can no longer be bypassed with a forged `X-Forwarded-For`. Loopback-originated requests (the internal health-check/cron probes) are exempt from the allow-list, so enabling it no longer breaks `system.health.check`. Note: audit/login rows written by an earlier version while behind a proxy may still contain a chain string in their IP column; the fix stops that going forward but does not rewrite historical rows.
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::
