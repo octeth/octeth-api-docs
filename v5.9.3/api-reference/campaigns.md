@@ -676,7 +676,7 @@ curl -X POST https://example.com/api.php \
 | CampaignStatus          | String  | No       | Filter by status (Draft, Ready, Scheduled, Sending, Sent, Paused, Failed, All) |
 | ScheduleType            | String/Array | No  | Filter by schedule type (Not Scheduled, Immediate, Future, Recursive) |
 | SearchKeyword           | String  | No       | Search campaigns by name or email subject (LIKE query)              |
-| FilterByUserID          | Integer | No       | Filter by account/user ID (admin only)                               |
+| FilterByUserID          | Integer | No       | **Ignored (v5.9.3, #2309).** `campaigns.get` is a user-authenticated endpoint and the listing is always scoped to the authenticated user's own campaigns; any value sent here is overridden with the caller's own user ID. Retained only for backward compatibility. |
 | CampaignIDs             | String/Array | No  | Filter by specific campaign IDs (comma-separated or array)           |
 | Date_From               | String  | No       | Start date for filtering (YYYY-MM-DD format)                         |
 | Date_To                 | String  | No       | End date for filtering (YYYY-MM-DD format)                           |

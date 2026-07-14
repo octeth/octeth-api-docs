@@ -92,6 +92,10 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
+::: warning Behavior change (v5.9.3, #2352)
+`SourceDescription` and `ExpiresAt` are now **preserved** when omitted. In earlier versions, a partial `sso.update` (for example, sending only `SourceID`, `SourceName`, `SourceCode`, and `ValidForSeconds` to rename a source) overwrote both with empty values — silently dropping the description and, more importantly, removing a previously-set `ExpiresAt` token-expiry constraint. Send each field only when you intend to change it; send `ExpiresAt` as an empty string to explicitly clear an expiry.
+:::
+
 **Request Body Parameters:**
 
 | Parameter | Type   | Required | Description                           |

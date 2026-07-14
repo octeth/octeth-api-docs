@@ -105,6 +105,10 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
+::: warning Behavior change (v5.9.3, #2348)
+For choice-type fields (`Drop down`, `Multiple choice`, `Checkboxes`), the field's stored options are now **preserved** when you update the field without resending `OptionLabel`. In earlier versions, any update that omitted `OptionLabel` (for example, renaming the field while resending the required `FieldType`) silently erased all of its options. To change the options, send `OptionLabel` (with `OptionValue`/`OptionSelected`); to clear them, send an empty `OptionLabel` array or change the field to a non-choice type.
+:::
+
 **Request Body Parameters:**
 
 | Parameter | Type | Required | Description |

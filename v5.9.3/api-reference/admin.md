@@ -901,7 +901,18 @@ Authenticates an administrator and creates a session. This endpoint supports bot
 | Password      | String  | Yes*     | Administrator password (*required unless using AdminAPIKey)                                      |
 | TFACode       | String  | Conditional | Two-Factor Authentication code (required if 2FA is enabled for the admin account)             |
 | AdminAPIKey   | String  | No       | Admin API Key for alternative authentication (bypasses username/password when valid)             |
-| Disable2FA    | Boolean | No       | Set to true to disable 2FA verification for this request                                         |
+| Disable2FA    | Boolean | No       | Skip 2FA verification for this request. Honored **only** when `Disable2FAToken` is also supplied and valid (see note below). |
+| Disable2FAToken | String | Conditional | Server-derived token that authorizes `Disable2FA`. Required for `Disable2FA` to take effect. |
+
+::: warning Behavior change (v5.9.3, #2317)
+`Disable2FA` alone no longer skips two-factor authentication. In earlier versions **any** client could send `Disable2FA=true` and bypass 2FA — a security hole. It is now honored only when accompanied by a matching `Disable2FAToken`:
+
+```
+Disable2FAToken = HMAC_SHA256("admin.login.disable2fa", SCRTY_SALT)   // lowercase hex
+```
+
+`SCRTY_SALT` is a server-side secret from `.oempro_env`, so only a trusted integration that has access to it can compute the token; an ordinary caller cannot forge it. If `SCRTY_SALT` is empty the token can never validate and `Disable2FA` is ignored. When the token is absent or invalid, normal 2FA handling applies — supply `TFACode`. Authenticating with `AdminAPIKey` is unaffected.
+:::
 
 ::: code-group
 

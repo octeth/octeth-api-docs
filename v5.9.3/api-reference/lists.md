@@ -1714,7 +1714,7 @@ This endpoint is deprecated and will be removed in a future Octeth release. Mode
 | Command                 | String  | Yes      | API command: `listintegration.generatesubscriptionformhtmlcode` |
 | SessionID               | String  | No       | Session ID obtained from login                           |
 | APIKey                  | String  | No       | API key for authentication                               |
-| SubscriberListID        | Integer | Yes      | ID of the list for the subscription form                 |
+| SubscriberListID        | Integer | Yes      | ID of the list for the subscription form. Must be a positive integer and a list you own. |
 | CustomFields            | String  | No       | Comma-separated custom field IDs to include in form      |
 | EmailAddressString      | String  | No       | Label text for email address field                       |
 | SubscribeButtonString   | String  | No       | Text for subscribe button                                |
@@ -1758,6 +1758,8 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 1: Missing subscriber list ID
+2: Invalid subscriber list id (must be a positive integer)
+3: Invalid subscriber list id (list not found or not owned by you)
 ```
 
 :::

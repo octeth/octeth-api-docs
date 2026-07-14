@@ -126,7 +126,18 @@ curl -X POST https://example.com/api.php \
 | PasswordEncrypted | Boolean | No | Set to true if password is already MD5 hashed |
 | TFACode | String | Conditional | Two-factor authentication code (required if 2FA is enabled) |
 | TFARecoveryCode | String | No | Two-factor authentication recovery code |
-| Disable2FA | Boolean | No | Set to true to disable 2FA verification |
+| Disable2FA | Boolean | No | Skip 2FA verification for this login. Honored **only** when `Disable2FAToken` is also supplied and valid (see note below). |
+| Disable2FAToken | String | Conditional | Server-derived token that authorizes `Disable2FA`. Required for `Disable2FA` to take effect. |
+
+::: warning Behavior change (v5.9.3, #2333)
+`Disable2FA` alone no longer skips two-factor authentication. In earlier versions **any** client could send `Disable2FA=true` and bypass 2FA — a security hole. It is now honored only when accompanied by a matching `Disable2FAToken`:
+
+```
+Disable2FAToken = HMAC_SHA256("user.login.disable2fa", SCRTY_SALT)   // lowercase hex
+```
+
+`SCRTY_SALT` is a server-side secret from `.oempro_env`, so only a trusted integration that has access to it (for example a custom SSO bridge running on the same host) can compute the token; an ordinary API caller cannot forge it. If `SCRTY_SALT` is empty the token can never validate and `Disable2FA` is ignored. When the token is absent or invalid, the request falls through to normal 2FA handling — supply `TFACode` (or `TFARecoveryCode`). Callers authenticating with `APIKey` are unaffected.
+:::
 
 ::: code-group
 

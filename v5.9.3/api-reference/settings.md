@@ -92,6 +92,10 @@ NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 
 All parameters are optional. Only provide the settings you want to update.
 
+::: warning Behavior change (v5.9.3, #2345)
+Omitted parameters are now left unchanged. In earlier versions, a partial `settings.update` unconditionally overwrote `DisableUserPasswordReset`, `MediaUploadStatus`, and `MediaLibraryAllowedFileTypes` even when they were not sent — so updating only, say, `SystemEmailFromName` silently re-enabled user password reset and blanked the media-upload settings. These three fields are now written only when included in the request.
+:::
+
 | Parameter | Type   | Required | Description                           |
 |-----------|--------|----------|---------------------------------------|
 | Command   | String | Yes      | API command: `settings.update` |

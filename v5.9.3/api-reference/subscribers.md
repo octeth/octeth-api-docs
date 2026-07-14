@@ -297,7 +297,7 @@ curl -X POST https://example.com/api.php \
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
 | SubscriberListID | Integer | Yes | ID of the subscriber list           |
-| Subscribers | String | Conditional | Comma-separated subscriber IDs (required if RulesJSON not provided) |
+| Subscribers | String | Conditional | Comma-separated subscriber IDs (required if RulesJSON not provided). Each ID must be a positive integer; a value containing a non-integer ID is rejected (error code `8`). |
 | RulesJSON | String | Conditional | JSON rules for bulk deletion (required if Subscribers not provided) |
 | RulesOperator | String | Conditional | Rules operator: and, or (required if RulesJSON provided) |
 | Suppressed | Boolean | No      | Delete from suppression list instead (default: false) |
@@ -336,6 +336,7 @@ curl -X POST https://example.com/api.php \
 2: Missing subscriber list id
 5: Invalid list id
 6: Invalid query builder response
+8: Invalid Subscribers value (contains a non-integer subscriber ID)
 ```
 
 :::
@@ -513,14 +514,18 @@ The modern endpoint provides:
 | ListID    | Integer| No       | ID of the subscriber list             |
 | ImportType | String | Yes      | Import type: Copy, File, MySQL        |
 | ImportData | String | Conditional | CSV data (required if ImportType = Copy) |
-| ImportFileName | String | Conditional | File name (required if ImportType = File) |
+| ImportFileName | String | Conditional | File name within the imports directory (required if ImportType = File). Provide a bare filename only — any path components are stripped (`basename`), so a value containing `/` or `..` is reduced to just the filename. |
 | ImportMySQLHost | String | Conditional | MySQL host (required if ImportType = MySQL) |
 | ImportMySQLPort | Integer | Conditional | MySQL port (required if ImportType = MySQL) |
 | ImportMySQLDatabase | String | Conditional | MySQL database (required if ImportType = MySQL) |
 | ImportMySQLQuery | String | Conditional | MySQL query (required if ImportType = MySQL) |
 | FieldTerminator | String | No | Field delimiter (default: ,)          |
 | FieldEncloser | String | No  | Field encloser (default: ")           |
-| MappedFields | Object | No   | Field mapping (CustomFieldID: FieldName) |
+| MappedFields | Object | Conditional | Step 2 only. Maps each import column to a target field, **keyed by the column identifiers (`FIELD1`, `FIELD2`, …) returned in the Step 1 `ImportFields` response** — e.g. `{"FIELD1": "EmailAddress", "FIELD2": "5"}`. At least one column must map to `EmailAddress`. |
+
+::: warning Fixed in v5.9.3 (#2338)
+Prior to v5.9.3, `File`-type imports through the public API always failed at Step 2 with error code `8` ("EmailAddress field not mapped"), because the nested `MappedFields` keys were case-folded and no longer matched the uppercase `FIELD1`/`FIELD2`/… column identifiers. This is fixed — send `MappedFields` keyed by the `FIELDn` identifiers exactly as returned in the Step 1 `ImportFields` response (case is normalized for you).
+:::
 
 ::: code-group
 
@@ -1907,11 +1912,15 @@ curl -X POST https://example.com/api.php \
 
 | Parameter | Type   | Required | Description                           |
 |-----------|--------|----------|---------------------------------------|
-| Command   | String | Yes      | API command: `subscriber.tags.delete` |
-| SessionID | String | No       | Session ID obtained from login        |
-| APIKey    | String | No       | API key for authentication            |
-| ListID    | Integer| Yes      | ID of the subscriber list             |
-| TagID     | Integer| Yes      | ID of the tag to delete               |
+| Command          | String | Yes | API command: `subscriber.tags.delete` |
+| SessionID        | String | No  | Session ID obtained from login        |
+| APIKey           | String | No  | API key for authentication            |
+| SubscriberListID | Integer| Yes | ID of the subscriber list             |
+| TagIDs           | String | Yes | Comma-separated list of tag IDs to delete (e.g. `"12,15,20"`). Must contain at least one positive integer ID. |
+
+::: warning Behavior change (v5.9.3, #2337)
+`TagIDs` is now **required** and must contain at least one valid positive integer ID. In earlier versions, omitting `TagIDs` (or sending an empty value) silently deleted **every tag on the list**; it now returns error code `5` instead. Malformed values such as `","` or non-numeric IDs are also rejected. To remove tags, always send an explicit comma-separated ID list.
+:::
 
 ::: code-group
 
@@ -1921,31 +1930,30 @@ curl -X POST https://example.com/api.php \
   -d '{
     "Command": "subscriber.tags.delete",
     "SessionID": "your-session-id",
-    "ListID": 123,
-    "TagID": 789
+    "SubscriberListID": 123,
+    "TagIDs": "789,790"
   }'
 ```
 
 ```json [Success Response]
 {
-  "Success": true,
-  "ErrorCode": 0
+  "Success": true
 }
 ```
 
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": 1
+  "ErrorCode": 5,
+  "ErrorText": ["Tag ids are missing"]
 }
 ```
 
 ```txt [Error Codes]
 0: Success
-1: Missing ListID parameter
-2: Missing TagID parameter
-3: Invalid ListID
-4: Invalid TagID
+2: Missing SubscriberListID parameter
+4: Invalid SubscriberListID (list not found or not owned by you)
+5: Tag ids are missing (TagIDs absent, empty, or has no valid positive integer ID)
 ```
 
 :::

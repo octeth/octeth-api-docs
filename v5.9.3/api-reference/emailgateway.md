@@ -1269,11 +1269,13 @@ curl -X POST https://example.com/api.php \
 
 **Request Body Parameters:**
 
+Like the private [`emailgateway.addwebhook`](#create-webhook) endpoint, the public endpoint validates `WebhookURL` to prevent SSRF: the scheme must be `http` or `https`, and the host cannot be `localhost`, `127.0.0.1`, `::1`, or end in `.local`. (Since v5.9.3 / #2349 — the public endpoint previously accepted any well-formed URL; it now enforces the same restrictions as the private endpoint.)
+
 | Parameter     | Type   | Required | Description                                                    |
 |---------------|--------|----------|----------------------------------------------------------------|
 | SenderAPIKey  | String | Yes      | API key for the sender domain (Bearer token)                   |
 | Event         | String | Yes      | Event type: delivered, bounced, opened, clicked, unsubscribed, complained |
-| WebhookURL    | String | Yes      | Webhook URL to receive event notifications                     |
+| WebhookURL    | String | Yes      | Webhook URL to receive event notifications. Must be an `http`/`https` URL whose host is not `localhost` / `127.0.0.1` / `::1` / `*.local` |
 
 ::: code-group
 
@@ -1303,8 +1305,10 @@ curl -X POST https://example.com/api/v1/webhooks \
 
 ```txt [Error Codes]
 2: Event is missing
-3: Invalid event type or invalid webhook URL
+3: Invalid Event value, or malformed WebhookURL
 5: WebhookURL is missing
+6: WebhookURL must be a valid HTTP or HTTPS URL (rejects ftp://, gopher://, etc.)
+7: WebhookURL cannot point to localhost, loopback, or .local addresses
 13: Invalid SenderAPIKey
 429: Too many requests
 ```
