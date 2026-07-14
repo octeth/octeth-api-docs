@@ -380,6 +380,27 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     The rebuild runs `ALTER TABLE … ENGINE=InnoDB` fully online (`ALGORITHM=INPLACE, LOCK=NONE`) when possible; a table carrying a `FULLTEXT` index (the `ft_email` search index) cannot rebuild in place, so it falls back to `ALGORITHM=COPY, LOCK=SHARED` (reads continue, writes are briefly blocked) — still off the request path. Notes: existing tables start with a counter of `0` (their historical accumulation is unknown without `PROCESS`), so the mechanism protects against **future** accumulation; run `php system/artisan oempro:rebuild-subscriber-tables --dry-run` to preview which tables would be rebuilt.
 
+32. **Bounce Webhook Authentication**
+
+    ```bash
+    BOUNCE_WEBHOOK_AUTH_ENABLED=false   # Require a signature header on /system/bounce_webhook (default: OFF when absent; the shipped example enables it)
+    ```
+
+    `https://{host}/system/bounce_webhook` is internet-exposed by design — PMTA/Logstash/fluentd senders POST bounce events to it from external mail servers — and was historically **unauthenticated**, so anyone on the internet could forge hard bounces for arbitrary recipient addresses and corrupt bounce reporting.
+
+    When enabled, the endpoint requires a static HTTP header on every request:
+
+    ```
+    X-Octeth-Signature: <secret>
+    ```
+
+    where `<secret>` is derived deterministically as `sha256(OEMPRO_PASSWORD_SALT + ADMIN_API_KEY + OEMPRO_PASSWORD_SALT)` — the same derivation pattern as `CADDY_DOMAIN_VERIFY_CODE`, so no new secret is stored. The admin **Bounce Processing** page displays the current secret and a ready-to-copy sender configuration (Logstash `http` output) that already embeds the header. Both the `type=pmta` and `type=fluentd` processing paths are gated; a missing or invalid signature returns **HTTP 401** and nothing is processed (no bounce is registered, no stats row is written).
+
+    - **Upgrade behavior:** an **absent or empty** value is treated as **OFF**. Existing installs upgrade with their pre-existing `.oempro_env` (which has no such key), so already-configured senders keep working until an operator opts in.
+    - **Fresh installs:** the shipped `_dockerfiles/examples/.oempro_env.example` sets this to `true`, so new installations are protected by default — the sender config sample copied from the admin page already carries the signature header, so a newly-configured sender works out of the box.
+    - **Trade-off:** a static header is *not* a per-request HMAC. It does **not** stop replay of a captured valid POST, but — unlike a secret placed in the URL — it is **not written to access logs or referrers**, and it closes the unauthenticated-forgery vector entirely.
+    - **Rotation:** because the secret derives from `OEMPRO_PASSWORD_SALT` and `ADMIN_API_KEY`, rotating either value changes the secret and requires updating every configured sender with the new header.
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::
