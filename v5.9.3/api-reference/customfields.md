@@ -109,6 +109,18 @@ curl -X POST https://example.com/api.php \
 For choice-type fields (`Drop down`, `Multiple choice`, `Checkboxes`), the field's stored options are now **preserved** when you update the field without resending `OptionLabel`. In earlier versions, any update that omitted `OptionLabel` (for example, renaming the field while resending the required `FieldType`) silently erased all of its options. To change the options, send `OptionLabel` (with `OptionValue`/`OptionSelected`); to clear them, send an empty `OptionLabel` array or change the field to a non-choice type.
 :::
 
+::: warning Behavior change (v5.9.3, #2341 / #2492)
+`SubscriberListID` is now **immutable** on update — a custom field cannot be moved to a different list.
+
+A custom field is a real column on that list's subscriber table, and this endpoint only updates the field's metadata; it does not move or recreate the column. Honoring a changed `SubscriberListID` would leave the field's metadata pointing at a list whose subscriber table has no matching column. To have the field on a different list, create it there with `customfield.create`.
+
+The parameter is still accepted so existing integrations that echo the field's current list keep working. What changed:
+
+- Sending a `SubscriberListID` that names **a different list you own** now returns error `14` (previously the field was silently repointed, leaving it broken).
+- Sending a `SubscriberListID` that names **a list you do not own** now returns error `13` (previously it was accepted without an ownership check).
+- **Omitting** the parameter now preserves the field's existing list. In earlier versions it wrote an empty list ID, detaching the field so it appeared across all of your lists.
+:::
+
 **Request Body Parameters:**
 
 | Parameter | Type | Required | Description |
@@ -119,7 +131,7 @@ For choice-type fields (`Drop down`, `Multiple choice`, `Checkboxes`), the field
 | CustomFieldID | Integer | Yes | ID of the custom field to update |
 | FieldName | String | Yes | Name of the custom field |
 | FieldType | String | Yes | Type of field: "Single line", "Paragraph text", "Multiple choice", "Drop down", "Checkboxes", "Hidden field", "Date field", "Time field" |
-| SubscriberListID | Integer | No | ID of the subscriber list |
+| SubscriberListID | Integer | No | ID of the subscriber list. **Immutable** — must match the field's current list if sent; a different list returns error `14`, a list you do not own returns error `13`. Omit to leave the field's list unchanged. See the behavior-change note above. |
 | DefaultValue | String | No | Default value for the custom field |
 | ValidationMethod | String | No | Validation method: "Disabled", "Numbers", "Letters", "Numbers and letters", "Email address", "URL", "Date", "Time", "Custom" |
 | ValidationRule | String | Conditional | Validation rule (required if ValidationMethod is "Date", "Time", or "Custom") |
@@ -178,6 +190,8 @@ curl -X POST https://example.com/api.php \
 10: Invalid IsRequired value
 11: Invalid IsUnique value
 12: Invalid IsGlobal value
+13: Invalid subscriber list id (the list does not exist or does not belong to you)
+14: Custom field list cannot be changed. Create the custom field on the target list instead.
 1000: Merge tag alias code has been set for another custom field
 1001: Merge tag alias code includes invalid characters
 1002: Merge tag alias cannot use a reserved subscriber field name
