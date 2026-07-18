@@ -419,6 +419,33 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     A direct client (untrusted immediate peer) can never influence `REMOTE_ADDR`, so the admin IP allow-list can no longer be bypassed with a forged `X-Forwarded-For`. Loopback-originated requests (the internal health-check/cron probes) are exempt from the allow-list, so enabling it no longer breaks `system.health.check`. Note: audit/login rows written by an earlier version while behind a proxy may still contain a chain string in their IP column; the fix stops that going forward but does not rewrite historical rows.
 
+34. **New-List Suppression Default & Synchronous Import Threshold**
+
+    ```bash
+    NEW_LIST_DEFAULT_ADD_TO_SUPPRESSION_LIST=false   # opt-outs on NEW lists feed the suppression lists by default (default: false)
+    RUN_IMPORT_IN_SYNC_FOR_SUBSCRIBERS_LESS_THAN=50  # imports at or below this row count run synchronously (default: 50)
+    ```
+
+    Both of these are read with a code-level default, so they apply even when the key is absent from your `.oempro_env`. Both defaults changed in v5.9.3, which means an installation that never set them will see the new behaviour after upgrading.
+
+    **`NEW_LIST_DEFAULT_ADD_TO_SUPPRESSION_LIST`** controls the initial value of the two per-list suppression settings (`OptOutAddToSuppressionList` / `OptOutAddToGlobalSuppressionList`) when a **new** subscriber list is created without an explicit value for them. With `false`, new lists start with both set to *No*: an unsubscribe from such a list does not automatically add the address to the list-level or global suppression list. Set it to `true` to restore the pre-v5.9.3 behaviour.
+
+    The scope is narrow but easy to misread: this affects **only lists created after the setting takes effect**. Existing lists store these settings as their own columns and are never rewritten by this key, so changing it neither breaks nor retroactively fixes any list you already have. Each list's setting also remains editable in that list's settings page. If your deliverability or compliance posture depends on new lists feeding your suppression lists automatically, set this explicitly rather than relying on the default.
+
+    **`RUN_IMPORT_IN_SYNC_FOR_SUBSCRIBERS_LESS_THAN`** sets the row count at or below which a CSV import through `POST api/v1/subscribers.import` is processed **synchronously**, inline within the API request, instead of being queued. Raising the default from 10 to 50 means imports of 11–50 rows now return `ImportType: sync` and the HTTP request blocks until the import finishes. If you have an API client with timeout assumptions built around the asynchronous path, either lower this value or extend that client's timeout.
+
+35. **Email Gateway Recipient Resolution Timeout**
+
+    ```bash
+    SENDEMAIL_RECIPIENT_RESOLUTION_TIMEOUT=30   # Total timeout (seconds) for resolving a list send's recipients (default: 30)
+    ```
+
+    When `emailgateway.sendemail` is called with a list rather than explicit recipients, it resolves that audience through an internal call to the query builder. This setting bounds that call, and is applied to both the connection and the total execution time.
+
+    The value was previously hard-coded at `5` seconds. That became visible in v5.9.3: a failed resolution now aborts the send with HTTP 502 rather than silently returning an empty `MessageID`, so on a large list a slow-but-healthy resolution turned into a failed send instead of a silent no-op. The default of 30 seconds gives large lists room to resolve.
+
+    It is deliberately a separate setting from `SUBSCRIBER_BROWSE_QUERY_TIMEOUT`, even though both bound the same backend. The browse page is an interactive render that an operator may reasonably want to fail fast; this is a send path, where failing fast drops mail. Tuning one should not silently change the other. A value of `0` or below is ignored and the 30-second default is used instead, because the underlying HTTP client treats a zero timeout as *wait forever*.
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::

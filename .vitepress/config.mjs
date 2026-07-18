@@ -308,6 +308,7 @@ export default defineConfig({
                                 {text: 'Getting Started', link: '/v5.9.3/api-reference/getting-started'},
                                 {text: 'Authorization', link: '/v5.9.3/api-reference/authorization'},
                                 {text: 'Error Handling', link: '/v5.9.3/api-reference/error-handling'},
+                                {text: 'Behavior Changes in v5.9.3', link: '/v5.9.3/api-reference/behavior-changes'},
                                 {text: 'Admin', link: '/v5.9.3/api-reference/admin'},
                                 {text: 'Reports', link: '/v5.9.3/api-reference/reports'},
                                 {text: 'Auto Responders', link: '/v5.9.3/api-reference/autoresponders'},

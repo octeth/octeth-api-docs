@@ -30,6 +30,13 @@ Release in progress. Changelog will be updated upon release.
 
 - (To be documented)
 
+### Upgrade Notes
+
+- **Reverse Proxies and Load Balancers** - If you run an external reverse proxy or load balancer in front of Octeth at a non-loopback address, set `TRUSTED_PROXIES` in `.oempro_env` **before upgrading**. Without it, Octeth records the proxy's own address as the visitor IP for every request, which makes the admin "Authorized IP Addresses" list stop matching (you can lock yourself out), collapses per-IP rate limits, and attributes all opens, clicks and geographic reporting to a single location. Installations using only the bundled proxy are unaffected, as it runs on loopback and is always trusted
+- **New List Suppression Default** - Newly created subscriber lists no longer add opt-outs to your suppression lists by default. Existing lists are unchanged, and each list's setting remains editable in its own settings page. If you rely on new lists feeding your suppression lists automatically, set `NEW_LIST_DEFAULT_ADD_TO_SUPPRESSION_LIST=true` in `.oempro_env`
+- **Synchronous Import Threshold** - CSV imports are now processed synchronously up to 50 subscribers, raised from 10. Imports in the 11-50 range now return `ImportType: sync` and the API request blocks until the import finishes, rather than returning immediately. Adjust with `RUN_IMPORT_IN_SYNC_FOR_SUBSCRIBERS_LESS_THAN`
+- **API Behavior Changes** - This release turns several API calls that previously returned fabricated success into explicit errors, and changes the shape of a few responses. If you maintain an integration, review the [API Behavior Changes](/v5.9.3/api-reference/behavior-changes) page and work through its upgrade checklist
+
 ### Deprecations
 
 None
