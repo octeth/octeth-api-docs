@@ -805,9 +805,19 @@ Searches and filters website tracking events and subscriber activity events acro
 | DateFrom            | String  | No       | Start date for filtering (Y-m-d format, e.g., 2025-11-01)                                       |
 | DateTo              | String  | No       | End date for filtering (Y-m-d format, e.g., 2025-11-30)                                         |
 | WebsiteEventUUID    | String  | No       | Filter by specific website event UUID                                                            |
-| OrderField          | String  | No       | Field to sort by (e.g., EventID, CreatedAt). Default: EventID                                   |
-| OrderType           | String  | No       | Sort direction: `ASC` or `DESC` (default: DESC)                                                  |
+| OrderField          | String  | No       | Field to sort by (e.g., EventID, CreatedAt). Default: EventID. Must be sent together with `OrderType` — see the sorting note below. |
+| OrderType           | String  | No       | Sort direction: `ASC` or `DESC` (default: DESC). Must be sent together with `OrderField` — see the sorting note below. |
 | IncludeProperties   | Boolean | No       | Include event properties/metadata (default: true)                                                |
+
+::: warning Sorting parameters are coupled and format-filtered (v5.9.3, #2359)
+`OrderField` and `OrderType` are validated for **shape**, not against a list of sortable columns, and they are validated **as a pair**:
+
+- **Both must be present and non-empty.** Sending `OrderField` alone, without `OrderType`, silently yields the default ordering (`EventID DESC`) — this is the most common surprise here. Always send both.
+- `OrderField` must be a plain column identifier (letters, digits and underscores, starting with a letter or underscore) and `OrderType` must be `ASC` or `DESC`. If either fails, the pair is discarded and ordering falls back to `EventID DESC`.
+- Because there is no column allow-list, a value that *is* identifier-shaped but names a column that does not exist is passed through to the query and surfaces as a **database error** rather than falling back.
+
+The silent-fallback cases return HTTP `200` with `Success: true` and no error code. If results come back in an unexpected order after upgrading, your sort parameters are being rejected silently — confirm you are sending both of them.
+:::
 
 ::: code-group
 
@@ -1399,8 +1409,16 @@ Retrieves a paginated list of users with their email sending activity status. Us
 | SearchKeyword      | String  | No       | Search by username, email, first name, last name, or company name                               |
 | RecordsPerRequest  | Integer | No       | Number of records per request (0-1000, default: 25, 0 for all)                                 |
 | RecordsFrom        | Integer | No       | Offset for pagination (default: 0)                                                               |
-| OrderField         | String  | No       | Field to sort by: `Username`, `CompanyName`, `LastActivityDateTime`, `LastSendingActivityDateTime`, `AccountStatus`, `UserActivityStatus` |
-| OrderType          | String  | No       | Sort direction: `ASC` or `DESC`                                                                  |
+| OrderField         | String  | No       | Field to sort by: `Username`, `CompanyName`, `LastActivityDateTime`, `LastSendingActivityDateTime`, `AccountStatus`, `UserActivityStatus`. Any other value is silently ignored — see the sorting note below. |
+| OrderType          | String  | No       | Sort direction: `ASC` or `DESC` (default: `ASC`). Coerced, not validated — any value other than `DESC` is treated as `ASC`. |
+
+::: warning Sorting is restricted to an allow-list (v5.9.3, #2321)
+`OrderField` accepts only the six columns listed above. A value outside that list is **dropped silently**; if no valid column remains, the endpoint falls back to its default ordering (`UserActivityStatus DESC`, then last activity descending).
+
+`OrderType` is coerced rather than validated: any value that is not `DESC` — including a typo or an unrelated string — becomes `ASC`.
+
+Neither case returns an error. The response is HTTP `200` with `Success: true`, just ordered differently than requested. If results come back in an unexpected order after upgrading, check your `OrderField` against the list above.
+:::
 
 ::: code-group
 

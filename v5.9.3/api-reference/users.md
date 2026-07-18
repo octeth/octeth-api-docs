@@ -1010,14 +1010,23 @@ No specific error codes for this endpoint
 | APIKey    | String | No       | API key for authentication            |
 | RecordsPerRequest | Integer | No | Number of records per page (default: 25) |
 | RecordsFrom | Integer | No | Starting record offset (default: 0) |
-| OrderField | String | No | Field to order by |
-| OrderType | String | No | Order direction: 'ASC' or 'DESC' |
+| OrderField | String | No | Field to order by (default: `UserID`). Must be a plain column identifier — letters, digits and underscores only, starting with a letter or underscore. Pipe-separate for multi-column sort (e.g. `AccountStatus\|UserID`). See the sorting note below. |
+| OrderType | String | No | Order direction: 'ASC' or 'DESC' (default: `ASC`). Pipe-separate to match a multi-column `OrderField`. See the sorting note below. |
 | RelUserGroupID | Mixed | No | User group ID, array of IDs, or special value ('Online', 'Enabled', 'Disabled', 'Trusted', 'Untrusted') |
 | RelUserCategoryID | Integer | No | User category ID (-1 for uncategorized) |
 | SearchField | String | No | Field to search in |
 | SearchKeyword | String | No | Search keyword |
 | ReturnStats | Boolean | No | Set to true to include statistics |
 | IncludeLimitUtilization | Boolean | No | Set to true to include limit utilization data |
+
+::: warning Sorting parameters are format-filtered (v5.9.3)
+`OrderField` and `OrderType` are validated for **shape**, not against a list of sortable columns. Each pipe-separated segment of `OrderField` must be a plain identifier, and each segment of `OrderType` must be `ASC` or `DESC`.
+
+- A value containing anything else (backticks, quotes, spaces, parentheses or any other metacharacter) is **silently discarded**. When that happens the pair is reset together — ordering falls back to `UserID ASC` even if only one of the two parameters was malformed. The response is still HTTP `200` with `Success: true` and no error code.
+- Because there is no column allow-list, a value that *is* identifier-shaped but names a column that does not exist (for example `OrderField: "Bogus"`) is passed through to the query and surfaces as a **database error** — it does not fall back to the default.
+
+Neither case returns a validation error. If results come back in an unexpected order after upgrading, your sort parameter is being rejected silently — check it against the shape rules above.
+:::
 
 ::: code-group
 

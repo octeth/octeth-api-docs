@@ -189,6 +189,7 @@ curl -X POST https://example.com/api.php \
 | RetrieveTags            | Boolean | No       | Include campaign tags (default: false)                               |
 | SplitABTestStatistics   | Boolean | No       | Include A/B test statistics (default: false)                         |
 | RetrieveRecipientDomains| Boolean | No       | Include recipient domain statistics (default: true)                  |
+| FailOnNotFound          | Boolean | No       | Return an error when the campaign does not exist or is not owned by the authenticated user (default: false). When omitted or false, a missing campaign is **not** an error: the response is `Success: true` with an empty `Campaign` array. |
 
 ::: code-group
 
@@ -229,14 +230,35 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": 2
+  "ErrorCode": 3
 }
 ```
 
 ```txt [Error Codes]
 0: Success
-2: Campaign not found or invalid CampaignID
+2: Invalid CampaignID (non-numeric)
+3: Campaign not found or doesn't belong to user - only returned when FailOnNotFound=true
 ```
+
+::: warning Campaign Not Found Is Not An Error By Default
+Unless `FailOnNotFound=true` is passed, requesting a campaign that does not exist (or that belongs to another user) returns:
+
+```json
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Campaign": []
+}
+```
+
+Callers that treat `Success: true` as "the campaign exists" must also check that `Campaign` is a non-empty object, or pass `FailOnNotFound=true` to get `ErrorCode 3` instead.
+:::
+
+::: warning ParentCampaign Is Absent When There Is No Parent
+`ParentCampaign` is only added to the response when the campaign is an auto-resend **and** its parent campaign was found and is owned by the authenticated user. Otherwise the key is **omitted entirely** — it is not returned as `null`. Test with a key-existence check (`isset()` / `array_key_exists()` / `'ParentCampaign' in response.Campaign`), not a null comparison.
+
+Note that the sibling `AutoResendCampaign` key behaves differently: it is always present when applicable and returns an empty array (`[]`) when there is no auto-resend campaign, rather than being omitted.
+:::
 
 :::
 
@@ -482,6 +504,12 @@ When the `ABTesting` object is provided, the campaign is configured as an A/B sp
 - Each variation must have a distribution of at least 1%.
 - To disable A/B testing on a campaign, pass an empty `ABTesting` parameter.
 - The system randomly distributes recipients across variations during queue generation, so each subscriber receives exactly one variation.
+:::
+
+::: warning Untrusted Accounts Are Held At Pending Approval
+When the campaign's owner has a `ReputationLevel` of `Untrusted`, a `Draft` → `Ready` transition is rewritten to `Pending Approval` and an approval notification is sent to the administrators. The campaign is not queued for sending until an administrator approves it.
+
+The API still returns `Success: true` in this case — the response does **not** indicate that the status was changed from the one requested. Callers must not assume the requested `CampaignStatus` took effect; re-read the campaign with `campaign.get` to confirm the resulting status.
 :::
 
 ::: code-group

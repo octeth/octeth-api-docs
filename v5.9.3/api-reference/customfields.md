@@ -131,7 +131,7 @@ The parameter is still accepted so existing integrations that echo the field's c
 | CustomFieldID | Integer | Yes | ID of the custom field to update |
 | FieldName | String | Yes | Name of the custom field |
 | FieldType | String | Yes | Type of field: "Single line", "Paragraph text", "Multiple choice", "Drop down", "Checkboxes", "Hidden field", "Date field", "Time field" |
-| SubscriberListID | Integer | No | ID of the subscriber list. **Immutable** — must match the field's current list if sent; a different list returns error `14`, a list you do not own returns error `13`. Omit to leave the field's list unchanged. See the behavior-change note above. |
+| SubscriberListID | Integer | No | ID of the subscriber list. **Immutable** — must match the field's current list if sent; a different list returns error `14`, a list you do not own returns error `13`. Omit to leave the field's list unchanged. A value that is not a positive integer (for example `"abc"`, `0`, `-1`, or an array) fails the format check and is silently ignored with `Success: true` — neither `13` nor `14` is returned. See the behavior-change note above. |
 | DefaultValue | String | No | Default value for the custom field |
 | ValidationMethod | String | No | Validation method: "Disabled", "Numbers", "Letters", "Numbers and letters", "Email address", "URL", "Date", "Time", "Custom" |
 | ValidationRule | String | Conditional | Validation rule (required if ValidationMethod is "Date", "Time", or "Custom") |
@@ -395,6 +395,14 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+::: warning Behavior change (v5.9.3, #2378)
+The documented `Years` requirement for `Date field` is now **enforced**. Creating a field with `FieldType` set to `Date field` without a `Years` value returns error `5`. In earlier versions the validation was a dead no-op, so the field was silently created with a default year range of the current year minus 10 through the current year plus 10.
+
+Both an omitted `Years` and an empty string count as missing. If you relied on the old implicit default, send the range explicitly (for example `"Years": "2015-2035"`).
+
+This applies at creation time only — existing date fields are unaffected, and `global.customfield.update` is unchanged.
 :::
 
 **Request Body Parameters:**

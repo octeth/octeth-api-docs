@@ -256,6 +256,24 @@ curl -X POST https://example.com/api.php \
 
 \* **Note:** Either `EmailAddresses` or `EmailAddressesBulk` must be provided. Both can be provided simultaneously.
 
+**Response Counters:**
+
+The response returns three fields: `TotalImported`, `TotalFailed` and `FailedEmailAddresses`.
+
+- `TotalImported` counts **only rows actually persisted** to the suppression list.
+- `TotalFailed` counts **only malformed email addresses** — inputs that fail `FILTER_VALIDATE_EMAIL`. It does not mean "everything that was not imported". Each such address is also echoed back in `FailedEmailAddresses`.
+
+::: warning Counters may not add up to the number of addresses you submitted
+`TotalImported + TotalFailed` can be **less than** the number of addresses in your request. Four kinds of input increment neither counter:
+
+1. **Blank lines** in `EmailAddressesBulk` (a trailing newline, or blank lines between addresses) are skipped before any counting.
+2. **Duplicates** — an address already present in the target suppression list is skipped without being inserted.
+3. **Whitelisted** addresses — skipped without being inserted.
+4. **A failed database insert** — a genuine write failure is silently not counted. This is a known caveat: such an address is neither reported in `TotalImported` nor in `TotalFailed` / `FailedEmailAddresses`.
+
+If your integration reconciles the response against the number of addresses you sent (for example asserting `TotalImported + TotalFailed == count(addresses)`), that check needs updating — treat `TotalImported` as "newly suppressed", `TotalFailed` as "rejected as malformed", and the remainder as "already suppressed, whitelisted, blank, or not written".
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -271,13 +289,23 @@ curl -X POST https://example.com/api.php \
   }'
 ```
 
-```json [Success Response]
+```json [Success Response — all 5 new and valid]
 {
   "Success": true,
   "ErrorCode": 0,
   "TotalImported": 5,
   "TotalFailed": 0,
   "FailedEmailAddresses": []
+}
+```
+
+```json [Success Response — with skipped addresses]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "TotalImported": 2,
+  "TotalFailed": 1,
+  "FailedEmailAddresses": ["not-an-email"]
 }
 ```
 

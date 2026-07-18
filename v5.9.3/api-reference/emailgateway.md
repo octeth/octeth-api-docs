@@ -1827,8 +1827,17 @@ curl -X POST https://example.com/api/v1/email \
 36: Invalid SubscriberID
 37: Invalid JourneyID
 38: Invalid ActionID
+39: Failed to resolve list recipients (returned with HTTP 502, not HTTP 200)
 429: Email send rate limit exceeded
 ```
+
+::: warning Error code 39 is returned with HTTP 502
+Unlike every other error code on this endpoint — which is returned inside an `Errors` array with an HTTP `200` status — code `39` is returned with HTTP status **`502`**. It means the recipient set behind `TargetListID` could not be resolved (the internal recipient-resolution request failed, timed out, returned a non-2xx status, or returned no usable query).
+
+This condition is **not transient**: retrying the same request with the same unresolvable recipient set fails identically. Treat it as a permanent failure for that payload and investigate the list/segment rather than retrying in a loop.
+
+Previously this same condition returned HTTP `200` with `{"MessageID": []}` — a silent drop in which the caller was told the send had succeeded while no email was queued. Callers that only checked for a `200` status should now also handle `502`.
+:::
 
 :::
 
@@ -1923,7 +1932,16 @@ curl -X POST https://example.com/api.php \
 6: Invalid user account
 7: User is not trusted or not enabled
 8: Phone verification required but not completed (auth) / Recipient email address is suppressed (send)
+9: Maximum number of TO addresses exceeded
+10: Maximum number of CC addresses exceeded
+11: Maximum number of BCC addresses exceeded
+12: Email send rate limit reached
+13: Email delivery credit limit reached
 ```
+
+::: tip Rejection reasons on the send path
+Error codes `9`-`13` are returned on the send (mail-fetch) path with `Success: false` and the corresponding `SMTPResponse` string. Previously these rejections returned an empty `ErrorCode: []`, so a caller could not tell why a relay attempt had been refused — the code now identifies the specific limit that was hit.
+:::
 
 ::: tip Phone verification gate
 On the auth path, error code `8` is returned only when `PHONE_VERIFICATION_REQUIRED_TO_SEND_EG_EMAILS` is `true` and the owner user's `PhoneVerified` is not `1`. When the flag is `false` (default), the phone-verification check is skipped — matching the `Send Email via API` endpoint.

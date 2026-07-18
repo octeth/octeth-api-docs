@@ -96,7 +96,7 @@ curl -X POST https://example.com/api.php \
 | APIKey    | String | No       | API key for authentication            |
 | SegmentID | Integer | Yes | ID of the segment to update |
 | SegmentName | String | Yes | Name of the segment |
-| SubscriberListID | Integer | No | ID of the subscriber list (to move segment) |
+| SubscriberListID | Integer | No | ID of the subscriber list (to move segment). Must be a numeric ID of a list **owned by the authenticated user** — otherwise the update aborts with error code `6`. Non-numeric values (e.g. `12abc`, `0`) are silently ignored and the segment keeps its current list. |
 | SegmentOperator | String | No | Logical operator for combining rules: `and` or `or` |
 | SegmentRuleField | Array | No | Array of rule field names (old style) |
 | SegmentRuleOperator | Array | No | Array of rule operators (old style) |
@@ -143,8 +143,17 @@ curl -X POST https://example.com/api.php \
 2: Missing segment name
 4: Invalid segment id
 5: Invalid segment operator
+6: Invalid subscriber list id
 ```
 
+:::
+
+::: warning `SubscriberListID` ownership
+When `SubscriberListID` is supplied, the target list is looked up scoped to the authenticated user. A list belonging to another account is therefore indistinguishable from one that does not exist — both return `Success: false` with `ErrorCode: [6]` and `ErrorText: ["Invalid subscriber list id"]`, and the update aborts before any change is written.
+
+This response is returned with **HTTP 200**, like every other error from this legacy endpoint — always branch on the `Success` / `ErrorCode` fields in the body, not on the HTTP status.
+
+Non-numeric values (`"12abc"`, `"0"`) fail the numeric guard and are **silently ignored**: no error is raised and the segment keeps its existing list. Ownership of the segment itself is checked separately and reports error code `4` (`Invalid segment id`).
 :::
 
 ## Copy Segments

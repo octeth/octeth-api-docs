@@ -153,7 +153,26 @@ curl -X POST https://example.com/api.php \
 | LogoType      | String  | No       | Logo MIME type (e.g., "image/png", "image/jpeg")                      |
 | LogoSize      | Integer | No       | Logo file size in bytes                                               |
 | LogoFileName  | String  | No       | Original logo filename                                                |
-| ThemeSettings | String  | No       | Theme CSS settings in format: `tag````value\ntag````value` (newline-separated) |
+| ThemeSettings | String  | No       | Theme CSS settings in format: `tag````value\ntag````value` (newline-separated). **Omit (or send an empty string) to preserve the theme's existing settings unchanged** — see below. |
+
+**Partial Update Semantics:**
+
+`theme.update` is a partial update: every optional parameter you omit keeps its stored value. This includes `ThemeSettings`.
+
+- **`ThemeSettings` omitted or empty** — the theme's currently stored settings are carried forward and re-persisted as-is. Nothing is recalculated, and no tag is reset. This is the correct way to change only a theme's name, product name, logo or template.
+- **`ThemeSettings` supplied** — the settings are rebuilt from scratch against the CSS tag list of the effective template (the `Template` you supplied, or the theme's current template if you omitted it). Within that rebuild:
+  - Blank lines and malformed lines (any line that does not contain both a tag and a value separated by `||||`) are skipped.
+  - Any tag defined by the template but absent from your payload falls back to that tag's `Default` value.
+
+::: warning There is no way to reset a theme to its defaults through this endpoint
+Because omitting `ThemeSettings` preserves the stored settings, and supplying it only defaults the tags you leave out of an otherwise-supplied payload, `theme.update` offers no "reset everything to defaults" path. To restore defaults for the full tag set, send a `ThemeSettings` payload that omits the tags you want defaulted.
+:::
+
+::: info Behavior change
+Previously, omitting `ThemeSettings` did **not** preserve the stored settings. In the common partial-update case — where `Template` was omitted too, e.g. simply renaming a theme — the stored settings were **wiped** to an empty value. (Only in the narrower case where `Template` *was* supplied while `ThemeSettings` was omitted did each tag fall back to its `Default`.)
+
+This is strictly a fix, but it is still a behavior change for integrations that worked around the old wipe by always resending the complete settings payload on every update. That compensation is no longer necessary — you can now send just the fields you intend to change.
+:::
 
 ::: code-group
 

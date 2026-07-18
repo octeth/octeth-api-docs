@@ -448,6 +448,25 @@ When `EmailID` or `ISP` is passed, `JourneyStats.AggregatedEmailActions` is comp
 
 :::
 
+::: warning Strict date validation
+`StartDate` and `EndDate` must be strictly zero-padded `YYYY-MM-DD`. The value is parsed and round-tripped back to `Y-m-d` and must match the input character-for-character — anything else is **rejected with HTTP 422** and error code `4` (`StartDate`) and/or `5` (`EndDate`). Errors accumulate, so a request with two bad dates returns both codes in one response.
+
+| Value | Result | Why |
+|-------|--------|-----|
+| `2026-01-05` | Accepted | Valid, zero-padded calendar date |
+| `2026-02-31` | Rejected | Day overflows into March — previously rolled over silently |
+| `2026-13-01` | Rejected | Month out of range |
+| `0000-00-00` | Rejected | MySQL-style zero date, not a real calendar date |
+| `2026-1-5` | Rejected | Month and day are not zero-padded |
+| `2026-01-05 ` | Rejected | Trailing whitespace — `/api.php` does not trim inputs |
+| ` 2026-01-05` | Rejected | Leading whitespace — same reason |
+| `20260105` | Rejected | Missing `-` separators |
+
+Omitted bounds are still defaulted (`StartDate` → 30 days ago, `EndDate` → today) and are **then** range-checked, so passing a future `StartDate` with no `EndDate` now returns code `6` instead of an empty result set. The comparison is date-granular, so a same-day `StartDate`/`EndDate` never trips it.
+
+If you build date strings by concatenation (e.g. `$y.'-'.$m.'-'.$d` without padding) or pass MySQL zero dates straight through, audit those call sites before upgrading.
+:::
+
 ## List Journeys
 
 <Badge type="info" text="GET" /> `/api/v1/journeys`
@@ -560,6 +579,25 @@ curl -X GET https://example.com/api/v1/journeys \
 6: StatsStartDate must be before StatsEndDate
 ```
 
+:::
+
+::: warning Strict date validation
+`StatsStartDate` and `StatsEndDate` must be strictly zero-padded `YYYY-MM-DD`. The value is parsed and round-tripped back to `Y-m-d` and must match the input character-for-character — anything else is **rejected with HTTP 422** and error code `4` (`StatsStartDate`) and/or `5` (`StatsEndDate`). Errors accumulate, so a request with two bad dates returns both codes in one response.
+
+| Value | Result | Why |
+|-------|--------|-----|
+| `2026-01-05` | Accepted | Valid, zero-padded calendar date |
+| `2026-02-31` | Rejected | Day overflows into March — previously rolled over silently |
+| `2026-13-01` | Rejected | Month out of range |
+| `0000-00-00` | Rejected | MySQL-style zero date, not a real calendar date |
+| `2026-1-5` | Rejected | Month and day are not zero-padded |
+| `2026-01-05 ` | Rejected | Trailing whitespace — `/api.php` does not trim inputs |
+| ` 2026-01-05` | Rejected | Leading whitespace — same reason |
+| `20260105` | Rejected | Missing `-` separators |
+
+Omitted bounds are still defaulted (`StatsStartDate` → 30 days ago, `StatsEndDate` → today) and are **then** range-checked, so passing a future `StatsStartDate` with no `StatsEndDate` now returns code `6` instead of an empty result set. The comparison is date-granular, so a same-day `StatsStartDate`/`StatsEndDate` never trips it.
+
+If you build date strings by concatenation (e.g. `$y.'-'.$m.'-'.$d` without padding) or pass MySQL zero dates straight through, audit those call sites before upgrading. Note that this validation runs even when `SkipStats=1`.
 :::
 
 ## List SendEmail Actions Across Journeys

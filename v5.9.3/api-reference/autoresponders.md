@@ -154,6 +154,12 @@ autorespondertriggervalue: Missing required parameter autorespondertriggervalue 
 
 Retrieves detailed information about a specific autoresponder including configuration, trigger settings, and optionally performance statistics. The autoresponder must be owned by the authenticated user. `RepeatSettings` is returned as a decoded object (or `null` when never set).
 
+::: warning Behavior change (v5.9.3, #2367)
+An `AutoResponderID` that does not exist, or that belongs to another user, now returns `Success: false` with error code `2`. Earlier versions returned `Success: true` with a fabricated, near-empty `AutoResponder` object, so an integration that treated a `200` response as a valid record was reading placeholder data.
+
+Lookup is scoped by owner, so a non-owned ID is deliberately indistinguishable from a missing one — both produce the same error. This prevents callers from enumerating other users' autoresponder IDs.
+:::
+
 **Request Body Parameters:**
 
 | Parameter           | Type    | Required | Description                                                                                      |
@@ -228,6 +234,7 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 autoresponderid: Missing required parameter autoresponderid
+2: Auto responder not found or not owned by the authenticated user
 ```
 
 :::
