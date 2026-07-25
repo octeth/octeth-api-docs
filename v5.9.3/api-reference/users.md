@@ -1783,6 +1783,7 @@ curl -X POST https://example.com/api.php \
 1: Missing UserID parameter
 2: Invalid UserID (must be a positive integer)
 3: User not found
+4: A feature-usage count query failed (usage temporarily unavailable — do not treat missing counts as zero)
 ```
 
 :::
