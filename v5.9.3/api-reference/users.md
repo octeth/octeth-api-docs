@@ -1710,3 +1710,169 @@ This endpoint is deprecated and will be removed in a future version. There is no
 - **Status:** DEPRECATED - No replacement available
 :::
 
+
+## Get Per-User Usage and Feature Adoption
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns a single account's current usage figures and which features it actually uses, in one strictly **read-only** call — safe to poll on a billing-page render or to gate a plan downgrade. Unlike `user.get`, it performs **no writes**: it never materialises a `oempro_users_payment_log` period and never triggers the active-subscriber-count write-through.
+
+The response reports the two limit-reset periods **separately** because they run on different clocks: `LimitEmailSendPerPeriod` resets on the calendar month, `LimitCampaignSendPerPeriod` on the payment-log window. Each usage figure carries its own freshness ceiling (`MaxStalenessSeconds`). The active-subscriber count **excludes archived lists** (`Definition: "SubscribedNotHardBounced,ArchivedExcluded"`).
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                  |
+|-----------|---------|----------|----------------------------------------------|
+| Command   | String  | Yes      | API command: `user.usage.get`                |
+| AdminApiKey | String | Yes    | Admin API key for authentication             |
+| UserID    | Integer | Yes      | Target user account ID                       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "user.usage.get",
+    "AdminApiKey": "your-admin-api-key",
+    "UserID": 42
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserID": 42,
+  "Periods": {
+    "EmailSend":    { "Type": "CalendarMonth", "Start": "2026-07-01 00:00:00", "End": "2026-07-31 23:59:59" },
+    "CampaignSend": { "Type": "PaymentLog", "Start": "2026-07-08", "End": "2026-08-08", "Derived": true }
+  },
+  "Usage": {
+    "ActiveSubscribers":     { "Value": 33, "Source": "oempro_subscriber_lists.ActiveSubscriberCount", "AsOf": null, "MaxStalenessSeconds": 300, "Definition": "SubscribedNotHardBounced,ArchivedExcluded" },
+    "EmailsSentInPeriod":    { "Value": 0, "Source": "CampaignsEgTransactionalSum", "MaxStalenessSeconds": 120, "Period": "EmailSend" },
+    "CampaignsSentInPeriod": { "Value": 0, "Source": "oempro_users_payment_log.CampaignsSent", "MaxStalenessSeconds": 0, "Period": "CampaignSend", "Derived": true }
+  },
+  "Features": {
+    "Campaigns":           { "InUse": true, "Count": 23 },
+    "Journeys":            { "InUse": true, "Count": 23, "ActiveCount": 0 },
+    "SendingDomains":      { "InUse": true, "Count": 2 },
+    "EmailGatewayAPIKeys": { "InUse": true, "Count": 1 },
+    "UserAPIKeys":         { "InUse": true, "Count": 1 },
+    "AutoResponders":      { "InUse": true, "Count": 4 },
+    "Lists":               { "InUse": true, "Count": 7 },
+    "Segments":            { "InUse": true, "Count": 4 }
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [1]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing UserID parameter
+2: Invalid UserID (must be a positive integer)
+3: User not found
+```
+
+:::
+
+**Notes:**
+- `Periods.CampaignSend.Derived` is `true` when no payment-log row covers today yet; the window was computed read-only and the backend has **not** materialised it (treat as not-yet-authoritative). `CampaignsSentInPeriod.Value` is `0` in that case.
+- `ActiveSubscribers.AsOf` is `null` because the denormalized count has no last-calculated timestamp; only the `MaxStalenessSeconds` ceiling is known.
+- Feature counts exclude soft-deleted rows: `SendingDomains` and `EmailGatewayAPIKeys` exclude `Status = 'Deleted'`. `Journeys.ActiveCount` counts `Status = 'Enabled'`.
+- `EmailsSentInPeriod` equals the value `LimitEmailSendPerPeriod` enforcement uses for the same calendar-month window.
+
+## Get Bulk User Usage Metering
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns date-ranged usage for **many users** in a single call — a per-day "emails sent" series plus the current active-subscriber count per account — for a daily billing/metering job. The emails-sent figure uses the same enforcement-backed source as `user.usage.get` (campaign + Email Gateway + auto-responder sends), so display and metering agree. It is bulk (a fixed number of grouped queries regardless of user count) and issues no Redis `KEYS` scan.
+
+Absent periods are **omitted** (never padded with synthesized zeros) so a consumer can distinguish "no activity recorded" from "genuinely zero." The active-subscriber count **excludes archived lists**.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                                                 |
+|-------------|--------|----------|-----------------------------------------------------------------------------|
+| Command     | String | Yes      | API command: `users.usage.get`                                              |
+| AdminApiKey | String | Yes      | Admin API key for authentication                                            |
+| StartDate   | String | Yes      | Range start. Accepts the same formats as `user.stats` (e.g. `YYYY-MM-DD`)   |
+| EndDate     | String | Yes      | Range end. Same formats as `StartDate`                                      |
+| UserIDs     | String | No       | CSV or array of user IDs to scope to. Omit for **all** users                |
+| Aggregation | String | No       | Period bucketing. Possible values: `daily` (default), `weekly`, `monthly`, `yearly` |
+| Metrics     | String | No       | CSV of metrics. Only `sent_emails` is supported (default)                   |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "users.usage.get",
+    "AdminApiKey": "your-admin-api-key",
+    "UserIDs": "1,2,3",
+    "StartDate": "2026-06-01",
+    "EndDate": "2026-06-30",
+    "Aggregation": "daily"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Aggregation": "daily",
+  "StartDate": "2026-06-01 00:00:00",
+  "EndDate": "2026-06-30 23:59:59",
+  "Metrics": ["sent_emails"],
+  "UserCount": 3,
+  "Users": {
+    "1": {
+      "UserID": 1,
+      "Metrics": { "sent_emails": { "2026-06-14": 5 } },
+      "TotalSentEmails": 5,
+      "TotalActiveSubscribers": { "Value": 33, "Source": "oempro_subscriber_lists.ActiveSubscriberCount", "Definition": "SubscribedNotHardBounced,ArchivedExcluded", "MaxStalenessSeconds": 300 }
+    }
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorMessage": "Unsupported aggregation; supported: daily, weekly, monthly, yearly"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing StartDate parameter
+2: Missing EndDate parameter
+3: Unsupported aggregation value
+4: Unsupported metric value
+5: Invalid StartDate/EndDate format
+```
+
+:::
+
+**Notes:**
+- When `UserIDs` is supplied, every requested user appears in `Users` (with an empty `Metrics` map and `0` subscribers when they have no data), giving deterministic per-account rows. When omitted, only users with sends or active subscribers in scope are returned.
+- Days with no activity are omitted from each `Metrics` series; `weekly`/`monthly`/`yearly` fold those daily buckets in the response.
+- `TotalActiveSubscribers` is always the current live value; it does not honor the date range.
