@@ -75,6 +75,14 @@ If you build date strings by concatenation, or pass MySQL zero dates through, au
 
 Note also that omitted bounds are still defaulted (`-30 days` / today) and *then* range-checked — so a future `StartDate` with no `EndDate` now returns `Code 6` rather than an empty result set.
 
+### `smssuppression.browse` — retrieval failures now error instead of returning an empty list
+
+Previously, a failed retrieval was reported as `Success: true` with `TotalRecords: 0` and `Suppressions: []` — indistinguishable from a list that genuinely has no suppressed numbers. It now returns `Success: false` with the new `ErrorCode: [5]`.
+
+This matters more than a typical error-code addition, because `Level=list` was failing **for every account**: the list owner was resolved from a table that does not exist, so the query always failed and the failure was masked as an empty success. If you have a per-list SMS suppression view that has always rendered empty, this is why — it will start returning rows after upgrading.
+
+If you treat `TotalRecords: 0` as "empty", add a `Success` check. `Success: true` with `TotalRecords: 0` now reliably means the filter matched nothing.
+
 ### `campaign.update` — Untrusted accounts are held at `Pending Approval` again
 
 For accounts with `ReputationLevel = Untrusted`, a `Draft → Ready` transition is now held at `Pending Approval` and an admin notification is sent.
@@ -119,6 +127,16 @@ Addresses that duplicate an existing entry, or that are whitelisted, are now cou
 
 If you reconcile counts against your input length, that check needs updating.
 
+### `user.current` — `GroupInfo` now carries the account's capability flags
+
+`GroupInfo` previously held four keys (`UserGroupID`, `GroupName`, `GroupPlanName`, `DefaultSenderDomain`). It now also returns the group's `Permissions`, the `Limit*` quota set, the `Force*` content constraints, and the sender-domain / sender-info feature gates. See [Get Current User Information](./users.md#userinfo-groupinfo).
+
+The change is **purely additive** — the four pre-existing keys are unchanged in name and value, and nothing was removed. The only way this breaks a caller is if it iterates `GroupInfo` and assumes exactly four entries.
+
+The practical upside: these flags previously required an **admin-authenticated** `user.get`, which forced frontend integrations to hold an admin API key purely to render a user's own UI. That is no longer necessary.
+
+Note that delivery-server records and their `ConnectionParams`, `SendMethod*` SMTP settings, all `Payment*` values, and the `ThresholdImport` / `ThresholdEmailSend` moderation thresholds are deliberately **not** included and remain admin-only.
+
 ### `campaign.get` — the `ParentCampaign` key is omitted when there is no parent
 
 Previously present as `"ParentCampaign": null`; now absent entirely. Use a key-existence check rather than a null check.
@@ -144,6 +162,42 @@ These only affect callers doing something that was never intended to work. Liste
 
 ## Fixed, not broken
 
+### `user.get` / `users.get` no longer create payment-period rows as a side effect
+
+Reading a user's limit utilization used to **write** to the payment log. `user.get`, `users.get` with `IncludeLimitUtilization=true`, the admin Limit Utilization tab, and the 15-minute all-users cron each inserted rows when no period covered today — and because the read path passed an incomplete user record, those rows were written with an empty `PeriodStartDate`.
+
+Those malformed rows still satisfied the "does a period cover today" test, so the **send path** found them and booked real metering (`CampaignsSent`, `CampaignsTotalRecipients`, `EmailGatewayEmailsDelivered`) into a window anchored at `0000-00-00` instead of creating a correct period anchored to the account's signup anniversary.
+
+Read paths are now strictly read-only. Two consequences worth knowing:
+
+- **`LimitCampaignSendPerPeriod` counters may reset once, shortly after upgrading.** An account whose current period was one of these malformed rows keeps it until it expires (at most one month), then gets a correctly anchored period on its next send. Their in-flight counter effectively resets at that moment. The previous boundary was arbitrary, so this is a correction rather than a loss.
+- **Reported values are unchanged** for any account that already had a valid payment-period row. `LimitUtilization.MonthlyLimits.CampaignsSent` returns the same figure as before.
+
+Existing malformed rows are not deleted by the upgrade. They age out on their own, and no new ones are created.
+
+### `event.track` / `oct.eventI()` — custom fields are no longer dropped
+
+Two separate defects, both silent:
+
+- Passing a custom field by its **`CustomField<ID>`** key stored an **empty value** when the subscriber was created for the first time. It worked correctly on update, so the loss only affected brand-new subscribers. Merge tag aliases were unaffected.
+- The **`event.track` API command discarded `IdentifyProperties` entirely**, so custom fields could not be set server-to-server at all — only through the browser tracker.
+
+Both are fixed, and both key formats now behave identically on create and update across both ingress paths. If you worked around either by using merge tag aliases only, or by following up with a `subscriber.update` call, those workarounds remain valid and need no change.
+
+### Website tracker — an email-link click now identifies the visitor
+
+When a subscriber clicks a tracked campaign link, the landing URL carries a token that already identifies them authoritatively. Revenue attribution has always used it. Website-event **activity logging** and **Website Event journeys** did not — they resolved the visitor only through an explicit `oct.eventI()` call, so a single identified click produced inconsistent outcomes: the sale was credited to the subscriber, but their pageviews and custom events never appeared in their activity and never drove a journey.
+
+That token now seeds the visitor↔subscriber binding the same way an explicit identify does.
+
+::: warning Expect higher Website Event journey volume
+`WebsiteEvent_pageView` and `WebsiteEvent_customEvent` triggers may now fire for every clicked-through recipient who lands on a page running the tracker, where previously they fired only for visitors who had been explicitly identified. If you have journeys on those triggers, review them before upgrading — particularly any that send email.
+:::
+
+`WebsiteEvent_identify` deliberately does **not** fire for this implicit binding. The visitor never called `eventI()`, so an identify journey firing on a mere link click would be surprising. An explicit `eventI()` with a real email address still takes precedence and is never overwritten by the implicit binding.
+
+Revenue attribution behavior is unchanged.
+
 ### `theme.update` — omitting `ThemeSettings` now preserves the stored settings
 
 Previously, a partial update that omitted both `ThemeSettings` and `Template` **wiped** the theme's stored settings to an empty value. Omitting only `ThemeSettings` while supplying `Template` reset every setting to its default.
@@ -160,3 +214,7 @@ This is strictly a fix, but it is still a behavior change for anyone who worked 
 4. **Do you rely on `APIKeys` / `SMTPs` being falsy when empty, or on `ParentCampaign` being present?** Update both.
 5. **Do you treat any HTTP 200 from `emailgateway.sendemail` as a successful send?** Handle HTTP 502 / code 39.
 6. **Are any of your accounts `Untrusted`?** Expect `Pending Approval` rather than `Ready`, and re-read the campaign status.
+7. **Do you read `smssuppression.browse` and treat `TotalRecords: 0` as "empty"?** Add a `Success` check for the new `ErrorCode: [5]`. If your per-list SMS suppression view has always been empty, expect it to start returning rows.
+8. **Do you iterate `GroupInfo` from `user.current` assuming exactly four keys?** It now returns the full capability set. If you were calling the admin-authenticated `user.get` purely to read capability flags, you can stop.
+9. **Do you have journeys on `WebsiteEvent_pageView` or `WebsiteEvent_customEvent` triggers?** Review them before upgrading — an email-link click now identifies the visitor, so these can fire for every clicked-through recipient.
+10. **Do you monitor payment-period rows or `LimitCampaignSendPerPeriod` counters?** Expect a one-time counter reset for accounts that were on a malformed period, and expect read endpoints to stop creating rows.

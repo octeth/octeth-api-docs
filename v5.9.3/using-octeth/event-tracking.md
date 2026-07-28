@@ -161,8 +161,104 @@ octethTracker.eventI('visitor@example.com', {
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `email` | String | Yes | The visitor's email address. |
-| `properties` | Object | No | Additional key-value pairs to attach to the event. |
+| `email` | String | Yes | The visitor's email address, or a SHA256 hash of it. See [Identifying without sending the email address](#identifying-without-sending-the-email-address). |
+| `properties` | Object | No | **Event** properties attached to the identify event. Used for analytics and journey trigger criteria. These are **not** written to the subscriber record. |
+| `identifyProperties` | Object | No | **Subscriber** custom-field values written onto the matched or newly created subscriber. |
+
+### Saving Custom Fields at Identify Time
+
+The third argument writes values onto the subscriber themselves, rather than onto the event:
+
+```javascript
+octethTracker.eventI('newlead@example.com', {}, {
+    'First-Name': 'Jane',
+    'CustomField734': 'ORD-1001'
+});
+```
+
+Each entry addresses one custom field on the list, by either:
+
+1. the field's **merge tag alias** — e.g. `{'First-Name': 'Jane'}`; or
+2. the field's column key **`CustomField<CustomFieldID>`** — e.g. `{'CustomField734': 'Jane'}`.
+
+Both formats work identically whether the subscriber is being created for the first time or updated.
+
+**Precedence.** If both formats are supplied for the same field in one call, the **merge tag alias wins** and the `CustomField<ID>` entry is ignored.
+
+**Keys that match nothing** are not saved, and are recorded at DEBUG level in `data/logs/identify.log`. They are never applied to a different field.
+
+**Unique-identifier fields.** If the list has a custom field flagged as a unique identifier and the event also carries an external id, that id is written into the unique-identifier field *after* the `identifyProperties` write — so if `identifyProperties` targets that same field, the external id wins. Use a different field for values you want to control yourself.
+
+::: warning Fixed in v5.9.3
+Before v5.9.3, the `CustomField<ID>` format silently stored an **empty value** when the subscriber was created for the first time (it worked correctly on update). If you previously worked around this by using merge tag aliases only, that workaround is still valid and needs no change.
+:::
+
+### Identifying Without Sending the Email Address
+
+If your application must not transmit clear-text email addresses through the browser, you can identify the same subscriber with a **SHA256 hash of their email address** instead:
+
+```javascript
+octethTracker.eventI('7d4f0a...c9');   // 64-character hex SHA256
+```
+
+Octeth detects that the identifier is a hash — any 64-character hexadecimal string, which can never be a valid email address — looks the subscriber up by that hash, and then behaves exactly as if you had passed the clear-text address. Website-event activity is logged against the subscriber and Website Event journeys fire normally. The hash itself is never stored as an email address.
+
+#### The normalization contract (read this first)
+
+> **`hash = sha256( trim(email) )` — trim only. Case is preserved.**
+
+- **Trim only.** Leading and trailing whitespace is removed. Nothing else.
+- **No lowercasing.** `Jane.Doe@example.com` and `jane.doe@example.com` produce **different** hashes and will **not** match each other.
+- **No `+alias` stripping, no dot removal.** `jane+news@example.com` is hashed exactly as written.
+
+Your system must produce the hash with this exact rule, from exactly the casing Octeth holds for that subscriber. Any divergence produces **zero matches** — never a wrong match. This is by far the most common cause of "hash identification isn't working".
+
+```php
+// PHP
+$hash = hash('sha256', trim($email));
+```
+
+```javascript
+// JavaScript (browser, SubtleCrypto)
+const bytes = new TextEncoder().encode(email.trim());
+const digest = await crypto.subtle.digest('SHA-256', bytes);
+const hash = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+```
+
+```bash
+# Shell
+printf '%s' "$EMAIL" | sha256sum
+```
+
+The hexadecimal digest may be upper- or lowercase; both are accepted.
+
+#### Where the hash is stored
+
+The hash lives in a **custom field marked as a unique identifier** on the subscriber list:
+
+1. Create (or pick) a text custom field on the list, e.g. `EmailHash`.
+2. Mark it as the list's unique identifier.
+3. Populate it for every subscriber that should be resolvable, with `sha256(trim(email))`.
+
+- **Per list.** The hash must be present in each list where you expect identification to work. A subscriber who exists in several lists needs the field populated in each of them.
+- **Multiple unique-identifier fields.** If a list has more than one field marked as a unique identifier, the one with the **lowest Custom Field ID** is authoritative. This is the same field the `event.track` API matches its `ID` parameter against, so both paths always agree.
+- **Indexing.** Custom-field columns are not indexed by default. On a large list, add an index to the chosen column before enabling hash identification, otherwise each identify event performs a full table scan.
+- **No migration or schema change** is required to use this feature.
+
+#### When the hash does not match
+
+Nothing is created and nothing fires:
+
+- No subscriber is created — a hash is **never** written into an email address field.
+- No subscriber record is updated.
+- No journey is triggered.
+- The miss is recorded in `data/logs/identify.log` as `hash identify unmatched`, with the list ID and a short hash prefix. A steady stream of these lines almost always means a normalization mismatch — re-check the contract above.
+
+#### Server-to-server parity
+
+The same subscriber is resolved from the same hash through the `event.track` API. There the hash must travel in the **`ID`** parameter, not `Email` — the `Email` parameter is validated as a real email address and a hash would be rejected.
+
+Passing a clear-text email address behaves exactly as before, including creating the subscriber when they do not yet exist. Hash handling only engages when the identifier is a 64-character hexadecimal string.
 
 ### What Happens After Identification
 
@@ -383,10 +479,21 @@ If your website serves different purposes (such as a blog and an e-commerce stor
 
 1. Confirm the identify event is being called with a valid email address — open your browser's developer console and check for the identify call in the network requests.
 2. Verify the email address format is correct. Invalid email addresses are rejected during processing.
+3. If you are passing a **SHA256 hash** rather than a clear-text address, no subscriber is ever created — a hash only ever matches an existing subscriber. See [Identifying without sending the email address](#identifying-without-sending-the-email-address).
+
+### Custom Fields Not Saved at Identify
+
+1. Confirm the values are in the **third** argument (`identifyProperties`), not the second. The second argument holds event properties and is never written to the subscriber record.
+2. Check that each key matches a custom field on the list — either its merge tag alias or `CustomField<CustomFieldID>`. Keys matching no field are logged at DEBUG level in `data/logs/identify.log` and discarded.
+3. If the field is the list's unique identifier and the event also carries an external id, the external id is written last and wins.
+
+### Hash Identification Is Not Matching
+
+Almost always a normalization mismatch. Octeth hashes `sha256(trim(email))` with **case preserved** — no lowercasing, no `+alias` stripping, no dot removal. Confirm your system uses exactly the same rule, from exactly the casing Octeth holds for that subscriber. Misses are logged in `data/logs/identify.log` as `hash identify unmatched`. A mismatch always produces zero matches, never a wrong match.
 
 ### Events Not Appearing on Subscriber Profile
 
-1. Ensure the visitor has been identified with an identify event. Events are only linked to a subscriber profile after identification.
+1. Ensure the visitor has been identified. This happens either through an explicit identify event, or automatically when the visitor arrives by clicking a tracked link in one of your campaigns.
 2. Allow a few moments for event processing. Events are queued and processed asynchronously, so there may be a short delay before they appear.
 
 ## Related Features

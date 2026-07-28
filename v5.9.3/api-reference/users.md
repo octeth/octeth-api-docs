@@ -250,7 +250,24 @@ curl -X POST https://example.com/api.php \
       "UserGroupID": 1,
       "GroupName": "Standard Users",
       "GroupPlanName": "Standard Plan",
-      "DefaultSenderDomain": "example.com"
+      "DefaultSenderDomain": "example.com",
+      "Permissions": "User.Update,Campaign.Create,Campaign.Update,Campaigns.Get,List.Create",
+      "ForceUnsubscriptionLink": "Disabled",
+      "ForceRejectOptLink": "Disabled",
+      "ForceOptInList": "Disabled",
+      "LimitSubscribers": "0",
+      "LimitLists": "0",
+      "LimitCampaignSendPerPeriod": "0",
+      "LimitCampaignSendPeriod": "Monthly",
+      "LimitEmailSendPerPeriod": "0",
+      "LimitEmailSendPerDay": "0",
+      "LimitEmailSendPeriod": "Monthly",
+      "LimitEmailSendLifetime": "0",
+      "LimitEmailGatewaySenderDomains": "0",
+      "SenderDomainManagement": "Enabled",
+      "EnableSenderInfo": "Enabled",
+      "ForcedSenderInfo": "Disabled",
+      "DefaultSenderDomainActivate": "Disabled"
     },
     "MFA_QRCode": "otpauth://totp/...",
     "MFA_SecretKey": "ABCDEF123456",
@@ -288,6 +305,68 @@ curl -X POST https://example.com/api.php \
 1: Authentication required
 ```
 
+:::
+
+### `UserInfo.GroupInfo`
+
+An explicit, user-safe projection of the authenticated user's **user group**. It intentionally exposes only capability flags and plan quotas the user is already subject to.
+
+::: warning Not exposed here — by design
+Delivery-server records and their `ConnectionParams`, the group's `SendMethod*` SMTP settings (including `SendMethodSMTPPassword`), all `Payment*` values, and the `ThresholdImport` / `ThresholdEmailSend` abuse-moderation thresholds are **not** returned by `user.current`. They remain reachable only through the admin-authenticated `user.get`.
+:::
+
+| Key | Type | Description |
+|---|---|---|
+| `UserGroupID` | string (numeric) | The group's ID. |
+| `GroupName` | string | Administrative name of the group. |
+| `GroupPlanName` | string | Human-readable label for the group's subscription plan. Empty string when the group has no plan. |
+| `DefaultSenderDomain` | string \| null | The default sender domain applied to this account, or `null` when none is configured. A user-level override takes precedence over the group value. |
+| `Permissions` | string | The user's granted permissions. See **Permissions format** below. |
+| `ForceUnsubscriptionLink` | `"Enabled"` \| `"Disabled"` | When `Enabled`, campaign content must contain an unsubscribe link; content that does not is rejected at save time. |
+| `ForceRejectOptLink` | `"Enabled"` \| `"Disabled"` | When `Enabled`, an opt-out/reject link is required in campaign content. |
+| `ForceOptInList` | `"Enabled"` \| `"Disabled"` | When `Enabled`, newly created lists are forced to double opt-in. |
+| `LimitSubscribers` | string (numeric) | Maximum subscribers on the account. `0` means unlimited. |
+| `LimitLists` | string (numeric) | Maximum subscriber lists. `0` means unlimited. |
+| `LimitCampaignSendPerPeriod` | string (numeric) | Maximum campaign sends per reset period. `0` means unlimited. |
+| `LimitCampaignSendPeriod` | `"Monthly"` | Reset period for `LimitCampaignSendPerPeriod`. |
+| `LimitEmailSendPerPeriod` | string (numeric) | Maximum emails per reset period. `0` means unlimited. Same value as `Usage.Limit_Monthly`. |
+| `LimitEmailSendPerDay` | string (numeric) | Maximum emails per day. `0` means unlimited. |
+| `LimitEmailSendPeriod` | `"Monthly"` | Reset period for `LimitEmailSendPerPeriod`. |
+| `LimitEmailSendLifetime` | string (numeric) | Lifetime email cap. `0` means unlimited. Same value as `Usage.Limit_Lifetime`. |
+| `LimitEmailGatewaySenderDomains` | string (numeric) | Maximum Email Gateway sender domains. `0` means unlimited. |
+| `SenderDomainManagement` | `"Enabled"` \| `"Disabled"` | Whether the account may manage its own sender domains. Gates the sender-domain UI and sender-domain-scoped sends. |
+| `EnableSenderInfo` | `"Enabled"` \| `"Disabled"` | Whether sender-info (physical address block) fields are shown. |
+| `ForcedSenderInfo` | `"Enabled"` \| `"Disabled"` | Whether sender-info is mandatory. Only meaningful when `EnableSenderInfo` is `Enabled`. |
+| `DefaultSenderDomainActivate` | `"Enabled"` \| `"Disabled"` | Whether the default sender domain is actively applied to this account's sends. |
+
+#### Permissions format
+
+`Permissions` is **not** an array. It is either:
+
+- a **comma-separated string** of permission names, e.g. `"Campaign.Create,Campaign.Update,Campaigns.Get,List.Create"` — no spaces after the commas; or
+- the single-character **sentinel `"*"`**, meaning *all permissions are granted*.
+
+A client-side permission check must handle the sentinel explicitly:
+
+```js
+function hasPermission(groupInfo, permission) {
+  if (groupInfo.Permissions === '*') return true;             // full privileges
+  return groupInfo.Permissions.split(',').indexOf(permission) !== -1;
+}
+```
+
+The `"*"` sentinel is emitted when an administrator is impersonating the user with **Full** privileges. Treating it as a literal permission name rather than a wildcard will incorrectly deny every feature for that session.
+
+#### Defaults for older groups
+
+`SenderDomainManagement`, `EnableSenderInfo`, `ForcedSenderInfo` and `DefaultSenderDomainActivate` come from the group's options blob, and groups created before those options existed do not carry them. The endpoint always returns one of the two defined string values and never `null` — an absent option is reported as `"Disabled"`, which matches how the application itself evaluates it.
+
+#### Duplicated quota values
+
+`LimitEmailSendPerPeriod` and `LimitEmailSendLifetime` also appear in the response as `Usage.Limit_Monthly` and `Usage.Limit_Lifetime`. Both names carry the same value. The `Usage.*` names are retained unchanged for backwards compatibility; `GroupInfo` repeats them so the group's quota set is complete in one place.
+
+::: tip New in v5.9.3
+Everything below `DefaultSenderDomain` in the table above was added in v5.9.3. Previously these were readable only through the admin-authenticated `user.get`, which forced frontend integrations to hold an admin API key purely to render a user's own UI. The change is **purely additive** — the four pre-existing `GroupInfo` keys are unchanged in name and value.
 :::
 
 ## Get User Information

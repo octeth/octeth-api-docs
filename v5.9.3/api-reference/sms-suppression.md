@@ -61,6 +61,14 @@ Phone numbers must be in E.164 format with a leading `+` (e.g. `+15551234567`). 
 
 `Suppressions` is a JSON array of suppression rows, ordered by `CreatedAt DESC`. `TotalRecords` reflects the filtered count, so paging math always lines up with the rendered page.
 
+A retrieval failure is never reported as an empty list. If the suppression entries cannot be read, the response is `Success: false` with `ErrorCode: [5]` and no `TotalRecords` / `Suppressions` keys. `Success: true` with `TotalRecords: 0` therefore means the filter genuinely matched nothing (or, for `Level=list`, that the list has no suppressed numbers) — it is never a masked error.
+
+::: warning Behavior change in v5.9.3
+Before v5.9.3, `Level=list` always returned `Success: true, TotalRecords: 0, Suppressions: []` for every account, because the list owner was resolved from a table that does not exist and the resulting query failure was reported as an empty success. List-level browsing now returns the correct rows, and its `TotalRecords` agrees with `smssuppression.stats` for the same list.
+
+Integrations that treat `TotalRecords: 0` as "empty" must now also handle `Success: false` with `ErrorCode: [5]`.
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -110,12 +118,21 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Retrieval Failure Response]
+{
+  "Success": false,
+  "ErrorCode": [5]
+}
+```
+
 ```txt [Error Codes]
 0: Success
 1: Invalid Level value
 2: Missing ListID when Level=list
 3: ListID does not belong to the authenticated user
 4: Invalid Reason value
+5: Suppression entries could not be retrieved (internal error; the cause is
+   written to the application log). Retry; if it persists, contact the operator.
 ```
 
 :::

@@ -26,9 +26,10 @@ Website event tracking endpoints for capturing and managing user interactions an
 | Event     | String | Yes      | Event name (e.g., "page_view", "conversion", "identify") |
 | ListID    | Integer| No       | List ID to associate the event with   |
 | Email     | String | No       | Subscriber email address (validated)  |
-| ID        | String | No       | External unique identifier for the subscriber |
+| ID        | String | No       | External unique identifier for the subscriber. Resolved against the list's unique-identifier custom field. May be a SHA256 email hash — see [Identifying without sending the email address](../using-octeth/event-tracking.md#identifying-without-sending-the-email-address). |
 | UUID      | String | No       | Event UUID (auto-generated if not provided) |
 | Properties| Object | No       | Event properties (key-value pairs)    |
+| IdentifyProperties | Object | No | Custom-field values to write onto the matched or newly created subscriber, mirroring the 3rd argument of the browser tracker's `oct.eventI()`. Only applied to identify events. See below. |
 
 ::: code-group
 
@@ -87,6 +88,38 @@ curl -X POST https://example.com/api/v1/event \
 - For "conversion" events, the `Properties` object must include `conversion-id`, `conversion-name`, and `conversion-value`
 - For "identify" events or when sending a new email, an identify event is sent to update subscriber information
 - Test events can be sent by including `"isTest": true` in the `Properties` object (returns success without actual tracking)
+
+### Writing custom fields with `IdentifyProperties`
+
+`IdentifyProperties` carries **subscriber** custom-field values, written onto the matched or newly created subscriber. This is distinct from `Properties`, which carries **event** properties recorded against the identify event itself and never written to the subscriber record.
+
+Each entry addresses one custom field on the list, by either:
+
+1. the field's **merge tag alias**, e.g. `{"First-Name": "Jane"}`; or
+2. the field's column key **`CustomField<CustomFieldID>`**, e.g. `{"CustomField732": "Jane"}`.
+
+Both formats work identically on subscriber create and update.
+
+**Precedence.** If both formats are supplied for the same field in one call, the **merge tag alias wins** and the `CustomField<ID>` entry is ignored.
+
+**Keys that match nothing** are not saved and are recorded at DEBUG level in `data/logs/identify.log`. They are never applied to a different field. Only custom fields belonging to the authenticated user's list are matched.
+
+**Key casing is normalised server-side**, so `IdentifyProperties[customfield732]` and `IdentifyProperties[CustomField732]` are equivalent over the public API. This is deliberate: the API dispatcher lowercases all nested request keys, so callers cannot rely on their original casing surviving the request.
+
+```bash
+curl -X POST https://example.com/api.php \
+  --data-urlencode 'Command=event.track' \
+  --data-urlencode 'APIKey=your-api-key' \
+  --data-urlencode 'ListID=516' \
+  --data-urlencode 'Event=identify' \
+  --data-urlencode 'Email=newlead@example.com' \
+  --data-urlencode 'IdentifyProperties[First-Name]=Jane' \
+  --data-urlencode 'IdentifyProperties[CustomField734]=ORD-1001'
+```
+
+::: tip New in v5.9.3
+`IdentifyProperties` was previously accepted by the browser tracker only — the API command silently discarded it, so custom fields could not be set server-to-server at all. The parameter is **additive and backward compatible**: omitting it leaves behaviour and the response byte-identical to previous versions, and the response shape is unchanged.
+:::
 
 ## Get Website Event Properties
 
