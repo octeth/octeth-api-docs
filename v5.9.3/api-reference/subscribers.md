@@ -253,7 +253,7 @@ curl -X POST https://example.com/api.php \
 | IPAddress | String | Yes      | IP address of the subscriber          |
 | EmailAddress | String | Conditional | Email address (required if SubscriberID and RulesJSON not provided) |
 | SubscriberID | Integer | Conditional | Subscriber ID (required if EmailAddress and RulesJSON not provided) |
-| RulesJSON | String | Conditional | JSON rules for bulk unsubscription (required if EmailAddress and SubscriberID not provided) |
+| RulesJSON | String | Conditional | JSON rules for bulk unsubscription (required if EmailAddress and SubscriberID not provided). A **non-empty** value selects the bulk path; an empty value is treated as not supplied (see below). |
 | RulesOperator | String | Conditional | Rules operator: and, or (required if RulesJSON provided) |
 | CampaignID | Integer | No      | ID of the campaign (for tracking)     |
 | EmailID   | Integer | No       | ID of the email (for tracking)        |
@@ -274,7 +274,33 @@ Rejected payloads:
 
 Previously such a payload silently degraded to *no filter at all*, so the unsubscribe ran against **every subscriber in the list** and still returned `"Success": true`.
 
-An **omitted or empty** `RulesJSON` is unchanged: it keeps its existing meaning.
+An **omitted** `RulesJSON` is unchanged: it keeps its existing meaning.
+:::
+
+::: warning Empty RulesJSON no longer takes the bulk path (new in v5.9.3)
+A **present-but-empty** `RulesJSON` (`RulesJSON=`) is now treated as **not supplied**.
+
+Previously the bulk branch was selected on presence alone. Because an empty string is
+"present", a request sending an empty `RulesJSON` together with `RulesOperator` **and** a single
+`EmailAddress`/`SubscriberID` entered the bulk path with no filter — unsubscribing the **entire
+list** while silently discarding the one subscriber the caller named, and still returning
+`"Success": true`.
+
+Behaviour now:
+
+| Request | Result |
+|---|---|
+| Empty `RulesJSON` + `EmailAddress`/`SubscriberID` | Only that subscriber is unsubscribed |
+| Empty `RulesJSON`, no selector | `ErrorCode 3` (unchanged) |
+| Omitted `RulesJSON` + selector | Only that subscriber (unchanged) |
+| Non-empty, valid `RulesJSON` | Bulk unsubscribe (unchanged) |
+
+Note `RulesJSON=0` is **not** treated as empty — it is a supplied-but-unusable payload and is
+rejected with `ErrorCode 7` by the validation above.
+
+This precedence applies to `subscriber.unsubscribe` only. On `subscribers.delete`,
+`subscriber.tag` and `subscriber.untag` an empty `RulesJSON` with no selector already returned a
+missing-parameter error and is unaffected.
 :::
 
 ::: code-group

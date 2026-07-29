@@ -58,29 +58,37 @@ Type `y` and press Enter to start the upgrade.
 If you have campaigns actively sending, the upgrade command will warn you and ask for confirmation before stopping backend services.
 :::
 
+::: tip The summary appears twice — this is expected (new in v5.9.3)
+After you confirm, the command refreshes its own `cli/` scripts from the release you are installing and restarts itself once. That is why the version summary is printed a second time. You are only asked to confirm once.
+
+This guarantees that a years-old installation is still upgraded by the newest, fixed upgrade logic rather than by the scripts that shipped with the version you are leaving. The step is skipped automatically when your `cli/` already matches the release.
+:::
+
 ## What the Upgrade Command Does
 
 Once confirmed, the upgrade runs through these steps automatically:
 
-1. **Stops backend services** — Pauses all background workers, supervisor processes, and cron jobs so no tasks run during the upgrade.
+1. **Refreshes the upgrade runner** — Before touching anything, the command replaces its own `cli/` scripts with the ones from the release you are installing and re-runs itself once. This means the upgrade is always performed by the newest upgrade logic, even if the copy installed on your server is several versions old. Your previous `cli/` is copied to `data/backups/cli.bak.[version].[timestamp]/` first, so the swap is fully reversible. You will see the pre-flight output twice — that is expected, and you are only asked to confirm once. The step is skipped automatically when your `cli/` already matches the release.
 
-2. **Creates a backup** — Saves all your environment files (`.oempro_*_env`), Docker Compose configuration, and a full MySQL database dump to `data/backups/upgrade_[timestamp]/`.
+2. **Stops backend services** — Pauses all background workers, supervisor processes, and cron jobs so no tasks run during the upgrade.
 
-3. **Extracts and syncs release files** — Unpacks the zip file and syncs new application files into your installation. Your configuration files, data directory, plugins, and Docker volumes are preserved.
+3. **Creates a backup** — Saves all your environment files (`.oempro_*_env`), Docker Compose configuration, and a full MySQL database dump to `data/backups/upgrade_[timestamp]/`.
 
-4. **Merges environment files** — Compares your current environment files against the new version's defaults. Any new configuration keys introduced in the new version are added to your files with their default values. Your existing settings are never overwritten.
+4. **Extracts and syncs release files** — Unpacks the zip file and syncs new application files into your installation. Your configuration files, data directory, plugins, and Docker volumes are preserved.
 
-5. **Updates Docker configuration** — Updates Docker image tags to match the new version and pulls the latest container images.
+5. **Merges environment files** — Compares your current environment files against the new version's defaults. Any new configuration keys introduced in the new version are added to your files with their default values. Your existing settings are never overwritten.
 
-6. **Restarts containers** — Brings containers down and back up with the new images and code.
+6. **Updates Docker configuration** — Updates Docker image tags to match the new version and pulls the latest container images.
 
-7. **Installs dependencies** — Waits for Composer to install PHP dependencies in both the app and system containers.
+7. **Restarts containers** — Brings containers down and back up with the new images and code.
 
-8. **Runs database migrations** — Applies database schema changes for both the legacy (PHP 5.6) and Laravel (PHP 8.1) codebases.
+8. **Installs dependencies** — Waits for Composer to install PHP dependencies in both the app and system containers.
 
-9. **Builds JavaScript assets** — Compiles the Journey Builder and Website Event Tracker from source.
+9. **Runs database migrations** — Applies database schema changes for both the legacy (PHP 5.6) and Laravel (PHP 8.1) codebases.
 
-10. **Starts backend services and runs a health check** — Restarts all background workers and verifies the system is operational.
+10. **Builds JavaScript assets** — Compiles the Journey Builder and Website Event Tracker from source.
+
+11. **Starts backend services and runs a health check** — Restarts all background workers and verifies the system is operational.
 
 When finished, you'll see a summary:
 
@@ -248,6 +256,22 @@ docker exec -i oempro_mysql mysql -uoempro -p oempro < /opt/octeth/data/backups/
 ```
 
 Replace `YYYYMMDD_HHMMSS` with the actual timestamp from your backup directory.
+
+## Restoring the Previous CLI
+
+Each upgrade copies your existing `cli/` scripts to `data/backups/cli.bak.[version].[timestamp]/` before refreshing them from the release (step 1 above). To go back to the CLI you had before an upgrade attempt:
+
+```bash
+rsync -a --checksum --delete \
+  /opt/octeth/data/backups/cli.bak.5.8.1.20260729_101500/ \
+  /opt/octeth/cli/
+```
+
+Use the timestamped directory printed during the upgrade, or the newest `cli.bak.*` under `data/backups/`.
+
+::: info
+Setting `OCTETH_UPGRADE_SELF_UPDATED=1` in the environment makes the upgrade command skip the refresh and run with the CLI currently installed. This is a support and debugging escape hatch only — it is not needed for normal upgrades, and using it re-exposes an old installation to upgrade bugs that are already fixed in the target release.
+:::
 
 ## Troubleshooting
 

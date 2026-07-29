@@ -167,10 +167,24 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
 11. **SMS Delivery Reports**
     ```bash
-    SMS_DLR_NOTIFY_BASE_URL=         # Public base URL for SMS delivery-report (DLR) callbacks. For debugging via a tunnel; leave EMPTY in production
+    SMS_DLR_NOTIFY_BASE_URL=            # Public base URL for SMS delivery-report (DLR) callbacks. For debugging via a tunnel; leave EMPTY in production
+    SMS_DELIVERY_REPORTS_ENABLED=true   # Master switch for SMS delivery-report processing (default: true)
+    SMS_DELIVERY_REPORT_RETENTION_DAYS=30  # Days to keep rows in oempro_sms_delivery_reports; 0 disables pruning (default: 30)
     ```
 
-    Used only when debugging SMS delivery receipts locally (e.g. exposing your machine through a tunnel such as `localtunnel`). Production deployments leave this empty so the system uses the live callback URL.
+    `SMS_DLR_NOTIFY_BASE_URL` is used only when debugging SMS delivery receipts locally (e.g. exposing your machine through a tunnel such as `localtunnel`). Production deployments leave this empty so the system uses the live callback URL.
+
+    `SMS_DELIVERY_REPORTS_ENABLED` controls whether the `oempro_sms_delivery_reports` supervisord worker consumes the durable `sms_delivery_reports` RabbitMQ queue and reconciles each report against `oempro_sms_queue` (Sent / Delivered / Failed). Set it to `false` only if you do not use SMS, or you handle delivery reports elsewhere.
+
+    ::: warning When disabled, the worker idles rather than exits
+    With this set to `false` the worker starts, logs that it is disabled, and then **idles** — it deliberately does **not** exit. Supervisord runs it with `startsecs=1` and `startretries=10`, so a process that exits immediately is counted as a failed start and the program escalates to a permanent **FATAL** state within seconds, which is indistinguishable from a genuinely broken worker in `supervisorctl status`. Idling keeps it `RUNNING` and harmless.
+
+    Switching the value back to `true` is picked up by the idle worker within about a minute; no container restart is required.
+
+    Note that the public delivery-report webhook endpoint keeps accepting and enqueueing reports regardless of this setting. With processing disabled, the durable `sms_delivery_reports` queue grows unbounded if your gateway is still configured to POST to it — point the gateway away from the webhook as well.
+    :::
+
+    `SMS_DELIVERY_REPORT_RETENTION_DAYS` bounds the size of `oempro_sms_delivery_reports`. The worker prunes rows older than this every 1,000 processed messages. Set it to `0` to disable pruning entirely.
 
 12. **Google Postmaster Tools**
 
