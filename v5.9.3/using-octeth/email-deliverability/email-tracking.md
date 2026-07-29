@@ -280,7 +280,7 @@ Conversion tracking requires two components working together:
 Once event tracking is set up, add conversion tracking calls to your website at the point where conversions happen (e.g., the order confirmation page):
 
 ```javascript
-octethTracker.eventC('order-456', 'Purchase', 89.99, {
+oct.eventC('order-456', 'Purchase', 89.99, {
     product: 'Annual Plan',
     currency: 'USD'
 });
@@ -336,7 +336,7 @@ Attribution works through a combination of cookies and identification events:
 3. **Identification** — When the visitor provides their email address (through a form, login, or purchase), your code calls the identify event:
 
     ```javascript
-    octethTracker.eventI('subscriber@example.com');
+    oct.eventI('subscriber@example.com');
     ```
 
 4. **Linking** — The identify event matches the email address to a subscriber in your list (or creates a new subscriber). All past events associated with the UUID are retroactively linked to the subscriber, and all future events under the same UUID are automatically attributed.
@@ -361,10 +361,10 @@ The JavaScript tracker provides four event methods:
 
 | Method | Purpose |
 |---|---|
-| `octethTracker.eventP()` | Track page views (fired automatically on page load). |
-| `octethTracker.eventI()` | Identify a visitor by email address. |
-| `octethTracker.eventT()` | Track a named custom event. |
-| `octethTracker.eventC()` | Track a conversion with a monetary value. |
+| `oct.eventP()` | Track page views (fired automatically on page load). |
+| `oct.eventI()` | Identify a visitor by email address. |
+| `oct.eventT()` | Track a named custom event. |
+| `oct.eventC()` | Track a conversion with a monetary value. |
 
 Each event automatically captures browser metadata including the visitor's browser, operating system, device type, screen dimensions, current URL, page title, and referrer.
 
@@ -434,13 +434,13 @@ Even if you do not run an e-commerce store, use conversion events to track impor
 ### Conversions Are Not Being Attributed
 
 1. **Verify the JavaScript tracker is installed** — Check that the event tracking code is present on all pages of your website, including the conversion confirmation page.
-2. **Check conversion event calls** — Open your browser's developer console on the conversion page and verify that `octethTracker.eventC()` is being called with the correct parameters.
+2. **Check conversion event calls** — Open your browser's developer console on the conversion page and verify that `oct.eventC()` is being called with the correct parameters.
 3. **Check the attribution cookie** — After clicking a tracked link from an email, verify the `oempro_pr` cookie is set in your browser. If the cookie is missing, the attribution parameter may not be present in the tracking URL.
 4. **Check the attribution window** — Conversions must occur within 30 days of the email click. Conversions outside this window are not attributed.
 
 ### Subscriber Events Are Not Appearing on Profile
 
-1. **Ensure the visitor is identified** — Website events are only linked to a subscriber profile after an identify event (`octethTracker.eventI()`) has been called with the visitor's email address.
+1. **Ensure the visitor is identified** — Website events are linked to a subscriber profile once the visitor is identified. That happens either when you call `oct.eventI()` with their email address, or automatically when they arrive by clicking a tracked link in one of your campaigns.
 2. **Allow processing time** — Events are processed asynchronously through a message queue. There may be a short delay before events appear on the subscriber profile.
 3. **Check browser console for errors** — JavaScript errors on the page may prevent the tracking script from loading or sending events. Check the browser console for any error messages.
 

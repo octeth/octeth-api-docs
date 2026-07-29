@@ -55,6 +55,16 @@ The tracking script loads asynchronously and does not block page rendering. Once
 Install the tracking code on every page of your website where you want to capture visitor behavior. If the code is only on certain pages, events from other pages are not tracked.
 :::
 
+#### The tracker object name
+
+The snippet installs the tracker as a global JavaScript object named **`oct`**, which is the name used in every example on this page:
+
+```javascript
+oct.eventI('visitor@example.com');
+```
+
+The name is set by your Octeth installation's `EVENT_TRACKER_JS_OBJECT_NAME` setting and is carried in the snippet's `data-lobj` attribute. `oct` is the default. If your operator has changed it, the snippet you copied is authoritative — read the name from its `data-lobj` value and substitute it for `oct` throughout.
+
 ### Verifying the Installation
 
 After installing the tracking code, the Event Tracker page displays a status indicator:
@@ -70,10 +80,10 @@ The tracking script provides four event methods, each designed for a specific ty
 
 | Method | Purpose | When to Use |
 |---|---|---|
-| `octethTracker.eventP()` | Track page views | Automatically on every page load; manually for single-page applications |
-| `octethTracker.eventI()` | Identify a visitor | When the visitor provides their email address |
-| `octethTracker.eventT()` | Track a custom event | For any named interaction you want to monitor |
-| `octethTracker.eventC()` | Track a conversion | For purchases, registrations, and other measurable outcomes |
+| `oct.eventP()` | Track page views | Automatically on every page load; manually for single-page applications |
+| `oct.eventI()` | Identify a visitor | When the visitor provides their email address |
+| `oct.eventT()` | Track a custom event | For any named interaction you want to monitor |
+| `oct.eventC()` | Track a conversion | For purchases, registrations, and other measurable outcomes |
 
 All event methods accept optional properties as key-value pairs, allowing you to attach additional data to each event.
 
@@ -109,13 +119,13 @@ Once the tracking code is installed, every page load triggers a page view event.
 For single-page applications or situations where you need to track a page view manually, call the `eventP` method:
 
 ```javascript
-octethTracker.eventP();
+oct.eventP();
 ```
 
 You can optionally pass a custom URL and additional properties:
 
 ```javascript
-octethTracker.eventP('/products/widget-pro', {
+oct.eventP('/products/widget-pro', {
     category: 'Products',
     section: 'Widgets'
 });
@@ -149,13 +159,13 @@ Call the identify event whenever a visitor provides their email address on your 
 ### Calling the Identify Event
 
 ```javascript
-octethTracker.eventI('visitor@example.com');
+oct.eventI('visitor@example.com');
 ```
 
 You can also pass additional properties:
 
 ```javascript
-octethTracker.eventI('visitor@example.com', {
+oct.eventI('visitor@example.com', {
     source: 'contact-form',
     page: '/contact'
 });
@@ -174,7 +184,7 @@ octethTracker.eventI('visitor@example.com', {
 The third argument writes values onto the subscriber themselves, rather than onto the event:
 
 ```javascript
-octethTracker.eventI('newlead@example.com', {}, {
+oct.eventI('newlead@example.com', {}, {
     'First-Name': 'Jane',
     'CustomField734': 'ORD-1001'
 });
@@ -202,7 +212,7 @@ Before v5.9.3, the `CustomField<ID>` format silently stored an **empty value** w
 If your application must not transmit clear-text email addresses through the browser, you can identify the same subscriber with a **SHA256 hash of their email address** instead:
 
 ```javascript
-octethTracker.eventI('7d4f0a...c9');   // 64-character hex SHA256
+oct.eventI('7d4f0a...c9');   // 64-character hex SHA256
 ```
 
 Octeth detects that the identifier is a hash — any 64-character hexadecimal string, which can never be a valid email address — looks the subscriber up by that hash, and then behaves exactly as if you had passed the clear-text address. Website-event activity is logged against the subscriber and Website Event journeys fire normally. The hash itself is never stored as an email address.
@@ -283,7 +293,7 @@ Custom events let you track any named interaction on your website beyond page vi
 ### Tracking a Custom Event
 
 ```javascript
-octethTracker.eventT('button_click', {
+oct.eventT('button_click', {
     buttonName: 'Get Started',
     page: '/pricing'
 });
@@ -317,7 +327,7 @@ Conversion events track measurable outcomes such as purchases, registrations, or
 ### Tracking a Conversion
 
 ```javascript
-octethTracker.eventC('order-123', 'Product Purchase', 49.99, {
+oct.eventC('order-123', 'Product Purchase', 49.99, {
     product: 'Widget Pro',
     currency: 'USD'
 });
@@ -351,7 +361,7 @@ The token is produced by Octeth's link rewriter and is encrypted. A value you in
 
 ### Identification From an Email Click
 
-A visitor who clicks a tracked campaign link is **already identified**, before they do anything on your site and without any `octethTracker.eventI()` call.
+A visitor who clicks a tracked campaign link is **already identified**, before they do anything on your site and without any `oct.eventI()` call.
 
 The attribution token described above authoritatively encodes which subscriber the link was sent to. When the tracker sends its first event carrying that token, Octeth binds the browser to that subscriber. From that point on:
 
