@@ -329,13 +329,20 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     The shipped Docker images install the Xdebug extension for both PHP 5.6 and PHP 8.1, but it is **disabled by default**. Merely *loading* Xdebug installs per-call stack-trace hooks (the "Xdebug tax") that slow every PHP process — most noticeably the long-lived PHP 5.6 supervisor workers and the send engine — even with remote debugging turned off. Set `OEMPRO_XDEBUG_ENABLED=true` **only in local development** to enable step debugging / profiling; leave it `false` (or unset) in production. The flag is applied at container start by `_dockerfiles/xdebug-toggle.sh`, which enables/disables the extension for every PHP version and SAPI via `phpenmod`/`phpdismod`. Restart the containers after changing it.
 
-28. **Export File Retention**
+28. **Export File Retention and Stale-Job Recovery**
 
     ```bash
     EXPORT_FILE_RETENTION_DAYS=30                           # Days to keep completed/failed export files before cleanup
+    EXPORT_STALE_PROCESSING_TIMEOUT_MINUTES=360             # Minutes an export may stall in "Processing" before it is marked Failed (default: 360)
     ```
 
     Completed export result files are written to `data/exports/{ExportID}.export` and were previously never cleaned up, so export storage grew without bound on active accounts. The `cli/export_files_cleanup.php` cron (daily at 04:45 UTC) deletes the result files of **terminal** export jobs (`Completed` or `Failed`) whose completion time is older than `EXPORT_FILE_RETENTION_DAYS`. In-flight jobs (`Pending` / `Processing`) are **never** touched. Only the on-disk file is removed — the export row is preserved for history, so downloading an expired export returns a clear "expired" error (HTTP 410) instead of a broken or empty download. Raise this value to keep exports downloadable for longer.
+
+    **`EXPORT_STALE_PROCESSING_TIMEOUT_MINUTES`** — the number of minutes an export job may sit in the `Processing` state without making progress before the export worker marks it `Failed`. Accepted range `15`–`10080` (15 minutes to 7 days); values outside it are ignored and the 360-minute default is used.
+
+    The export worker claims a queued job, flips it to `Processing`, and then runs the export outside of a database transaction. If the worker process dies after the claim — a PHP fatal error, an out-of-memory kill, or a `SIGKILL` during a deployment — the job is left stranded in `Processing`. Workers only ever pick up jobs in the `Pending` state, so before this setting existed a stranded job was never retried and never failed: the user's export stayed on "Working" forever and no file was ever produced. The worker now sweeps for stranded jobs and marks them `Failed`, so the user gets a clear outcome and can simply request the export again.
+
+    **Choosing a value.** Progress is measured from the most recent of the job's start, last-update and submit timestamps. Campaign and multi-list exports refresh their last-update timestamp as they run, so for those this is a *no-progress* budget rather than a total-runtime budget; subscriber exports do not report progress, so their whole runtime counts against it. Keep the value comfortably above your longest healthy export. Octeth runs **two** export workers, so a value that is too low can mark a job as failed while another worker is still legitimately working on it — no data is corrupted if that happens (the running worker detects the `Failed` verdict and does not overwrite it), but the user loses an export that would otherwise have completed. Lower it only if your exports are known to be small and you want stranded jobs surfaced faster. A reaped job has its finish time recorded, so its partial result file is reclaimed by the normal `EXPORT_FILE_RETENTION_DAYS` cleanup once the retention window elapses.
 
 29. **Long-Running Worker Memory Hygiene**
 
