@@ -348,7 +348,7 @@ Retrieves a paginated list of queued emails for a specific campaign with filteri
 | SessionID          | String  | No       | Session ID obtained from login                                                                   |
 | APIKey             | String  | No       | API key for authentication                                                                       |
 | CampaignID         | Integer | Yes      | Campaign ID to retrieve queue items for                                                          |
-| RecordsPerRequest  | Integer | No       | Number of records per request (default: 50, max: 500). `0` is accepted but is **still capped at 500** — see the note below. |
+| RecordsPerRequest  | Integer | No       | Number of records per request (default: 50, max: 500). Pass `0` to return **all** matching records with no row cap. Non-numeric or negative values are invalid and fall back to the default (50). |
 | RecordsFrom        | Integer | No       | Offset for pagination (default: 0)                                                               |
 | ExactOffset        | Boolean | No       | <Badge type="tip" text="New in v5.9.3" /> When `true`, `RecordsFrom` is honoured as an exact row offset. When omitted or `false` (default), `RecordsFrom` is floored down to the nearest `RecordsPerRequest` boundary — the historical behaviour, kept for backward compatibility. |
 | Status             | String  | No       | Filter by queue status: `Pending`, `Sending`, `Sent`, `Delivered`, `Failed`                     |
@@ -366,12 +366,26 @@ Pass `ExactOffset: true` to have `RecordsFrom` treated as a true row offset. Thi
 `ExactOffset` accepts the usual boolean spellings — `true`, `1`, `"1"`, `"true"`, `"yes"`, `"on"`. Anything else is treated as false and yields the default behaviour. As everywhere on `/api.php`, the parameter name itself is matched case-insensitively.
 :::
 
-::: warning `RecordsPerRequest: 0` does not return all records here
-This endpoint returns at most **500** rows per request. `RecordsPerRequest: 0` is accepted but is still capped at 500 — it does **not** return every remaining row, even with `ExactOffset` enabled.
+::: tip `RecordsPerRequest: 0` returns all records
+<Badge type="tip" text="Changed in v5.9.3" /> `RecordsPerRequest: 0` returns every matching row with no cap, matching the sibling `admin.campaign.batches` endpoint. Before v5.9.3 it was silently capped at 500 rows, with nothing in the response indicating that truncation had occurred.
 
-Use `ExactOffset` together with an explicit `RecordsPerRequest` and advance `RecordsFrom` to page through the full queue.
+A campaign queue can hold millions of rows, and an unbounded request materialises the entire result set — including the `Options`, `SenderSettings` and `CustomFieldSnapshot` payloads — in a single response. For large campaigns, page with an explicit `RecordsPerRequest` plus `ExactOffset`, or narrow the result set with `Status`, `BatchID` or `Search` first.
 
-Note that the sibling `admin.campaign.batches` endpoint *does* honour `RecordsPerRequest: 0` as "all records". The two are not consistent with each other.
+Combining `RecordsPerRequest: 0` with `ExactOffset: true` and a non-zero `RecordsFrom` returns **every remaining row from that offset onward** (not just one page). With `RecordsFrom: 0`, or with `ExactOffset` omitted, it returns the full result set from the beginning.
+
+Non-numeric (e.g. `"abc"`) or negative values are invalid and fall back to the default page size of 50. Prior to v5.9.3 such values were treated as `0` and returned 500 rows.
+:::
+
+::: warning Send `0` as a string in JSON requests
+When the request body is JSON, a bare integer `0` (`"RecordsPerRequest": 0`) is **not** honoured as "all records" — it is treated as an absent value and falls back to the default page size of 50. Send it as a string instead:
+
+```json
+{ "RecordsPerRequest": "0" }
+```
+
+Form-encoded requests (`RecordsPerRequest=0`) are unaffected and work as documented.
+
+This affects every paginated endpoint that documents `0` as "all records", including `admin.campaign.batches`, and is not specific to this command.
 :::
 
 ::: code-group
