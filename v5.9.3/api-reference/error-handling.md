@@ -66,6 +66,27 @@ Error codes can be single values or arrays:
 | 18 | Subscriber limit reached | Upgrade plan or remove inactive subscribers |
 | 3 | List limit exceeded | Delete unused lists or upgrade plan |
 
+### Server Errors
+
+Returned with an HTTP **5xx** status. Unlike the codes above, these indicate a
+server-side fault rather than a problem with your request — retrying the same
+request unchanged will not help until the installation is fixed.
+
+| Code | Description | Resolution |
+|------|-------------|------------|
+| 100002 | The requested command is registered but its handler is missing on the server | Report to your Octeth administrator; the installation is incomplete or a file failed to deploy |
+
+::: tip New in v5.9.3
+Before v5.9.3 a missing command handler produced an HTML error page with an
+HTTP **200** status and disclosed the expected file's absolute path. Clients
+that branch on the status code treated that fatal error as a success and then
+failed to parse the body. It now returns HTTP 500 with the standard JSON error
+envelope, and the path is written to the server log instead of the response.
+
+This error path always answers in JSON, including for callers that requested
+`ResponseFormat=XML`.
+:::
+
 ## Handling Errors in Code
 
 ### JavaScript/Node.js
