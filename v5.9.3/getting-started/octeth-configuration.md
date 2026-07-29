@@ -177,7 +177,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     `SMS_DELIVERY_REPORTS_ENABLED` controls whether the `oempro_sms_delivery_reports` supervisord worker consumes the durable `sms_delivery_reports` RabbitMQ queue and reconciles each report against `oempro_sms_queue` (Sent / Delivered / Failed). Set it to `false` only if you do not use SMS, or you handle delivery reports elsewhere.
 
     ::: warning When disabled, the worker idles rather than exits
-    With this set to `false` the worker starts, logs that it is disabled, and then **idles** — it deliberately does **not** exit. Supervisord runs it with `startsecs=1` and `startretries=10`, so a process that exits immediately is counted as a failed start and the program escalates to a permanent **FATAL** state within seconds, which is indistinguishable from a genuinely broken worker in `supervisorctl status`. Idling keeps it `RUNNING` and harmless.
+    With this set to `false` the worker starts, logs that it is disabled, and then **idles** — it deliberately does **not** exit. Supervisord runs it with `startsecs=1` and `startretries=10`, so a process that exits immediately is counted as a failed start and the program escalates to a permanent **FATAL** state — not retried again — in about a minute (supervisord backs off between retries; measured: `BACKOFF` at 20s, `FATAL` at 65s), which is indistinguishable from a genuinely broken worker in `supervisorctl status`. Idling keeps it `RUNNING` and harmless.
 
     Switching the value back to `true` is picked up by the idle worker within about a minute; no container restart is required.
 
