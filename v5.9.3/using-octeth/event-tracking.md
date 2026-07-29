@@ -132,6 +132,10 @@ octethTracker.eventP('/products/widget-pro', {
 
 Identify events link an anonymous visitor to an email address. Once a visitor is identified, all of their past events (tracked under the same UUID) and all future events become associated with that email address as a subscriber in your list.
 
+::: tip You may not need to call identify at all
+A visitor who arrived by clicking a tracked campaign link is identified automatically — see [Identification from an email click](#identification-from-an-email-click). Calling identify explicitly is for visitors who give you their address on the site, and always takes precedence over the automatic binding.
+:::
+
 ### When to Use Identify
 
 Call the identify event whenever a visitor provides their email address on your website. Common scenarios include:
@@ -330,18 +334,39 @@ octethTracker.eventC('order-123', 'Product Purchase', 49.99, {
 
 ### Revenue Attribution
 
-Event tracking supports revenue attribution through URL parameters. This links conversions back to the email campaigns or sources that drove the visitor to your website.
+Event tracking supports revenue attribution through an attribution token on your campaign links. This links conversions back to the email that drove the visitor to your website.
 
 **How it works:**
 
-1. When a visitor arrives on your website through a link containing a special URL parameter (default: `pr`), the tracker stores the parameter value in a browser cookie.
-2. When a conversion event occurs, the stored value is automatically included in the conversion data.
-3. This allows you to track which campaigns, emails, or traffic sources generated revenue.
+1. Octeth rewrites every tracked link in a campaign to carry an attribution token in a URL parameter (default: `pr`). You do not create this value — it is an encrypted token generated at send time that identifies the specific recipient, list and campaign.
+2. When the visitor lands on your website, the tracker stores that token in a browser cookie.
+3. The tracker attaches the stored token to **every** event it sends — page views, custom events and conversions alike.
+4. Conversions carrying a valid token are attributed to the campaign that produced it.
 
-The attribution cookie has a default lifetime of 30 days. If the visitor converts within that window, the conversion is attributed to the original source.
+The attribution cookie has a default lifetime of 30 days. If the visitor converts within that window, the conversion is attributed to the original campaign.
 
-::: info
-Revenue attribution works automatically once the tracking code is installed. Add the `pr` parameter to your campaign links to connect email campaigns to website conversions. For example: `https://yoursite.com/offer?pr=campaign-123`.
+::: warning Do not hand-write the `pr` value
+The token is produced by Octeth's link rewriter and is encrypted. A value you invent yourself (for example `?pr=campaign-123`) decrypts to nothing and is silently ignored — it attributes no revenue and identifies no one. Enable link tracking on the campaign and Octeth adds the parameter for you.
+:::
+
+### Identification From an Email Click
+
+A visitor who clicks a tracked campaign link is **already identified**, before they do anything on your site and without any `octethTracker.eventI()` call.
+
+The attribution token described above authoritatively encodes which subscriber the link was sent to. When the tracker sends its first event carrying that token, Octeth binds the browser to that subscriber. From that point on:
+
+- Website-event activity is logged against the subscriber and appears on their profile.
+- Website Event journeys (page view, custom event, conversion) fire for them.
+- The binding **persists** — later events from the same browser still resolve to that subscriber even after the token cookie expires.
+
+**A Website Event `identify` journey does not fire on this path.** The visitor never called identify, so triggering an identify journey on a mere link click would be surprising. Only the actual event's own trigger fires.
+
+**Precedence: explicit identify > click-through binding > anonymous.** A click-through binding only fills an identity that is still empty, so it can never overwrite an email established by an `eventI()` call. In the other direction, a later explicit `eventI()` always wins and overrides a click-through binding.
+
+Tokens are scoped to the account that generated them: a token belonging to another account is refused and creates no binding.
+
+::: tip New in v5.9.3
+Before v5.9.3 the token was attached only to conversion events, so revenue attribution worked from a click-through but website-event activity and journeys did not — those still required an explicit `eventI()`. The token is now attached to every event, so the binding happens on the landing page view. Revenue attribution behaviour is unchanged.
 :::
 
 ## Using Event Data in Segments
