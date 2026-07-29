@@ -28,9 +28,20 @@ Retrieves a paginated list of batches for a specific campaign with filtering and
 | CampaignID         | Integer | Yes      | Campaign ID to retrieve batches for                                                              |
 | RecordsPerRequest  | Integer | No       | Number of records per request (default: 50, 0 for all records, max: 500)                        |
 | RecordsFrom        | Integer | No       | Offset for pagination (default: 0)                                                               |
+| ExactOffset        | Boolean | No       | <Badge type="tip" text="New in v5.9.3" /> When `true`, `RecordsFrom` is honoured as an exact row offset. When omitted or `false` (default), `RecordsFrom` is floored down to the nearest `RecordsPerRequest` boundary — the historical behaviour, kept for backward compatibility. |
 | Status             | String  | No       | Filter by batch status: `Pending`, `Working`, `Completed`, `Failed`, `Paused`                   |
 | OrderField         | String  | No       | Field to sort by: `ID`, `CreatedAt`, `UpdatedAt`, `FinishedAt`, `Status`, `ProcessedEmails`, `EmailsPerSec` |
 | OrderType          | String  | No       | Sort direction: `ASC` or `DESC` (default: ASC)                                                   |
+
+::: warning Pagination offset semantics
+By default `RecordsFrom` is converted to a page number (`floor(RecordsFrom / RecordsPerRequest) + 1`), so any value that is **not** an exact multiple of `RecordsPerRequest` is rounded down to the start of that page. For example, `RecordsFrom=25` with `RecordsPerRequest=50` returns rows 0–49, not rows 25–74.
+
+Pass `ExactOffset: true` to have `RecordsFrom` treated as a true row offset. This is opt-in so that existing integrations keep receiving identical results.
+
+When `ExactOffset` is enabled together with `RecordsPerRequest: 0` ("all records"), the first `RecordsFrom` rows are skipped and every remaining row is returned.
+
+`ExactOffset` accepts the usual boolean spellings — `true`, `1`, `"1"`, `"true"`, `"yes"`, `"on"`. Anything else is treated as false and yields the default behaviour. As everywhere on `/api.php`, the parameter name itself is matched case-insensitively.
+:::
 
 ::: code-group
 
@@ -337,14 +348,31 @@ Retrieves a paginated list of queued emails for a specific campaign with filteri
 | SessionID          | String  | No       | Session ID obtained from login                                                                   |
 | APIKey             | String  | No       | API key for authentication                                                                       |
 | CampaignID         | Integer | Yes      | Campaign ID to retrieve queue items for                                                          |
-| RecordsPerRequest  | Integer | No       | Number of records per request (default: 50, 0 for all records, max: 500)                        |
+| RecordsPerRequest  | Integer | No       | Number of records per request (default: 50, max: 500). `0` is accepted but is **still capped at 500** — see the note below. |
 | RecordsFrom        | Integer | No       | Offset for pagination (default: 0)                                                               |
+| ExactOffset        | Boolean | No       | <Badge type="tip" text="New in v5.9.3" /> When `true`, `RecordsFrom` is honoured as an exact row offset. When omitted or `false` (default), `RecordsFrom` is floored down to the nearest `RecordsPerRequest` boundary — the historical behaviour, kept for backward compatibility. |
 | Status             | String  | No       | Filter by queue status: `Pending`, `Sending`, `Sent`, `Delivered`, `Failed`                     |
 | Search             | String  | No       | Search term for EmailAddress field                                                               |
 | BatchID            | String  | No       | Filter by specific QueueBatchID                                                                  |
 | IsTest             | Boolean | No       | Filter by IsTest flag (true/false)                                                               |
 | OrderField         | String  | No       | Field to sort by: `QueueID`, `EmailAddress`, `Status`, `QueuedAt`, `SentAt`, `FailedAt`, `QueueBatchID` (default: QueueID) |
 | OrderType          | String  | No       | Sort direction: `ASC` or `DESC` (default: ASC)                                                   |
+
+::: warning Pagination offset semantics
+By default `RecordsFrom` is converted to a page number (`floor(RecordsFrom / RecordsPerRequest) + 1`), so any value that is **not** an exact multiple of `RecordsPerRequest` is rounded down to the start of that page. For example, `RecordsFrom=25` with `RecordsPerRequest=50` returns rows 0–49, not rows 25–74.
+
+Pass `ExactOffset: true` to have `RecordsFrom` treated as a true row offset. This is opt-in so that existing integrations keep receiving identical results.
+
+`ExactOffset` accepts the usual boolean spellings — `true`, `1`, `"1"`, `"true"`, `"yes"`, `"on"`. Anything else is treated as false and yields the default behaviour. As everywhere on `/api.php`, the parameter name itself is matched case-insensitively.
+:::
+
+::: warning `RecordsPerRequest: 0` does not return all records here
+This endpoint returns at most **500** rows per request. `RecordsPerRequest: 0` is accepted but is still capped at 500 — it does **not** return every remaining row, even with `ExactOffset` enabled.
+
+Use `ExactOffset` together with an explicit `RecordsPerRequest` and advance `RecordsFrom` to page through the full queue.
+
+Note that the sibling `admin.campaign.batches` endpoint *does* honour `RecordsPerRequest: 0` as "all records". The two are not consistent with each other.
+:::
 
 ::: code-group
 

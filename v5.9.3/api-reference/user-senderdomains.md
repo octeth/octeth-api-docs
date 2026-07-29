@@ -227,6 +227,29 @@ If a `(SenderDomain, UserID)` pair already exists (e.g. it was previously soft-d
 | UnsubscribeLink   | Boolean | No       | Whether to inject the unsubscribe link automatically. Default: `false`                                       |
 | CustomSubdomain   | String  | No       | Override the default MFROM/return-path subdomain. Letters, digits, and hyphens only; max 32 chars; no leading/trailing hyphens |
 | CustomTrackPrefix | String  | No       | Override the default click-tracking subdomain prefix. Same character rules as `CustomSubdomain`             |
+| UseTrackingSubdomain | Boolean | No | <Badge type="tip" text="New in v5.9.3" /> Whether the domain uses a separate tracking subdomain (e.g. `track-sl.example.com`). Stored inverted as `Options.TrackPrefixDisabled`, so `UseTrackingSubdomain=false` sets `TrackPrefixDisabled=true` and **removes the tracking record from the generated DNS record set**. When the parameter is omitted the key is not written to `Options` at all and a separate tracking subdomain is used — the previous, unchanged default. Mirrors the identically-named parameter on `user.senderdomain.update`. |
+
+Parameter names are matched case-insensitively, as everywhere on `/api.php`.
+
+::: tip Changed in v5.9.3 — DNS records now honour your custom subdomains
+The records returned in `SenderDomain.VerificationMeta.DNSRecords` are now generated with **this domain's** effective subdomain and tracking prefix.
+
+Previously the create response was built from the raw global DNS template, so a domain created with `CustomSubdomain` / `CustomTrackPrefix` received records whose host names carried the **global default** subdomain — the custom values only took effect after a subsequent `user.senderdomain.update`. `user.senderdomain.create` and `user.senderdomain.update` now produce the same records for the same domain and options.
+
+Note that the record set embeds two values that are regenerated on every call — a random host label and a verification hash (the TXT rdata) — so the records returned by a create and by a later update are equivalent but not literally identical strings. Always publish the record set most recently returned by the API.
+:::
+
+**Example record set.** For a request carrying `SenderDomain=example.com`, `CustomSubdomain=foo`, `CustomTrackPrefix=bar` and `UseTrackingSubdomain=true`, the generated host names use `foo` and `bar-foo`:
+
+```txt
+foo.example.com                    CNAME  mailer.deliveryservers.com
+key1._domainkey.foo.example.com    CNAME  key1._domainkey.mailer.deliveryservers.com
+_DMARC.foo.example.com             CNAME  _DMARC.mailer.deliveryservers.com
+bar-foo.example.com                CNAME  track.mailer.deliveryservers.com
+<random>.foo.example.com           TXT    <verification-hash>
+```
+
+With `UseTrackingSubdomain=false`, the `bar-foo.example.com` tracking record is omitted.
 
 ::: code-group
 

@@ -1444,6 +1444,170 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## Patch a User Group
+
+<Badge type="info" text="POST" /> `/api.php`
+
+<Badge type="tip" text="New in v5.9.3" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- **Partial update.** Only the fields present in the request body are written. Every other column of the user group is left untouched — it is not included in the `UPDATE` statement at all.
+:::
+
+### Why this exists alongside `usergroup.update`
+
+`usergroup.update` rebuilds the entire user group row from the request body. Around 30 optional columns are written unconditionally, so any field the caller omits is persisted as an empty string, and `PaymentSystem` / `CreditSystem` are written as `Disabled` whenever their key is absent — silently switching those systems off for every user in the group.
+
+The only safe way to change a single value through `usergroup.update` is to read the whole group back with `usergroup.get` and echo every field, which forces the client to hold and re-transmit `SendMethodSMTPPassword`.
+
+`usergroup.patch` removes that requirement: send `UserGroupID` plus only what you want to change. `usergroup.update` is unchanged and remains fully supported.
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `usergroup.patch`        |
+| SessionID | String | No       | Session ID obtained from admin login  |
+| APIKey    | String | No       | Admin API key for authentication      |
+| UserGroupID | Integer | Yes | The user group to patch. This is the only required field — a request carrying just `UserGroupID` is a valid no-op |
+| GroupName | String | No | Name of the user group |
+| RelThemeID | Integer | No | Theme ID. Must reference an existing theme |
+| SubscriberAreaLogoutURL | String | No | Subscriber area logout URL |
+| ForceUnsubscriptionLink | String | No | `Enabled` or `Disabled` |
+| ForceRejectOptLink | String | No | `Enabled` or `Disabled` |
+| ForceOptInList | String | No | `Enabled` or `Disabled` |
+| Permissions | Array \| String | No | Array of permission keys (stored comma-separated), or a pre-joined comma-separated string |
+| PaymentSystem | String | No | `Enabled` or `Disabled` |
+| CreditSystem | String | No | `Enabled` or `Disabled` |
+| PaymentPricingRange | String | No | Pricing range payload |
+| PaymentCampaignsPerRecipient | String | No | `Enabled` or `Disabled` |
+| PaymentCampaignsPerCampaignCost | Number | No | Per-campaign cost |
+| PaymentAutoRespondersChargeAmount | Number | No | Auto-responder charge amount |
+| PaymentAutoRespondersPerRecipient | String | No | `Enabled` or `Disabled` |
+| PaymentDesignPrevChargeAmount | Number | No | Design-preview charge amount |
+| PaymentDesignPrevChargePerReq | Number | No | Design-preview charge per request |
+| PaymentSystemChargeAmount | Number | No | System charge amount |
+| LimitSubscribers | Integer | No | Maximum number of subscribers |
+| LimitLists | Integer | No | Maximum number of lists |
+| LimitCampaignSendPerPeriod | Integer | No | Campaign send limit per period |
+| LimitEmailSendPerPeriod | Integer | No | Email send limit per period |
+| LimitEmailSendPerDay | Integer | No | Email send limit per day |
+| LimitEmailSendLifetime | Integer | No | Lifetime email limit |
+| LimitEmailGatewaySenderDomains | Integer | No | Email Gateway sender domain limit |
+| ThresholdImport | Integer | No | Import approval threshold |
+| ThresholdEmailSend | Integer | No | Email-send approval threshold |
+| PlainEmailHeader | String | No | Plain-text email header |
+| PlainEmailFooter | String | No | Plain-text email footer |
+| HTMLEmailHeader | String | No | HTML email header |
+| HTMLEmailFooter | String | No | HTML email footer |
+| TrialGroup | String | No | `Yes` or `No`. `Enabled` / `Disabled` are accepted as aliases and normalised to `Yes` / `No` |
+| TrialExpireSeconds | Integer | No | Trial duration in seconds |
+| XMailer | String | No | `X-Mailer` header value |
+| SendMethod | String | No | `System`, `SMTP`, `LocalMTA`, `PHPMail`, `PowerMTA` or `SaveToDisk` |
+| SendMethodSaveToDiskDir | String | No | Save-to-disk directory |
+| SendMethodPowerMTAVMTA | String | No | PowerMTA VirtualMTA |
+| SendMethodPowerMTADir | String | No | PowerMTA pickup directory |
+| SendMethodLocalMTAPath | String | No | Local MTA binary path |
+| SendMethodSMTPHost | String | No | SMTP host |
+| SendMethodSMTPPort | Integer | No | SMTP port |
+| SendMethodSMTPSecure | String | No | `ssl`, `tls`, or an empty string for none |
+| SendMethodSMTPTimeOut | Integer | No | SMTP timeout in seconds |
+| SendMethodSMTPAuth | String | No | `true` or `false` |
+| SendMethodSMTPUsername | String | No | SMTP username |
+| SendMethodSMTPPassword | String | No | SMTP password. **Omit it and the stored password is left completely untouched** |
+| Options | Object \| String | No | Group options as an object, or a JSON string that decodes to an object |
+| DefaultRateLimits | Object \| String | No | Rate-limit buckets. Merged over the canonical defaults, so a partial payload cannot drop a bucket |
+| CustomEmailHeaders | String | No | Custom email headers |
+| SubscriptionPlan | String | No | Subscription plan identifier for the group |
+
+Parameter names are matched case-insensitively, as everywhere on `/api.php`.
+
+**Not patchable:** `LimitCampaignSendPeriod`, `LimitEmailSendPeriod`, `PaymentAutoRespondersChargePeriod`, `PaymentDesignPrevChargePeriod` and `PaymentSystemChargePeriod` are fixed to `Monthly` by the product. `PaymentCreditSystem`, `PaymentCreditPricing`, `SendMethodSMTPDebug`, `SendMethodSMTPKeepAlive` and `SendMethodSMTPMsgConn` are not settable through any user group API command. `SubscriptionPlanIsDefault` is deliberately excluded — `usergroup.update` cannot set it either, and the "one default per subscription plan" rule is enforced by the admin interface.
+
+::: tip Clearing a value
+An empty string is a supplied value: sending `"XMailer": ""` clears the field. A field sent as `null` is treated as absent and is never written, because these columns are `NOT NULL`. Integer fields reject an empty string rather than storing it — see error code 32.
+:::
+
+::: warning Send-method settings are not connectivity-tested
+`usergroup.update` sends a live test email whenever `SendMethod` is not `System`. `usergroup.patch` validates the **format** of every send-method field it is given — so no value MySQL would silently coerce to an empty string or a zero can be stored — but does not perform that live test, because a partial payload does not describe a complete send configuration. Use `usergroup.update`, the admin interface, or `settings.emailsendingtest` when you want the connection verified.
+:::
+
+**Response Fields:**
+
+`UpdatedFields` lists the database columns actually written, so a caller can assert the write set rather than infer it. It is an empty array for a no-op patch, and in that case no `UPDATE` statement is issued at all.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "usergroup.patch",
+    "AdminAPIKey": "your-admin-api-key",
+    "UserGroupID": 3,
+    "LimitEmailSendPerPeriod": 250000,
+    "LimitSubscribers": 50000
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserGroupID": "3",
+  "UpdatedFields": ["LimitSubscribers", "LimitEmailSendPerPeriod"]
+}
+```
+
+```json [Success Response — no-op]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserGroupID": "3",
+  "UpdatedFields": []
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 26,
+  "ErrorField": "creditsystem"
+}
+```
+
+```txt [Error Codes]
+0:  Success
+19: Invalid theme ID (RelThemeID)
+20: Missing UserGroupID parameter (returned as an array, [20])
+21: User group not found
+22: Invalid send method
+23: Invalid SendMethodSMTPSecure — must be 'ssl', 'tls' or ''
+24: Invalid SendMethodSMTPAuth — must be 'true' or 'false'
+26: Invalid Enabled/Disabled value; the offending field is returned in ErrorField
+27: Invalid TrialGroup value — must be 'Yes' or 'No' (or the 'Enabled'/'Disabled' aliases)
+28: Invalid Options payload — must be an object, or a JSON string decoding to one
+29: Invalid DefaultRateLimits payload — must be an object, or a JSON string decoding to one
+30: Invalid Permissions payload — must be a comma-separated string, or an array whose
+    every element is a string
+31: Non-scalar value supplied for a scalar field; the offending field is returned in
+    ErrorField
+32: Invalid integer value; the offending field is returned in ErrorField. The value must
+    be a base-10 integer within the signed 32-bit column range (-2147483648..2147483647).
+    Floats ('1.5'), scientific notation ('1e3') and hexadecimal ('0x1A') are rejected
+    rather than silently coerced by MySQL — '0x1A' would otherwise store 0, which on a
+    Limit* column means unlimited. Negative values are accepted: -1 is an established
+    "unlimited" sentinel.
+```
+
+:::
+
+::: warning Enabled/Disabled values are validated, not coerced
+`usergroup.update` turns any value that is not exactly `Enabled` into `Disabled`, including a missing key. `usergroup.patch` rejects an unrecognised value with `ErrorCode: 26` and writes nothing for an absent key, so a system can be turned both on and off explicitly and can never be disabled by accident.
+:::
+
 ## Get User Group
 
 <Badge type="info" text="POST" /> `/api.php`

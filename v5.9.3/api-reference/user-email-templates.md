@@ -531,8 +531,22 @@ Renders a user email template the way a subscriber would actually receive it: br
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
 | EmailTemplateID | Integer | Yes | ID of the user-owned email template to preview. Must belong to the authenticated user. |
-| SampleData | Object | No | Map of merge-tag values to use during personalization (e.g. `{"FirstName": "Jane", "Email": "jane@example.com"}`). When omitted, sensible defaults are used so unfilled tags don't render as raw `%Subscriber:Foo%` strings. Caller-supplied values override the defaults. |
+| SampleData | Object | No | Map of merge-tag values to use during personalization (e.g. `{"FirstName": "Jane", "Email": "jane@example.com"}`). When omitted, sensible defaults are used so unfilled tags don't render as raw `%Subscriber:Foo%` strings. Caller-supplied values override the defaults. Keys are matched **case-insensitively** — see below. |
 | IncludeBranding | Boolean | No | When `true` (default), wraps the template via the user's configured email header/footer (set via `useremail.header.set` / `useremail.footer.set` and the user-group's branding). When `false`, returns the personalized body only. |
+
+::: warning Fixed in v5.9.3 — `SampleData` is no longer silently ignored
+`SampleData` values did not reach the rendered preview. The API dispatcher lowercases every key at every depth of the request payload, while personalization matches `%Subscriber:<Field>%` **case-sensitively** — so `{"FirstName": "Jane"}` arrived as `firstname` and was *added* alongside the default `FirstName` rather than overriding it. `%Subscriber:FirstName%` kept rendering the placeholder default, and a caller-only tag such as `%Subscriber:Company%` never resolved at all.
+
+The documented contract is unchanged ("caller-supplied values override the defaults") — v5.9.3 makes it true. If you worked around this by pre-rendering merge tags yourself before calling the endpoint, that workaround is now redundant but still harmless.
+:::
+
+**`SampleData` key matching.** Keys are matched case-insensitively against, in precedence order:
+
+1. the default sample subscriber's fields;
+2. your account's custom fields — by the field's merge-tag alias, or by `CustomField<ID>`;
+3. every `Subscriber` merge tag present in the template being previewed (including tags in the branding header/footer when `IncludeBranding` is `true`).
+
+A matched key is normalized to the field's real spelling, so `{"firstname": "Jane"}` and `{"FirstName": "Jane"}` both fill `%Subscriber:FirstName%`. The remap is strictly additive: every value also stays available under the exact name you sent, so a tag written in that same case keeps resolving. Keys that match nothing are passed through unchanged rather than dropped, and are recorded at DEBUG level in the application log.
 
 ::: code-group
 

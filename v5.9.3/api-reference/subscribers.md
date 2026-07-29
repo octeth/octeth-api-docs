@@ -147,8 +147,26 @@ curl -X POST https://example.com/api/v1/subscriber.create \
 | EmailAddress | String | Yes   | Email address of the subscriber       |
 | IPAddress | String | Yes      | IP address of the subscriber          |
 | CustomFieldN | String | No    | Custom field values (N = CustomFieldID) |
+| EnforceRequiredFields | Boolean | No | <Badge type="tip" text="New in v5.9.3" /> When `true`, every custom field the list marks `IsRequired = Yes` is validated — **including fields whose `CustomFieldN` key is not present in the request at all**. Omitting a required field then returns `ErrorCode 6` with `ErrorCustomFieldID` / `ErrorCustomFieldTitle`. Defaults to `false`, which preserves the historical behaviour where a required field is only checked when its key is submitted with an empty value. |
 | Source    | String | No       | Acquisition source bucket persisted on the subscriber row. Possible values: `CSVImport`, `API`, `Webhook`, `Manual`, `Other`, `Unknown`. Defaults to `API` for this endpoint. Anything outside this set is coerced to `Unknown`. |
 | SourceRef | String | No       | Optional free-text source reference (e.g., a custom label or integration id). Truncated server-side to 64 characters. |
+
+::: warning Required custom fields are only fully enforced on request
+By default this endpoint validates `IsRequired` custom fields **only when the caller submits the field's key**. A required field that is omitted entirely is not checked, and the subscriber is created without it. Set `EnforceRequiredFields=true` to validate every required field on the list.
+
+The parameter is opt-in precisely because enabling it by default would turn existing, currently-successful integrations into `ErrorCode 6` failures.
+
+When `EnforceRequiredFields=true`:
+
+- **All** required fields applicable to the list are checked — both list-specific fields and the account's global custom fields, using the same ownership scoping as the rest of the endpoint.
+- **`Visibility` is not considered.** A required field marked `User Only` or `Hidden` is enforced too, so a caller opting in must be able to supply every required field on the list.
+- **A list-specific required field that is omitted but has a non-empty `FieldDefaultValue` is accepted**, because that default is written to the subscriber row — the stored value ends up non-empty, so the requirement is genuinely satisfied.
+- **A global required field is not excused by its `FieldDefaultValue`.** Global custom-field values are only written from what the request submits — no default is backfilled — so an omitted global field would be stored empty and is reported.
+- Error precedence is unchanged: a submitted-but-empty required field (`6`), a validation failure (`8`) or a uniqueness conflict (`7`) is still reported before any omitted-field error.
+- Only the **first** list in a comma-separated `ListID` is validated. Subsequent lists never receive custom-field values from this endpoint and are not checked.
+
+`EnforceRequiredFields` accepts the usual boolean spellings — `true`, `1`, `"1"`, `"true"`, `"yes"`, `"on"`. Anything else is treated as false. No new error codes are introduced: omitted required fields reuse `ErrorCode 6` with the same `ErrorCustomFieldID` / `ErrorCustomFieldTitle` keys the present-but-empty case already returns.
+:::
 
 ::: code-group
 
@@ -188,6 +206,15 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Error Response — missing required field]
+{
+  "Success": false,
+  "ErrorCode": 6,
+  "ErrorCustomFieldID": 5,
+  "ErrorCustomFieldTitle": "Company"
+}
+```
+
 ```txt [Error Codes]
 0: Success
 1: Missing ListID parameter
@@ -195,7 +222,8 @@ curl -X POST https://example.com/api.php \
 3: Missing IPAddress parameter
 4: Invalid ListID
 5: Invalid EmailAddress
-6: Required custom field missing
+6: Required custom field missing (returned with ErrorCustomFieldID and
+   ErrorCustomFieldTitle)
 7: Custom field value is not unique
 8: Invalid custom field value
 9: Duplicate email address

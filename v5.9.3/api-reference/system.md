@@ -62,6 +62,7 @@ curl -X GET "https://example.com/api.php?Command=system.health.check&adminapikey
     "Session": "OK",
     "SystemContainer": "OK",
     "Vector": "OK",
+    "WebsiteEventRouting": "OK",
     "Haproxy": "OK",
     "Cron": "OK",
     "Supervisor": "OK",
@@ -84,6 +85,7 @@ curl -X GET "https://example.com/api.php?Command=system.health.check&adminapikey
     "Session": "OK",
     "SystemContainer": "OK",
     "Vector": "Timeout after 3 seconds",
+    "WebsiteEventRouting": "HAProxy did not route /hello/message to backend_vector (HTTP 503; \"X-Server: oempro_vector\" response header missing). Check that backend_vector has an available server.",
     "Haproxy": "OK",
     "Cron": "App container cron not executing (last run: 120 seconds ago)",
     "Supervisor": "# campaign_delivery_worker: STOPPED # journey_worker: FATAL ",
@@ -129,7 +131,8 @@ The endpoint performs comprehensive health checks on the following components:
 - **Redis**: Cache server connectivity
 - **Session**: PHP session functionality
 - **SystemContainer**: Laravel backend container health (`/system/ping`)
-- **Vector**: Log aggregation service health
+- **Vector**: Log aggregation service health (probed directly)
+- **WebsiteEventRouting** <Badge type="tip" text="New in v5.9.3" />: The full load-balancer → Vector path used by the public website-event tracker
 - **Haproxy**: Load balancer connectivity
 - **Cron**: App and system container cron job execution (heartbeat checks)
 - **Supervisor**: Process manager status for all managed processes
@@ -147,6 +150,22 @@ The endpoint performs comprehensive health checks on the following components:
 - The Cron check monitors heartbeat files updated every minute; considers cron failed if > 90 seconds since last update
 - The Supervisor check reports processes not in `RUNNING` state with format: `# process_name: STATE`
 - The SendEngine check discovers containers dynamically using Docker Compose project prefix detection
+
+### The `WebsiteEventRouting` check
+
+<Badge type="tip" text="New in v5.9.3" />
+
+The `Vector` check talks to the Vector container directly, so it cannot see a broken load-balancer route. `WebsiteEventRouting` exercises the **routed** path instead — the same path the public website-event tracker uses — so that failure mode is actually detected. Both checks are kept, so a genuine Vector outage stays distinguishable from broken routing.
+
+This exists because of a real, long-lived outage: a startup DNS race left the Vector backend with no available server for roughly four weeks. The load balancer resolved the container name once at boot, failed while the container was still starting, and permanently disabled the server. Vector itself stayed healthy the whole time, so the health check reported `OK` while the public website-event endpoint returned HTTP 503 to every visitor.
+
+How it probes:
+
+- It issues a **GET** to the website-event path through the load balancer. `GET` is deliberate — Vector's HTTP source only accepts `POST`, so a `GET` is rejected before ingestion. A synthetic `POST` would be forwarded downstream and inject a junk website event on every health-check tick.
+- It is also deliberately **not** an `OPTIONS` request: `OPTIONS` on the website-event paths is answered by a static backend that never touches Vector, so an `OPTIONS` probe would have stayed green throughout the outage described above.
+- The assertion is the presence of the `X-Server: oempro_vector` **response header**, which only the Vector backend adds. The load balancer's internally generated "no server available" 503 is produced before those backend response rules run and therefore carries no such header. Matching the header rather than the status code proves the response really came from Vector through the intended route.
+
+On failure the check reports the observed HTTP status and states that the `X-Server: oempro_vector` header was missing, pointing the operator at the Vector backend's server availability.
 
 ## Process PowerMTA Log File
 

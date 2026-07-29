@@ -1492,6 +1492,20 @@ Retries failed recipients for campaigns with status "Sent" or "Failed". This end
 
 **Important:** This endpoint bypasses the campaign picker and handles batch creation + RabbitMQ publishing directly. This ensures only the original failed recipients are retried without re-inserting subscribers who joined target lists after the original send.
 
+::: warning If delivery cannot be dispatched
+The database work — resetting failed recipients to `Pending`, creating batches, moving the campaign to `Sending` — is committed **before** the campaign is published to the message queue. The publish is retried up to three times.
+
+If it still fails, for example while the message queue service is unreachable, the committed work is **deliberately not rolled back**: the recipients stay re-queued and the campaign stays in `Sending`. The response reports `ErrorCode 6` with an `ErrorText` saying exactly that, and naming the recovery action.
+
+Because the campaign then has pending batches with no worker processing them, it is reported as stuck. Resume delivery with [Unstuck a Stuck Campaign](./admin.md#unstuck-a-stuck-campaign) (`admin.campaign.unstuck`). Calling `admin.campaign.retryfailed` again will **not** help — it rejects campaigns already in `Sending` status with `ErrorCode 3`.
+:::
+
+::: tip Changed in v5.9.3 — a failed COMMIT is now reported
+The transaction's `COMMIT` result was not inspected. A failed commit fell through to the message-queue publish and the endpoint could return `Success: true` for work that never became durable — and a delivery worker consuming that message would find the campaign without its new pending batches.
+
+A failed commit is now caught and returned as `ErrorCode 6` with the "Database error" wording. Conversely, a message-queue dispatch failure *after* a successful commit is no longer misreported as a database error accompanied by a no-op `ROLLBACK`; it gets its own explicit `ErrorText`, as described above.
+:::
+
 **Request Body Parameters:**
 
 | Parameter  | Type    | Required | Description                                           |
@@ -1532,6 +1546,14 @@ curl -X POST https://example.com/api/v1/admin.campaign.retryfailed \
 }
 ```
 
+```json [Error Response — delivery not dispatched]
+{
+  "Success": false,
+  "ErrorCode": 6,
+  "ErrorText": "150 failed recipients were re-queued and the campaign is now in Sending status, but the delivery queue could not be notified after 3 attempts, so no delivery worker has started. Nothing was rolled back. Once the message queue service is reachable again, resume delivery with the campaign unstuck action (admin.campaign.unstuck). Message queue error: ..."
+}
+```
+
 ```txt [Error Codes]
 0: Success
 1: campaign_id parameter is required
@@ -1539,7 +1561,8 @@ curl -X POST https://example.com/api/v1/admin.campaign.retryfailed \
 3: Campaign is not in Sent or Failed status
 4: Queue table does not exist for this campaign
 5: No failed recipients found for this campaign
-6: Database error during retry operation
+6: Database error during retry operation, or the retry was committed but the campaign
+   could not be dispatched to the delivery queue. The ErrorText distinguishes the two.
 ```
 
 :::

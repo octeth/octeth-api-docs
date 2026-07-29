@@ -83,6 +83,16 @@ This matters more than a typical error-code addition, because `Level=list` was f
 
 If you treat `TotalRecords: 0` as "empty", add a `Success` check. `Success: true` with `TotalRecords: 0` now reliably means the filter matched nothing.
 
+### `admin.campaign.retryfailed` — a failed commit is no longer reported as success
+
+The retry transaction's `COMMIT` result was never inspected. A failed commit fell straight through to the message-queue publish, so the endpoint could return `Success: true` for work that never became durable — and a delivery worker consuming that message would find the campaign without the pending batches it was told to process.
+
+A failed commit is now caught and returned as `ErrorCode: 6`.
+
+The same fix separates two failures that used to look identical. Once the commit **has** succeeded, a message-queue dispatch failure is no longer reported as a "Database error" alongside a `ROLLBACK` that was a no-op against already-durable state. It still returns `ErrorCode: 6`, but with an `ErrorText` stating plainly that the recipients were re-queued, the campaign is in `Sending`, nothing was rolled back, and delivery is resumed with `admin.campaign.unstuck`. The publish is now retried up to three times first.
+
+If you parse `ErrorText`, note that code `6` now carries two distinguishable messages. If you treated any `Success: true` from this endpoint as "the retry is under way", that assumption is now actually true.
+
 ### `campaign.update` — Untrusted accounts are held at `Pending Approval` again
 
 For accounts with `ReputationLevel = Untrusted`, a `Draft → Ready` transition is now held at `Pending Approval` and an admin notification is sent.
@@ -218,3 +228,4 @@ This is strictly a fix, but it is still a behavior change for anyone who worked 
 8. **Do you iterate `GroupInfo` from `user.current` assuming exactly four keys?** It now returns the full capability set. If you were calling the admin-authenticated `user.get` purely to read capability flags, you can stop.
 9. **Do you have journeys on `WebsiteEvent_pageView` or `WebsiteEvent_customEvent` triggers?** Review them before upgrading — an email-link click now identifies the visitor, so these can fire for every clicked-through recipient.
 10. **Do you monitor payment-period rows or `LimitCampaignSendPerPeriod` counters?** Expect a one-time counter reset for accounts that were on a malformed period, and expect read endpoints to stop creating rows.
+11. **Do you call `admin.campaign.retryfailed` and treat `Success: true` as "the retry is under way"?** That is now accurate — but handle `ErrorCode: 6`, which covers both a failed commit and a committed retry that could not be dispatched. The `ErrorText` tells you which, and the second case is recovered with `admin.campaign.unstuck`, not by retrying.
