@@ -399,7 +399,7 @@ Unattended production-style install:
   --admin-name "Jane Doe" \
   --admin-email jane@example.com \
   --admin-username jane \
-  --admin-password 'Str0ngPassw0rd' \
+  --admin-password 'YOUR_STRONG_PASSWORD_HERE' \
   --license-key XXXX-XXXX-XXXX-XXXX
 ```
 

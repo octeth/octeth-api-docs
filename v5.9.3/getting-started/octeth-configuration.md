@@ -472,7 +472,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     # Application tier
     SENDENGINE_CPU_LIMIT=3.0                # Send engine (default: 3.0 — unchanged from previous releases)
-    SENDENGINE_MEM_LIMIT=3G                 # Send engine (default: 3G; 6G on a dedicated MTA host)
+    SENDENGINE_MEM_LIMIT=                   # Leave EMPTY: each compose file supplies its own default (3G single-host, 6G dedicated MTA host). Setting a value pins both.
     SENDENGINE_MEM_RESERVATION=512M
     LINK_PROXY_CPU_LIMIT=3.0                # Link proxy / tracking (default: 3.0 — unchanged)
     LINK_PROXY_MEM_LIMIT=3G
@@ -513,7 +513,9 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     - **`<SERVICE>_MEM_LIMIT`** — a **hard** memory cap. A container that exceeds it is killed by the kernel's OOM killer and restarted by its restart policy.
     - **`<SERVICE>_MEM_RESERVATION`** — a **soft** floor. It only biases the kernel's reclaim decisions when the host is under memory pressure. It does not reserve memory and it will not prevent an OOM kill; it is not a guarantee.
 
-    **`0` means unlimited** and is the default for twelve of the fourteen services, so this entire section is opt-in: an install that never sets these values behaves exactly as it did before. The send engine and link proxy default to the same `3.0` cores / `3G` / `512M` they have always used, so their behavior is unchanged too. (`docker-compose.mta.yml`, used when the send engine runs on its own MTA host, is a standalone deployment file and defaults `SENDENGINE_MEM_LIMIT` to `6G`; setting the variable in `.oempro_env` overrides whichever file is in use.)
+    **`0` means unlimited** and is the default for twelve of the fourteen services, so this entire section is opt-in: an install that never sets these values behaves exactly as it did before. The send engine and link proxy default to the same `3.0` cores / `3G` / `512M` they have always used, so their behavior is unchanged too.
+
+    **Leave `SENDENGINE_MEM_LIMIT` empty unless you mean to pin it.** It is the one value whose default differs per compose file: `3G` in `docker-compose.yml` and `6G` in `docker-compose.mta.yml` (the standalone file used when the send engine runs on its own MTA host, which has more headroom because it runs nothing else). An **empty** value falls through to whichever compose file is in use and takes that file's own default, preserving the historical behavior on both. Writing a value into `.oempro_env` **pins both files to it** — writing `3G` would silently downgrade a dedicated MTA host from its historical `6G`. Every other variable in this section has the same default in both files, so this caveat applies only here.
 
     **Units matter.** Memory accepts `b`, `k`, `m` and `g` suffixes — `512m`, `2g`, `3G`. A bare number is interpreted as **bytes**, so `MYSQL_MEM_LIMIT=2` means two bytes and the container will fail to start. Always write a suffix.
 
