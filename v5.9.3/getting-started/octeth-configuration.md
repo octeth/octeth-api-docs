@@ -453,6 +453,91 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     It is deliberately a separate setting from `SUBSCRIBER_BROWSE_QUERY_TIMEOUT`, even though both bound the same backend. The browse page is an interactive render that an operator may reasonably want to fail fast; this is a send path, where failing fast drops mail. Tuning one should not silently change the other. A value of `0` or below is ignored and the 30-second default is used instead, because the underlying HTTP client treats a zero timeout as *wait forever*.
 
+36. **Container Resource Limits**
+
+    ```bash
+    # Data tier
+    MYSQL_CPU_LIMIT=0                       # CPU cores for oempro_mysql (default: 0 = unlimited)
+    MYSQL_MEM_LIMIT=0                       # Hard memory cap for oempro_mysql (default: 0 = unlimited)
+    MYSQL_MEM_RESERVATION=0                 # Soft memory floor for oempro_mysql (default: 0 = none)
+    CLICKHOUSE_CPU_LIMIT=0
+    CLICKHOUSE_MEM_LIMIT=0
+    CLICKHOUSE_MEM_RESERVATION=0
+    REDIS_CPU_LIMIT=0
+    REDIS_MEM_LIMIT=0
+    REDIS_MEM_RESERVATION=0
+    RABBITMQ_CPU_LIMIT=0
+    RABBITMQ_MEM_LIMIT=0
+    RABBITMQ_MEM_RESERVATION=0
+
+    # Application tier
+    SENDENGINE_CPU_LIMIT=3.0                # Send engine (default: 3.0 — unchanged from previous releases)
+    SENDENGINE_MEM_LIMIT=3G                 # Send engine (default: 3G; 6G on a dedicated MTA host)
+    SENDENGINE_MEM_RESERVATION=512M
+    LINK_PROXY_CPU_LIMIT=3.0                # Link proxy / tracking (default: 3.0 — unchanged)
+    LINK_PROXY_MEM_LIMIT=3G
+    LINK_PROXY_MEM_RESERVATION=512M
+    OEMPRO_SUPERVISOR_CPU_LIMIT=0
+    OEMPRO_SUPERVISOR_MEM_LIMIT=0
+    OEMPRO_SUPERVISOR_MEM_RESERVATION=0
+    OEMPRO_CPU_LIMIT=0
+    OEMPRO_MEM_LIMIT=0
+    OEMPRO_MEM_RESERVATION=0
+    OEMPRO_SYSTEM_CPU_LIMIT=0
+    OEMPRO_SYSTEM_MEM_LIMIT=0
+    OEMPRO_SYSTEM_MEM_RESERVATION=0
+    OEMPRO_CRON_CPU_LIMIT=0
+    OEMPRO_CRON_MEM_LIMIT=0
+    OEMPRO_CRON_MEM_RESERVATION=0
+
+    # Edge / auxiliary tier
+    VECTOR_CPU_LIMIT=0
+    VECTOR_MEM_LIMIT=0
+    VECTOR_MEM_RESERVATION=0
+    EG_INBOUND_SMTP_CPU_LIMIT=0
+    EG_INBOUND_SMTP_MEM_LIMIT=0
+    EG_INBOUND_SMTP_MEM_RESERVATION=0
+    HAPROXY_CPU_LIMIT=0
+    HAPROXY_MEM_LIMIT=0
+    HAPROXY_MEM_RESERVATION=0
+    MAILPIT_CPU_LIMIT=0
+    MAILPIT_MEM_LIMIT=0
+    MAILPIT_MEM_RESERVATION=0
+    ```
+
+    Octeth runs as fourteen Docker containers on one host. Previously only two of them — the send engine and the link proxy — had any CPU or memory cap, and both values were hard-coded in `docker-compose.yml`, a version-controlled file that is replaced on upgrade. Everything else, including the memory-hungry data tier (`oempro_mysql`, `oempro_clickhouse`, `oempro_redis`, `oempro_rmq`) and the worker tier (`oempro_supervisor`, `oempro_cron`), ran with no cgroup limit at all. A single container that leaks memory or spins the CPU could therefore starve every other service on the machine, and container-level throttling and memory-versus-limit monitoring only produced meaningful data for those two services.
+
+    Every service now reads three optional settings from `.oempro_env`:
+
+    - **`<SERVICE>_CPU_LIMIT`** — a ceiling on CPU cores, fractional values allowed (`1.5` = one and a half cores). It caps total CPU time; it does not pin the container to specific cores.
+    - **`<SERVICE>_MEM_LIMIT`** — a **hard** memory cap. A container that exceeds it is killed by the kernel's OOM killer and restarted by its restart policy.
+    - **`<SERVICE>_MEM_RESERVATION`** — a **soft** floor. It only biases the kernel's reclaim decisions when the host is under memory pressure. It does not reserve memory and it will not prevent an OOM kill; it is not a guarantee.
+
+    **`0` means unlimited** and is the default for twelve of the fourteen services, so this entire section is opt-in: an install that never sets these values behaves exactly as it did before. The send engine and link proxy default to the same `3.0` cores / `3G` / `512M` they have always used, so their behavior is unchanged too. (`docker-compose.mta.yml`, used when the send engine runs on its own MTA host, is a standalone deployment file and defaults `SENDENGINE_MEM_LIMIT` to `6G`; setting the variable in `.oempro_env` overrides whichever file is in use.)
+
+    **Units matter.** Memory accepts `b`, `k`, `m` and `g` suffixes — `512m`, `2g`, `3G`. A bare number is interpreted as **bytes**, so `MYSQL_MEM_LIMIT=2` means two bytes and the container will fail to start. Always write a suffix.
+
+    **Applying and verifying.** Limits are applied when a container is created, so run `./cli/octeth.sh docker:up` (or `docker:restart`) after changing them, then confirm with:
+
+    ```bash
+    docker inspect oempro_mysql --format 'Memory={{.HostConfig.Memory}} NanoCpus={{.HostConfig.NanoCpus}}'
+    ```
+
+    A value of `0` for either field means no limit is in force. The Octeth CLI passes `--env-file .oempro_env` to Docker Compose, so these settings apply on every CLI-driven run — including `./cli/octeth.sh upgrade`, which does not otherwise load the environment file. If you invoke `docker compose` directly, pass `--env-file .oempro_env` yourself; there is no root `.env` file, so without it Compose falls back to the defaults baked into the compose file.
+
+    **Choosing values.** Deliberately no non-zero defaults are shipped for the other twelve services: a memory cap that is too low turns a healthy but busy service into an OOM-kill loop, and the right number depends entirely on host size and workload. Start generous, watch actual usage, then tighten. Keep the sum of all memory limits comfortably below total host RAM, and note these caps are **per container** — the send engine is horizontally scaled, so *N* replicas can consume up to *N* × the limit.
+
+    Service-specific cautions:
+
+    - **`oempro_mysql`** is the most memory-sensitive container. Its InnoDB buffer pool is configured separately (`_dockerfiles/mysql/conf.d`); set `MYSQL_MEM_LIMIT` **above** `innodb_buffer_pool_size` plus per-connection buffers, or MySQL will be OOM-killed mid-query. On a dedicated host, 50–70% of RAM is a reasonable start.
+    - **`oempro_redis`** does not evict when it hits a *cgroup* limit — it is killed. If you set `REDIS_MEM_LIMIT`, also configure a Redis-level `maxmemory` **below** it so Redis evicts instead of dying.
+    - **`oempro_rmq`** has its own memory high-watermark flow control. Keep `RABBITMQ_MEM_LIMIT` above that watermark so flow control engages before the OOM killer does.
+    - **`oempro_clickhouse`** also has its own `max_server_memory_usage`; the cgroup cap is the outer bound.
+    - **`oempro_supervisor`** runs every long-running loop worker and carries the highest runaway risk, which makes it the best candidate for a first limit. The workers already self-recycle on PHP memory (see *Long-Running Worker Memory Hygiene*); keep this cap well above the combined worker `memory_limit` so supervisord does not thrash.
+    - **`oempro_haproxy`** handles every inbound request and is the worst container in the stack to OOM-kill. Do not starve it.
+
+    On a **fresh install**, `install:start` lowers `SENDENGINE_CPU_LIMIT` and `LINK_PROXY_CPU_LIMIT` to fit the host when it has fewer than four cores — see *Octeth Installation* for the sizing table. Existing installs are never adjusted automatically.
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::

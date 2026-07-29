@@ -263,6 +263,20 @@ curl -X POST https://example.com/api.php \
 | BypassListSuppressionSettings | Boolean | No | When `true`, skip the list-level `OptOutAddToSuppressionList` and `OptOutAddToGlobalSuppressionList` auto-add (default: `false`). Used by admin-initiated unsubscribe actions in the subscriber edit page so the explicit "Add to suppression list" menu item is the only way an admin action writes suppression rows. End-user opt-outs from email links and journey actions leave this unset and keep honoring the list settings. Gated by the `ADMIN_UNSUBSCRIBE_BYPASSES_LIST_SUPPRESSION_SETTINGS` feature flag; an explicit `AddToGlobalSuppression=true` still adds the global suppression row even when the bypass is on. |
 | Preview   | Integer | No       | Preview mode (1 = don't actually unsubscribe) |
 
+::: warning RulesJSON validation (new in v5.9.3)
+When `RulesJSON` is supplied it is validated **before** anything is modified. A payload that cannot produce a filter is rejected with `ErrorCode 7` and the request has **no effect**.
+
+Rejected payloads:
+
+- anything that is not a JSON **string** (send `RulesJSON` as a JSON-encoded string, not as a nested array/object, even when posting an `application/json` body);
+- a string that is not syntactically valid JSON;
+- a structurally empty payload in which no rule carries a `type` key — e.g. `[]`, `[[]]`, `[[{}]]`.
+
+Previously such a payload silently degraded to *no filter at all*, so the unsubscribe ran against **every subscriber in the list** and still returned `"Success": true`.
+
+An **omitted or empty** `RulesJSON` is unchanged: it keeps its existing meaning.
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -300,6 +314,8 @@ curl -X POST https://example.com/api.php \
 5: Invalid user information
 6: Invalid EmailAddress
 7: Subscriber not found
+   -- OR -- "Invalid RulesJSON syntax. It must be a properly formatted JSON payload"
+   (distinguish by the ErrorText field, which is only present for the RulesJSON rejection)
 8: Invalid CampaignID
 9: Subscriber already unsubscribed
 10: Invalid EmailID
@@ -327,9 +343,23 @@ curl -X POST https://example.com/api.php \
 | APIKey    | String | No       | API key for authentication            |
 | SubscriberListID | Integer | Yes | ID of the subscriber list           |
 | Subscribers | String | Conditional | Comma-separated subscriber IDs (required if RulesJSON not provided). Each ID must be a positive integer; a value containing a non-integer ID is rejected (error code `8`). |
-| RulesJSON | String | Conditional | JSON rules for bulk deletion (required if Subscribers not provided) |
+| RulesJSON | String | Conditional | JSON rules for bulk deletion (required if Subscribers not provided). Must be a JSON **string** describing at least one rule (each rule object requires a `type` key). An unparseable or rule-less payload returns error code `7` and deletes nothing. |
 | RulesOperator | String | Conditional | Rules operator: and, or (required if RulesJSON provided) |
 | Suppressed | Boolean | No      | Delete from suppression list instead (default: false) |
+
+::: warning RulesJSON validation (new in v5.9.3)
+When `RulesJSON` is supplied it is validated **before** anything is deleted. A payload that cannot produce a filter is rejected with `ErrorCode 7` and the request has **no effect**.
+
+Rejected payloads:
+
+- anything that is not a JSON **string** (send `RulesJSON` as a JSON-encoded string, not as a nested array/object, even when posting an `application/json` body);
+- a string that is not syntactically valid JSON;
+- a structurally empty payload in which no rule carries a `type` key — e.g. `[]`, `[[]]`, `[[{}]]`.
+
+Previously such a payload silently degraded to *no filter at all*, so the deletion ran against **every subscriber in the list** and still returned `"Success": true`.
+
+An **omitted or empty** `RulesJSON` is unchanged: it keeps its existing meaning.
+:::
 
 ::: code-group
 
@@ -365,6 +395,7 @@ curl -X POST https://example.com/api.php \
 2: Missing subscriber list id
 5: Invalid list id
 6: Invalid query builder response
+7: Invalid RulesJSON syntax. It must be a properly formatted JSON payload
 8: Invalid Subscribers value (contains a non-integer subscriber ID)
 ```
 
@@ -1635,9 +1666,23 @@ curl -X POST https://example.com/api.php \
 | Command   | String | Yes      | API command: `subscriber.tag`         |
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
-| ListID    | Integer| Yes      | ID of the subscriber list             |
-| SubscriberID | Integer | Yes   | ID of the subscriber                  |
-| TagID     | Integer| Yes      | ID of the tag to apply                |
+| SubscriberListID | Integer | Yes | ID of the subscriber list          |
+| TagID     | Integer/Array | Yes | ID of the tag to apply. Accepts a single ID, a comma-separated string, or an array. |
+| SubscriberID | Integer/String | Conditional | Subscriber ID, or a comma-separated list of IDs. Required unless `RulesJSON` is provided. |
+| RulesJSON | String | Conditional | JSON rules for filter-based bulk tagging. Required when `SubscriberID` is not provided. Must be a JSON **string** describing at least one rule (each rule object requires a `type` key). |
+| RulesOperator | String | Conditional | Rules operator: and, or. Required when `RulesJSON` is provided. |
+
+::: warning RulesJSON validation (new in v5.9.3)
+When `RulesJSON` is supplied it is validated **before** anything is modified. A payload that cannot produce a filter is rejected with `ErrorCode 7` and the request has **no effect**.
+
+Rejected payloads:
+
+- anything that is not a JSON **string** (send `RulesJSON` as a JSON-encoded string, not as a nested array/object, even when posting an `application/json` body);
+- a string that is not syntactically valid JSON;
+- a structurally empty payload in which no rule carries a `type` key — e.g. `[]`, `[[]]`, `[[{}]]`.
+
+Previously such a payload silently degraded to *no filter at all*, so the tagging ran against **every subscriber in the list** and still returned `"Success": true`.
+:::
 
 ::: code-group
 
@@ -1669,12 +1714,15 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
-1: Missing ListID parameter
-2: Missing SubscriberID parameter
-3: Missing TagID parameter
-4: Invalid ListID
-5: Invalid TagID
-6: Subscriber not found
+1: Missing TagID parameter
+2: Missing SubscriberListID parameter
+4: Invalid SubscriberListID
+6: Missing RulesJSON parameter (when SubscriberID is not supplied)
+   -- OR -- Invalid TagID (no matching tag found)
+7: Missing RulesOperator parameter (when SubscriberID is not supplied)
+   -- OR -- "Invalid RulesJSON syntax. It must be a properly formatted JSON payload"
+   (distinguish by the ErrorText field, which is only present for the RulesJSON rejection)
+8: Invalid query builder response
 ```
 
 :::
@@ -1696,9 +1744,23 @@ curl -X POST https://example.com/api.php \
 | Command   | String | Yes      | API command: `subscriber.untag`       |
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
-| ListID    | Integer| Yes      | ID of the subscriber list             |
-| SubscriberID | Integer | Yes   | ID of the subscriber                  |
-| TagID     | Integer| Yes      | ID of the tag to remove               |
+| SubscriberListID | Integer | Yes | ID of the subscriber list          |
+| TagID     | Integer/Array | Yes | ID of the tag to remove. Accepts a single ID, a comma-separated string, or an array. |
+| SubscriberID | Integer/String | Conditional | Subscriber ID, or a comma-separated list of IDs. Required unless `RulesJSON` is provided. |
+| RulesJSON | String | Conditional | JSON rules for filter-based bulk untagging. Required when `SubscriberID` is not provided. Must be a JSON **string** describing at least one rule (each rule object requires a `type` key). |
+| RulesOperator | String | Conditional | Rules operator: and, or. Required when `RulesJSON` is provided. |
+
+::: warning RulesJSON validation (new in v5.9.3)
+When `RulesJSON` is supplied it is validated **before** anything is modified. A payload that cannot produce a filter is rejected with `ErrorCode 7` and the request has **no effect**.
+
+Rejected payloads:
+
+- anything that is not a JSON **string** (send `RulesJSON` as a JSON-encoded string, not as a nested array/object, even when posting an `application/json` body);
+- a string that is not syntactically valid JSON;
+- a structurally empty payload in which no rule carries a `type` key — e.g. `[]`, `[[]]`, `[[{}]]`.
+
+Previously such a payload silently degraded to *no filter at all*, so the untagging ran against **every subscriber in the list** and still returned `"Success": true`.
+:::
 
 ::: code-group
 
@@ -1730,12 +1792,15 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
-1: Missing ListID parameter
-2: Missing SubscriberID parameter
-3: Missing TagID parameter
-4: Invalid ListID
-5: Invalid TagID
-6: Subscriber not found
+1: Missing TagID parameter
+2: Missing SubscriberListID parameter
+4: Invalid SubscriberListID
+6: Missing RulesJSON parameter (when SubscriberID is not supplied)
+   -- OR -- Invalid TagID (no matching tag found)
+7: Missing RulesOperator parameter (when SubscriberID is not supplied)
+   -- OR -- "Invalid RulesJSON syntax. It must be a properly formatted JSON payload"
+   (distinguish by the ErrorText field, which is only present for the RulesJSON rejection)
+8: Invalid query builder response
 ```
 
 :::

@@ -373,6 +373,60 @@ This removes all Octeth data and configuration, returning your server to a clean
 This command permanently deletes all your data, campaigns, subscribers, and settings. Use only when you want to start completely fresh.
 :::
 
+### Unattended installation (CI, automation, AI agents)
+
+`install:start` and `install:reset` are interactive by default. Add `--yes` (or `-y`) to run them without any prompt at all — useful from a provisioning script, a CI job, or an AI coding agent that has no terminal to type into.
+
+In non-interactive mode a missing required value is never turned into a prompt: the command prints which flag is missing and exits with a non-zero status, so an automated run can never hang waiting on input.
+
+Unattended reset:
+
+```bash
+/opt/octeth/cli/octeth.sh install:reset --yes
+```
+
+Unattended development install:
+
+```bash
+/opt/octeth/cli/octeth.sh install:start --dev --yes
+```
+
+Unattended production-style install:
+
+```bash
+/opt/octeth/cli/octeth.sh install:start --yes --accept-eula \
+  --app-url https://mailer.example.com/ \
+  --admin-name "Jane Doe" \
+  --admin-email jane@example.com \
+  --admin-username jane \
+  --admin-password 'Str0ngPassw0rd' \
+  --license-key XXXX-XXXX-XXXX-XXXX
+```
+
+| Flag | Purpose |
+| --- | --- |
+| `-y`, `--yes` | Suppress every prompt. Missing or invalid values are fatal, never re-prompted. |
+| `--accept-eula` | Accept the [EULA](https://octeth.com/terms) without prompting. Required together with `--yes` unless `--dev` is used (`--dev` accepts it automatically). |
+| `--force` | Continue when configuration files from an earlier installation are present. It only overrides the abort — it deletes nothing. |
+| `--app-url <url>` | Application URL, `http://` or `https://`. |
+| `--admin-name <name>` | Administrator full name. |
+| `--admin-email <email>` | Administrator email address. |
+| `--admin-username <username>` | Administrator username: 3-32 characters, starts with a letter, letters/digits/underscore. |
+| `--admin-password <password>` | Administrator password. |
+| `--license-key <key>` | Octeth license key. May be empty and added later in `.oempro_env`. |
+
+Values given with these flags go through exactly the same validation as the interactive prompts. An invalid value always exits non-zero rather than asking again.
+
+::: warning
+`--admin-password` puts the password on the command line, where it is visible in the process list (`ps`) and in shell history. On a shared machine prefer the interactive prompt, or clear the history entry afterwards.
+:::
+
+::: tip
+`--force` does not delete anything. To install onto a genuinely clean slate, run `install:reset --yes` first, then `install:start`.
+:::
+
+Service passwords (MySQL, RabbitMQ, ClickHouse, Supervisor) are always generated automatically and cannot be set with a flag.
+
 **Installing CLI tools globally:**
 
 ```bash
