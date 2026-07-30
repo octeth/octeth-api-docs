@@ -153,6 +153,30 @@ Previously present as `"ParentCampaign": null`; now absent entirely. Use a key-e
 
 Note that the sibling `AutoResendCampaign` key emits `[]` in the equivalent situation — the two are not consistent with each other.
 
+### Email Gateway send rate limits are now reported as they are enforced
+
+`user.get` and `users.get` (when limit utilization is requested), the admin user **Limit Utilization** tab, and the limit-utilization cron all report Email Gateway send rate limits under `LimitUtilization.EmailGateway.SendRateLimits`. Those numbers were computed differently from the numbers the send path actually enforces, so they could disagree with reality. They now come from the same normalisation the enforcement check uses.
+
+Two stored shapes were reported wrongly and now change:
+
+- An interval whose limit was stored as the **string** `"-1"` rather than the number `-1` was reported as a real limit of `-1`, with `remaining` = `-1 - used` and `exceeded: true` for any usage at all. It is now recognised as *unlimited* and, like every other unlimited interval, is **omitted** from `SendRateLimits`.
+- An interval the operator never configured was reported with a limit equal to its **position** in the interval list — `0`/minute, `1`/hour, `2`/day, `3`/week, `4`/month, `5`/year. Unconfigured intervals are now unlimited and are omitted.
+
+A user group whose rate limits are entirely unlimited no longer emits an `EmailGateway` block at all; the positional-index defect could previously make one appear.
+
+Accounts with a correctly stored, all-integer rate-limit configuration — the overwhelming majority — see **no change**. If you parse `SendRateLimits`, treat a missing interval as unlimited rather than assuming every interval is present.
+
+### `user.update` — `RateLimits` is normalised before it is stored
+
+Rate limits saved through `user.update`, and through the admin user-edit page's JSON editor (which routes to the same endpoint), are now normalised to the canonical document shape before they are written — the same way user-group default rate limits already were.
+
+The stored value becomes `{"EmailGateway":{Minute,Hour,Day,Week,Month,Year},"SMS":{…}}` with integer values, where `-1` means unlimited and an omitted interval becomes `-1`. This is what stops a limit entering the table as the string `"-1"`, which is the source of the display defect above.
+
+Two things deliberately did **not** change:
+
+- **An empty value still means "no user-level override"** — the account inherits its user group's default rate limits. Only a value that decodes to an object is normalised; anything else is stored exactly as sent. This matters: normalising an empty value into an all-unlimited document would silently promote those accounts from their group's limits to no limit at all.
+- **Existing stored values are not modified.** There is no migration or backfill; rows are normalised as they are next written.
+
 ### Sorting parameters are now validated
 
 As part of closing a SQL injection surface, `users.get`, `admin.events.search` and `admin.users.activity` validate the sort parameters they receive. A sort value containing anything outside a plain identifier is discarded and the endpoint falls back to its default ordering — **silently, with HTTP 200**.

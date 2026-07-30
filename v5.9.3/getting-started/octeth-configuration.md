@@ -598,6 +598,24 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **API note.** The `emailgateway.exportevents` API endpoint has applied this prefixing since it shipped and continues to do so **unconditionally**, ignoring this setting, so existing API callers see no change in either direction.
 
+38. **Send-Engine Proactive Allocation Guard Rails**
+
+    ```bash
+    SENDENGINE_PROACTIVE_FAILURE_BUDGET=25          # Consecutive worker failures before slot refills stop (default: 25)
+    SENDENGINE_PROACTIVE_BACKOFF_BASE_SECONDS=5     # First backoff delay in seconds; doubles per failure (default: 5)
+    SENDENGINE_PROACTIVE_BACKOFF_MAX_SECONDS=300    # Ceiling for that doubling backoff (default: 300)
+    ```
+
+    The send-engine controller keeps every sending campaign topped up to its maximum worker count with a **proactive allocation** pass that runs every 5 seconds and refills any freed slot. That pass consulted no failure counter and had no backoff, so a campaign whose workers crash immediately — bad delivery-server credentials, an unreachable MTA, a fatal error in the delivery worker — was respawned indefinitely at a steady 5-second cadence. The result was continuous process churn, log volume and load against an already-failing delivery server, with no ceiling and no operator signal that the campaign was stuck. (The controller's existing per-campaign respawn guard only ever gated its own one-for-one respawn when a worker died; it never applied to this refill.)
+
+    - **`SENDENGINE_PROACTIVE_FAILURE_BUDGET`** — consecutive worker failures for a single campaign at or above which the proactive pass stops refilling that campaign's slots. The default matches the controller's existing respawn budget, so the first 25 failures behave exactly as they did before. Accepted range `1`–`1000`.
+    - **`SENDENGINE_PROACTIVE_BACKOFF_BASE_SECONDS`** — the first delay before refilling a campaign that has recorded a failure. It doubles with each additional consecutive failure (5s, 10s, 20s, 40s …) up to the ceiling. The default equals the pass's own 5-second cadence, so the first retry is no slower than before. Accepted range `1`–`300`.
+    - **`SENDENGINE_PROACTIVE_BACKOFF_MAX_SECONDS`** — the ceiling for that doubling backoff. Accepted range `1`–`3600`. If configured **below** the base value it is raised to the base, since a ceiling under the base would silently cancel the growth.
+
+    **How a campaign recovers.** The counters are per campaign and live in the controller process. Each worker that exits cleanly **decays** its campaign's failure count by one. It is deliberately *not* reset by a single clean exit: exiting `0` does not prove the worker did any useful work — a worker that handled an exception internally, and a surplus worker that found no pending batch, both exit `0` — so zeroing on any clean exit would let a mixed crash loop hold the count at zero and the budget would never engage. A campaign therefore bleeds its failures off as its workers complete and recovers on its own once the underlying fault is fixed, with **no controller restart required**. The practical consequence is that a campaign sitting well above its budget needs one clean exit per excess failure before it drops back under. The counters are cleared outright only when a campaign's last worker exits and the controller discards its state.
+
+    **Operator signal.** A campaign that exhausts its budget is logged once at `ERROR` and reported as `proactive_blocked` in `data/logs/sendengine_worker_allocation.log`. Deliberate pauses and stops are **not** counted as failures.
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::

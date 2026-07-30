@@ -66,25 +66,73 @@ Error codes can be single values or arrays:
 | 18 | Subscriber limit reached | Upgrade plan or remove inactive subscribers |
 | 3 | List limit exceeded | Delete unused lists or upgrade plan |
 
-### Server Errors
+### Hard Failures
 
-Returned with an HTTP **5xx** status. Unlike the codes above, these indicate a
-server-side fault rather than a problem with your request — retrying the same
-request unchanged will not help until the installation is fixed.
+Every code listed above is a **handler error**: the endpoint ran and rejected your
+request (bad parameters, missing permissions, an expired session). Those answer
+**HTTP 200** with the normal envelope — that contract is unchanged.
 
-| Code | Description | Resolution |
-|------|-------------|------------|
-| 100002 | The requested command is registered but its handler is missing on the server | Report to your Octeth administrator; the installation is incomplete or a file failed to deploy |
+A **hard failure** is different: the request never reached a working endpoint, or
+the endpoint failed in a way it did not model. These answer **HTTP 4xx or 5xx**
+with the same envelope shape.
+
+| Code | Description | HTTP | Resolution |
+|------|-------------|------|------------|
+| 100000 | The request body was not valid JSON | 400 | Fix the payload your client is sending |
+| 100001 | Unsupported or invalid connection method | 400 | Check the request method and endpoint you are calling |
+| 100003 | Unknown or unroutable command | 400 | Check the `Command` name against this reference |
+| 100002 | The command is registered but its handler is missing on the server | 500 | Report to your Octeth administrator; the installation is incomplete or a file failed to deploy |
+| 100004 | A required server-side component could not be loaded | 500 | Report to your Octeth administrator |
+| 100005 | An unhandled exception escaped the endpoint | 500 | Report to your Octeth administrator with the time of the call |
+
+A hard failure looks like this:
+
+```json
+{
+  "Success": false,
+  "ErrorCode": 100003,
+  "ErrorText": "Invalid API command: \"nope\" not found.",
+  "Errors": [ { "Code": 100003, "Message": "Invalid API command: \"nope\" not found." } ]
+}
+```
+
+Server-side detail — file paths, stack context — is written to the Octeth error
+log and never to the response.
 
 ::: tip New in v5.9.3
-Before v5.9.3 a missing command handler produced an HTML error page with an
-HTTP **200** status and disclosed the expected file's absolute path. Clients
-that branch on the status code treated that fatal error as a success and then
-failed to parse the body. It now returns HTTP 500 with the standard JSON error
-envelope, and the path is written to the server log instead of the response.
+Several of these paths previously answered with an HTML page and an HTTP **200**
+status, some of them disclosing an absolute filesystem path. Clients that branch
+on the status code treated a fatal error as a success and then failed to parse
+the body. They now return a proper 4xx/5xx with the standard error envelope.
 
-This error path always answers in JSON, including for callers that requested
-`ResponseFormat=XML`.
+The `4xx` codes mean the call was wrong and retrying it unchanged will not help.
+The `5xx` codes indicate a server-side fault; retrying will not help either until
+the installation is fixed.
+:::
+
+#### `ResponseFormat=XML` on hard failures
+
+Hard failures honour `ResponseFormat=XML` and answer with `Content-Type: text/xml`
+carrying the same envelope:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <Success><![CDATA[false]]></Success>
+  <ErrorCode><![CDATA[100003]]></ErrorCode>
+  <ErrorText><![CDATA[Invalid API command: "nope" not found.]]></ErrorText>
+  <Errors><node_0><Code><![CDATA[100003]]></Code><Message><![CDATA[Invalid API command: "nope" not found.]]></Message></node_0></Errors>
+</response>
+```
+
+There are two deliberate exceptions — **100000** and **100001** always answer in
+JSON, whatever you asked for. Both are raised before the request has been parsed
+far enough to know which format was requested.
+
+::: warning `ResponseFormat` is case-sensitive
+The value must be exactly `JSON` or `XML`. Any other spelling — including
+lowercase `xml` — is silently treated as `JSON`, on both successful responses and
+hard failures. This applies to the whole API, not just error paths.
 :::
 
 ## Handling Errors in Code

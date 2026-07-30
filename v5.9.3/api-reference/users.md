@@ -477,7 +477,7 @@ curl -X POST https://example.com/api.php \
 | AvailableCredits | Integer | No | Available credits (admin only) |
 | RelUserGroupID | Integer | No | User group ID (admin only) |
 | ReputationLevel | String | No | Reputation level (admin only) |
-| RateLimits | String | No | JSON string of rate limits. Omit to keep the existing row's value; pass an empty string to clear it. |
+| RateLimits | String | No | JSON string of rate limits, normalised before storage to `{"EmailGateway":{Minute,Hour,Day,Week,Month,Year},"SMS":{…}}` with integer values (`-1` = unlimited; an omitted interval becomes `-1`). Omit to keep the existing row's value; pass an **empty string** to clear it, which means "no user-level override — inherit the user group's default rate limits" (an empty value is stored as-is, never normalised into an all-unlimited document). |
 | CustomEmailHeaders | String | No | Custom email headers. Omit to keep the existing row's value; pass an empty string to clear it. |
 | WhiteListedEmailAddresses | String | No | Whitelisted email addresses. Omit to keep the existing row's value; pass an empty string to clear it. |
 | Enable2FA | String | No | Set to 'true' to enable 2FA |

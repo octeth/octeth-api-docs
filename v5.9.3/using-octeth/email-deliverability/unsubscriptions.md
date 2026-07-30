@@ -149,6 +149,27 @@ The API returns an HTML form containing:
 
 Embed this HTML on any web page. When a subscriber submits the form, the unsubscription is processed through Octeth's standard flow.
 
+### HTTP methods accepted by the opt-out endpoints
+
+::: warning Changed in v5.9.3
+The public opt-out endpoints now **fail closed on the HTTP method**. If you built a custom integration that opts subscribers out with a `GET` request, it will stop working and must be changed to `POST`.
+:::
+
+Only `POST` may change a subscriber's status. The full rules:
+
+| Endpoint | `GET` | `HEAD` | `POST` | Anything else |
+|---|---|---|---|---|
+| `/u/` and `/u.php` (the in-email unsubscribe link) | Renders the confirmation page | Renders the confirmation page | **Processes the opt-out** | `405 Method Not Allowed` |
+| `/unsubscribe.php` (the embeddable form's target) | `405` | `405` | **Processes the opt-out** | `405` |
+
+Why this changed: any method other than `GET` previously skipped the confirmation page and went straight to opt-out processing. Automated clients issuing bare `HEAD` requests — link scanners, security sandboxes and HTTP libraries following URLs in your emails — were therefore unsubscribing real subscribers without any human involvement, which inflated unsubscribe rates and removed people who never asked to leave.
+
+`HEAD` deliberately renders the confirmation page rather than returning `405`, because HTTP requires a `HEAD` response to carry the same status and headers as the equivalent `GET` (the body is discarded automatically).
+
+**The form Octeth generates for you already uses `POST`**, so an embedded form produced by `ListIntegration.GenerateUnsubscriptionFormHTMLCode` needs no change. Only hand-written integrations that used `GET` are affected.
+
+**One-click unsubscribe is unaffected.** A genuine RFC 8058 request — a `POST` whose body contains `List-Unsubscribe=One-Click` — still unsubscribes immediately with `HTTP 200` and no confirmation step, exactly as Gmail and Yahoo require. See [One-Click Unsubscribe](#one-click-unsubscribe-list-unsubscribe-header) above.
+
 ## How Unsubscription Processing Works
 
 Regardless of which channel triggers the unsubscription, Octeth follows the same core process.
