@@ -12,26 +12,58 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Changelog will be updated upon release.
+Released July 30th, 2026, after three weeks of development. This release is focused on security, correctness, and reliability. It completes a systematic hardening review of the API surface, adds usage-metering endpoints for external billing integrations, introduces product-wide spreadsheet-safety for CSV exports, and makes background delivery workers substantially more resilient. Upgrading promptly is recommended.
+
+If you maintain an API integration, review the Upgrade Notes below before upgrading — this release turns several calls that previously returned fabricated success into explicit errors.
 
 ### New Features
 
-- (To be documented)
+- **Account Usage APIs** - Two new administrator endpoints report account usage and feature adoption: one for a single account (read-only, safe to call on every billing-page render) and one for bulk, date-ranged metering across many accounts. Both are designed for external billing and reporting integrations
+- **Bulk Suppression Lookup** - A new endpoint checks many addresses against your suppression lists in one call, with full account and list scoping
+- **Partial User Group Updates** - User groups can now be updated field-by-field without resubmitting the whole group
+- **Spreadsheet-Safe CSV Exports** - Exported CSV cells that begin with a formula character are now written so spreadsheets display them as text rather than evaluating them. Octeth's own import understands this automatically, so exporting and re-importing is lossless
+- **Privacy-Friendly Visitor Identification** - Website tracking can now identify a visitor by a hashed email address instead of a plain one
+- **Self-Updating Upgrade Runner** - The upgrade command now bootstraps itself from the target release before running, so upgrades always use the correct version's upgrade logic. New `--reinstall` and `--yes` flags support unattended runs
+- **Non-Interactive Installation** - Installation and reset can now run fully unattended, suitable for automated provisioning
 
 ### Enhancements
 
-- (To be documented)
+- **Configurable Container Resources** - Per-container CPU and memory limits are now configurable, and are automatically clamped to the host's actual capacity on a fresh install
+- **Account Capabilities Without an Admin Key** - The current-account endpoint now reports the account's own capability and quota flags, so a frontend integration no longer needs to hold an administrator API key purely to render a user's own interface
+- **Improved Segment Rule Clarity** - The segment builder now makes the relationship between multiple rules explicit in the interface
+- **Faster Bulk Journey Enrollment** - Bulk journey triggering now uses a more efficient pagination strategy on large lists
+- **Reduced Database Load During Sending** - Campaign counters are buffered and delivery events are grouped, easing pressure on database replication during large sends
 
 ### Bug Fixes
 
-- (To be documented)
+- **Custom Field Updates** - Corrected two issues that could cause subscriber updates to fail on lists using validated custom fields, including updates that never touched those fields
+- **More Reliable Campaign Sending** - The send engine now recovers leaked worker slots, stops retrying indefinitely when a campaign's workers cannot start, and reports a clear status when a message fails
+- **No Lost Messages on Infrastructure Hiccups** - Messages and delivery reports are now safely requeued rather than dropped when a database or queue connection is briefly interrupted
+- **Background Workers Recover Cleanly** - Workers now shut down gracefully on restart, back off and retry instead of failing permanently when the message queue is briefly unavailable, and release work that was interrupted mid-processing
+- **Per-List SMS Suppression Browsing Restored** - The per-list view of SMS suppressions was failing for every account and reporting the failure as an empty list. It now reads from the correct source and returns results
+- **Accurate Transactional Reporting** - Transactional audit exports now report the true delivery outcome
+- **Stuck Message Recovery** - Messages left mid-send by an interrupted process are now detected and returned for processing
+- **Corrected Rate Limit Reporting** - Email Gateway send rate limits are now stored consistently and reported using the same rules the send path enforces, so displayed limits match what is actually applied
+- **Date Handling in Journeys and Reporting** - Corrected several date-range and calendar edge cases across journey and reporting endpoints
+- **Campaign Approval for Untrusted Accounts** - The approval hold for untrusted accounts is working again after a defect that made it inoperative
+- **Upgrade Path for Sender Domains** - Sender domain data now merges correctly during upgrade on installations that already had domains configured
+- **Bounce Processing Continuity** - Bounce webhook authentication now defaults to off on upgrade, so existing bounce senders continue working without reconfiguration
 
 ### Security Patches
 
-- (To be documented)
+- **Strengthened Account Data Isolation** - Completed a systematic review of account scoping across campaign, subscriber, import, preview, and journey operations, ensuring every request is constrained to the requesting account
+- **Strengthened Input Validation** - Hardened input handling across administrative listing, deletion, sorting, and reporting operations
+- **Hardened Password Reset** - Administrator password reset now uses signed, expiring, single-use tokens
+- **Protected Two-Factor Bypass Path** - The internal two-factor bypass path now requires a server-derived trusted token
+- **Stronger Key Generation** - API key generation now uses a cryptographically secure random source
+- **Outbound Request Validation** - Public webhook registration now validates the destination before accepting it
+- **Optional Bounce Webhook Authentication** - The bounce webhook endpoint can now require a shared signature; the administration area shows the value and a ready-to-use sender configuration
+- **Reduced Log Exposure** - Configuration values that may carry secrets are no longer written to logs in an error path
 
 ### Upgrade Notes
 
+- **Run Database Migrations Off-Peak on Large Installations** - This release adds a full-text index to your subscriber tables. The first build of that index rebuilds and briefly locks each table, so schedule the upgrade outside your busiest sending window if you have large lists
+- **CSV Export Shape Changes Slightly** - Exported cells beginning with a formula character (`=`, `+`, `-`, `@`, tab or carriage return) now gain a leading apostrophe so spreadsheets treat them as text instead of evaluating them. Octeth's own import strips it automatically, so export and re-import is lossless — but if you feed Octeth exports into an external pipeline, verify it tolerates the change. It can be disabled with `CSV_EXPORT_FORMULA_PROTECTION=false`
 - **Reverse Proxies and Load Balancers** - If you run an external reverse proxy or load balancer in front of Octeth at a non-loopback address, set `TRUSTED_PROXIES` in `.oempro_env` **before upgrading**. Without it, Octeth records the proxy's own address as the visitor IP for every request, which makes the admin "Authorized IP Addresses" list stop matching (you can lock yourself out), collapses per-IP rate limits, and attributes all opens, clicks and geographic reporting to a single location. Installations using only the bundled proxy are unaffected, as it runs on loopback and is always trusted
 - **New List Suppression Default** - Newly created subscriber lists no longer add opt-outs to your suppression lists by default. Existing lists are unchanged, and each list's setting remains editable in its own settings page. If you rely on new lists feeding your suppression lists automatically, set `NEW_LIST_DEFAULT_ADD_TO_SUPPRESSION_LIST=true` in `.oempro_env`
 - **Synchronous Import Threshold** - CSV imports are now processed synchronously up to 50 subscribers, raised from 10. Imports in the 11-50 range now return `ImportType: sync` and the API request blocks until the import finishes, rather than returning immediately. Adjust with `RUN_IMPORT_IN_SYNC_FOR_SUBSCRIBERS_LESS_THAN`
