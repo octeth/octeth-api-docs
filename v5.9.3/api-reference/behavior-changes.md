@@ -153,6 +153,23 @@ Previously present as `"ParentCampaign": null`; now absent entirely. Use a key-e
 
 Note that the sibling `AutoResendCampaign` key emits `[]` in the equivalent situation — the two are not consistent with each other.
 
+### `campaign.recipients.get` — two audience-definition rejections moved out of the catch-all code
+
+Two conditions previously reported as the generic `ErrorCode: 10` now return their own codes:
+
+| Code | Meaning |
+|---|---|
+| 5 | A criterion carries an invalid `list_id` (joins the existing "targeting definition unusable" code) |
+| 6 | A list referenced by the campaign's criteria is unavailable |
+
+The message changes with them: what used to be `"Error retrieving campaign recipients: List 42 not found"` is now `"List 42 not found"`.
+
+The old code `10` also absorbs genuine internal faults, so a caller had no way to tell "your campaign references a list that no longer exists" — something the account owner can fix — from "something broke server-side". That is the distinction these codes restore.
+
+`Success: false` and **HTTP 200** are unchanged, so only a caller that branches on the specific value of `ErrorCode`, or matches the full message string, is affected. Code `10` still exists and is still returned for unexpected internal failures — including a **database failure** during the list lookup, which is deliberately not reported as code `6`.
+
+Code `6` intentionally does not distinguish "the list does not exist" from "the list belongs to another account" — the response is byte-identical in both cases so it cannot be used to probe for other accounts' lists.
+
 ### Email Gateway send rate limits are now reported as they are enforced
 
 `user.get` and `users.get` (when limit utilization is requested), the admin user **Limit Utilization** tab, and the limit-utilization cron all report Email Gateway send rate limits under `LimitUtilization.EmailGateway.SendRateLimits`. Those numbers were computed differently from the numbers the send path actually enforces, so they could disagree with reality. They now come from the same normalisation the enforcement check uses.
@@ -252,4 +269,5 @@ This is strictly a fix, but it is still a behavior change for anyone who worked 
 8. **Do you iterate `GroupInfo` from `user.current` assuming exactly four keys?** It now returns the full capability set. If you were calling the admin-authenticated `user.get` purely to read capability flags, you can stop.
 9. **Do you have journeys on `WebsiteEvent_pageView` or `WebsiteEvent_customEvent` triggers?** Review them before upgrading — an email-link click now identifies the visitor, so these can fire for every clicked-through recipient.
 10. **Do you monitor payment-period rows or `LimitCampaignSendPerPeriod` counters?** Expect a one-time counter reset for accounts that were on a malformed period, and expect read endpoints to stop creating rows.
-11. **Do you call `admin.campaign.retryfailed` and treat `Success: true` as "the retry is under way"?** That is now accurate — but handle `ErrorCode: 6`, which covers both a failed commit and a committed retry that could not be dispatched. The `ErrorText` tells you which, and the second case is recovered with `admin.campaign.unstuck`, not by retrying.
+11. **Do you branch on `ErrorCode: 10` from `campaign.recipients.get`, or match its full `ErrorMessage` string?** An invalid `list_id` is now code `5` and an unavailable list is now code `6`, and the `Error retrieving campaign recipients:` prefix is gone from those two messages. Code `10` now means an unexpected internal failure.
+12. **Do you call `admin.campaign.retryfailed` and treat `Success: true` as "the retry is under way"?** That is now accurate — but handle `ErrorCode: 6`, which covers both a failed commit and a committed retry that could not be dispatched. The `ErrorText` tells you which, and the second case is recovered with `admin.campaign.unstuck`, not by retrying.

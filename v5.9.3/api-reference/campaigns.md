@@ -383,10 +383,30 @@ curl -X POST https://example.com/api.php \
 2: Invalid CampaignID (must be numeric)
 3: Campaign not found or access denied
 4: Invalid campaign status (must be Draft, Ready, or Pending Approval)
-5: Campaign has no RulesJsonBundle or criteria defined
-10: Error retrieving campaign recipients
+5: Campaign targeting definition unusable - no RulesJsonBundle, no criteria
+   defined, or a criterion carries an invalid list_id
+6: A list referenced by the campaign's criteria is unavailable
+10: Error retrieving campaign recipients (unexpected internal failure)
 ```
 
+:::
+
+::: tip Changed in v5.9.3
+Codes `5` and `6` are returned with **HTTP 200** and `Success: false`, like every other
+rejection from this endpoint.
+
+Two conditions that used to be reported as the catch-all code `10` are now reported
+distinctly: an invalid `list_id` in a criterion is code `5`, and a referenced list that is
+unavailable is code `6`. Previously both arrived as code `10` with the message prefixed by
+`Error retrieving campaign recipients:`, which made them indistinguishable from a genuine
+server-side fault.
+
+Code `6` deliberately does **not** distinguish "the list does not exist" from "the list
+belongs to another account" — the response is byte-identical in both cases, so it cannot be
+used to probe for the existence of other accounts' lists.
+
+A **database failure** during the list lookup stays in the generic code `10` bucket. A server
+fault is never reported to you as "you referenced a list that does not exist".
 :::
 
 ## Resume a Campaign

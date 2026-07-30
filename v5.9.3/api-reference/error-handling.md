@@ -85,6 +85,12 @@ with the same envelope shape.
 | 100004 | A required server-side component could not be loaded | 500 | Report to your Octeth administrator |
 | 100005 | An unhandled exception escaped the endpoint | 500 | Report to your Octeth administrator with the time of the call |
 
+The three `400` codes above are the complete set. Any hard-failure code outside that
+set — including one an endpoint invents — answers **500**, because a code the server
+does not recognise cannot be assumed to be the caller's fault. Endpoints that need to
+reject a request signal it through their own `Success: false` envelope at HTTP 200
+(see each endpoint's Error Codes block), not through a hard failure.
+
 A hard failure looks like this:
 
 ```json
