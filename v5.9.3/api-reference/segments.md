@@ -25,13 +25,26 @@ Segment management endpoints for creating, updating, and managing subscriber seg
 | APIKey    | String | No       | API key for authentication            |
 | SubscriberListID | Integer | Yes | ID of the subscriber list |
 | SegmentName | String | Yes | Name of the segment |
-| SegmentOperator | String | Yes | Logical operator for combining rules: `and` or `or` |
+| SegmentOperator | String | Yes | Connector between top-level rule **groups**: `and` or `or`. It is **not** applied uniformly to every rule — the connector alternates with nesting depth (see the note below). |
 | SegmentRuleField | Array | No | Array of rule field names (old style) |
 | SegmentRuleOperator | Array | No | Array of rule operators (old style) |
 | SegmentRuleFilter | Array | No | Array of rule filter values (old style) |
 | RulesJson | String | No | Segment rules in JSON format |
 | Randomness | Boolean | No | Pick a random audience matching the segment rules. Accepts `true`/`false`/`yes`/`no`/`1`/`0`. Defaults to `false`. Persisted as the `Randomness` key inside the segment's `Options` JSON blob (round-trips via `Segments.Get`). |
 | RandomnessAudienceSize | Integer | No | Maximum number of subscribers to pick when `Randomness` is enabled. Non-numeric values silently coerce to `0`. Defaults to `0`. Persisted as the `RandomnessAudienceSize` key inside the segment's `Options` JSON blob. |
+
+::: warning `SegmentOperator` alternates with nesting depth
+`SegmentOperator` sets the connector between top-level **groups** in `RulesJson`. It is not applied to every rule uniformly — the connector flips at each level of nesting:
+
+| `SegmentOperator` | Between groups | Inside one group | Inside a sub-group |
+|---|---|---|---|
+| `and` | AND | **OR** | AND |
+| `or` | OR | **AND** | OR |
+
+So `SegmentOperator: "or"` with several rules in a **single** `RulesJson` group ANDs those rules together. To OR a set of rules, put each one in its **own** group. The structure of `RulesJson` — not `SegmentOperator` alone — determines the resolved audience.
+
+Only three levels are evaluated (groups, sub-groups, and their rules); anything nested deeper is ignored by the segment engine. Changing `SegmentOperator` on an existing segment re-resolves its audience in both directions, since the within-group connector flips as well.
+:::
 
 ::: code-group
 
@@ -97,7 +110,7 @@ curl -X POST https://example.com/api.php \
 | SegmentID | Integer | Yes | ID of the segment to update |
 | SegmentName | String | Yes | Name of the segment |
 | SubscriberListID | Integer | No | ID of the subscriber list (to move segment). Must be a numeric ID of a list **owned by the authenticated user** — otherwise the update aborts with error code `6`. Non-numeric values (e.g. `12abc`, `0`) are silently ignored and the segment keeps its current list. |
-| SegmentOperator | String | No | Logical operator for combining rules: `and` or `or` |
+| SegmentOperator | String | No | Connector between top-level rule **groups**: `and` or `or`. It is **not** applied uniformly to every rule — the connector alternates with nesting depth (see the note under `segment.create`). Changing it re-resolves the segment's audience, because the connector *inside* each group flips too. |
 | SegmentRuleField | Array | No | Array of rule field names (old style) |
 | SegmentRuleOperator | Array | No | Array of rule operators (old style) |
 | SegmentRuleFilter | Array | No | Array of rule filter values (old style) |

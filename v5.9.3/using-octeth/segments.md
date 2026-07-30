@@ -64,12 +64,18 @@ To create a new segment:
 
 4. Enter a **Segment Name** — choose a descriptive name that reflects the purpose of the segment, such as "Active Gmail Users" or "Opened Last Campaign".
 
-5. Select the **Segment Operator**:
+5. Select **Matches** (the segment operator):
 
-| Operator | Description |
-|---|---|
-| **And** | A subscriber must match **all** rules to be included in the segment. |
-| **Or** | A subscriber must match **at least one** rule to be included in the segment. |
+| Option | Stored as | What it sets |
+|---|---|---|
+| **All rules** | `and` | Rule **groups** are combined with AND. |
+| **Any rule** | `or` | Rule **groups** are combined with OR. |
+
+::: warning "Matches" applies between groups — not to every rule
+This setting is **not** applied uniformly to every rule on the board. It sets the connector between top-level **groups**; rules *inside* a single group are combined with the **opposite** connector, and a sub-group flips back again.
+
+So "Any rule" does **not** mean "match any one of these rules" when a group holds more than one rule — inside that group the rules are ANDed. Read [Groups and Sub-Groups](#groups-and-sub-groups) before relying on this setting, and check the connector labels shown in the builder itself.
+:::
 
 6. Build your segment rules using the rule builder (see [Building Segment Rules](#building-segment-rules)).
 
@@ -87,8 +93,32 @@ The rule builder is the core of segment creation. It provides a visual interface
 
 Rules are organized into **groups**. Each group contains one or more rules, and you can nest **sub-groups** within a group for more complex logic.
 
-- **Between groups**, the segment operator (AND/OR) determines how groups relate to each other.
-- **Within a group**, rules use the opposite logic — if the segment operator is AND, rules within a group use OR logic, and vice versa. This alternating pattern allows you to build complex conditions.
+The connector **alternates with each level of nesting**. It is not the same everywhere on the board:
+
+| **Matches** setting | Between groups | Inside one group | Inside a sub-group |
+|---|---|---|---|
+| **All rules** (`and`) | AND | **OR** | AND |
+| **Any rule** (`or`) | OR | **AND** | OR |
+
+Read the bold column carefully — it is the one that surprises people. Under **Any rule**, two rules placed in the *same* group must **both** match; to get true "either of these" behaviour, put each rule in its **own group**.
+
+::: tip Worked example
+Three rules — `Country = UK`, `Country = IE`, `Status = Subscribed` — with **Matches: Any rule**:
+
+- All three in **one group** → `UK AND IE AND Subscribed` → matches nobody (a subscriber cannot have two countries).
+- Each in its **own group** → `UK OR IE OR Subscribed` → matches far too many people.
+- `UK` and `IE` in group 1, `Subscribed` in group 2 → `(UK AND IE) OR Subscribed`, still not what you want.
+
+To express "(UK or IE) and Subscribed", switch **Matches** to **All rules** and put `UK` and `IE` in one group (they OR together) and `Subscribed` in a second group (the groups AND together).
+:::
+
+Nesting is only evaluated three levels deep — groups, sub-groups, and the rules inside them. Rules nested deeper than that are ignored by the segment engine.
+
+<Badge type="tip" text="New in v5.9.3" /> The rule builder now states this in the interface: every group and sub-group header shows a **`rules inside: And` / `rules inside: Or`** hint naming that container's own connector, and the connector chips rendered between rules and between groups reflect the same model. The connectors themselves have not changed — v5.9.3 only makes the existing behaviour visible.
+
+::: warning Changing "Matches" re-resolves every group
+Because the connector alternates, switching between **All rules** and **Any rule** flips the logic *inside* your groups as well as between them. A segment that previously matched a given audience can widen or narrow substantially. Re-check the subscriber count after changing this setting, and remember that the count shown may be cached for a few minutes before it catches up.
+:::
 
 To get started:
 
