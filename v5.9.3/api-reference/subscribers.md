@@ -34,6 +34,7 @@ Subscriber management endpoints for managing email list subscribers, including c
 | UnsubscriptionIP | String | Conditional | Required if Status is Unsubscribed or Opt-Out Pending (IP address) |
 | BounceType | String | No      | Bounce type: Not Bounced, Soft, Hard (default: Not Bounced) |
 | CustomFields | Object | No     | Custom field values (key: CustomFieldID, value: field value). Accepts both list-specific and global custom field IDs. |
+| EnforceRequiredFields | Boolean | No | <Badge type="tip" text="New in v5.9.3" /> Opt in to strict custom-field enforcement. When `true`, the endpoint rejects a request whose custom-field values violate the list's own rules: a required (`IsRequired`) field that is empty **or omitted with no usable default**, a value that fails its `ValidationMethod`, or a duplicate value on a unique (`IsUnique`) field. Defaults to `false`, in which case custom-field values are accepted exactly as before (ownership and existence of each field ID are still validated). The same flag exists on `subscriber.subscribe` and `subscriber.update`. See the warning below. |
 | OptInConfirmationEmailID | Integer | No | Email ID to send for opt-in confirmation |
 | UpdateIfDuplicate | Boolean | No | Update subscriber if email already exists (default: false) |
 | UpdateIfUnsubscribed | Boolean | No | Update subscriber if previously unsubscribed (default: false) |
@@ -44,6 +45,18 @@ Subscriber management endpoints for managing email list subscribers, including c
 | TriggerAutoResponders | Boolean | No | Trigger autoresponders (default: false) |
 | Source    | String | No       | Acquisition source bucket persisted on the subscriber row. Possible values: `CSVImport`, `API`, `Webhook`, `Manual`, `Other`, `Unknown`. Defaults to `API` for this endpoint. Anything outside this set is coerced to `Unknown`. |
 | SourceRef | String | No       | Optional free-text source reference (e.g., a custom label or integration id). Truncated server-side to 64 characters. |
+
+::: warning Custom-field content rules are only enforced on request
+By default `subscriber.create` validates that each submitted custom-field ID belongs to the caller and applies to the target list, but it does **not** check the field's own content rules — so a subscriber can be created that violates every required, unique and validation rule on the list. Pass `EnforceRequiredFields=true` to also enforce `IsRequired`, `IsUnique` and `ValidationMethod`.
+
+Precedence, per submitted field, is required (`26`) → validation (`28`) → uniqueness (`27`). Required fields the request omits entirely are reported after all submitted fields have been checked.
+
+A required **list-specific** field that is omitted but has a non-empty default value is considered satisfied — the default is written for you. A required **global** field (one that applies to all lists) is never defaulted, so omitting it is always an error.
+
+`"0"` and `0` are real values and never count as empty.
+
+Note that these error codes differ from the equivalents on `subscriber.subscribe` and `subscriber.update` (`6`/`7`/`8` and `8`/`9`/`10` respectively). `subscriber.create` already used `0`–`25` for other conditions, so its custom-field codes start at `26`.
+:::
 
 ::: code-group
 
@@ -125,6 +138,9 @@ curl -X POST https://example.com/api/v1/subscriber.create \
 23: Invalid list information
 24: Invalid OptInConfirmationEmailID value
 25: Invalid OptInConfirmationEmailID (email does not exist or does not belong to user)
+26: Required custom field is empty or was omitted (EnforceRequiredFields only)
+27: Unique custom field value already exists (EnforceRequiredFields only)
+28: Custom field value failed its validation method (EnforceRequiredFields only)
 ```
 
 :::
@@ -275,6 +291,10 @@ Rejected payloads:
 Previously such a payload silently degraded to *no filter at all*, so the unsubscribe ran against **every subscriber in the list** and still returned `"Success": true`.
 
 An **omitted** `RulesJSON` is unchanged: it keeps its existing meaning.
+:::
+
+::: tip `RulesJSON` validation is shared across five commands
+`RulesJSON` is validated identically on `subscribers.search`, `subscribers.delete`, `subscriber.unsubscribe`, `subscriber.tag` and `subscriber.untag`. The accepted payload shapes and the message text are the same on all five; only the error **code** differs — `6` on `subscribers.search`, `7` on the other four.
 :::
 
 ::: warning Empty RulesJSON no longer takes the bulk path (new in v5.9.3)
@@ -506,7 +526,7 @@ curl -X POST https://example.com/api.php \
 | ListID    | Integer| Yes      | ID of the subscriber list             |
 | Operator  | String | Yes      | Rules operator: and, or               |
 | Rules     | String | No       | Legacy rules format                   |
-| RulesJSON | String | No       | JSON rules format                     |
+| RulesJSON | String | No       | JSON rules format. Optional — omit it (or send an empty string) to search the whole list. When supplied it must be a JSON **string** describing at least one rule, and each rule object requires a `type` key. An unparseable or rule-less payload returns error code `6` and no results. |
 | RecordsPerRequest | Integer | No | Number of records to return (default: 25) |
 | RecordsFrom | Integer | No   | Offset for pagination (default: 0)    |
 | OrderField | String | No      | Field to order by (default: EmailAddress) |
@@ -514,6 +534,27 @@ curl -X POST https://example.com/api.php \
 | OnlyTotal | Boolean | No      | Return only total count (default: false) |
 | AddMustHaveFilters | Boolean | No | Add mandatory filters for segment rules (default: false) |
 | DebugQueryBuilder | Boolean | No | Return SQL query for debugging (default: false) |
+
+::: warning RulesJSON validation (new in v5.9.3)
+When `RulesJSON` is supplied it is validated **before** the search runs. A payload that cannot produce a filter is rejected with `ErrorCode 6`.
+
+Rejected payloads:
+
+- anything that is not a JSON **string** (send `RulesJSON` as a JSON-encoded string, not as a nested array/object, even when posting an `application/json` body);
+- a string that is not syntactically valid JSON;
+- a structurally empty payload in which no rule carries a `type` key — e.g. `[]`, `[[]]`, `[[{}]]`, `[[[]]]`;
+- a payload whose only rules use a `type` the segment engine does not recognise, or whose rules are nested more than three levels deep (the engine does not evaluate level 3 or deeper).
+
+Previously such a payload silently degraded to *no filter at all*, so the search returned **every subscriber in the list** together with `"Success": true` — indistinguishable from a deliberate whole-list search. Callers that relied on that response were receiving unfiltered results without any indication the filter had been discarded.
+
+Omitting `RulesJSON`, or sending it as an empty string, is unaffected: that remains the documented "no filter, return the whole list" call. Filtering via the legacy `Rules` string parameter is also unaffected.
+:::
+
+::: warning `RecordsPerRequest: 0` is not supported here
+`0` is **not** interpreted as "all records" on this command, unlike the admin campaign endpoints. Always pass a positive page size and paginate with `RecordsFrom`.
+
+A JSON integer `0` falls back to the default of 25. A form-encoded `0` or the JSON string `"0"` reaches the segment engine as `LIMIT 0` and returns **no rows at all**.
+:::
 
 ::: code-group
 
@@ -525,7 +566,7 @@ curl -X POST https://example.com/api.php \
     "SessionID": "your-session-id",
     "ListID": 123,
     "Operator": "and",
-    "RulesJSON": "[{\"field\":\"EmailAddress\",\"operator\":\"contains\",\"value\":\"example.com\"}]",
+    "RulesJSON": "[[{\"type\":\"fields\",\"field_id\":\"EmailAddress\",\"operator\":\"contains\",\"value\":\"example\"}]]",
     "RecordsPerRequest": 50,
     "RecordsFrom": 0
   }'
@@ -553,7 +594,8 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": 1
+  "ErrorCode": [6],
+  "ErrorText": ["Invalid RulesJSON syntax. It must be a properly formatted JSON payload"]
 }
 ```
 
@@ -564,6 +606,7 @@ curl -X POST https://example.com/api.php \
 3: ListID not found
 4: Problem with the segment engine
 5: Segment recursion limit exceeded
+6: Invalid RulesJSON syntax. It must be a properly formatted JSON payload
 ```
 
 :::
@@ -1129,6 +1172,18 @@ curl -X POST https://example.com/api/v1/subscribers.import \
 | SearchField | String | No      | Field to search in                    |
 | SearchKeyword | String | No    | Search keyword                        |
 
+::: danger `RecordsPerRequest: 0` is not supported here
+`0` is **not** interpreted as "all records" on this command, unlike the admin campaign endpoints. Always pass a positive page size and paginate with `RecordsFrom`.
+
+What `0` actually does depends on how you send it and which segment you request, and neither outcome is useful:
+
+- a JSON integer `0` falls back to the default of 25;
+- a form-encoded `0` or the JSON string `"0"` on a **segment ID** produces `LIMIT 0, 0` and returns **no rows**;
+- a form-encoded `0` or the JSON string `"0"` on any **named** segment (`Active`, `Suppressed`, `Unsubscribed`, …) drops the `LIMIT` entirely and reads the **whole subscriber table** for that list into memory. On a large list this will exhaust memory or time out.
+
+Use `RecordsPerRequest` with `RecordsFrom` to page through a large list.
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -1203,9 +1258,41 @@ curl -X POST https://example.com/api.php \
 | UnsubscriptionIP | String | No | IP address for unsubscription        |
 | UnsubscriptionDate | String | No | Date for unsubscription (Y-m-d H:i:s) |
 | BounceType | String | No      | Bounce type: Not Bounced, Soft, Hard  |
-| Fields    | Object | No       | Custom field values (CustomFieldID: value) |
+| Fields    | Object | No       | Custom field values (CustomFieldID: value). Keys are matched **case-insensitively** — see the note below. |
+| EnforceRequiredFields | Boolean | No | <Badge type="tip" text="New in v5.9.3" /> Opt in to the corrected custom-field checks. When `true`, a required multi-value field submitted as an **empty array** (`[]`, `[""]`, or an unfilled Date field's `["", "", ""]`) is rejected with `ErrorCode 8` instead of being accepted and stored blank, and the validation and uniqueness checks are evaluated against the submitted value. Defaults to `false`, which preserves historical behaviour. Same flag name and semantics as `subscriber.subscribe` and `subscriber.create`. See the warning below. |
 | IgnoreAllOtherCustomFieldsExceptGivenOnes | Boolean | No | Only update specified fields (default: false) |
 | TriggerEvents | Boolean | No   | Trigger journey events (default: true) |
+
+::: tip Custom-field names in `Fields` are matched case-insensitively
+<Badge type="tip" text="Fixed in v5.9.3" /> The public API lowercases every request key, including the keys inside the nested `Fields` object. Until v5.9.3 this endpoint looked its custom-field values up in PascalCase, so **no** submission shape matched: on a list with a required custom field `subscriber.update` returned `ErrorCode 8` even when the value *was* submitted, and the validation and uniqueness checks were evaluated against an empty value rather than the submitted one (issue #2661).
+
+`Fields` keys are now resolved case-insensitively, so `CustomField1`, `customfield1` and `CUSTOMFIELD1` are equivalent. The documented example below works verbatim.
+:::
+
+::: warning What `EnforceRequiredFields` changes
+The key-casing fix is applied so that **no request that succeeded before can start failing**: with `EnforceRequiredFields` absent or false, a custom field is only rejected when the corrected check **and** the historical check both reject it. In practice that means, by default:
+
+- a **required** field you submit is now accepted (previously `ErrorCode 8` regardless of what you sent);
+- a value now seen to be **valid** is no longer rejected — e.g. a real URL in a `URL`-validated field previously failed with *"Custom field value is not an URL address"*;
+- a value now seen to be **unique** is no longer rejected — previously a genuinely unique value could fail with `ErrorCode 9` because the empty lookup collided with another subscriber's empty value;
+- but a value now seen to be **invalid** or a **duplicate** is still accepted, exactly as before. Rejecting those is new enforcement.
+
+Set `EnforceRequiredFields=true` to apply the corrected checks on their own, which additionally:
+
+- rejects a required multi-value field submitted as an empty array (`ErrorCode 8`);
+- rejects a value that duplicates another subscriber's value in an `IsUnique` field (`ErrorCode 9`);
+- rejects a value that fails the field's `ValidationMethod` (`ErrorCode 10`);
+- makes `IgnoreAllOtherCustomFieldsExceptGivenOnes` filter on the **keys** present in `Fields` rather than on its values, so the fields you *did* submit are actually checked. With the flag off, that filter continues to skip effectively every field.
+
+With the flag on, a submitted value counts as missing when it is an array with no non-empty member — `[]`, `[""]`, `[" "]`, `["", "", ""]`, evaluated recursively so the positional Date `(d, m, Y)` and Time `(H, i)` arrays are handled — or a scalar that is empty once trimmed. A submitted `"0"` is always a real value and is never treated as missing, with the flag on or off.
+
+No new error codes are introduced. Two consequences worth calling out:
+
+- On a list whose required field also has a `Numbers`, `Letters`, `Numbers and letters` or `Date` validation method, submitting an **invalid** value used to be rejected with `ErrorCode 8` and is now accepted and stored. `EnforceRequiredFields=true` rejects it with `ErrorCode 10`.
+- Multi-value fields (Date, Time, checkbox groups) are checked for **presence** but not for validity or uniqueness, because those two helpers accept scalars only.
+
+`EnforceRequiredFields` accepts the usual boolean spellings — `true`, `1`, `"1"`, `"true"`, `"yes"`, `"on"`. Anything else is treated as false.
+:::
 
 ::: code-group
 
@@ -1218,6 +1305,7 @@ curl -X POST https://example.com/api.php \
     "SubscriberID": 456,
     "SubscriberListID": 123,
     "EmailAddress": "newemail@example.com",
+    "EnforceRequiredFields": true,
     "Fields": {
       "CustomField1": "Updated Value"
     }
@@ -1364,6 +1452,8 @@ curl -X POST https://example.com/api.php \
 4: Invalid ListID
 429: Too many requests (rate limit exceeded)
 ```
+
+:::
 
 ::: info SubscriberJourneys fields
 

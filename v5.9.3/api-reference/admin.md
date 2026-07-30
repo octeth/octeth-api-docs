@@ -26,7 +26,7 @@ Retrieves a paginated list of batches for a specific campaign with filtering and
 | SessionID          | String  | No       | Session ID obtained from login                                                                   |
 | APIKey             | String  | No       | API key for authentication                                                                       |
 | CampaignID         | Integer | Yes      | Campaign ID to retrieve batches for                                                              |
-| RecordsPerRequest  | Integer | No       | Number of records per request (default: 50, 0 for all records, max: 500)                        |
+| RecordsPerRequest  | Integer | No       | Number of records per request (default: 50, max: 500). Pass `0` to return **all** matching records with no row cap. <Badge type="tip" text="Fixed in v5.9.3" /> `0` is honoured in every request shape — JSON integer `0`, JSON string `"0"`, and form-encoded `0`. |
 | RecordsFrom        | Integer | No       | Offset for pagination (default: 0)                                                               |
 | ExactOffset        | Boolean | No       | <Badge type="tip" text="New in v5.9.3" /> When `true`, `RecordsFrom` is honoured as an exact row offset. When omitted or `false` (default), `RecordsFrom` is floored down to the nearest `RecordsPerRequest` boundary — the historical behaviour, kept for backward compatibility. |
 | Status             | String  | No       | Filter by batch status: `Pending`, `Working`, `Completed`, `Failed`, `Paused`                   |
@@ -252,7 +252,7 @@ Retrieves a paginated list of processes associated with a campaign's batches, al
 | SessionID          | String  | No       | Session ID obtained from login                                                                   |
 | APIKey             | String  | No       | API key for authentication                                                                       |
 | CampaignID         | Integer | Yes      | Campaign ID to retrieve processes for                                                            |
-| RecordsPerRequest  | Integer | No       | Number of records per request (default: 50, 0 for all records, max: 500)                        |
+| RecordsPerRequest  | Integer | No       | Number of records per request (default: 50, max: 500). Pass `0` to return **all** matching records with no row cap. <Badge type="tip" text="Fixed in v5.9.3" /> `0` is honoured in every request shape — JSON integer `0`, JSON string `"0"`, and form-encoded `0`. |
 | RecordsFrom        | Integer | No       | Offset for pagination (default: 0)                                                               |
 | OrderField         | String  | No       | Field to sort by: `ProcessID`, `PID`, `Hostname`, `ProcessType`, `RegisteredAt`, `LastPingedAt`, `MemoryUsage`, `MemoryPeakUsage` (default: LastPingedAt) |
 | OrderType          | String  | No       | Sort direction: `ASC` or `DESC` (default: DESC)                                                  |
@@ -376,16 +376,12 @@ Combining `RecordsPerRequest: 0` with `ExactOffset: true` and a non-zero `Record
 Non-numeric (e.g. `"abc"`) or negative values are invalid and fall back to the default page size of 50. Prior to v5.9.3 such values were treated as `0` and returned 500 rows.
 :::
 
-::: warning Send `0` as a string in JSON requests
-When the request body is JSON, a bare integer `0` (`"RecordsPerRequest": 0`) is **not** honoured as "all records" — it is treated as an absent value and falls back to the default page size of 50. Send it as a string instead:
+::: tip `RecordsPerRequest: 0` works in every request shape
+<Badge type="tip" text="Fixed in v5.9.3" /> A bare JSON integer `0` (`"RecordsPerRequest": 0`), the JSON string `"0"`, and a form-encoded `RecordsPerRequest=0` are now all honoured identically as "all records".
 
-```json
-{ "RecordsPerRequest": "0" }
-```
+Before this fix a JSON integer `0` was misread as an omitted parameter and silently replaced with the default page size, so a JSON client following this page verbatim received one page instead of the full result set, with nothing in the response indicating the shortfall. The same fix applies to `admin.campaign.batches`, `admin.campaign.processes` and `admin.users.activity`.
 
-Form-encoded requests (`RecordsPerRequest=0`) are unaffected and work as documented.
-
-This affects every paginated endpoint that documents `0` as "all records", including `admin.campaign.batches`, and is not specific to this command.
+`0 = all records` is a convention of these admin campaign endpoints, **not** a global one. It is explicitly not supported on `subscribers.get`, `subscribers.search` or `journey.action.subscribers` — see the note on those commands before passing `0` to them.
 :::
 
 ::: code-group
@@ -1449,10 +1445,16 @@ Retrieves a paginated list of users with their email sending activity status. Us
 | ActivityPeriod     | Integer | No       | Number of days to look back for activity (1-365, default: 30)                                   |
 | ActivityStatus     | String  | No       | Filter by status: `All`, `Active`, `Idle` (default: All)                                        |
 | SearchKeyword      | String  | No       | Search by username, email, first name, last name, or company name                               |
-| RecordsPerRequest  | Integer | No       | Number of records per request (0-1000, default: 25, 0 for all)                                 |
+| RecordsPerRequest  | Integer | No       | Number of records per request (1-1000, default: 25). Pass `0` for **all** records. <Badge type="tip" text="Fixed in v5.9.3" /> `0` is honoured in every request shape — JSON integer `0`, JSON string `"0"`, and form-encoded `0`. Non-numeric values and booleans now fall back to the default instead of being read as `0`. See the caution below before using `0`. |
 | RecordsFrom        | Integer | No       | Offset for pagination (default: 0)                                                               |
 | OrderField         | String  | No       | Field to sort by: `Username`, `CompanyName`, `LastActivityDateTime`, `LastSendingActivityDateTime`, `AccountStatus`, `UserActivityStatus`. Any other value is silently ignored — see the sorting note below. |
 | OrderType          | String  | No       | Sort direction: `ASC` or `DESC` (default: `ASC`). Coerced, not validated — any value other than `DESC` is treated as `ASC`. |
+
+::: warning `RecordsPerRequest: 0` removes the row cap entirely
+`0` does not mean "the maximum of 1000" — it removes the `LIMIT` from the query, so the response contains **every** enabled user account matching the filters. On a large installation that is a slow request and a large response body.
+
+Prefer an explicit page size and paginate with `RecordsFrom`. Use `0` only when you genuinely need the whole set in one call and know the account count is manageable.
+:::
 
 ::: warning Sorting is restricted to an allow-list (v5.9.3, #2321)
 `OrderField` accepts only the six columns listed above. A value outside that list is **dropped silently**; if no valid column remains, the endpoint falls back to its default ordering (`UserActivityStatus DESC`, then last activity descending).

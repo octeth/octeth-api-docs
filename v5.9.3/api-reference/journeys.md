@@ -1256,6 +1256,12 @@ curl -X PATCH https://example.com/api/v1/journey.actions.published \
 | OrderField | String | No      | Field to order by (default: EmailAddress) |
 | OrderType | String  | No       | Order direction. Possible values: `ASC`, `DESC` (default: `ASC`) |
 
+::: warning `RecordsPerRequest: 0` is not supported here
+`0` is **not** interpreted as "all records" on this command, unlike the admin campaign endpoints. Always pass a positive page size and paginate with `RecordsFrom`.
+
+A JSON integer `0` falls back to the default of 25. A form-encoded `0` or the JSON string `"0"` drops the `LIMIT` from the query, so the response contains every subscriber joined to that action — slow and potentially very large on a busy journey.
+:::
+
 ::: code-group
 
 ```bash [Example Request]
