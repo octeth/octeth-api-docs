@@ -18,11 +18,11 @@ Octeth provides an automated upgrade command that handles the entire upgrade pro
 ### Download the New Version
 
 1. Log in to [Octeth Client Area](https://my.octeth.com/)
-2. Download the latest release zip file (e.g., `oempro-rel-v5.8.0.zip`)
+2. Download the latest release zip file (e.g., `oempro-rel-v5.9.4.zip`)
 3. Upload it to your server:
 
 ```bash
-scp oempro-rel-v5.8.0.zip root@your-server:/opt/
+scp oempro-rel-v5.9.4.zip root@your-server:/opt/
 ```
 
 ### Check Your Current Version
@@ -38,15 +38,15 @@ cat /opt/octeth/.oempro_env | grep PRODUCT_VERSION
 The upgrade command takes a path to the release zip file:
 
 ```bash
-/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v5.8.0.zip
+/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v5.9.4.zip
 ```
 
 The command will display the upgrade plan and ask for confirmation before proceeding:
 
 ```text
   Upgrade Summary:
-    Version:  v5.7.3 → v5.8.0
-    Zip:      oempro-rel-v5.8.0.zip
+    Version:  v5.9.3 → v5.9.4
+    Zip:      oempro-rel-v5.9.4.zip
     Backup:   Yes (env + database)
 
   ▸ Proceed with upgrade? (y/N):
@@ -97,7 +97,7 @@ When finished, you'll see a summary:
     Upgrade Complete!
   ═══════════════════════════════════════════════════════
 
-  Version:     v5.7.3 → v5.8.0
+  Version:     v5.9.3 → v5.9.4
   Backup:      data/backups/upgrade_20260215_143022/
   New env keys:
     + .oempro_env: CADDY_DOMAIN_VERIFY_CODE
@@ -117,7 +117,7 @@ The upgrade command supports several options:
 See what the upgrade would do without making any changes:
 
 ```bash
-/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v5.8.0.zip --dry-run
+/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v5.9.4.zip --dry-run
 ```
 
 This shows the full upgrade plan including which new environment keys would be added. Use this to review the upgrade before committing.
@@ -127,7 +127,7 @@ This shows the full upgrade plan including which new environment keys would be a
 If you already have a recent backup (for example, from the [Backup Add-On](./backup-addon-setup)), you can skip the built-in backup step:
 
 ```bash
-/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v5.8.0.zip --skip-backup
+/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v5.9.4.zip --skip-backup
 ```
 
 ::: warning
@@ -139,7 +139,7 @@ Skipping the backup means the upgrade cannot automatically roll back if somethin
 Enable verbose output to see exactly what each step is doing:
 
 ```bash
-/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v5.8.0.zip --debug
+/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v5.9.4.zip --debug
 ```
 
 This is helpful when troubleshooting a failed upgrade or when sharing details with support.
@@ -149,7 +149,7 @@ This is helpful when troubleshooting a failed upgrade or when sharing details wi
 Allow a same-version reinstall or downgrade:
 
 ```bash
-/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v5.8.0.zip --force
+/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v5.9.4.zip --force
 ```
 
 By default, the command prevents downgrading or reinstalling the same version. Use `--force` to override this check.
@@ -163,7 +163,7 @@ Downgrading is not recommended and may cause database incompatibilities. Only us
 Options can be combined as needed:
 
 ```bash
-/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v5.8.0.zip --skip-backup --debug
+/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v5.9.4.zip --skip-backup --debug
 ```
 
 ## Pre-Flight Checks
@@ -263,7 +263,7 @@ Each upgrade copies your existing `cli/` scripts to `data/backups/cli.bak.[versi
 
 ```bash
 rsync -a --checksum --delete \
-  /opt/octeth/data/backups/cli.bak.5.8.1.20260729_101500/ \
+  /opt/octeth/data/backups/cli.bak.5.9.3.20260729_101500/ \
   /opt/octeth/cli/
 ```
 

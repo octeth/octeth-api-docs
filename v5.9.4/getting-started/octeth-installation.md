@@ -8,7 +8,7 @@ On the server, create the Octeth directory and unzip the Octeth package:
 
 ```bash
 mkdir -p /opt/octeth
-unzip /opt/oempro-rel-v5.8.3.zip -d /opt/octeth
+unzip /opt/oempro-rel-v5.9.4.zip -d /opt/octeth
 ```
 
 Make installation tool executable:
