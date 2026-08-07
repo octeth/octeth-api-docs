@@ -1169,7 +1169,7 @@ curl -X POST https://example.com/api/v1/subscribers.import \
 | RecordsFrom | Integer | No   | Offset for pagination (default: 0)    |
 | OrderField | String | No      | Field to order by (default: EmailAddress) |
 | OrderType | String | No       | Order direction: ASC, DESC (default: ASC) |
-| SearchField | String | No      | Field to search in                    |
+| SearchField | String | No      | Field to search in. Must be a default search field (`EmailAddress`, `SubscriberID`, `SubscriptionDate`, `SubscriptionIP`, `OptInDate`) or the **numeric ID** of a custom field. Any other value is rejected with `ErrorCode 4`. |
 | SearchKeyword | String | No    | Search keyword                        |
 
 ::: danger `RecordsPerRequest: 0` is not supported here
@@ -1230,6 +1230,7 @@ curl -X POST https://example.com/api.php \
 1: Missing SubscriberListID parameter
 2: Missing SubscriberSegment parameter
 3: Invalid ListID or list does not belong to user
+4: Invalid SearchField (not a default search field or a numeric custom-field ID)
 ```
 
 :::
