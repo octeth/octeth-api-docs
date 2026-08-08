@@ -1755,7 +1755,7 @@ curl -X POST https://example.com/api.php \
 | SendAt        | Integer | No       | Schedule send time (Unix timestamp)                        |
 | Attachments   | Array   | No       | Array of attachments: [{filename, content, type, disposition, contentid}] |
 | TemplateID    | Integer | No       | Email template ID to use                                   |
-| TargetListID  | Integer | No       | Send to all subscribers in a list                          |
+| TargetListID  | Integer | No       | Send to subscribers in a list. **By default this delivers to the first 250 recipients only**; set `EMAILGATEWAY_SENDEMAIL_FULL_LIST=true` to deliver to the entire list (see note below) |
 | ListID        | Integer | No       | List ID for subscriber context                             |
 | SubscriberID  | Integer | No       | Subscriber ID for personalization                          |
 | JourneyID     | Integer | No       | Journey ID for tracking                                    |
@@ -1832,13 +1832,15 @@ curl -X POST https://example.com/api/v1/email \
 ```
 
 ::: warning Error code 39 is returned with HTTP 502
-Unlike every other error code on this endpoint — which is returned inside an `Errors` array with an HTTP `200` status — code `39` is returned with HTTP status **`502`**. It means the recipient set behind `TargetListID` could not be resolved (the internal recipient-resolution request failed, timed out, returned a non-2xx status, or returned no usable query).
+Unlike every other error code on this endpoint — which is returned inside an `Errors` array with an HTTP `200` status — code `39` is returned with HTTP status **`502`**. It means the recipient set behind `TargetListID` could not be resolved (the internal recipient-resolution request failed, timed out, returned a non-2xx status, returned no usable query, or the recipient query itself failed to execute).
 
 This condition is **not transient**: retrying the same request with the same unresolvable recipient set fails identically. Treat it as a permanent failure for that payload and investigate the list/segment rather than retrying in a loop.
 
 Previously this same condition returned HTTP `200` with `{"MessageID": []}` — a silent drop in which the caller was told the send had succeeded while no email was queued. Callers that only checked for a `200` status should now also handle `502`.
 :::
 
+::: tip A `TargetListID` send delivers to the first 250 recipients unless full-list mode is enabled
+By default a list send resolves and delivers to **at most the first 250 recipients** of the list (ordered by email address) and returns HTTP `200` with one `MessageID` per delivered recipient — a list larger than 250 is silently truncated, and the only hint is that the `MessageID` array length is 250. To deliver to the **entire** list, set `EMAILGATEWAY_SENDEMAIL_FULL_LIST=true` in the install's configuration; the send then paginates through the whole list (ordered by subscriber ID so no recipient is skipped or duplicated) and returns a `MessageID` for every recipient. This is an install-wide, opt-in setting — not a per-request parameter — because enabling it increases how many emails (and delivery credits) each call consumes. See the [configuration guide](../getting-started/octeth-configuration.md).
 :::
 
 ## Send Email via SMTP Relay
