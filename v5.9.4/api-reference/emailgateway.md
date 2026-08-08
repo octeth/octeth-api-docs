@@ -1839,6 +1839,8 @@ This condition is **not transient**: retrying the same request with the same unr
 Previously this same condition returned HTTP `200` with `{"MessageID": []}` — a silent drop in which the caller was told the send had succeeded while no email was queued. Callers that only checked for a `200` status should now also handle `502`.
 :::
 
+:::
+
 ::: tip A `TargetListID` send delivers to the first 250 recipients unless full-list mode is enabled
 By default a list send resolves and delivers to **at most the first 250 recipients** of the list (ordered by email address) and returns HTTP `200` with one `MessageID` per delivered recipient — a list larger than 250 is silently truncated, and the only hint is that the `MessageID` array length is 250. To deliver to the **entire** list, set `EMAILGATEWAY_SENDEMAIL_FULL_LIST=true` in the install's configuration; the send then paginates through the whole list (ordered by subscriber ID so no recipient is skipped or duplicated) and returns a `MessageID` for every recipient. This is an install-wide, opt-in setting — not a per-request parameter — because enabling it increases how many emails (and delivery credits) each call consumes. See the [configuration guide](../getting-started/octeth-configuration.md).
 :::
