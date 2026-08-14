@@ -6,14 +6,14 @@ description: Deliberate API behavior changes in Octeth v5.9.4 that an existing i
 
 # API Behavior Changes in v5.9.4
 
-Octeth v5.9.4 closes a set of SQL-injection surfaces in the subscriber APIs. Every change on this page was deliberate.
+Octeth v5.9.4 closes a set of injection surfaces in the subscriber APIs and removes several silent failures. Every change on this page was deliberate.
 
 None of them alter a *successful, well-formed* request. One turns a class of malformed input that used to **appear** to succeed into an explicit error — which is exactly the kind of thing an integration can be quietly relying on.
 
 **Before upgrading, read Tier 1.** If you drive `subscribers.get` search with a field value you build or forward from another system, it is worth a few minutes of your time.
 
-::: info This page is maintained through the release cycle
-Entries are added as fixes merge and the list is finalized at release. If you are reading it mid-cycle, treat it as current-but-growing rather than frozen.
+::: info Finalized for the v5.9.4 release
+This page was maintained through the release cycle and finalized when v5.9.4 shipped on 14 August 2026. It is the complete list for this version.
 :::
 
 ## One general note on error codes
@@ -34,13 +34,26 @@ This closes a SQL-injection surface: the rejected values are exactly the ones th
 
 If you treat `TotalSubscribers: 0` from a search as "no matches", add a `Success` check: a well-formed search that matches nothing still returns `Success: true`, while an invalid `SearchField` now returns `Success: false` / `ErrorCode: 4`.
 
+## Tier 2 — Same call, different results
+
+### Email address "contains" search returns matches it previously missed
+
+A `contains` search on an email address is served by a full-text index. Search terms whose words collide with the database's built-in stopword list produced a query that matched **nothing**, so the search returned zero rows for terms that plainly should have matched. Those tokens are now dropped from the generated query rather than poisoning it.
+
+No request changes. If you have a saved search, a segment, or a test that asserted an empty result for one of these terms, it will now return rows — which is the correct answer.
+
+### `emailgateway.sendemail` list sends can now reach the whole list
+
+A list send has historically delivered to the **first 250 recipients** and returned a success response, with nothing in the response indicating the list was truncated. That remains the default in v5.9.4, so no existing integration changes.
+
+A new server-side setting, `EMAILGATEWAY_SENDEMAIL_FULL_LIST`, makes a list send paginate the entire list. If you send to lists larger than 250 through the Email Gateway, ask your administrator to enable it — and be aware that doing so genuinely increases the number of emails a single call sends.
+
 ## Tier 3 — Security closures
 
 These only affect callers doing something that was never intended to work. Listed for completeness and for anyone auditing.
 
 - **`subscribers.get` `SearchField`** — SQL injection through the criteria builder's field name closed (the caller-visible effect is the Tier 1 entry above). The value half of a search was always parameter-escaped; the field-name half is now identifier-escaped too.
 - **`subscribers.search`** — the internal segment-engine call is now parameter-safe (a value can no longer smuggle an additional request parameter), and `OrderField` / `OrderType` are validated against an allowlist. An `OrderField` that is not a physical subscriber column (or a `CustomField<n>`) now falls back to `EmailAddress` ordering **silently, with HTTP 200**, where an unusual value could previously reach the query builder. A successful sort on a real column is unchanged. If your results come back in an unexpected order after upgrading, your sort parameter is being rejected — it is not reported as an error.
-- **Legacy criteria builder** — every backtick-wrapped field name emitted by the shared `GetRows` query builder is now identifier-escaped (embedded backticks are doubled). No API-visible change for any legitimate caller; column names never contain a backtick, so the emitted SQL is byte-identical.
 - **Journey action save** — `Journeys::CreateAction()`'s update path now verifies the target action row exists and belongs to both the requesting account and the journey being edited before writing, and scopes the `UPDATE` by `(ActionID, RelUserID, RelJourneyID)`. This closes a cross-tenant write where a crafted save could re-parent another account's action row into the caller's journey, and stops a stale/wrong action id from silently succeeding (which orphaned child actions into unreachable branches). A legitimate journey save — which only ever targets rows the account already owns in that journey — is unchanged; only stale/foreign ids are now rejected. A failed `UPDATE` also returns an error instead of a fabricated success.
 - **Segment rules — unresolvable operator fails closed** — a suppression rule whose operator is missing or unrecognised now compiles to an *unsatisfiable* predicate (matches nobody) and is logged, instead of silently inverting to "not suppressed". The old inversion could include suppressed addresses in an audience. Normal segments built in the UI always carry a valid operator and are unaffected; this only changes malformed/hand-crafted rules.
 
@@ -49,3 +62,5 @@ These only affect callers doing something that was never intended to work. Liste
 1. **Do you call `subscribers.get` with a `SearchField` you build or forward from another system?** Make sure it is a default search field (`EmailAddress`, `SubscriberID`, `SubscriptionDate`, `SubscriptionIP`, `OptInDate`) or a **numeric** custom-field ID. Anything else now returns `Success: false` / `ErrorCode: 4` instead of a masked empty success. In particular, if you pass a custom field by its **name** rather than its numeric ID, that call was already returning nothing and will now return an explicit error.
 2. **Do you treat `TotalSubscribers: 0` from a `subscribers.get` search as "empty"?** Add a `Success` check — `Success: true` with `TotalSubscribers: 0` reliably means the search matched nothing; `Success: false` / `ErrorCode: 4` means the field was invalid.
 3. **Do you sort `subscribers.search` results by a non-standard `OrderField`?** A value that is not a physical column or `CustomField<n>` now falls back to `EmailAddress` ordering silently (HTTP 200). Verify your sort field if results come back in an unexpected order.
+4. **Do you assert on an empty result from an email address `contains` search?** Some terms that previously returned nothing now correctly return matches. Check any saved search, segment or test that depended on the empty result.
+5. **Do you send to lists larger than 250 recipients via `emailgateway.sendemail`?** Those sends have always stopped at 250 while reporting success. The default is unchanged in v5.9.4 — talk to your administrator about `EMAILGATEWAY_SENDEMAIL_FULL_LIST` if you need the full list reached.

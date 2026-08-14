@@ -12,23 +12,39 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Scheduled for August 13th, 2026. Changelog will be updated upon release.
+Released August 14th, 2026, after a two-week development cycle. This is a focused security and correctness release. It closes two injection vulnerabilities in the subscriber APIs and removes a set of silent failures — cases where Octeth reported success while quietly doing the wrong thing, or nothing at all. There are no new features and no database migrations, so it is a low-risk upgrade.
+
+**Upgrading promptly is recommended.** If you maintain an API integration, review the Upgrade Notes below and the [v5.9.4 API behavior changes](/v5.9.4/api-reference/behavior-changes) page first — one call that previously returned a masked empty success now returns an explicit error.
 
 ### New Features
 
-- (To be documented)
+None. This release is deliberately scoped to security and correctness.
 
 ### Enhancements
 
-- (To be documented)
+- **Full-List Sending via the Email Gateway** - A list send through the Email Gateway has always stopped after the first 250 recipients while reporting success. A new administrator setting lets a list send reach every recipient on the list. The previous behavior remains the default, so existing integrations are unaffected until it is switched on
+- **More Accurate Email Address Search** - Searching email addresses by "contains" no longer returns an empty result for certain common search terms
 
 ### Bug Fixes
 
-- (To be documented)
+- **Suppressed Contacts Could Enter an Audience** - A segment rule with an unrecognized condition was evaluated as its own opposite, which on a suppression rule meant suppressed contacts could be swept into an audience. Such a rule now safely matches nobody and is recorded in the logs
+- **Journey Action Saves** - Saving a journey action could write to the wrong record when given a stale or invalid reference, silently moving child actions into branches that could never be reached. Saves are now verified against the account and journey before writing, and a failed save reports an error instead of appearing to succeed
+- **Misleading Success on Large Email Gateway List Sends** - Sending to a list of more than 250 recipients returned a success response with no indication that the list had been truncated. See the enhancement above for how to send to the full list
+- **SMS Delivery Report Processing** - Delivery report handling no longer queues work when delivery reports are switched off
+- **First-Time Installation** - A fresh installation configured its inbound email relay with a placeholder credential instead of the real one
+- **Upgrade Reliability** - The upgrade process now uses safer temporary file handling
 
 ### Security Patches
 
-- (To be documented)
+- Closed two vulnerabilities in the subscriber APIs that could allow an authenticated account to read data belonging to other accounts. Both were found during an internal audit, reproduced under controlled conditions, and verified as fixed. There is no indication either was exploited. Installations should upgrade promptly
+- Hardened validation of search and sort parameters across the subscriber endpoints
+- Tightened account and journey ownership checks when saving journey actions
+
+### Upgrade Notes
+
+- **No database migrations ship with this release.** Upgrading is a container pull and restart
+- **One API response change.** `subscribers.get` called with an invalid search field now returns an explicit error instead of an empty result that looked like a successful search matching nothing. If your integration treats an empty result as "no matches", add a success check. Full detail and an upgrade checklist: [v5.9.4 API behavior changes](/v5.9.4/api-reference/behavior-changes)
+- **Sorting subscriber searches.** A sort field that is not a real subscriber column now falls back to sorting by email address, without reporting an error. If results come back in an unexpected order after upgrading, check your sort parameter
 
 ### Deprecations
 
