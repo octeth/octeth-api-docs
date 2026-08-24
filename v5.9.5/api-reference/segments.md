@@ -26,12 +26,16 @@ Segment management endpoints for creating, updating, and managing subscriber seg
 | SubscriberListID | Integer | Yes | ID of the subscriber list |
 | SegmentName | String | Yes | Name of the segment |
 | SegmentOperator | String | Yes | Connector between top-level rule **groups**: `and` or `or`. It is **not** applied uniformly to every rule — the connector alternates with nesting depth (see the note below). |
-| SegmentRuleField | Array | No | Array of rule field names (old style) |
-| SegmentRuleOperator | Array | No | Array of rule operators (old style) |
+| SegmentRuleField | Array | No | Array of rule field names (old style). Each value must be a known subscriber column, a `CustomField<n>` id, or an activity field (`Opens`/`Clicks`). See the validation note below. |
+| SegmentRuleOperator | Array | No | Array of rule operators (old style). Each value must be a recognised operator phrase (e.g. `Contains`, `Equals to`, `Is`, `Is not`, `Is set`, `Between`). See the validation note below. |
 | SegmentRuleFilter | Array | No | Array of rule filter values (old style) |
 | RulesJson | String | No | Segment rules in JSON format |
 | Randomness | Boolean | No | Pick a random audience matching the segment rules. Accepts `true`/`false`/`yes`/`no`/`1`/`0`. Defaults to `false`. Persisted as the `Randomness` key inside the segment's `Options` JSON blob (round-trips via `Segments.Get`). |
 | RandomnessAudienceSize | Integer | No | Maximum number of subscribers to pick when `Randomness` is enabled. Non-numeric values silently coerce to `0`. Defaults to `0`. Persisted as the `RandomnessAudienceSize` key inside the segment's `Options` JSON blob. |
+
+::: warning `SegmentRuleField` / `SegmentRuleOperator` are validated
+Each `SegmentRuleField` must be a known subscriber column, a `CustomField<n>` id, or an activity field (`Opens`/`Clicks`), and each `SegmentRuleOperator` must be a recognised operator phrase. A value outside those sets returns `Success: false` with `ErrorCode: 5` (`"Invalid segment rule field or operator"`) and no segment is created. This closes a legacy-criteria-builder SQL injection where a crafted rule field reached raw SQL (issue #2720).
+:::
 
 ::: warning `SegmentOperator` alternates with nesting depth
 `SegmentOperator` sets the connector between top-level **groups** in `RulesJson`. It is not applied to every rule uniformly — the connector flips at each level of nesting:
@@ -86,6 +90,7 @@ curl -X POST https://example.com/api.php \
 2: Missing segment name
 3: Missing segment operator
 4: List not found or doesn't belong to user
+5: Invalid segment rule field or operator (issue #2720)
 ```
 
 :::
@@ -111,8 +116,8 @@ curl -X POST https://example.com/api.php \
 | SegmentName | String | Yes | Name of the segment |
 | SubscriberListID | Integer | No | ID of the subscriber list (to move segment). Must be a numeric ID of a list **owned by the authenticated user** — otherwise the update aborts with error code `6`. Non-numeric values (e.g. `12abc`, `0`) are silently ignored and the segment keeps its current list. |
 | SegmentOperator | String | No | Connector between top-level rule **groups**: `and` or `or`. It is **not** applied uniformly to every rule — the connector alternates with nesting depth (see the note under `segment.create`). Changing it re-resolves the segment's audience, because the connector *inside* each group flips too. |
-| SegmentRuleField | Array | No | Array of rule field names (old style) |
-| SegmentRuleOperator | Array | No | Array of rule operators (old style) |
+| SegmentRuleField | Array | No | Array of rule field names (old style). Each value must be a known subscriber column, a `CustomField<n>` id, or an activity field (`Opens`/`Clicks`). An out-of-set value returns `ErrorCode: [7]` (see below). |
+| SegmentRuleOperator | Array | No | Array of rule operators (old style). Each value must be a recognised operator phrase (e.g. `Contains`, `Equals to`, `Is`, `Is not`, `Is set`, `Between`). An out-of-set value returns `ErrorCode: [7]` (see below). |
 | SegmentRuleFilter | Array | No | Array of rule filter values (old style) |
 | RulesJson | String | No | Segment rules in JSON format |
 | Randomness | Boolean | No | Pick a random audience matching the segment rules. Accepts `true`/`false`/`yes`/`no`/`1`/`0`. **When this parameter is omitted (or sent as an empty string) along with `RandomnessAudienceSize`, the segment's existing `Options` value is preserved as-is.** When at least one of the two randomness params is provided, the missing one is read from the segment's existing `Options` blob (no silent reset to defaults). |
@@ -157,6 +162,7 @@ curl -X POST https://example.com/api.php \
 4: Invalid segment id
 5: Invalid segment operator
 6: Invalid subscriber list id
+7: Invalid segment rule field or operator (issue #2720)
 ```
 
 :::
