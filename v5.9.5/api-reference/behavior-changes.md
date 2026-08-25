@@ -24,8 +24,6 @@ No request change is needed, but the response values differ. The response shape 
 
 - **`emailgateway.recipientdomainstats` is now scoped to the sender domain you pass.** `DomainID` was required but was used only to verify ownership and then discarded, so the statistics aggregated across **all** of the account's sender domains for the given recipient domain. It is now applied as a filter. Accounts with a single sender domain see identical numbers. Accounts with more than one sender domain will see lower numbers than before, because the response no longer includes traffic from their other sender domains. This is what makes the endpoint reconcile with the `emailgateway.listrecipientdomains` leaderboard it drills into, which was always sender-domain scoped (issue #2728).
 
-  The same fix also repairs a hard failure on servers running MySQL 8's default `sql_mode`. Both of this endpoint's queries compared against a zero-date literal, which `NO_ZERO_DATE` rejects with an error, so on a stock MySQL 8 server the endpoint returned a server error rather than statistics. The comparison no longer uses a literal. If this endpoint has been failing for you, it should now work with no configuration change (issue #2728).
-
 ## Tier 3: Security closures
 
 These only affect callers doing something that was never intended to work. Listed for completeness and for anyone auditing.
