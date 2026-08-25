@@ -2075,6 +2075,18 @@ curl -X GET "https://example.com/api/v1/inbound-relay-domain-check?domain=exampl
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
+Returns delivery statistics for a single recipient domain, broken down by queue status: summary counts with queue-latency statistics, and a delivery-speed histogram. Pairs with [`emailgateway.listrecipientdomains`](#list-recipient-domains), which returns the leaderboard these statistics drill into.
+
+::: warning Changed in v5.9.5: results are now scoped to the sender domain
+`DomainID` was previously used only to verify ownership and was then discarded, so the statistics covered **all** of the account's sender domains for the given recipient domain, while the leaderboard above them was scoped to one sender domain. The two disagreed on totals. `DomainID` is now applied as a filter, so both are scoped identically and reconcile.
+
+The response **shape is unchanged**. Accounts with a single sender domain see no difference. Accounts with **more than one** sender domain will see lower numbers here than before, because the response no longer aggregates across their other sender domains.
+:::
+
+**Reading `SummaryStats` and `DeliverySpeedHistogram`:** both are keyed **dynamically by the queue statuses actually present** in the requested window. There is no fixed key set and no zero-fill. A status with no messages in the window is simply absent, and within a status, buckets with a count of zero are omitted. Do **not** zero-fill against a hard-coded status list; iterate whatever keys are present. In practice you will see `Sent` and `Failed`, and occasionally `Sending`. Note that `Bounced` is never a key here: it is tracked separately from queue status. Histogram buckets are always returned in the fixed order `< 1s`, `1-5s`, `5-10s`, `10-30s`, `30-60s`, `1-5m`, `5-10m`, `> 10m`.
+
+Delivery seconds measure **queue latency** (queued to processed), and only messages that have actually been processed are included.
+
 **Request Body Parameters:**
 
 | Parameter        | Type    | Required | Description                                              |
@@ -2082,7 +2094,7 @@ curl -X GET "https://example.com/api/v1/inbound-relay-domain-check?domain=exampl
 | Command          | String  | Yes      | API command: `emailgateway.recipientdomainstats`         |
 | SessionID        | String  | No       | Session ID obtained from login                           |
 | APIKey           | String  | No       | API key for authentication                               |
-| DomainID         | Integer | Yes      | Sender domain ID (used to verify user ownership)         |
+| DomainID         | Integer | Yes      | Sender domain ID. Must be owned by the caller. Scopes the results (changed in v5.9.5) |
 | RecipientToDomain | String | Yes      | Recipient domain to filter by (e.g., `gmail.com`)        |
 | StartDate        | String  | No       | Start date (Y-m-d format, default: 28 days ago)         |
 | EndDate          | String  | No       | End date (Y-m-d format, default: today)                  |
@@ -2300,15 +2312,30 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
-Returns a leaderboard of the recipient domains (e.g. `gmail.com`, `yahoo.com`, `outlook.com`) for emails sent from a single sender domain over a date range. Built as a single ES terms aggregation on `message.to-domain` with per-bucket Sent / Failed / Sending counts and SMTP-session delivery-time statistics. New capability — the legacy `domain_recipients.php` view required the user to type a recipient domain manually before any data was shown.
+Returns a leaderboard of the recipient domains (e.g. `gmail.com`, `yahoo.com`, `outlook.com`) for emails sent from a single sender domain over a date range, grouped from the email gateway's own send queue. Rows are sorted by `Sent` descending, then by `Domain` ascending.
+
+::: warning Changed in v5.9.5: data source and counting semantics
+Before v5.9.5 this endpoint read the ClickHouse event stream and counted MTA-level events. It returned an **empty `RecipientDomains` array for every account that sends through the gateway API** rather than the SMTP relay, because the recipient-domain field it grouped on and the MTA-acceptance event it counted are only ever produced by the SMTP relay ingress. It now reads the send queue, which records the recipient domain on every message on both send paths.
+
+Two consequences for existing integrations. The response **shape is unchanged**, but:
+
+1. **`Sent` and `Failed` changed meaning** (see below). `Sent` is now acceptance by Octeth's delivery server, not by the receiving MTA.
+2. **Delivery-time fields changed quantity.** They were the SMTP session duration; they are now queue latency, the same measurement [`emailgateway.recipientdomainstats`](#retrieve-recipient-domain-statistics) reports. The two endpoints previously reported different quantities under the same unit while being rendered on the same page.
+
+The endpoint now also reports **retroactively**: the send queue has no retention window, so historical data is available immediately with no backfill.
+:::
 
 Counts semantics:
 
-- **Sent** = events where `event = "accepted-by-mta"` (recipient MTA acknowledged the message)
-- **Failed** = events where `event ∈ {"bounced", "rejected-by-mta", "rejected-by-oempro"}`
-- **Sending** = `max(Total − Sent − Failed, 0)`, where `Total` is the count of `accepted-by-oempro` events. Represents messages that entered the gateway but haven't reached a terminal state yet.
+- **Sent** = messages accepted by the Octeth delivery server for delivery (queue status `Sent` or `Delivered`). This is **not** confirmation that the receiving MTA accepted the message.
+- **Failed** = messages Octeth itself could not send (queue status `Failed`). Bounces reported later by the receiving MTA are **not** included here. Those are recorded separately and are not part of this leaderboard.
+- **Sending** = messages queued but not yet in a terminal state (queue status `Pending` or `Sending`).
 
-Delivery-time fields (`AvgDeliverySec`, `MinDeliverySec`, `MaxDeliverySec`) come from `delivery-status.session-seconds` on `accepted-by-mta` events — the SMTP session duration recorded per delivery. Returns `null` when the bucket has no `accepted-by-mta` events. Rows are sorted by `Sent` desc.
+Delivery-time fields (`AvgDeliverySec`, `MinDeliverySec`, `MaxDeliverySec`) measure **queue latency**: the seconds between a message being queued and being processed. They are computed only over messages counted in `Sent` that have actually been processed, and are `null` when a recipient domain has no such messages in the window. A `null` therefore means "no delivery data yet", which is distinct from `0` ("delivered within the same second").
+
+The `Domain` grouping key is returned **lowercased**, so `Gmail.com` and `gmail.com` are one row.
+
+Known limitation: a single SMTP-relay message addressed to several recipients records only the **first** recipient's domain, while credit usage counts every recipient. Such messages are therefore under-represented on this leaderboard relative to the account's credit consumption.
 
 **Request Body Parameters:**
 
@@ -2318,7 +2345,7 @@ Delivery-time fields (`AvgDeliverySec`, `MinDeliverySec`, `MaxDeliverySec`) come
 | SessionID | String  | No       | Session ID obtained from login                                                                               |
 | APIKey    | String  | No       | API key for authentication                                                                                   |
 | DomainID  | Integer | Yes      | Sender domain ID. Must be owned by the caller                                                                |
-| StartDate | String  | No       | Start date (`Y-m-d` strict). Defaults to 30 days ago. Invalid formats fall back to the default               |
+| StartDate | String  | No       | Start date (`Y-m-d` strict). Defaults to 30 days ago. Invalid formats fall back to the default. The window is capped at 365 days: a longer range has its start trimmed forward, and the response reports the range actually queried |
 | EndDate   | String  | No       | End date (`Y-m-d` strict). Defaults to today. Clamped to `>= StartDate`                                      |
 | Limit     | Integer | No       | Maximum number of recipient-domain rows. Default `50`, clamped to `[1, 1000]`                                |
 
@@ -2344,21 +2371,21 @@ curl -G https://example.com/api.php \
   "RecipientDomains": [
     {
       "Domain": "gmail.com",
-      "Sent": 11554,
-      "Failed": 172,
-      "Sending": 3,
-      "AvgDeliverySec": 0.05,
+      "Sent": 28126,
+      "Failed": 35,
+      "Sending": 0,
+      "AvgDeliverySec": 0.26,
       "MinDeliverySec": 0,
-      "MaxDeliverySec": 1.0
+      "MaxDeliverySec": 502
     },
     {
       "Domain": "yahoo.com",
-      "Sent": 4881,
-      "Failed": 64,
+      "Sent": 2291,
+      "Failed": 4,
       "Sending": 0,
-      "AvgDeliverySec": 0.08,
+      "AvgDeliverySec": 0.06,
       "MinDeliverySec": 0,
-      "MaxDeliverySec": 2.0
+      "MaxDeliverySec": 26
     }
   ]
 }
