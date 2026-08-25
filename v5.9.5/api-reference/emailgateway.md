@@ -2319,7 +2319,7 @@ Before v5.9.5 this endpoint read the ClickHouse event stream and counted MTA-lev
 
 Two consequences for existing integrations. The response **shape is unchanged**, but:
 
-1. **`Sent` and `Failed` changed meaning** (see below). `Sent` is now acceptance by Octeth's delivery server, not by the receiving MTA.
+1. **`Sent` and `Failed` changed meaning** (see below). `Sent` is now acceptance by Octeth's delivery server, not by the receiving MTA, and `Failed` counts failed send attempts (including outright SMTP rejections) rather than MTA-reported bounces.
 2. **Delivery-time fields changed quantity.** They were the SMTP session duration; they are now queue latency, the same measurement [`emailgateway.recipientdomainstats`](#retrieve-recipient-domain-statistics) reports. The two endpoints previously reported different quantities under the same unit while being rendered on the same page.
 
 The endpoint now also reports **retroactively**: the send queue has no retention window, so historical data is available immediately with no backfill.
@@ -2328,7 +2328,7 @@ The endpoint now also reports **retroactively**: the send queue has no retention
 Counts semantics:
 
 - **Sent** = messages accepted by the Octeth delivery server for delivery (queue status `Sent` or `Delivered`). This is **not** confirmation that the receiving MTA accepted the message.
-- **Failed** = messages Octeth itself could not send (queue status `Failed`). Bounces reported later by the receiving MTA are **not** included here. Those are recorded separately and are not part of this leaderboard.
+- **Failed** = messages whose send attempt failed (queue status `Failed`). This covers failures on our side (sender domain, API key or SMTP configuration not found, credit or rate limits reached, message unparseable, every recipient suppressed) **and** messages the receiving mail server rejected outright during the SMTP conversation. What it does **not** include is a bounce reported back later, after the message had already been accepted for delivery. Those are recorded separately and are not part of this leaderboard.
 - **Sending** = messages queued but not yet in a terminal state (queue status `Pending` or `Sending`).
 
 Delivery-time fields (`AvgDeliverySec`, `MinDeliverySec`, `MaxDeliverySec`) measure **queue latency**: the seconds between a message being queued and being processed. They are computed only over messages counted in `Sent` that have actually been processed, and are `null` when a recipient domain has no such messages in the window. A `null` therefore means "no delivery data yet", which is distinct from `0` ("delivered within the same second").
