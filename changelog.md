@@ -12,23 +12,40 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Scheduled for August 28th, 2026. Changelog will be updated upon release.
+Released August 28th, 2026, after a two-week development cycle. This is a correctness and hardening release with no new features. It closes the last of the injection vulnerabilities found during the v5.9.4 security audit, repairs a reporting endpoint that had been returning nothing for a large group of accounts since it shipped, and removes several failure modes that made real problems harder to diagnose.
+
+**If you use the Email Gateway reporting endpoints, read the Upgrade Notes below and the [v5.9.5 API behavior changes](/v5.9.5/api-reference/behavior-changes) page before upgrading.** Two of those endpoints now return different, more accurate numbers.
+
+Two database migrations ship with this release. One is expected to do nothing on a healthy installation. The other builds an index on the email gateway queue, so on installations with a large send history, run the upgrade outside peak sending hours.
 
 ### New Features
 
-- (To be documented)
+None. This release is deliberately scoped to correctness and security.
 
 ### Enhancements
 
-- (To be documented)
+- **Recipient Domain Reporting Now Reconciles** - The recipient domain leaderboard and the per-domain statistics it drills into are now measured from the same source, over the same sender domain, so the two views agree with each other for the first time
+- **Clearer Errors From Segment and Subscriber Queries** - A query that fails now returns a proper error with the underlying cause recorded in the logs, instead of a generic server error page that discarded the real reason
 
 ### Bug Fixes
 
-- (To be documented)
+- **Recipient Domain Reporting Returned Nothing** - The recipient domain breakdown returned an empty result for every account sending through the Email Gateway API rather than the SMTP relay. It now reads from the send queue, which records the recipient domain on every message on both sending paths, so the report is populated immediately and covers your existing send history with no waiting period
+- **Per-Domain Statistics Included Other Sender Domains** - Per-recipient-domain statistics aggregated across all of your sender domains instead of the one requested. Accounts with a single sender domain are unaffected. Accounts with several will see lower, correct numbers
+- **Upgrade Reliability** - A check used during database upgrades could mistake an absent table for an existing one, which could stop an upgrade partway through. The check is now exact, and an upgrade that cannot verify the database state now stops cleanly and can be safely re-run rather than recording itself as finished
+- **Noisy Logs on Installations Without Optional Add-Ons** - Scheduled tasks belonging to optional add-ons ran on every installation whether or not the add-on was present, writing roughly 1,750 failure lines a day into the log an administrator checks first when investigating a real problem. Those tasks are now silent when their add-on is not installed, and start working automatically if one is added later
+- **Completed Export Files Were Not Always Cleaned Up** - Completed exports whose finish time was missing were skipped by the file retention cleanup, so their files were kept indefinitely. Any such records are now repaired during the upgrade
 
 ### Security Patches
 
-- (To be documented)
+- Closed a vulnerability in segment rules that could allow an authenticated account holder to read data belonging to other accounts. It was found during the internal audit that produced the v5.9.4 fixes, reproduced under controlled conditions, and verified as fixed. There is no indication it was exploited. Installations should upgrade promptly
+- Segment rule fields and conditions are now validated when a segment is saved and again when it is used. Segments built in the Octeth interface are unaffected. Only rules submitted directly through the API with values outside the accepted set are rejected
+
+### Upgrade Notes
+
+- **Two database migrations ship with this release.** Run them as part of the upgrade. One repairs export records and is expected to be a no-op on a healthy installation. The other adds an index to the email gateway queue: on installations with a large send history this is the only step with meaningful build time, so schedule the upgrade outside peak sending hours
+- **No configuration changes.** No settings were added, removed, or changed in meaning
+- **Email Gateway reporting numbers change.** The recipient domain report now returns data where it previously returned an empty result, and its "sent", "failed" and delivery-time figures carry more precise meanings. Per-domain statistics are now scoped to the sender domain you request. Full detail and an upgrade checklist: [v5.9.5 API behavior changes](/v5.9.5/api-reference/behavior-changes)
+- **Saving segments through the API.** A segment rule field or condition outside the accepted set is now rejected with an error instead of being stored. Segments created in the Octeth interface are unaffected
 
 ### Deprecations
 
