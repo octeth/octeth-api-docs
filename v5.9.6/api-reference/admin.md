@@ -643,8 +643,8 @@ Searches and filters campaigns across all accounts with admin privileges. This e
 | SearchKeyword           | String  | No       | Search by campaign name or email subject (LIKE query)                                            |
 | FilterByUserID          | Integer | No       | Filter by account/user ID (empty for all accounts)                                              |
 | CampaignIDs             | String/Array | No  | Filter by specific campaign IDs (comma-separated string or array). Example: "1,2,3" or [1,2,3]  |
-| DateFrom                | String  | No       | Start date for filtering (Y-m-d format). For Sent campaigns, filters by SendProcessFinishedOn; for Scheduled, filters by SendDate |
-| DateTo                  | String  | No       | End date for filtering (Y-m-d format)                                                            |
+| Date_From               | String  | No       | Start date (Y-m-d). The underscore is part of the name; keys are matched case-insensitively. The column depends on `CampaignStatus`: `Sent` and `Failed` filter on `SendProcessFinishedOn`, `Sending` on `SendProcessStartedOn`, `Scheduled` and any other status on `SendDate`; `Draft`, `Pending Approval` and unscheduled `Ready` campaigns ignore the window. Note this differs from the `DateFrom` the campaign-report commands below take, which apply the screen's bucket mapping (`Sent` on `SendProcessStartedOn`) |
+| Date_To                 | String  | No       | End date (Y-m-d), same column rules as `Date_From`                                               |
 | OrderField              | String  | No       | Field to sort by (e.g., CampaignName, SendProcessFinishedOn)                                     |
 | OrderType               | String  | No       | Sort direction: `ASC` or `DESC`                                                                  |
 | RecordsPerRequest       | Integer | No       | Number of records per page (0 for all)                                                           |
