@@ -1091,7 +1091,7 @@ No specific error codes for this endpoint
 | RecordsFrom | Integer | No | Starting record offset (default: 0) |
 | OrderField | String | No | Field to order by (default: `UserID`). Must be a plain column identifier: letters, digits and underscores only, starting with a letter or underscore. Pipe-separate for multi-column sort (e.g. `AccountStatus\|UserID`). See the sorting note below. |
 | OrderType | String | No | Order direction: 'ASC' or 'DESC' (default: `ASC`). Pipe-separate to match a multi-column `OrderField`. See the sorting note below. |
-| RelUserGroupID | Mixed | No | User group ID, array of IDs, or special value ('Online', 'Enabled', 'Disabled', 'Trusted', 'Untrusted') |
+| RelUserGroupID | Mixed | No | A user group id, an array of group ids, or one of six pseudo-values that select on something other than the group: `Online`, `Enabled`, `Disabled`, `Trusted`, `Untrusted`, `ActivationPendingSenderDomains`. See the note below |
 | RelUserCategoryID | Integer | No | User category ID (-1 for uncategorized) |
 | SearchField | String | No | Field to search in |
 | SearchKeyword | String | No | Search keyword |
@@ -1106,6 +1106,19 @@ No specific error codes for this endpoint
 - Because there is no column allow-list, a value that *is* identifier-shaped but names a column that does not exist (for example `OrderField: "Bogus"`) is passed through to the query and surfaces as a **database error**. It does not fall back to the default.
 
 Neither case returns a validation error. If results come back in an unexpected order after upgrading, your sort parameter is being rejected silently. Check it against the shape rules above.
+:::
+
+::: warning RelUserGroupID pseudo-values are exact, case-sensitive strings
+`users.get` recognises six string values in `RelUserGroupID` that are not group ids:
+
+| Value | Selects |
+|-------|---------|
+| `Online` | Users whose `LastActivityDateTime` is within the last 600 seconds |
+| `Enabled`, `Disabled` | Users whose `AccountStatus` is that value |
+| `Trusted`, `Untrusted` | Users whose `ReputationLevel` is that value |
+| `ActivationPendingSenderDomains` | Users owning at least one sender domain whose status is `Blocked` (awaiting admin activation) |
+
+The comparison is a strict string match. `online`, `ENABLED` or any other spelling is not recognised: it is treated as a numeric group id, compares equal to no group and returns an empty `Users` list with `TotalUsers: 0` and `Success: true`. There is no error code for a misspelt pseudo-value. Numeric ids keep working as before, and an array of ids selects users in any of those groups.
 :::
 
 ::: tip Limit-utilization filter and blocked-domain totals (v5.9.6)
@@ -1160,6 +1173,83 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: LimitUtilizationStatus is not OK, Warning or Exceeded
 2: The limit-utilization status buckets are not available yet (the cron has not run)
+```
+
+:::
+
+## Search Users (Admin)
+
+<Badge type="info" text="POST" /> `/api.php`
+
+<Badge type="tip" text="New in v5.9.6" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Users` privilege)
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Cross-tenant by design. A restricted sub-admin (`AccessLimited` with `AccessAllowedUserGroupIDs`) only sees users in its allowed user groups.
+:::
+
+The admin global search box as a command. `Keyword` is matched against `FirstName`, `LastName`, `CompanyName`, `EmailAddress` and `Username` (contains, case-insensitive per the column collation; `%` and `_` in the keyword are matched literally) and, when the keyword is a number, against the exact `UserID`. `users.get` searches one nominated field; this searches all of them at once. `Password`, `AuthToken`, the 2FA secrets and API keys are never returned.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.users.search` |
+| AdminAPIKey | String | Yes | Admin API key |
+| Keyword | String | Yes | Search text. Must not be empty after trimming |
+| RecordsFrom | Integer | No | Offset, default `0` |
+| RecordsPerRequest | Integer | No | Page size, default `25`, maximum `500`; anything below `1` falls back to `25` |
+| OrderField | String | No | One of `UserID` (default), `Username`, `EmailAddress`, `FirstName`, `LastName`, `CompanyName`, `UserSince`, `LastActivityDateTime`, `AccountStatus`, `ReputationLevel`, `RelUserGroupID`, `RelUserCategoryID`. Anything else falls back to `UserID` |
+| OrderType | String | No | `ASC` (default) or `DESC` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.users.search",
+    "AdminAPIKey": "your-admin-api-key",
+    "Keyword": "acme",
+    "RecordsPerRequest": 25,
+    "OrderField": "LastActivityDateTime",
+    "OrderType": "DESC"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "Users": [
+    {
+      "UserID": "42",
+      "RelUserGroupID": "3",
+      "EmailAddress": "owner@acme.example",
+      "Username": "acme",
+      "FirstName": "Ada",
+      "LastName": "Lovelace",
+      "CompanyName": "Acme",
+      "AccountStatus": "Enabled",
+      "LastActivityDateTime": "2026-09-04 10:15:00"
+    }
+  ],
+  "TotalUsers": 1,
+  "RecordsFrom": 0,
+  "RecordsPerRequest": 25
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Keyword is required"
+}
+```
+
+```txt [Error Codes]
+1: Keyword is missing or empty
 ```
 
 :::
@@ -1308,8 +1398,14 @@ curl -X GET https://example.com/api/v1/users.status \
 | ForceRejectOptLink | String | Yes | 'Enabled' or 'Disabled' |
 | DefaultRateLimits | String | No | JSON-encoded rate limits with `SMS` and `EmailGateway` buckets, each containing `Minute`/`Hour`/`Day`/`Week`/`Month`/`Year` integer counts (`-1` = unlimited). Posted values are deep-merged over the canonical defaults, so a partial payload (only one bucket, or only some intervals) preserves the missing keys at `-1`. Omit to store the full all-`-1` defaults. |
 | CustomEmailHeaders | String | No | JSON-encoded SMTP header overrides for users in this group (e.g. `{"Add":{"X-Header":"value"},"Remove":["X-Other"]}`). |
-| Options | Object | No | JSON object of per-group options (e.g. `TargetDeliveryServerID_Marketing`, `EmailGatewayDNSTemplate`, `DefaultSenderDomain`, `EnableSenderInfo`). Pass as an object. The endpoint JSON-encodes it. |
+| Options | Object \| String | No | Object of user group option keys and values, or a JSON string of one when the request is form-encoded. The two shapes `usergroup.update` and `usergroup.patch` accept. Anything else is `ErrorCode 28`. Omitting the parameter is unchanged. Changed in v5.9.6 |
 | SubscriptionPlan | String | No | Subscription plan identifier for the group. |
+
+::: warning Options (v5.9.6)
+Before v5.9.6 this command JSON-encoded whatever it was handed, unconditionally. A JSON string was therefore **double-encoded**: the column ended up holding a JSON *string* instead of an object, so nothing could read the options back. It now accepts an object or a JSON string of one and refuses anything else with `ErrorCode 28`, matching `usergroup.patch`.
+
+Keys sent as a nested object (`Options[UserAreaLogoutURL]=...` or a JSON request body) arrive lowercased, because `/api.php` lowercases every nested request key. Known option keys are now remapped onto their canonical spelling before storage, so they land under the names the product actually reads. Keys outside the known set, such as a plugin's own, are stored exactly as they arrive.
+:::
 
 ::: code-group
 
@@ -1363,6 +1459,7 @@ curl -X POST https://example.com/api.php \
 23: Invalid SMTP secure setting
 24: Invalid SMTP auth setting
 25: Email settings test failed
+28: Options is not an object and not a JSON string of one
 ```
 
 :::
@@ -1534,10 +1631,15 @@ The only safe way to change a single value through `usergroup.update` is to read
 | DefaultRateLimits | Object \| String | No | Rate-limit buckets. Merged over the canonical defaults, so a partial payload cannot drop a bucket |
 | CustomEmailHeaders | String | No | Custom email headers |
 | SubscriptionPlan | String | No | Subscription plan identifier for the group |
+| SubscriptionPlanIsDefault | String | No | `Yes` or `No`. Marks this group as the default group for its `SubscriptionPlan`. Only one group may be the default for a plan, the same rule the admin edit screen enforces. Checked against the plan and flag the group will have after this patch, so moving a group that is already the default onto a plan that has one is refused as well. An empty plan never conflicts. New in v5.9.6 |
 
 Parameter names are matched case-insensitively, as everywhere on `/api.php`.
 
-**Not patchable:** `LimitCampaignSendPeriod`, `LimitEmailSendPeriod`, `PaymentAutoRespondersChargePeriod`, `PaymentDesignPrevChargePeriod` and `PaymentSystemChargePeriod` are fixed to `Monthly` by the product. `PaymentCreditSystem`, `PaymentCreditPricing`, `SendMethodSMTPDebug`, `SendMethodSMTPKeepAlive` and `SendMethodSMTPMsgConn` are not settable through any user group API command. `SubscriptionPlanIsDefault` is deliberately excluded. `usergroup.update` cannot set it either, and the "one default per subscription plan" rule is enforced by the admin interface.
+**Not patchable:** `LimitCampaignSendPeriod`, `LimitEmailSendPeriod`, `PaymentAutoRespondersChargePeriod`, `PaymentDesignPrevChargePeriod` and `PaymentSystemChargePeriod` are fixed to `Monthly` by the product. `PaymentCreditSystem`, `PaymentCreditPricing`, `SendMethodSMTPDebug`, `SendMethodSMTPKeepAlive` and `SendMethodSMTPMsgConn` are not settable through any user group API command.
+
+::: tip SubscriptionPlanIsDefault (v5.9.6)
+`usergroup.patch` now accepts `SubscriptionPlanIsDefault`. Before v5.9.6 the key was silently ignored (`Success: true`, not listed in `UpdatedFields`). Sending it now either writes the column or answers `ErrorCode 33` (value other than `Yes`/`No`) or `ErrorCode 34` (another group is already the default for that plan; the response carries `ConflictingUserGroupID` and an `ErrorText` naming the group). Payloads that do not carry the key behave exactly as before. `usergroup.update` still cannot set this column.
+:::
 
 ::: tip Clearing a value
 An empty string is a supplied value: sending `"XMailer": ""` clears the field. A field sent as `null` is treated as absent and is never written, because these columns are `NOT NULL`. Integer fields reject an empty string rather than storing it (see error code 32).
@@ -1613,12 +1715,109 @@ curl -X POST https://example.com/api.php \
     rather than silently coerced by MySQL: '0x1A' would otherwise store 0, which on a
     Limit* column means unlimited. Negative values are accepted: -1 is an established
     "unlimited" sentinel.
+33: SubscriptionPlanIsDefault must be Yes or No
+34: Another user group is already the default for this subscription plan (see
+    ConflictingUserGroupID)
 ```
 
 :::
 
 ::: warning Enabled/Disabled values are validated, not coerced
 `usergroup.update` turns any value that is not exactly `Enabled` into `Disabled`, including a missing key. `usergroup.patch` rejects an unrecognised value with `ErrorCode: 26` and writes nothing for an absent key, so a system can be turned both on and off explicitly and can never be disabled by accident.
+:::
+
+## Patch User Group Options
+
+<Badge type="info" text="POST" /> `/api.php`
+
+<Badge type="tip" text="New in v5.9.6" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `UserGroups` privilege)
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- **Merge semantics.** Only the keys present in `Options` are written into the group's stored Options JSON. Every other key, including keys written by plugins, is preserved verbatim. The whole-blob `Options` parameter of `usergroup.update` / `usergroup.patch` is unchanged and still replaces the entire JSON.
+- **An unreadable stored blob is refused, not overwritten.** If the group's stored `Options` column is not empty and does not decode to a JSON array or object, the command answers `ErrorCode 8` and writes nothing, rather than merging into an empty set and thereby discarding whatever was stored. An empty column, and the literal `null` that `usergroup.create` writes when it is given no `Options` at all, both mean "no options yet" and patch normally.
+:::
+
+`usergroup.update` and `usergroup.patch` take `Options` as an opaque replace, so changing one key meant reading the group, decoding, mutating and re-encoding, with no validation. This command validates every key and value the way the admin user group screen does, and stores values in the same shape the screen stores them, so a group edited through either path reads identically to the sending engine.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `usergroup.options.patch` |
+| AdminAPIKey | String | Yes | Admin API key |
+| UserGroupID | Integer | Yes | The user group to patch |
+| Options | Object \| String | Yes | Object of option keys and values, or a JSON string of one when the request is form-encoded. An empty object is a valid no-op. Keys are matched case-insensitively and stored under their canonical spelling |
+
+**Option keys and accepted values:**
+
+| Key | Accepted input | Stored as |
+|---|---|---|
+| TargetDeliveryServerID_Marketing, TargetDeliveryServerID_Transactional, TargetDeliveryServerID_AutoResponder | Delivery server ID, or `0` for the system default. The server must exist | Digit string, as the screen's `<select>` posts it |
+| ShowEmailThroughput, PreventEmailCampaignCreateIfSpamAssassinScoreIsNotZero, SimplifiedCampaignCreateUI, SenderDomainManagement, EnableSenderInfo, ForcedSenderInfo, DefaultSenderDomainActivate | `Enabled` / `Disabled` (also `true` / `false`) | `"Enabled"` when on, boolean `false` when off. This is what the screen stores for a ticked or unticked checkbox, and `DefaultSenderDomainActivate` is read by truthiness, so `Disabled` is never stored |
+| DisableSESPlugins, EmailGatewayNewDomainManualApproval | `Enabled` / `Disabled` | `"Enabled"` / `"Disabled"` |
+| DisableListUnsubscribeHeader | `true` / `false` | Boolean |
+| DefaultSenderDomain, UserAreaLogoutURL | String | String (trimmed) |
+| DefaultSenderDomainMonthlyLimit | Non-negative integer | Integer |
+| EmailGatewayDNSTemplate, EmailCampaignDNSTemplate | A template name from `EMAILGATEWAY_DNS_TEMPLATES` / `EMAILCAMPAIGN_DNS_TEMPLATES` (case-sensitive; `Default` always exists) | String |
+
+Any key outside this list is refused with `ErrorCode 4`; the response lists the offending keys in `UnknownKeys` under the spelling the request used. Note that `/api.php` lowercases nested request keys, so a key sent inside a JSON request body is reported lowercase, while a key sent inside a form-encoded `Options` JSON string keeps its original case.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "usergroup.options.patch",
+    "AdminAPIKey": "your-admin-api-key",
+    "UserGroupID": 5,
+    "Options": {
+      "SenderDomainManagement": "Enabled",
+      "EmailGatewayDNSTemplate": "Default",
+      "DefaultSenderDomainMonthlyLimit": 5000
+    }
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "UserGroupID": 5,
+  "UpdatedOptions": ["SenderDomainManagement", "EmailGatewayDNSTemplate", "DefaultSenderDomainMonthlyLimit"],
+  "Options": {
+    "TargetDeliveryServerID_Marketing": "0",
+    "SenderDomainManagement": "Enabled",
+    "EmailGatewayDNSTemplate": "Default",
+    "DefaultSenderDomainMonthlyLimit": 5000,
+    "UserAreaLogoutURL": "https://example.com/logged-out"
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "Unknown option key(s): bogus. Known keys: TargetDeliveryServerID_Marketing, ...",
+  "UnknownKeys": ["bogus"]
+}
+```
+
+```txt [Error Codes]
+1: UserGroupID is missing
+2: User group not found
+3: Options is missing, is not an object (or a JSON string of one), or is a non-empty JSON
+   list (integer keys). An empty array or object is a valid no-op patch
+4: Unknown option key(s); see UnknownKeys
+5: Invalid value for a key; ErrorField names the key and ErrorText says what is accepted
+6: Unknown DNS template name; ErrorText lists the valid names
+7: TargetDeliveryServerID_* refers to a delivery server that does not exist
+8: The group's stored Options column is unreadable (non-empty but not a JSON array or
+   object); GroupName names the group and nothing is written
+```
+
 :::
 
 ## Get User Group
@@ -1739,6 +1938,10 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+::: tip Copy name (v5.9.6)
+The copy is named `Duplicate of <original name>` (the screen language string when loaded, the same English text otherwise), so an API-driven duplicate never gets an empty name.
 :::
 
 **Request Body Parameters:**
@@ -1882,90 +2085,396 @@ curl -X POST https://example.com/api.php \
 | GroupName | String | Display name of the user group |
 | DeliveryServerAssignments | Object | Delivery server assignments per channel type. Contains three keys: `Marketing`, `Transactional`, and `AutoResponder`. Each contains `DeliveryServerID` (0 if not assigned) and `DeliveryServerName` (empty string if not assigned) |
 
-## Add Credits (DEPRECATED)
+## Add Credits
 
-::: danger DEPRECATED
-This endpoint is deprecated and will be removed in a future version. There is no replacement endpoint.
-:::
-
-<Badge type="warning" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api.php`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Update`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
-- **Status:** DEPRECATED - No replacement available
 :::
 
-## Order Payment (DEPRECATED)
+Adds `Credits` to the user's `AvailableCredits` balance and returns the new total. The value is added as an integer with no floor and no check that the user group runs the credit system: a negative `Credits` reduces the balance and can take it below zero. To set an absolute balance use `user.update` with `AvailableCredits` instead.
 
-::: danger DEPRECATED
-This endpoint is deprecated and will be removed in a future version. There is no replacement endpoint.
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `user.addcredits` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | User whose balance is changed |
+| Credits | Integer | Yes | Amount to add. Negative values subtract. `0` is accepted and changes nothing |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "user.addcredits", "AdminAPIKey": "your-admin-api-key", "UserID": 42, "Credits": 5000}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "TotalCredits": 12500
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [3]
+}
+```
+
+```txt [Error Codes]
+1: UserID is missing
+2: Credits is missing
+3: User not found
+```
+
 :::
 
-<Badge type="warning" text="POST" /> `/api.php`
+Missing-parameter codes are returned as an array (`[1]`, `[2]` or `[1, 2]`); code `3` is also returned as a one-element array.
+
+## Order Payment
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: warning DEPRECATION WARNING
+This command is deprecated and will be removed in a future Octeth release. It exists only for the WooCommerce billing integration: it mints a single sign-on token for the SSO source whose code is `wp-woocommerce-frontend`. There is no replacement. Do not build new integrations on it.
+:::
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.PaymentHistory`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
-- **Status:** DEPRECATED - No replacement available
 :::
 
-## Get Payment Periods (DEPRECATED)
+Returns an SSO token that carries `{user_id, subscription_id, order_id, action: "pay_order", expires_at}` encrypted with the `wp-woocommerce-frontend` SSO source's key pair (AES-256-CBC plus HMAC-SHA256, URL-encoded base64). The token expires 3600 seconds after it is minted. Nothing is validated: the user, subscription and order ids are copied into the token as given.
 
-::: danger DEPRECATED
-This endpoint is deprecated and will be removed in a future version. There is no replacement endpoint.
+**If no SSO source with code `wp-woocommerce-frontend` exists, the call still answers `Success: true`.** The token is then encrypted with empty keys and cannot be decrypted by anything. Create the SSO source first (Settings, Single Sign-On) and check `ssosources.get` before relying on the token.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `user.order.pay` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Copied into the token as `user_id`; not checked against the users table |
+| SubscriptionID | Integer | Yes | Copied into the token as `subscription_id` |
+| OrderID | Integer | Yes | Copied into the token as `order_id` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "user.order.pay", "AdminAPIKey": "your-admin-api-key", "UserID": 42, "SubscriptionID": 7, "OrderID": 1201}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Token": "<url-encoded SSO token>"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [1, 1, 1],
+  "Token": ""
+}
+```
+
+```txt [Error Codes]
+1: A required parameter is missing. The array holds one 1 per missing parameter (UserID, SubscriptionID, OrderID)
+```
+
 :::
 
-<Badge type="warning" text="POST" /> `/api.php`
+## Get Payment Periods
+
+<Badge type="info" text="POST" /> `/api.php`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.PaymentHistory`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
-- **Status:** DEPRECATED - No replacement available
 :::
 
-## Update Payment Periods (DEPRECATED)
+Every payment period (invoice row) of one user from `oempro_users_payment_log`, newest `PeriodEndDate` first, optionally filtered by `PaymentStatus`. Read-only: unlike the send path, this call never creates a period for the current month. Use [Get a Payment Period](#get-a-payment-period) (`user.paymentperiod.get`) for a single row by `LogID`.
 
-::: danger DEPRECATED
-This endpoint is deprecated and will be removed in a future version. There is no replacement endpoint.
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `user.paymentperiods` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Owner of the periods |
+| PaymentStatus | String | No | Return only periods in this status: `NA`, `Unpaid`, `Waiting`, `Paid` or `Waived`. Any other value answers error `3` |
+| ReturnFormatted | String | No | `Yes` to format the three date columns with the admin short date format and the seven amount columns as currency strings; anything else returns raw stored values |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "user.paymentperiods", "AdminAPIKey": "your-admin-api-key", "UserID": 42, "PaymentStatus": "Unpaid"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "PaymentPeriods": [
+    {
+      "LogID": "1005",
+      "RelUserID": "42",
+      "PeriodStartDate": "2026-07-08",
+      "PeriodEndDate": "2026-08-08",
+      "CampaignsSent": "4",
+      "CampaignsTotalRecipients": "18200",
+      "CampaignsTotalDelivered": "18004",
+      "AutoRespondersSent": "5",
+      "AutoRespondersDelivered": "5",
+      "EmailGatewayEmailsDelivered": "0",
+      "DesignPreviewRequests": "0",
+      "ChargePerCampaignSent": "40",
+      "ChargeAutoResponderPeriod": "0",
+      "ChargeDesignPreviewPeriod": "0",
+      "ChargeSystemPeriod": "89.5",
+      "ChargeTotalCampaignRecipients": "0",
+      "ChargeTotalAutoRespondersSent": "0",
+      "ChargeTotalDesignPrevRequests": "0",
+      "Discount": "0",
+      "Tax": "0",
+      "TotalAmount": "129.5",
+      "PaymentStatus": "Unpaid",
+      "PaymentStatusDate": "2026-08-08",
+      "PaidGateway": "",
+      "GatewayTransactionID": ""
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3
+}
+```
+
+```txt [Error Codes]
+1: UserID is missing (returned as [1])
+2: User not found
+3: PaymentStatus is not one of NA, Unpaid, Waiting, Paid, Waived
+```
+
 :::
 
-<Badge type="warning" text="POST" /> `/api.php`
+::: warning Empty result is a string, not an array
+When the user has no matching periods the response carries `"PaymentPeriods": ""` (an empty string), not `[]`. Treat a non-array value as "no periods".
+:::
+
+## Update a Payment Period
+
+<Badge type="info" text="POST" /> `/api.php`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.PaymentHistory`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
-- **Status:** DEPRECATED - No replacement available
 :::
 
-## Change Subscription Payment (DEPRECATED)
+Updates one payment period of a user and returns the stored row. This is the API behind the admin invoice edit screen, and it behaves like that screen: on every call the charge columns (`ChargePerCampaignSent`, `ChargeAutoResponderPeriod`, `ChargeSystemPeriod`, `ChargeTotalCampaignRecipients`, `ChargeTotalAutoRespondersSent`), `Tax` and `TotalAmount` are recomputed from the user group's current pricing and the row's usage counters, whether or not you passed `Discount`, `IncludeTax` or `PaymentStatus`. `PaymentStatusDate` is always set to today's date, even when `PaymentStatus` is unchanged. The period must belong to `UserID`; a `LogID` of another account answers error `4`.
 
-::: danger DEPRECATED
-This endpoint is deprecated and will be removed in a future version. There is no replacement endpoint.
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `user.paymentperiods.update` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Owner of the period |
+| LogID | Integer | Yes | Payment period id (`LogID` from `user.paymentperiods`) |
+| Discount | Number | No | Replaces the stored `Discount`; subtracted from the subtotal before tax |
+| IncludeTax | String | No | `Include` applies the install's payment tax percentage to the subtotal, `Exclude` sets `Tax` to `0`. When omitted, tax is applied if the stored `Tax` is non-zero and not otherwise. Any other value answers error `5` |
+| PaymentStatus | String | No | New status: `NA`, `Unpaid`, `Waiting`, `Paid` or `Waived`. Any other value answers error `6` |
+| ReturnFormatted | String | No | `Yes` to format dates and amounts in the response as `user.paymentperiods` does |
+| SendReceipt | String | No | `Yes` to email the invoice to the user after the update. Only sent when the payment receipt email subject and message are configured in Settings, Payments |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "user.paymentperiods.update", "AdminAPIKey": "your-admin-api-key", "UserID": 42, "LogID": 1005, "PaymentStatus": "Paid", "SendReceipt": "Yes"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "PaymentPeriod": {
+    "LogID": "1005",
+    "RelUserID": "42",
+    "PeriodStartDate": "2026-07-08",
+    "PeriodEndDate": "2026-08-08",
+    "CampaignsSent": "4",
+    "CampaignsTotalRecipients": "18200",
+    "CampaignsTotalDelivered": "18004",
+    "AutoRespondersSent": "5",
+    "AutoRespondersDelivered": "5",
+    "ChargePerCampaignSent": "40",
+    "ChargeAutoResponderPeriod": "0",
+    "ChargeSystemPeriod": "89.5",
+    "ChargeTotalCampaignRecipients": "0",
+    "ChargeTotalAutoRespondersSent": "0",
+    "Discount": "0",
+    "Tax": "0",
+    "TotalAmount": "129.5",
+    "PaymentStatus": "Paid",
+    "PaymentStatusDate": "2026-09-04",
+    "PaidGateway": "",
+    "GatewayTransactionID": ""
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4
+}
+```
+
+```txt [Error Codes]
+1: UserID is missing (returned inside an array, e.g. [1] or [1, 3])
+3: LogID is missing (returned inside an array)
+2: User not found
+4: Payment period not found for this user
+5: IncludeTax is not Include or Exclude
+6: PaymentStatus is not one of NA, Unpaid, Waiting, Paid, Waived
+```
+
 :::
 
-<Badge type="warning" text="POST" /> `/api.php`
+## Change Subscription Payment
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: warning DEPRECATION WARNING
+This command is deprecated and will be removed in a future Octeth release. It exists only for the WooCommerce billing integration: it mints a single sign-on token for the SSO source whose code is `wp-woocommerce-frontend`. There is no replacement. Do not build new integrations on it.
+:::
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.PaymentHistory`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
-- **Status:** DEPRECATED - No replacement available
 :::
 
-## Upgrade Subscription (DEPRECATED)
+Identical to [Order Payment](#order-payment) except that the token carries `action: "cc_update"` and no `order_id`. The same caveat applies: when the `wp-woocommerce-frontend` SSO source does not exist the call still answers `Success: true` with an undecryptable token.
 
-::: danger DEPRECATED
-This endpoint is deprecated and will be removed in a future version. There is no replacement endpoint.
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `user.subscription.changepayment` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Copied into the token as `user_id`; not checked against the users table |
+| SubscriptionID | Integer | Yes | Copied into the token as `subscription_id` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "user.subscription.changepayment", "AdminAPIKey": "your-admin-api-key", "UserID": 42, "SubscriptionID": 7}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Token": "<url-encoded SSO token>"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [1, 1],
+  "Token": ""
+}
+```
+
+```txt [Error Codes]
+1: A required parameter is missing. The array holds one 1 per missing parameter (UserID, SubscriptionID)
+```
+
 :::
 
-<Badge type="warning" text="POST" /> `/api.php`
+## Upgrade Subscription
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: warning DEPRECATION WARNING
+This command is deprecated and will be removed in a future Octeth release. It exists only for the WooCommerce billing integration: it mints a single sign-on token for the SSO source whose code is `wp-woocommerce-frontend`. There is no replacement. Do not build new integrations on it.
+:::
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.PaymentHistory`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
-- **Status:** DEPRECATED - No replacement available
 :::
 
+Identical to [Change Subscription Payment](#change-subscription-payment) except that the token carries `action: "upgrade"`. The same caveat applies: when the `wp-woocommerce-frontend` SSO source does not exist the call still answers `Success: true` with an undecryptable token.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `user.subscription.upgrade` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Copied into the token as `user_id`; not checked against the users table |
+| SubscriptionID | Integer | Yes | Copied into the token as `subscription_id` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "user.subscription.upgrade", "AdminAPIKey": "your-admin-api-key", "UserID": 42, "SubscriptionID": 7}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Token": "<url-encoded SSO token>"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [1, 1],
+  "Token": ""
+}
+```
+
+```txt [Error Codes]
+1: A required parameter is missing. The array holds one 1 per missing parameter (UserID, SubscriptionID)
+```
+
+:::
 
 ## Get Per-User Usage and Feature Adoption
 

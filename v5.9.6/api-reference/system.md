@@ -314,7 +314,7 @@ The endpoint surfaces four sources:
 3. **`RuntimeOptions`**: every row in the `oempro_options` table (the runtime-editable options used by `OemproOptions::get()`/`set()`). JSON-encoded values are decoded automatically when they are arrays.
 4. **`DefinedConstants`**: `get_defined_constants(true)['user']`: every constant registered by `ConfigLoader` plus library `define()` calls.
 
-**Sensitive value redaction:** any key whose name contains a known secret substring (case-insensitive: `PASSWORD`, `PASSWD`, `_PASS`, `SECRET`, `SALT`, `TOKEN`, `API_KEY`, `APIKEY`, `CLIENT_SECRET`, `ENCRYPTION_KEY`, `HMAC`, `ERLANG_COOKIE`, `LICENSE_KEY`, `AUTH_CODE`, `BUGSNAG_API`, `SENTRY_API`, `PRIVATE_KEY`, `WEBHOOK_SECRET`) has its value replaced with the literal string `"***REDACTED***"`. The key itself remains visible. Empty values pass through untouched so callers can distinguish "configured but blank" from "configured with a value, redacted".
+**Sensitive value redaction:** any key whose name contains a known secret substring (case-insensitive: `PASSWORD`, `PASSWD`, `_PASS`, `SECRET`, `SALT`, `TOKEN`, `API_KEY`, `APIKEY`, `CLIENT_SECRET`, `ENCRYPTION_KEY`, `HMAC`, `ERLANG_COOKIE`, `LICENSE_KEY`, `AUTH_CODE`, `BUGSNAG_API`, `SENTRY_API`, `PRIVATE_KEY`, `WEBHOOK_SECRET`) has its value replaced with the literal string `"***REDACTED***"`. The key itself remains visible. Empty values pass through untouched so callers can distinguish "configured but blank" from "configured with a value, redacted". Never post the literal `***REDACTED***` back as a value: `settings.update` refuses it with `ErrorCode 13` (see [Update System Settings](./settings.md#update-system-settings)), and no other write command treats it specially, so writing it anywhere else stores the marker as the real value. Omit a field to keep its stored secret.
 
 **Request Parameters:**
 
@@ -441,6 +441,131 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
+```
+
+:::
+
+## Run the System Check
+
+<Badge type="info" text="GET" /> `/api/v1/admin.system.check`
+
+<Badge type="tip" text="New in v5.9.6" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `System`)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Runs the requirements and settings check shown on the admin About page: PHP ini flags (`register_globals`, `magic_quotes_*`, `safe_mode`, `max_execution_time`), the required PHP extensions, the PHP version, write access to the `data/` directories, and whether MySQL runs with a STRICT `sql_mode`. Directory messages name the path relative to the application root; the response never carries an absolute path.
+
+`Errors` is a map of category (`PHP Errors`, `Directory Errors`, `MySQL Errors`) to the list of messages in that category. Categories with no message are omitted, so a clean install returns an empty map (`[]` in JSON) and `Passed: true`.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                          |
+|-------------|--------|----------|--------------------------------------|
+| Command     | String | Yes      | API command: `admin.system.check`    |
+| AdminAPIKey | String | Yes      | Admin API key                        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/admin.system.check?AdminAPIKey=your-admin-api-key"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Passed": false,
+  "Errors": {
+    "PHP Errors": [
+      "PHP IMAP extension is disabled. Please enable it."
+    ],
+    "MySQL Errors": [
+      "MySQL runs in STRICT mode. Please disable STRICT option in sql_mode parameter in the MySQL configuration file."
+    ]
+  },
+  "TotalErrors": 2
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998
+}
+```
+
+```txt [Error Codes]
+0: Success
+99998: Authentication failure
+99999: Not enough privileges (sub-admin without the System privilege, when ADMIN_API_ENFORCE_PRIVILEGES is on)
+```
+
+:::
+
+## Get System Information
+
+<Badge type="info" text="GET" /> `/api/v1/admin.system.info`
+
+<Badge type="tip" text="New in v5.9.6" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `System`)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the version and runtime facts the admin About page shows: the Octeth product version, the PHP version, the PHP ini values the page lists, and the MySQL server version. Nothing else is included: no filesystem paths, no environment values and no `phpinfo()` output (the About page's PHP settings dump and the database export stay UI-only). For the configuration itself use `system.getsettings`.
+
+`PHPSettings` reports an empty ini value as the string `"false"`, exactly as the About page renders it.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                          |
+|-------------|--------|----------|--------------------------------------|
+| Command     | String | Yes      | API command: `admin.system.info`     |
+| AdminAPIKey | String | Yes      | Admin API key                        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/admin.system.info?AdminAPIKey=your-admin-api-key"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ProductVersion": "5.9.6",
+  "PHPVersion": "5.6.40",
+  "PHPSettings": {
+    "memory_limit": "512M",
+    "max_execution_time": "0",
+    "safe_mode": "false",
+    "magic_quotes_gpc": "false",
+    "register_globals": "false",
+    "magic_quotes_runtime": "false"
+  },
+  "MySQLVersion": "8.0.41"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998
+}
+```
+
+```txt [Error Codes]
+0: Success
+99998: Authentication failure
+99999: Not enough privileges
 ```
 
 :::

@@ -119,6 +119,26 @@ The privilege a command needs mirrors the screen that owns it: for example `Sett
 
 The response of `Admin.Login` never includes the sub-admin API key.
 
+### Choosing the credential with `Access`
+
+Most commands accept exactly one kind of credential, and `Access` is ignored on them. Some commands are registered for two kinds, and for those the registry lists the kinds in order: the first one is the default, and `Access` selects the other.
+
+- `Access=admin` authenticates with `AdminAPIKey` (or an admin `SessionID`) and runs the command's admin path.
+- `Access=user` authenticates with `APIKey` (or a user `SessionID`) and runs the command's user path.
+- The value is compared exactly. `Admin`, `USER` or any other spelling makes authentication fail with `99998` even when the credential is valid.
+- When a request carries both a user credential and `AdminAPIKey` without `Access`, the default kind is used and the other credential is ignored. Pass `Access` whenever you send both.
+- `Access=subscriber` exists only for `subscriber.get`, `subscriber.get.activity` and `subscriber.update` when called from a logged-in subscriber area session; it is not a third API credential.
+
+Commands that default to **admin** (pass `Access=user` to run them as a user):
+
+`user.update`, `user.snapshot`, `suppression.import`, `smssuppression.add`, `smssuppression.patterns.add`, `email.template.create`, `email.templates.get`, `email.template.get`, `email.template.update`, `email.template.delete`, `email.template.thumbnail.upload`, `email.smtp.render`, `campaign.recipients.get`, `campaign.linkclicks.get`, `campaign.recipients.activity.get`, `campaign.abtest.get`, `media.delete`
+
+Commands that default to **user** (pass `Access=admin` together with `UserID` to run them as an admin, see the next section):
+
+`campaigns.get`, `lists.get`, `lists.stats`, `list.getactivityseries`, `segments.get`, `segments.rulevocabulary.get`, `subscribers.get`, `media.upload`, `emailgateway.getdomains`, `user.senderdomain.list`, `smssuppression.browse`, `smssuppression.stats`, `smssuppression.delete`, `smssuppression.patterns.browse`, `smssuppression.patterns.delete`
+
+What the admin path does differs per command and is described on each command's page: `suppression.import` writes install-wide rows under admin auth, `user.update` unlocks the admin-only fields, the `campaign.*` reports and `email.template.*` commands read or write across accounts, and the user-default commands above resolve `UserID` and then run as that user.
+
 ### Admin access to user-owned objects
 
 Some user commands also accept admin authentication so an admin UI can read another account's data without impersonating it: `lists.get`, `campaigns.get`, `segments.get`, `emailgateway.getdomains`, `user.senderdomain.list`, `lists.stats`, `list.getactivityseries`, `subscribers.get` and `media.upload` (v5.9.6, #2775). Pass `Access=admin` together with `UserID`; the handler then runs exactly as it would for that user's own key. Without `Access=admin` the call is a user call, so nothing changes for existing integrations. These calls need the `User.Edit` privilege when privilege enforcement is on, and a restricted sub-admin can only name accounts inside its allowed user groups. Error codes reserved for this path: `5001` (UserID missing or invalid), `5002` (user not found), `5003` (user outside the admin's allowed groups).

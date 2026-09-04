@@ -1117,6 +1117,910 @@ curl -X POST https://example.com/api/v1/admin.campaigns.export \
 
 With `Format=csv` the response carries `CSV` (the file contents as a string) and `Filename` (`campaign_report_YYYY-MM-DD_HH-MM-SS.csv`) instead of `Rows`.
 
+## Get Dashboard Overview
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Dashboard` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Read-only; no parameters besides the command and the key
+:::
+
+Returns the aggregates the admin Dashboard shows: the total number of user accounts and three top-10 leaderboards, accounts by campaign count (each with its list count), by bounce records and by feedback-loop (spam complaint) reports. Leaderboards are sorted by their count descending; accounts that no longer exist are not listed.
+
+Two dashboard blocks are deliberately not part of this command because they already have one: campaigns pending approval come from `admin.campaigns.search` with `CampaignStatus=Pending Approval`, and online users from `users.get` with `RelUserGroupID=Online`. The two charts have their own commands, `admin.delivery.history` and `admin.delivery.forecast`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.overview.get` |
+| AdminAPIKey | String | Yes | Admin API key |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  --data-urlencode "Command=admin.overview.get" \
+  --data-urlencode "AdminAPIKey=your-admin-api-key" \
+  --data-urlencode "ResponseFormat=JSON"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "TotalUsers": 113,
+  "TopUsersLimit": 10,
+  "Scoped": false,
+  "TopUsersByCampaigns": [
+    { "UserID": 21, "FirstName": "Acme", "LastName": "Newsletters", "EmailAddress": "ops@acme.example", "TotalCampaigns": 834, "TotalLists": 5 }
+  ],
+  "TopUsersByBounces": [
+    { "UserID": 21, "FirstName": "Acme", "LastName": "Newsletters", "EmailAddress": "ops@acme.example", "TotalBounces": 88 }
+  ],
+  "TopUsersByComplaints": [
+    { "UserID": 7, "FirstName": "Jane", "LastName": "Doe", "EmailAddress": "jane@example.com", "TotalComplaints": 2 }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999
+}
+```
+
+```txt [Error Codes]
+99998: Authentication failed
+99999: Not enough privileges (sub-admin without Dashboard)
+```
+
+:::
+
+## Get Delivery History
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Dashboard` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Returns exactly `Days` points, zero-filled
+:::
+
+The Dashboard's delivery history chart as data: one point per day with the total emails sent (`SUM(TotalSent)`) by campaigns in status `Sent`, keyed on the day the send started. The window is `Days` days **ending yesterday**; the current, partial day is excluded, which is what the Dashboard chart has always shown. `StartDate` and `EndDate` give the exact window.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.delivery.history` |
+| AdminAPIKey | String | Yes | Admin API key |
+| Days | Integer | No | Window length in days, default 30. Values below 1 become 1 and values above 365 become 365. A non-integer is rejected with error 1 |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  --data-urlencode "Command=admin.delivery.history" \
+  --data-urlencode "AdminAPIKey=your-admin-api-key" \
+  --data-urlencode "Days=7" \
+  --data-urlencode "ResponseFormat=JSON"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "Days": 7,
+  "StartDate": "2026-08-28",
+  "EndDate": "2026-09-03",
+  "Scoped": false,
+  "Series": [
+    { "Date": "2026-08-28", "TotalSent": 59154 },
+    { "Date": "2026-08-29", "TotalSent": 0 },
+    { "Date": "2026-08-30", "TotalSent": 0 },
+    { "Date": "2026-08-31", "TotalSent": 12400 },
+    { "Date": "2026-09-01", "TotalSent": 0 },
+    { "Date": "2026-09-02", "TotalSent": 0 },
+    { "Date": "2026-09-03", "TotalSent": 3010 }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Days must be an integer"
+}
+```
+
+```txt [Error Codes]
+1: Days is not an integer
+99998: Authentication failed
+99999: Not enough privileges (sub-admin without Dashboard)
+```
+
+:::
+
+## Get Delivery Forecast
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Dashboard` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Served from a 300-second cache shared with the Dashboard and the forecast cron; `FromCache` and `GeneratedAt` say which copy you got
+:::
+
+The Dashboard's delivery forecast as data, with the per-campaign rows the chart only sums: for today and the next seven days (always 8 entries), every campaign scheduled for that day (`ScheduleType` Future) with its estimated recipient count (`Campaigns::EstimatedCampaignRecipients`, the active subscribers of the campaign's recipient lists and segments at the time the forecast was built), plus per-day totals.
+
+The forecast is recomputed at most every 300 seconds. The cron `plugin_campaign_forecast_calculator` refreshes it, the Dashboard reads it, and this command reads the same cached copy, so all three agree. A cache miss rebuilds it inline. A restricted sub-admin receives the cached forecast filtered to campaigns of accounts in their allowed groups, with the totals recomputed.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.delivery.forecast` |
+| AdminAPIKey | String | Yes | Admin API key |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  --data-urlencode "Command=admin.delivery.forecast" \
+  --data-urlencode "AdminAPIKey=your-admin-api-key" \
+  --data-urlencode "ResponseFormat=JSON"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "GeneratedAt": "2026-09-04 10:15:02",
+  "FromCache": true,
+  "CacheTTL": 300,
+  "Scoped": false,
+  "Days": [
+    {
+      "Date": "2026-09-04",
+      "TotalCampaigns": 2,
+      "TotalEstimatedRecipients": 51200,
+      "Campaigns": [
+        { "CampaignID": 91, "CampaignName": "September promo", "RelOwnerUserID": 3, "EstimatedRecipients": 50000 },
+        { "CampaignID": 94, "CampaignName": "Welcome batch", "RelOwnerUserID": 8, "EstimatedRecipients": 1200 }
+      ]
+    },
+    { "Date": "2026-09-05", "TotalCampaigns": 0, "TotalEstimatedRecipients": 0, "Campaigns": [] }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998
+}
+```
+
+```txt [Error Codes]
+99998: Authentication failed
+99999: Not enough privileges (sub-admin without Dashboard)
+```
+
+:::
+
+## Get Live Sending View
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Throughput here is batch-derived and is NOT the same figure as `admin.campaigns.search` with `IncludeVelocity`
+:::
+
+Everything the admin Live view shows, as data: campaigns currently in status `Sending` or `Paused` (`SendingCampaigns`), campaigns in status `Sent` or `Failed` whose delivery batches have completed (`SentCampaigns`), both restricted to campaigns whose send started within the last `TimeFrame` days, and the "at a glance" tiles (`GlanceMetrics`).
+
+Throughput per campaign (`EmailsPerSecond`, `EmailsPerHour`, `ProcessDurationInSeconds`, `TotalProcessedEmails`, `BatchCount`) is derived from the campaign's delivery batches: the emails processed divided by the wall-clock span from the earliest batch start to the latest batch finish. `admin.campaigns.search` with `IncludeVelocity=true` measures a rolling 60-second queue window instead; the two definitions answer different questions and will not agree. The six rates are percentages of `TotalSent`. Campaigns with no delivery batches yet are not listed.
+
+`GlanceMetrics` are the screen's tiles: `TotalRecipients` summed over the listed campaigns, distinct `UserCount`, `CampaignCount`, and the plain (unweighted) means of throughput, open rate and click rate across every listed campaign. On an idle window every average is 0.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.live.sending` |
+| AdminAPIKey | String | Yes | Admin API key |
+| TimeFrame | Integer | No | `1` (default), `7` or `30` days; anything else is rejected with error 1. Campaigns whose send started at or after midnight `TimeFrame` days ago are included (`StartFrom` in the response) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  --data-urlencode "Command=admin.live.sending" \
+  --data-urlencode "AdminAPIKey=your-admin-api-key" \
+  --data-urlencode "TimeFrame=7" \
+  --data-urlencode "ResponseFormat=JSON"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "TimeFrame": 7,
+  "StartFrom": "2026-08-28 00:00:00",
+  "Scoped": false,
+  "SendingCampaigns": [
+    {
+      "UserID": 21, "Name": "Acme Newsletters", "EmailAddress": "ops@acme.example",
+      "CampaignStatus": "Sending", "CampaignName": "September promo", "SendProcessStartedOn": "2026-09-04 09:00:04",
+      "CampaignID": 7758, "TotalProcessedEmails": 12000, "StartedEarliestBy": "2026-09-04 09:00:07",
+      "FinishedLatestBy": "2026-09-04 09:04:17", "ProcessDurationInSeconds": 250, "EmailsPerSecond": 48,
+      "EmailsPerHour": 172800, "BatchCount": 120, "TotalRecipients": 59157, "TotalSent": 12000, "TotalFailed": 3,
+      "UniqueOpens": 240, "OpenRate": 2, "UniqueClicks": 12, "ClickRate": 0.1, "UniqueConversions": 0,
+      "ConversionRate": 0, "TotalUnsubscriptions": 1, "UnsubscriptionRate": 0.01, "TotalHardBounces": 0, "HardBounceRate": 0
+    }
+  ],
+  "SentCampaigns": [],
+  "GlanceMetrics": {
+    "TotalRecipients": 59157, "UserCount": 1, "CampaignCount": 1,
+    "AvgThroughputSec": 48, "AvgThroughputHour": 172800, "AvgOpenRate": 2, "AvgClickRate": 0.1
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "TimeFrame must be one of 1, 7, 30"
+}
+```
+
+```txt [Error Codes]
+1: TimeFrame is not one of 1, 7, 30
+99998: Authentication failed
+99999: Not enough privileges (sub-admin without Reports)
+```
+
+:::
+
+## Get System Wide Delivery Metrics
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Platform-wide aggregates; this is a full scan of the campaigns table per call, so cache the result on your side rather than polling
+:::
+
+The admin System Wide Delivery Metrics report as data: campaign aggregates per period, newest first, over campaigns in status `Sent`, `Paused`, `Sending` or `Failed`, grouped on the day the send started. Each row carries the report's 12 columns.
+
+| Column | Meaning |
+|---|---|
+| Period | `Y-m-d` (Daily), `Y-<ISO week number>` (Weekly, MySQL `%u`), `Y-m` (Monthly), `Y` (Yearly) |
+| TotalUsers | Distinct accounts that sent in the period |
+| TotalCampaigns | Campaigns that started sending in the period |
+| TotalRecipients, TotalSent, TotalFailed | Sums over those campaigns |
+| UniqueOpens, UniqueClicks, OptOuts, HardBounces | Sums over those campaigns |
+| OpenRate | `UniqueOpens / TotalSent`, percent, 2 decimals |
+| ClickRate | `UniqueClicks / UniqueOpens`, percent, 2 decimals. This is the report's definition (a click-to-open rate), not clicks over sends |
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.delivery.metrics` |
+| AdminAPIKey | String | Yes | Admin API key |
+| Period | String | Yes | `Daily`, `Weekly`, `Monthly` or `Yearly` (case-insensitive) |
+| Limit | Integer | No | Number of most recent periods to return, default 12. Values below 1 become 1 and values above 120 become 120 (the admin screen always shows 120). A non-integer is rejected with error 2 |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  --data-urlencode "Command=admin.delivery.metrics" \
+  --data-urlencode "AdminAPIKey=your-admin-api-key" \
+  --data-urlencode "Period=Monthly" \
+  --data-urlencode "Limit=3" \
+  --data-urlencode "ResponseFormat=JSON"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "Period": "Monthly",
+  "Limit": 3,
+  "Scoped": false,
+  "Metrics": [
+    { "Period": "2026-09", "TotalUsers": 14, "TotalCampaigns": 88, "TotalRecipients": 910000, "TotalSent": 905000, "TotalFailed": 5000, "UniqueOpens": 190000, "UniqueClicks": 21000, "OptOuts": 800, "HardBounces": 1200, "OpenRate": 20.99, "ClickRate": 11.05 },
+    { "Period": "2026-08", "TotalUsers": 12, "TotalCampaigns": 71, "TotalRecipients": 640000, "TotalSent": 638100, "TotalFailed": 1900, "UniqueOpens": 150300, "UniqueClicks": 14020, "OptOuts": 610, "HardBounces": 900, "OpenRate": 23.55, "ClickRate": 9.33 },
+    { "Period": "2026-07", "TotalUsers": 1, "TotalCampaigns": 1, "TotalRecipients": 59157, "TotalSent": 59154, "TotalFailed": 3, "UniqueOpens": 0, "UniqueClicks": 0, "OptOuts": 0, "HardBounces": 0, "OpenRate": 0, "ClickRate": 0 }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Period must be one of Daily, Weekly, Monthly, Yearly"
+}
+```
+
+```txt [Error Codes]
+1: Period missing or not one of Daily, Weekly, Monthly, Yearly
+2: Limit is not an integer
+99998: Authentication failed
+99999: Not enough privileges (sub-admin without Reports)
+```
+
+:::
+
+## Get Delivery Server KPI Dashboard
+
+<Badge type="info" text="POST" /> `/api/v1/admin.deliveryserver.kpi`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `DeliveryServers` privilege, the same one the admin Delivery Servers Reports screen checks)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+The KPI dashboard of the admin Delivery Servers Reports screen as data: the totals of every campaign that started sending inside a time frame, the same totals for the preceding comparison window, the period-over-period change in percent, a per-recipient-domain (ESP) roll-up and a per-delivery-server breakdown of unique opens, clicks, conversions, unsubscriptions and bounces.
+
+The result is cached in Redis under the same entry the screen uses (`admin_delivery_report_kpi_<TimeFrame>`), with a TTL that depends on the time frame: 10 seconds for `today` and `yesterday`, 10 minutes for `last7days`, 30 minutes for `last14days`, 1 hour for `last28days`, `thismonth` and `lastmonth`, 2 hours for `last3months`, 24 hours for `thisyear` and `lastyear`. `CacheHit` and `CacheTTLSeconds` tell you whether you were served from the cache and for how long it stays valid. A failed computation is never cached and never returned as zeros; it answers ErrorCode 2. A first call on a long time frame can take a while: the breakdown runs a set of statistics subqueries per campaign, delivery server and recipient domain.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.deliveryserver.kpi` |
+| AdminAPIKey | String | Yes | Admin API key |
+| TimeFrame | String | No | `today` (default), `yesterday`, `last7days`, `last14days`, `last28days`, `thismonth`, `lastmonth`, `last3months`, `thisyear`, `lastyear` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.deliveryserver.kpi \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.deliveryserver.kpi",
+    "AdminAPIKey": "your-admin-api-key",
+    "TimeFrame": "last7days"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "TimeFrame": "last7days",
+  "TimeFrameBeginsAt": "2026-08-28 00:00:00",
+  "TimeFrameEndsAt": "2026-09-04 23:59:59",
+  "CompareTimeFrameBeginsAt": "2026-08-21 00:00:00",
+  "CompareTimeFrameEndsAt": "2026-08-27 23:59:59",
+  "Totals": {
+    "TotalRecipients": 184220,
+    "TotalSent": 183901,
+    "TotalUniqueOpens": 61204,
+    "TotalUniqueClicks": 9110,
+    "OpenRate": 33,
+    "DeliveredToClickRate": 5,
+    "OpenedToClickRate": 15
+  },
+  "Compare": {
+    "TotalRecipients": 160010,
+    "TotalSent": 159700,
+    "TotalUniqueOpens": 50120,
+    "TotalUniqueClicks": 8002,
+    "DeliveredToClickRate": 5,
+    "OpenedToClickRate": 16
+  },
+  "Change": {
+    "TotalRecipients": 15.13,
+    "UniqueOpens": 22.11,
+    "DeliveredToClickRate": 0,
+    "OpenedToClickRate": -6.25
+  },
+  "DeliveryServers": {
+    "1": {"DeliveryServerID": 1, "Name": "Primary MTA"}
+  },
+  "ESPDomainStats": {
+    "gmail.com": {
+      "TotalQueued": 90112,
+      "UniqueOpens": 30871,
+      "UniqueClicks": 4410,
+      "UniqueConversions": 12,
+      "UniqueUnsubscriptions": 88,
+      "UniqueBounces": 140,
+      "DeliveryServerIDs": [1]
+    }
+  },
+  "ESPDomainTotalQueued": {"gmail.com": 90112},
+  "DeliveryServerStats": {
+    "1": {
+      "gmail.com": {
+        "TotalQueued": 90112,
+        "UniqueOpens": 30871,
+        "UniqueClicks": 4410,
+        "UniqueConversions": 12,
+        "UniqueUnsubscriptions": 88,
+        "UniqueBounces": 140
+      }
+    }
+  },
+  "CacheHit": false,
+  "CacheTTLSeconds": 600,
+  "Scoped": false
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Invalid TimeFrame. Accepted values: today, yesterday, last7days, last14days, last28days, thismonth, lastmonth, last3months, thisyear, lastyear"
+}
+```
+
+```txt [Error Codes]
+1: TimeFrame is not one of the ten accepted values
+2: The campaign roll-up failed (see the application log). A response of zeros would be
+   indistinguishable from a genuinely idle window, so the call is refused instead
+99998: Authentication failure or session expired
+99999: Not enough privileges
+```
+
+:::
+
+`Totals.OpenRate`, `Totals.DeliveredToClickRate` and `Totals.OpenedToClickRate` are whole-number percentages of `TotalSent` (or of `TotalUniqueOpens` for the opened-to-click rate). The `Change` figures are percentages relative to the comparison window; when the comparison figure is 0 the change is reported as 0, never as an infinite value. `DeliveryServerStats` is keyed by delivery server id, then by recipient domain; only the five most-queued domains per campaign and server are included. `DeliveryServers` carries ids and names only, never connection parameters.
+
+## Get Delivery Server Performance Matrix
+
+<Badge type="info" text="POST" /> `/api/v1/admin.deliveryserver.performance`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `DeliveryServers` privilege, the same one the admin Delivery Servers Reports screen checks)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+The performance matrix of the admin Delivery Servers Reports screen: for each chosen account, its last 20 sent, paused or failed campaigns (returned in `Campaigns` so a client can offer them for selection); for each chosen campaign, the delivery servers it was queued on; for each server, the five most-queued recipient domains with unique opens, clicks, conversions, unsubscriptions and bounces, with the remaining domains folded into an `Other` entry.
+
+Every (campaign, delivery server, domain) tuple costs a block of statistics subqueries, so `Limit` caps how many blocks one call executes. When the cap is reached the response carries `Truncated: true` and `TupleCount` equals `Limit`; narrow the selection with `CampaignIDs`, `DeliveryServerIDs` or `ESPs`, or raise `Limit` (at most 1000).
+
+When `UserIDs` is empty the command applies the screen's default selection, the owners and ids of the five most recently started campaigns of the last seven days, and reports `DefaultSelectionApplied: true`. Pass `IgnoreDefaultSelections=true` to get an empty matrix instead.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.deliveryserver.performance` |
+| AdminAPIKey | String | Yes | Admin API key |
+| UserIDs | String | No | Comma-separated account ids to expand. Empty = the default selection (see above) |
+| CampaignIDs | String | No | Comma-separated campaign ids to expand. A campaign is only expanded when its owner is in `UserIDs` |
+| DeliveryServerIDs | String | No | Comma-separated delivery server ids to keep. Empty = all |
+| ESPs | String | No | Comma-separated recipient domains to keep (case-insensitive). Empty = all |
+| IgnoreDefaultSelections | Boolean | No | `true` = never apply the default selection when `UserIDs` is empty |
+| Limit | Integer | No | Maximum number of (campaign, delivery server, domain) tuples computed. Default 100, clamped to [1, 1000] |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.deliveryserver.performance \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.deliveryserver.performance",
+    "AdminAPIKey": "your-admin-api-key",
+    "UserIDs": "12",
+    "CampaignIDs": "7746",
+    "Limit": 50
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ChosenUsers": [12],
+  "ChosenCampaigns": [7746],
+  "ChosenDeliveryServers": [],
+  "ChosenESPs": [],
+  "DefaultSelectionApplied": false,
+  "Users": [
+    {"UserID": 12, "RelUserGroupID": 2, "Username": "acme", "EmailAddress": "ops@acme.example", "FirstName": "Ada", "LastName": "Lovelace", "CompanyName": "Acme", "AccountStatus": "Enabled", "UserSince": "2024-02-01 10:00:00", "GroupName": "Pro"}
+  ],
+  "Campaigns": [
+    {"CampaignID": 7746, "CampaignName": "September newsletter", "RelOwnerUserID": 12}
+  ],
+  "ESPs": {"gmail.com": 36789, "yahoo.com": 8102},
+  "Matrix": [
+    {
+      "UserID": 12,
+      "CampaignID": 7746,
+      "CampaignName": "September newsletter",
+      "CampaignStatus": "Sent",
+      "SendProcessStartedOn": "2026-09-01 09:00:00",
+      "TotalProcessedEmails": "57637",
+      "StartedEarliestBy": "2026-09-01 09:00:02",
+      "FinishedLatestBy": "2026-09-01 09:41:10",
+      "ProcessDurationInSeconds": "2468",
+      "EmailsPerSecond": "23",
+      "EmailsPerHour": "84072",
+      "BatchCount": "527",
+      "TotalRecipients": "57637",
+      "TotalSent": "57402",
+      "TotalFailed": "235",
+      "UniqueOpens": "18220",
+      "OpenRate": "31.74",
+      "UniqueClicks": "2710",
+      "ClickRate": "4.72",
+      "UniqueConversions": "0",
+      "ConversionRate": "0.00",
+      "TotalUnsubscriptions": "41",
+      "UnsubscriptionRate": "0.07",
+      "TotalHardBounces": "90",
+      "HardBounceRate": "0.16",
+      "DeliveryServers": [
+        {
+          "DeliveryServerID": 1,
+          "Name": "Primary MTA",
+          "Domains": [
+            {"Domain": "gmail.com", "TotalQueued": 36789, "UniqueOpens": 12005, "UniqueClicks": 1840, "UniqueConversions": 0, "UniqueUnsubscriptions": 20, "UniqueBounces": 31}
+          ],
+          "Other": {"TotalQueued": 9120, "UniqueOpens": 2100, "UniqueClicks": 300, "UniqueConversions": 0, "UniqueUnsubscriptions": 9, "UniqueBounces": 22}
+        }
+      ]
+    }
+  ],
+  "Limit": 50,
+  "TupleCount": 5,
+  "Truncated": false,
+  "UsersOutOfScope": [],
+  "Scoped": false
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999
+}
+```
+
+```txt [Error Codes]
+99998: Authentication failure or session expired
+99999: Not enough privileges
+```
+
+:::
+
+`Other` is `null` when every queued domain of that server fits in the top five. Its opens, clicks and the rest are the campaign totals minus the top-five totals, so they are the screen's arithmetic, not a separate count. `UsersOutOfScope` lists the ids a restricted sub-admin asked for but may not see; they are skipped, not an error. Ids in `UserIDs`, `CampaignIDs` and `DeliveryServerIDs` that are not positive integers are ignored.
+
+## Get List Freshness Report
+
+<Badge type="info" text="POST" /> `/api/v1/admin.lists.freshness`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+The admin List Freshness report: every account that owns at least one list, with the number of days since its most recent subscription or import across all its lists (`BestFreshnessDays`), the list count, the most recent activity date, the active subscriber total and a freshness status. The status comes from the `ListFreshnessThresholds` option (days: `Active`, `SlowingDown`, `Stale`), which you read and write through `settings.get` and `settings.update`:
+
+| Status | Rule |
+|---|---|
+| `Active` | `BestFreshnessDays` at most `Active` |
+| `Slowing Down` | at most `SlowingDown` |
+| `Stale` | at most `Stale` |
+| `Dead` | more than `Stale` |
+| `No Data` | no list of the account has any subscription or import history |
+
+The rows are cached for 60 seconds (the same cache the screen uses); the classification is applied after the cache, so a threshold change shows immediately.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.lists.freshness` |
+| AdminAPIKey | String | Yes | Admin API key |
+| OrderField | String | No | `WorstFreshness` (default), `User`, `TotalLists`, `LastActivity`. Any other value is refused |
+| OrderType | String | No | `ASC` or `DESC` (default) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.lists.freshness \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.lists.freshness",
+    "AdminAPIKey": "your-admin-api-key",
+    "OrderField": "LastActivity",
+    "OrderType": "DESC"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "OrderField": "LastActivity",
+  "OrderType": "DESC",
+  "Thresholds": {"Active": 14, "SlowingDown": 45, "Stale": 90},
+  "StatusCounts": {"Active": 3, "Slowing Down": 1, "Stale": 0, "Dead": 4, "No Data": 2},
+  "TotalUsers": 10,
+  "Users": [
+    {
+      "UserID": 12,
+      "Username": "acme",
+      "FirstName": "Ada",
+      "LastName": "Lovelace",
+      "CompanyName": "Acme",
+      "RelUserGroupID": 2,
+      "RelUserCategoryID": 1,
+      "CategoryName": "Agencies",
+      "TotalLists": 4,
+      "ActiveSubscribers": 58210,
+      "BestFreshnessDays": 2,
+      "MostRecentActivity": "2026-09-02",
+      "FreshnessStatus": "Active"
+    }
+  ],
+  "CacheHit": false,
+  "Scoped": false
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Invalid OrderField. Accepted values: WorstFreshness, User, TotalLists, LastActivity"
+}
+```
+
+```txt [Error Codes]
+1: OrderField is not in the allow-list
+2: OrderType is not ASC or DESC
+3: The report query failed (see the application log)
+99998: Authentication failure or session expired
+99999: Not enough privileges
+```
+
+:::
+
+`BestFreshnessDays` and `MostRecentActivity` are `null` for a `No Data` account. When sorting by `WorstFreshness`, `No Data` accounts sort first on `DESC` and last on `ASC`, as on the screen. `ActiveSubscribers` is the sum of the denormalized per-list active counts, with a live count only for lists that have never been counted.
+
+## Get List Freshness Detail
+
+<Badge type="info" text="POST" /> `/api/v1/admin.lists.freshness.detail`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Per-list freshness for one account: every list with its last subscription or import date, the days since, the 90-day subscription, import and unsubscription totals, the active subscriber count, the freshness status (same rules as `admin.lists.freshness`) and a 90-point `DailyGrowth` series (subscriptions plus imports per day, oldest first, ending today), which is the screen's sparkline. `OverallStatus` is the status of the account's freshest list, `No Data` only when no list has any history. Cached 60 seconds per account.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.lists.freshness.detail` |
+| AdminAPIKey | String | Yes | Admin API key |
+| UserID | Integer | Yes | The account |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.lists.freshness.detail \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.lists.freshness.detail",
+    "AdminAPIKey": "your-admin-api-key",
+    "UserID": 12
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "User": {"UserID": 12, "RelUserGroupID": 2, "Username": "acme", "EmailAddress": "ops@acme.example", "FirstName": "Ada", "LastName": "Lovelace", "CompanyName": "Acme", "AccountStatus": "Enabled", "UserSince": "2024-02-01 10:00:00", "GroupName": "Pro"},
+  "OverallStatus": "Active",
+  "Thresholds": {"Active": 14, "SlowingDown": 45, "Stale": 90},
+  "StatusCounts": {"Active": 1, "Slowing Down": 0, "Stale": 0, "Dead": 1, "No Data": 0},
+  "SparklineDays": 90,
+  "TotalLists": 2,
+  "Lists": [
+    {
+      "ListID": 301,
+      "ListName": "Newsletter",
+      "CreatedOn": "2024-02-01 10:05:00",
+      "ActiveSubscribers": 58210,
+      "LastActivityDate": "2026-09-02",
+      "DaysSinceActivity": 2,
+      "RecentSubscriptions": 1204,
+      "RecentImports": 0,
+      "RecentUnsubscriptions": 31,
+      "FreshnessStatus": "Active",
+      "DailyGrowth": [0, 0, 12, 40, 9]
+    }
+  ],
+  "CacheHit": false
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "User not found"
+}
+```
+
+```txt [Error Codes]
+1: UserID is missing or not a positive integer
+2: The account does not exist (or, for a restricted sub-admin, is outside the allowed user groups)
+99998: Authentication failure or session expired
+99999: Not enough privileges
+```
+
+:::
+
+The `DailyGrowth` example is shortened; the real array always has exactly `SparklineDays` (90) integers.
+
+## Get Revenue Summary
+
+<Badge type="info" text="POST" /> `/api/v1/admin.revenue.summary`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+The admin Payment Reports screen as data. Revenue is the sum of `TotalAmount` over the payment log plus `NetAmount` over paid credit purchases, in `Currency` (the install's `PAYMENT_CURRENCY`). The response holds this month against last month, the all-time total split into paid and not paid, this month's highest payment period, the five accounts with the highest all-time revenue and every account with an unpaid balance.
+
+Ratios are always finite: a month with no revenue gives `RevenueDifferenceRatio` 0, and an empty payment log gives 0 for both `TotalPaidRevenueRatio` and `TotalNotPaidRevenueRatio`.
+
+Aggregates are install-wide. For a restricted sub-admin the three per-account lists are filtered to the allowed user groups and `Scoped` is `true`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.revenue.summary` |
+| AdminAPIKey | String | Yes | Admin API key |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.revenue.summary \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.revenue.summary",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "Currency": "USD",
+  "Month": "2026-09",
+  "PreviousMonth": "2026-08",
+  "CurrentMonthRevenue": 4120.5,
+  "PreviousMonthRevenue": 3980,
+  "RevenueDifference": 140.5,
+  "RevenueDifferenceRatio": 3.41,
+  "TotalRevenue": 187650.75,
+  "TotalPaidRevenue": 171200.75,
+  "TotalNotPaidRevenue": 16450,
+  "TotalPaidRevenueRatio": 91,
+  "TotalNotPaidRevenueRatio": 9,
+  "TopUserThisMonth": {
+    "User": {"UserID": 12, "RelUserGroupID": 2, "Username": "acme", "EmailAddress": "ops@acme.example", "FirstName": "Ada", "LastName": "Lovelace", "CompanyName": "Acme", "AccountStatus": "Enabled", "UserSince": "2024-02-01 10:00:00", "GroupName": "Pro"},
+    "TotalAmount": 1290,
+    "PeriodStartDate": "2026-09-01",
+    "PeriodEndDate": "2026-09-30",
+    "PaymentStatus": "Paid"
+  },
+  "AllTimeTopUsers": [
+    {"User": {"UserID": 12, "FirstName": "Ada", "LastName": "Lovelace", "GroupName": "Pro"}, "AllTimeTotalAmount": 40210}
+  ],
+  "AllTimeReceivables": [
+    {"User": {"UserID": 31, "FirstName": "Grace", "LastName": "Hopper", "GroupName": "Starter"}, "ReceivableAmount": 980}
+  ],
+  "Scoped": false
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999
+}
+```
+
+```txt [Error Codes]
+99998: Authentication failure or session expired
+99999: Not enough privileges
+```
+
+:::
+
+`RevenueDifferenceRatio` is `RevenueDifference` as a percentage of `CurrentMonthRevenue`, rounded to two decimals (the screen rounds it to a whole number). `TopUserThisMonth` is `null` when no payment period ends in the current month. The `User` objects in the example lists are shortened; every one carries the same fields as `TopUserThisMonth.User`, and never a password, API key or two-factor secret.
+
+## Get Revenue Series
+
+<Badge type="info" text="POST" /> `/api/v1/admin.revenue.series`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Monthly revenue (payment log `TotalAmount` plus paid credit purchases `NetAmount`) for a range of calendar months, one point per month with 0 where nothing was billed. This is the source of the revenue chart on the Payment Reports screen. The range is capped at 36 months: a longer range is cut to the 36 months ending at `To` and `Capped` is `true`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.revenue.series` |
+| AdminAPIKey | String | Yes | Admin API key |
+| From | String | No | First month, `YYYY-MM`. Default: twelve months before `To` (13 points) |
+| To | String | No | Last month, `YYYY-MM`. Default: the current month |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.revenue.series \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.revenue.series",
+    "AdminAPIKey": "your-admin-api-key",
+    "From": "2026-01",
+    "To": "2026-03"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "Currency": "USD",
+  "From": "2026-01",
+  "To": "2026-03",
+  "Months": 3,
+  "MaxMonths": 36,
+  "Capped": false,
+  "Series": [
+    {"Month": "2026-01", "TotalAmount": 3900},
+    {"Month": "2026-02", "TotalAmount": 4015.25},
+    {"Month": "2026-03", "TotalAmount": 0}
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "From must not be after To"
+}
+```
+
+```txt [Error Codes]
+1: From is not YYYY-MM
+2: To is not YYYY-MM
+3: From is after To
+99998: Authentication failure or session expired
+99999: Not enough privileges
+```
+
+:::
+
 ## Get Email
 
 <Badge type="info" text="POST" /> `/api.php`
@@ -1641,6 +2545,71 @@ curl -X POST https://example.com/api/v1/admin.processes.list \
 
 ```txt [Error Codes]
 0: Success
+```
+
+:::
+
+## Clear Stale Processes
+
+<Badge type="info" text="POST" /> `/api/v1/admin.processes.clear`
+
+<Badge type="tip" text="New in v5.9.6" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `Processes`)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+- Not available in demo mode
+:::
+
+Deletes rows from the process registry (`oempro_processes`) whose `LastPingedAt` is older than `StaleMinutes`. This is the API form of the admin Processes screen's "clear dead processes" link, which uses a fixed 10 minutes; the screen and this command share one implementation. Workers ping every few seconds, so a row older than the window belongs to a process that died without recording its exit. Only the registry row is removed; no process is signalled or stopped. Use `admin.processes.list` with the same `StaleMinutes` to preview what would be removed.
+
+**Request Body Parameters:**
+
+| Parameter    | Type    | Required | Description                                                                                              |
+|--------------|---------|----------|----------------------------------------------------------------------------------------------------------|
+| Command      | String  | Yes      | API command: `admin.processes.clear`                                                                     |
+| AdminAPIKey  | String  | Yes      | Admin API key                                                                                            |
+| StaleMinutes | Integer | No       | Rows whose last ping is older than this many minutes are deleted. Default 10. Clamped to 1..1440; a non-numeric value is refused with `ErrorCode 1`. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.processes.clear \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.processes.clear",
+    "AdminAPIKey": "your-admin-api-key",
+    "StaleMinutes": 30
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "DeletedCount": 3,
+  "StaleMinutes": 30,
+  "StaleBefore": "2026-09-04 18:15:00"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "StaleMinutes must be a number of minutes"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: StaleMinutes is not numeric
+2: Process cleanup query failed
+NOT AVAILABLE IN DEMO MODE.: DEMO_MODE_ENABLED is on
+99998: Authentication failure
+99999: Not enough privileges
 ```
 
 :::
@@ -3041,6 +4010,96 @@ curl -X POST https://example.com/api/v1/admin.campaign.markfailed \
 
 :::
 
+## Retry Failed Recipients
+
+<Badge type="info" text="POST" /> `/api/v1/admin.campaign.retryfailed`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privilege: `Reports`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Retries failed recipients for campaigns with status "Sent" or "Failed". This endpoint resets failed queue entries to Pending, creates new delivery batches, sets the campaign to "Sending" status, and pushes it to RabbitMQ for delivery workers to process.
+
+**Important:** This endpoint bypasses the campaign picker and handles batch creation and RabbitMQ publishing directly. This ensures only the original failed recipients are retried without re-inserting subscribers who joined target lists after the original send.
+
+::: warning If delivery cannot be dispatched
+The database work (resetting failed recipients to `Pending`, creating batches, moving the campaign to `Sending`) is committed **before** the campaign is published to the message queue. The publish is retried up to three times.
+
+If it still fails, for example while the message queue service is unreachable, the committed work is **deliberately not rolled back**: the recipients stay re-queued and the campaign stays in `Sending`. The response reports `ErrorCode 6` with an `ErrorText` saying exactly that, and naming the recovery action.
+
+Because the campaign then has pending batches with no worker processing them, it is reported as stuck. Resume delivery with [Unstuck a Stuck Campaign](#unstuck-a-stuck-campaign) (`admin.campaign.unstuck`). Calling `admin.campaign.retryfailed` again will **not** help: it rejects campaigns already in `Sending` status with `ErrorCode 3`.
+:::
+
+::: tip Changed in v5.9.3: a failed COMMIT is now reported
+The transaction's `COMMIT` result was not inspected. A failed commit fell through to the message-queue publish and the endpoint could return `Success: true` for work that never became durable, and a delivery worker consuming that message would find the campaign without its new pending batches.
+
+A failed commit is now caught and returned as `ErrorCode 6` with the "Database error" wording. Conversely, a message-queue dispatch failure *after* a successful commit is no longer misreported as a database error accompanied by a no-op `ROLLBACK`; it gets its own explicit `ErrorText`, as described above.
+:::
+
+**Request Body Parameters:**
+
+| Parameter  | Type    | Required | Description                                           |
+|------------|---------|----------|-------------------------------------------------------|
+| Command    | String  | Yes      | API command: `admin.campaign.retryfailed`             |
+| SessionID  | String  | No       | Session ID obtained from login                        |
+| APIKey     | String  | No       | API key for authentication                            |
+| CampaignID | Integer | Yes      | ID of the campaign to retry failed recipients for     |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.campaign.retryfailed \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.campaign.retryfailed",
+    "APIKey": "your-admin-api-key",
+    "CampaignID": 4069
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "RetriedCount": 150,
+  "BatchesCreated": 1,
+  "Message": "150 failed recipients queued for retry in 1 batch(es)."
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Campaign is not in Sent or Failed status. Only completed or failed campaigns can have their failed recipients retried."
+}
+```
+
+```json [Error Response: delivery not dispatched]
+{
+  "Success": false,
+  "ErrorCode": 6,
+  "ErrorText": "150 failed recipients were re-queued and the campaign is now in Sending status, but the delivery queue could not be notified after 3 attempts, so no delivery worker has started. Nothing was rolled back. Once the message queue service is reachable again, resume delivery with the campaign unstuck action (admin.campaign.unstuck). Message queue error: ..."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: campaign_id parameter is required
+2: Campaign not found
+3: Campaign is not in Sent or Failed status
+4: Queue table does not exist for this campaign
+5: No failed recipients found for this campaign
+6: Database error during retry operation, or the retry was committed but the campaign
+   could not be dispatched to the delivery queue. The ErrorText distinguishes the two.
+```
+
+:::
+
 ## Get Database Table Statistics
 
 <Badge type="info" text="GET" /> `/api/v1/admin.database.stats`
@@ -3110,6 +4169,160 @@ curl -X GET "https://example.com/api/v1/admin.database.stats?APIKey=your-admin-a
 ```txt [Error Codes]
 0: Success
 1: Database query failed
+```
+
+:::
+
+## Check Database Tables
+
+<Badge type="info" text="GET" /> `/api/v1/admin.database.check`
+
+<Badge type="tip" text="New in v5.9.6" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `System`)
+- Rate limit: 10 requests per 300 seconds
+- Legacy endpoint access via `/api.php` is also supported
+- `CHECK TABLE` reads every page of every table it covers. Run `Scope=All` off-peak; see the scope note below.
+:::
+
+Runs MySQL `CHECK TABLE` over Octeth's tables and returns one row per table with MySQL's own `Msg_type` / `Msg_text`. This is the API form of the About page's database health panel. A table is flagged `HasIssue` when its final status row is anything other than `status` / `OK`, including a synthetic `error` row when the statement for that table's batch failed (so "not checked" is never reported as healthy).
+
+**Scope.** Octeth creates one table per list (`oempro_subscribers_<ListID>`), per campaign (`oempro_queue_c_<CampaignID>`) and per day (`oempro_email_metrics_<yyyymmdd>` and `oempro_email_metrics_aggregated_<yyyymmdd>`). On a mature install those outnumber the roughly 300 core tables twenty to one and hold nearly all the data. The default `Scope=Core` covers only the core tables. `Scope=All` covers every table: it is a full read of the database through the InnoDB buffer pool, takes minutes, and on a host whose buffer pool is sized close to its RAM it can exhaust memory. Name specific tables with `Tables` to check the per-entity tables you care about.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                                                                                      |
+|-------------|--------|----------|------------------------------------------------------------------------------------------------------------------|
+| Command     | String | Yes      | API command: `admin.database.check`                                                                              |
+| AdminAPIKey | String | Yes      | Admin API key                                                                                                    |
+| Scope       | String | No       | `Core` (default): the core schema tables only. `All`: every Octeth table. Ignored when `Tables` is given.         |
+| Tables      | String | No       | Comma-separated list or JSON array of table names to check, e.g. `oempro_subscribers_12,oempro_queue_c_6014`. Every name must be an existing Octeth table (`ErrorCode 2` otherwise). Omit the parameter entirely to use `Scope`: supplying it while naming no table (`Tables=`, or a JSON `"Tables": []`) is `ErrorCode 2`, never a fall-back to `Scope`. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/admin.database.check?AdminAPIKey=your-admin-api-key&Tables=oempro_admins,oempro_subscribers_12"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Scope": "Tables",
+  "Tables": [
+    {
+      "TableName": "oempro_admins",
+      "Operation": "check",
+      "MessageType": "status",
+      "MessageText": "OK",
+      "HasIssue": false
+    },
+    {
+      "TableName": "oempro_subscribers_12",
+      "Operation": "check",
+      "MessageType": "error",
+      "MessageText": "Table './oempro/oempro_subscribers_12' is marked as crashed and should be repaired",
+      "HasIssue": true
+    }
+  ],
+  "TotalTables": 2,
+  "TablesWithIssues": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Tables must name existing Octeth tables",
+  "UnknownTables": ["oempro_nope"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Database check query failed (the table list could not be read)
+2: Tables was supplied but names no table, or names a table that is not an Octeth table
+3: Scope is not Core or All
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
+
+## Repair Database Tables
+
+<Badge type="info" text="POST" /> `/api/v1/admin.database.repair`
+
+<Badge type="tip" text="New in v5.9.6" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `System`)
+- Rate limit: 10 requests per 300 seconds
+- Legacy endpoint access via `/api.php` is also supported
+- Not available in demo mode
+:::
+
+Runs MySQL `REPAIR TABLE` over Octeth's tables and returns MySQL's per-table result rows. This is the API form of the About page's "Repair database" button, which discards those rows. Every Octeth table uses InnoDB, and InnoDB does not support `REPAIR TABLE`: MySQL answers one `note` row per table saying so, and that row is passed through unchanged so you see what MySQL said. The command exists for the MyISAM case and for parity with the screen; for InnoDB corruption use `admin.database.check` to find the table and MySQL's own recovery procedure.
+
+`Scope` and `Tables` work exactly as on `admin.database.check` (default `Scope=Core`).
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                                                           |
+|-------------|--------|----------|---------------------------------------------------------------------------------------|
+| Command     | String | Yes      | API command: `admin.database.repair`                                                  |
+| AdminAPIKey | String | Yes      | Admin API key                                                                         |
+| Scope       | String | No       | `Core` (default) or `All`. Ignored when `Tables` is given.                            |
+| Tables      | String | No       | Comma-separated list or JSON array of existing Octeth table names to repair. Omit it to use `Scope`; supplying it while naming no table is `ErrorCode 2`. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.database.repair \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.database.repair",
+    "AdminAPIKey": "your-admin-api-key",
+    "Tables": ["oempro_admins"]
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Scope": "Tables",
+  "Tables": [
+    {
+      "TableName": "oempro_admins",
+      "Operation": "repair",
+      "MessageType": "note",
+      "MessageText": "The storage engine for the table doesn't support repair"
+    }
+  ],
+  "TotalTables": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": "NOT AVAILABLE IN DEMO MODE."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Database repair query failed (the table list could not be read)
+2: Tables was supplied but names no table, or names a table that is not an Octeth table
+3: Scope is not Core or All
+NOT AVAILABLE IN DEMO MODE.: DEMO_MODE_ENABLED is on
+99998: Authentication failure
+99999: Not enough privileges
 ```
 
 :::
