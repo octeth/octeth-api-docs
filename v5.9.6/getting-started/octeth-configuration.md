@@ -621,6 +621,43 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **Operator signal.** A campaign that exhausts its budget is logged once at `ERROR` and reported as `proactive_blocked` in `data/logs/sendengine_worker_allocation.log`. Deliberate pauses and stops are **not** counted as failures.
 
+39. **Journey Action Failure Retries**
+
+    ```bash
+    JOURNEY_ACTION_FAILURE_MAX_ATTEMPTS=6            # Attempts before an entry is dead-ended (default: 6)
+    JOURNEY_ACTION_FAILURE_RETRY_BASE_SECONDS=900    # Delay before the first retry, doubles per failure (default: 900)
+    JOURNEY_ACTION_FAILURE_RETRY_MAX_SECONDS=21600   # Ceiling for that doubling backoff (default: 21600)
+    ```
+
+    A journey action that failed used to advance the subscriber to the next action anyway. The entry moved on as though the subscriber had been emailed, so they permanently missed that email even after the underlying fault was fixed, and nothing in the interface said so. A failing action now holds the entry in place, retries it on a doubling backoff, and dead-ends it with the reason recorded once the attempts run out.
+
+    - **`JOURNEY_ACTION_FAILURE_MAX_ATTEMPTS`** sets how many times an action is attempted before the entry is dead-ended with the failure reason recorded. Attempts are counted as the run of *consecutive* failed executions for the same entry and action, so an attempt that succeeds resets the count to zero. Accepted range `1`–`20`.
+    - **`JOURNEY_ACTION_FAILURE_RETRY_BASE_SECONDS`** sets how long the entry waits before the first retry. The delay doubles on each additional consecutive failure up to the ceiling. Accepted range `30`–`86400`.
+    - **`JOURNEY_ACTION_FAILURE_RETRY_MAX_SECONDS`** is the longest an entry waits between retries. Accepted range `30`–`604800`. A value below the base is raised to the base, since a ceiling under the base would silently cancel the doubling.
+
+    **What the shipped defaults buy you.** An entry is retried after 15 minutes, 30 minutes, 1 hour, 2 hours and 4 hours before it is given up on. That leaves most of a working day to fix a misconfigured sender domain or a gateway outage without losing the send.
+
+    **Where failures are recorded.** On `oempro_journeys_action_executions` with `ExecutionStatus='Failed'`, plus `ErrorMessage`, `ErrorCode`, and for a pending retry `SnoozedUntil` and `SnoozeReason`. They also appear in the journey log.
+
+40. **Campaign Sender-Domain Auto Branding**
+
+    ```bash
+    CAMPAIGN_SENDER_DOMAIN_AUTO_BRANDING=true       # Brand campaigns with a matching verified sender domain (default: true)
+    ```
+
+    The Email Gateway has always branded messages with the account's own verified sender domain, gated only on that domain being `Enabled`. The campaign path additionally required the user group's **Sender Domain Management** option *and* an explicit per-content sender-domain selection. For one and the same account the gateway mail therefore carried customer-domain headers while the campaigns carried the shared platform delivery-server domain, which is the channel that sends the most volume.
+
+    When this is `true`, a campaign whose From address domain exactly matches one of the account's `Enabled` sender domains is branded with that domain even if the group option is off. The envelope MFROM, `Message-ID`, `List-Unsubscribe`, `X-Report-Abuse` and `X-Complaints-To` all move to the customer domain.
+
+    **Matching is exact.** A From address on `mail.example.com` does not match a verified `example.com`. An account with no matching verified domain sends exactly the headers it sent before.
+
+    **Precedence is unchanged at the top.** An explicit per-content sender-domain selection still wins. This From-domain match sits between that and the group `DefaultSenderDomain` fallback.
+
+    **The tracking host is gated separately.** Click and open links only move to the customer domain when that domain's verification actually covered the tracking record. If a customer verified their MFROM records but never pointed the tracking CNAME, the MFROM and `Message-ID` are branded while tracking stays on the platform host. Pointing links at an unprovisioned hostname would break every URL in the message.
+
+    **When to turn it off.** Set it to `false` if you run a shared-IP warmup pool that depends on platform-branded campaign headers. Enabling this moves reputation onto a colder customer domain.
+
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::
@@ -5259,6 +5296,12 @@ Changes to security settings (like password reset options) take effect immediate
 Rebranding allows you to customize Octeth's user-facing pages and elements with your own branding. This is particularly useful when offering Octeth as a white-label service to your clients or when you want to maintain consistent branding across your subscriber-facing communications.
 
 To access rebranding settings, navigate to **Preferences** → **System Settings** → **Rebranding** in the administrator dashboard.
+
+::: warning Rebranding the interface is only half of a whitelabel deployment
+Everything on this page changes what your **users** see when they log in. It changes nothing about what their **recipients** see. The `X-Mailer`, `X-Complaints-To` and `X-Report-Abuse` headers, the `utm_source` on every tracked link, the envelope sender, the `Message-ID` domain and the tracking hostname are all configured elsewhere, and every one of them reaches recipients regardless of how the interface looks.
+
+Work through the [Whitelabel Deployment Checklist](/v5.9.6/getting-started/whitelabel-deployment-checklist) after you finish here.
+:::
 
 ### Product Name
 

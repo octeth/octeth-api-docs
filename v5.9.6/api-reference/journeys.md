@@ -350,9 +350,9 @@ curl -X POST https://example.com/api/v1/journey.copytouser \
 | SessionID | String  | No       | Session ID obtained from login        |
 | APIKey    | String  | No       | API key for authentication            |
 | JourneyID | Integer | Yes      | ID of the journey to retrieve         |
-| StartDate | String  | No       | Start date for stats (YYYY-MM-DD)     |
-| EndDate   | String  | No       | End date for stats (YYYY-MM-DD)       |
-| IncludeActivityCounters | Boolean | No | When truthy (`1`, `true`, `yes`, `on`), the `JourneyStats` block also includes `LastTriggeredAt`, `LastActivityAt`, and `TotalEnrolledLifetime`. Defaults to `false` so existing consumers see the same shape they do today. |
+| StartDate | String  | No       | `YYYY-MM-DD` start of the stats window. Defaults to 30 days ago. Windows `JourneyStats.WindowedEmailActions`, `JourneyStats.AggregatedDaysEmailActions` and `JourneyStats.DaysRevenue`. It does **not** affect `JourneyStats.AggregatedEmailActions` or `JourneyStats.TotalRevenue`, which are always all-time. |
+| EndDate   | String  | No       | `YYYY-MM-DD` end of the stats window, inclusive. Defaults to today. Same fields as `StartDate`. |
+| IncludeActivityCounters | Boolean | No | When truthy (`1`, `true`, `yes`, `on`), the `JourneyStats` block also includes `LastTriggeredAt`, `LastActivityAt`, `TotalEnrolledLifetime`, `TotalEnrolledInRange` and `AggregatedDaysEnrolments`. Defaults to `false` so existing consumers see the same shape they do today. |
 | EmailID | Integer | No | Scope `JourneyStats.AggregatedEmailActions` to a single `SendEmail` action on this journey (issue #2019). Must reference an action whose `Action='SendEmail'` and that belongs to this journey + caller. Reads the per-action ISP cache. Defaults to unset (journey-wide aggregate, unchanged). |
 | ISP | String | No | Scope `JourneyStats.AggregatedEmailActions` to a single ISP domain (issue #2019). Must match `/^[a-zA-Z0-9.-]+$/`. Defaults to unset. Combine with `EmailID` to intersect (one action × one ISP). |
 
@@ -395,9 +395,33 @@ When `IncludeActivityCounters=1` is passed, the `JourneyStats` block also includ
 |-------|------|-------------|
 | `LastTriggeredAt` | string or null | Most recent enrollment (`MAX(oempro_journeys_entries.CreatedAt)`), `Y-m-d H:i:s` format. `null` when the journey has never been triggered. |
 | `LastActivityAt` | string or null | Most recent log row of any kind (`MAX(oempro_journeys_logs.CreatedAt)`), same format. `null` when no activity has been recorded. |
-| `TotalEnrolledLifetime` | int | `COUNT(DISTINCT RelSubscriberID)` of subscribers who have ever been enrolled. Distinct from `TotalSubscribers` (which counts every enrollment row — a subscriber re-enrolled twice contributes 2 to `TotalSubscribers` but 1 to `TotalEnrolledLifetime`). |
+| `TotalEnrolledLifetime` | int | `COUNT(DISTINCT RelSubscriberID)` of subscribers who have ever been enrolled, over all time. Ignores `StartDate` / `EndDate`. Distinct from `TotalSubscribers`, which counts every enrollment row, so a subscriber re-enrolled twice contributes 2 to `TotalSubscribers` but 1 to `TotalEnrolledLifetime`. |
+| `TotalEnrolledInRange` | int | Number of enrolment **events** inside the requested window (default: the last 30 days). The sum of `AggregatedDaysEnrolments`. |
+| `AggregatedDaysEnrolments` | object | The same enrolment-event count broken down per calendar day, keyed `YYYY-MM-DD`, newest day first, zero-filled across the whole inclusive range. Uses the same window and the same key set as `AggregatedDaysEmailActions`, so the two can be plotted on one x-axis without special-casing gaps. |
 
 These counters require two extra index-driven queries (one on `journeys_entries`, one on `journeys_logs`) and are off by default to keep the existing latency profile.
+
+```json
+"AggregatedDaysEnrolments": {
+  "2026-09-01": { "EnrolmentCount": 4 },
+  "2026-08-31": { "EnrolmentCount": 0 },
+  "2026-08-30": { "EnrolmentCount": 11 }
+}
+```
+:::
+
+::: warning `TotalEnrolledInRange` and `TotalEnrolledLifetime` are different measures and do not reconcile
+`TotalEnrolledLifetime` counts **distinct subscribers** (`COUNT(DISTINCT RelSubscriberID)`). A subscriber enrolled three times contributes 1.
+
+`TotalEnrolledInRange` and `AggregatedDaysEnrolments` count **enrolment events**. Every entry into the journey adds 1, including a re-enrolment of a subscriber who completed the journey earlier, and a restart triggered from the subscriber edit page.
+
+On any journey with re-enrolment the event count over all time therefore exceeds the distinct lifetime count. Widening the window until it covers the journey's whole history will **not** make `TotalEnrolledInRange` converge on `TotalEnrolledLifetime`. Do not compute one from the other, and do not present them as a part and a whole.
+:::
+
+::: warning Enrolment history starts at deployment, with no backfill
+Enrolment counts are recorded from the moment v5.9.6 is deployed and its database migration has run. A window that reaches back before the upgrade returns zeros for those days, and `TotalEnrolledInRange` for such a window undercounts.
+
+This is deliberate. The only existing record of an enrolment date is `journeys_entries.CreatedAt`, and restarting a subscriber's journey rewrites that column in place, so seeding history from it would import numbers that change retroactively. `TotalEnrolledLifetime` is unaffected and remains complete for all history.
 :::
 
 ::: info Per-action revenue fields (issue #2010)
@@ -411,6 +435,13 @@ Each `SendEmail` entry in the `Actions` array also exposes two top-level revenue
 Non-`SendEmail` actions (`Wait`, `Decision`, `AddTag`, etc.) do not have these fields — consistent with how `Stats` and `DailyStats` already behave for non-revenue-generating actions. No extra queries are required to produce the fields; they reuse data the response already computes.
 :::
 
+::: info Which fields the stats window applies to
+- **`AggregatedEmailActions`** is the journey's **all-time** engagement total. It ignores `StartDate` / `EndDate` (`journey.list`: `StatsStartDate` / `StatsEndDate`) entirely, and is identical between `journey.list` and `journey.get` for the same journey.
+- **`WindowedEmailActions`** is the same counter set restricted to the requested window (default: the last 30 days). Same keys, same types.
+- **`TotalRevenue`** is all-time. **`DaysRevenue`** is the revenue attributed within the requested window. `journey.list` has always returned `DaysRevenue`; it is now returned by `journey.get` as well, with the same meaning.
+- **`AggregatedDaysEmailActions`** is the per-day series over the requested window.
+:::
+
 ::: info Filtered `AggregatedEmailActions` (issue #2019)
 When `EmailID` or `ISP` is passed, `JourneyStats.AggregatedEmailActions` is computed from the per-ISP cache instead of the journey-wide cache. The same 11 keys are returned in both modes for shape stability:
 
@@ -420,7 +451,7 @@ When `EmailID` or `ISP` is passed, `JourneyStats.AggregatedEmailActions` is comp
 | `TotalRevenue` | Summed and converted from cents to currency units (matches the unfiltered shape). |
 | `ConversionCount`, `BrowserViewCount`, `ForwardCount` | Always returned as `0` under filter (the per-ISP cache does not track these three counters today). |
 
-**Time window:** the filtered `AggregatedEmailActions` is always an **all-time** aggregate — same semantics as the unfiltered path. `StartDate` and `EndDate` only drive the date-windowed `AggregatedDaysEmailActions` sub-block, never the lifetime summary. When neither `EmailID` nor `ISP` is set, the response is byte-identical to today's contract.
+**Time window:** the filter follows the same period rules as the unfiltered path, which the parameter table above states in full. When `EmailID` or `ISP` is supplied, `AggregatedEmailActions` is the all-time total for that action or ISP slice and `WindowedEmailActions` is the same slice over the requested window, so the filtered and unfiltered figures always cover the same periods as each other. When neither `EmailID` nor `ISP` is set, the response is byte-identical to today's contract.
 :::
 
 ```json [Error Response]
@@ -485,10 +516,10 @@ If you build date strings by concatenation (e.g. `$y.'-'.$m.'-'.$d` without padd
 | Command   | String | Yes      | API command: `journey.list`           |
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
-| StatsStartDate | String | No  | Start date for stats (YYYY-MM-DD)     |
-| StatsEndDate | String | No    | End date for stats (YYYY-MM-DD)       |
+| StatsStartDate | String | No  | `YYYY-MM-DD` start of the stats window. Defaults to 30 days ago. Windows `JourneyStats.WindowedEmailActions`, `JourneyStats.AggregatedDaysEmailActions` and `JourneyStats.DaysRevenue`. It does **not** affect `JourneyStats.AggregatedEmailActions` or `JourneyStats.TotalRevenue`, which are always all-time. |
+| StatsEndDate | String | No    | `YYYY-MM-DD` end of the stats window, inclusive. Defaults to today. Same fields as `StatsStartDate`. |
 | SkipStats | Boolean | No      | When truthy (`1`, `true`, `yes`), the per-row `JourneyStats` block is omitted entirely. Default: `false` (full stats are returned). Empty string is treated as absent. |
-| IncludeActivityCounters | Boolean | No | When truthy, each row's `JourneyStats` block gains `LastTriggeredAt`, `LastActivityAt`, and `TotalEnrolledLifetime` (see the `journey.get` reference for definitions). Batched in two queries total regardless of journey count. When combined with `SkipStats=1`, the entire `JourneyStats` block stays suppressed — counters are not produced standalone. Default: `false`. |
+| IncludeActivityCounters | Boolean | No | When truthy, each row's `JourneyStats` block gains `LastTriggeredAt`, `LastActivityAt`, `TotalEnrolledLifetime` and `TotalEnrolledInRange` (see the `journey.get` reference for definitions). The per-day `AggregatedDaysEnrolments` breakdown is not returned here; call `journey.get` for it. Batched in two queries total regardless of journey count. When combined with `SkipStats=1`, the entire `JourneyStats` block stays suppressed, and counters are not produced standalone. Default: `false`. |
 
 ::: tip About `SkipStats`
 This flag is intended for callers that only need the flat list of journeys (e.g. dropdown pickers in segment rule-builders) and don't display stats. When set, the endpoint skips four `JourneyStats` queries per journey plus the per-row stats join, so it's substantially cheaper for users with many journeys.
@@ -536,6 +567,7 @@ curl -X GET https://example.com/api/v1/journeys \
         "ActiveSubscribers": 150,
         "TotalSubscribers": 500,
         "AggregatedEmailActions": {},
+        "WindowedEmailActions": {},
         "AggregatedDaysEmailActions": [],
         "TotalRevenue": 0,
         "DaysRevenue": []
@@ -1420,7 +1452,7 @@ curl -X GET "https://example.com/api/v1/journey.stats.byisp?JourneyID=123&StartD
 
 Returns per-`SendEmail`-action engagement stats for a journey, optionally scoped by date range, single email (`EmailID`), and/or ISP domain. Closes the scoping triangle alongside `journey.stats.byisp` (issue #2007) and the `journey.get` filters (issue #2019) — the web UI's per-step overview cards render the same data filtered, this endpoint exposes it to API consumers.
 
-Each row contains a lifetime-style `Stats` block for the requested window plus a `DailyStats` time series zero-filled across every date in the window (consumers can chart a continuous x-axis without gap-fill logic).
+Each row contains a lifetime-style `Stats` block for the requested window plus a `DailyStats` time series zero-filled across every date in the window, so consumers can chart a continuous x-axis without gap-fill logic. **Both bounds of the requested range are always present**, so a request where the start and end date are equal returns exactly one day, and the number of keys depends only on the range, never on how much data exists inside it.
 
 **Request Body Parameters:**
 
@@ -1495,7 +1527,7 @@ curl -X GET "https://example.com/api/v1/journey.stats.byaction?JourneyID=123&Sta
 
 ::: info Field semantics
 - **`Stats`** is a lifetime aggregate for the requested window (same window applied across all returned actions).
-- **`DailyStats`** is a per-day series. Days with no activity are zero-filled so consumers can chart a continuous x-axis. `TotalRevenue` on both `Stats` and `DailyStats` is in currency units (cents/100), matching `journey.get`'s `AggregatedEmailActions.TotalRevenue` shape.
+- **`DailyStats`** is a per-day series. Days with no activity are zero-filled so consumers can chart a continuous x-axis, and **both bounds of the requested range are always present**, so the number of keys depends only on the range and never on how much data exists inside it. `TotalRevenue` on both `Stats` and `DailyStats` is in currency units (cents/100), matching `journey.get`'s `AggregatedEmailActions.TotalRevenue` shape.
 - **`EmailID`** in each row is the underlying `oempro_emails.EmailID` extracted from the action's `ActionParameters.EmailID`. Note that the input parameter also called `EmailID` refers to the journey **action's** `ActionID` (consistent with `journey.get` from issue #2019), not the underlying email's ID.
 - **`Action`** is always `"SendEmail"` — non-SendEmail actions (Wait, Decision, AddTag, etc.) are excluded since they don't produce engagement data.
 - When `EmailID` is omitted, every `SendEmail` action on the journey is returned, ordered by `OrderNo` ascending.
@@ -1739,8 +1771,8 @@ Enqueues an async CSV export of the caller's journeys with rolled-up stats for a
 | Command | String | Yes | API command: `journey.export.submit` |
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
-| StatsStartDate | String | No | `YYYY-MM-DD` start of the stats window. Defaults to 30 days ago. |
-| StatsEndDate | String | No | `YYYY-MM-DD` end of the stats window. Defaults to today. |
+| StatsStartDate | String | No | `YYYY-MM-DD` start of the stats window. Defaults to 30 days ago. Windows the same fields as on `journey.list`. |
+| StatsEndDate | String | No | `YYYY-MM-DD` end of the stats window, inclusive. Defaults to today. |
 | Status | String | No | Filter by journey status. Possible values: `Enabled`, `Disabled`, `all`. Defaults to `all`. |
 | IncludeActions | Boolean | No | When truthy, the CSV includes one row per `SendEmail` action under each journey (mirrors the web UI's expanded view). Defaults to `false`. |
 

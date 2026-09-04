@@ -30,6 +30,20 @@ Release in progress. Scheduled for September 11th, 2026. Changelog will be updat
 
 - (To be documented)
 
+### Upgrade Notes
+
+::: info Seeded during the cycle, finalize at release
+These notes are added as fixes merge, because a deliberate contract change reads as an ordinary bug fix in the commit log and a changelog derived from commit subjects will miss it. Preserve and merge these at release rather than overwriting them.
+:::
+
+- **One database migration ships with this release.** Run it as part of the upgrade. It creates the daily journey enrolment cache table and is a fast create with no data movement
+- **Segment rules that negate now match subscribers with no value.** Rules using "is not", "does not contain", "not between" or "not in the last x days" previously excluded every subscriber whose field was never filled in, which is the opposite of how each one reads in the rule builder. They now include them. **Existing segments will grow and journey Decision branches will route differently**, so review any send limit, recurring campaign or journey Yes branch that depends on a segment's size before upgrading. Full detail and an upgrade checklist: [v5.9.6 API behavior changes](/v5.9.6/api-reference/behavior-changes)
+- **Campaigns now brand with the account's verified sender domain by default.** A campaign whose From address domain matches one of the account's verified sender domains now carries that domain on its envelope sender, `Message-ID`, `List-Unsubscribe` and abuse headers, and on its tracking links where the tracking record itself verified. Previously this required the user group's Sender Domain Management option. Set `CAMPAIGN_SENDER_DOMAIN_AUTO_BRANDING=false` to keep the previous behavior, which is worth doing if you run a shared-IP warmup pool that depends on platform-branded campaign headers
+- **Auto responder messages now use the sender domain root in their From header**, matching campaigns and gateway mail. The authenticated domain moves with it, so Google Postmaster Tools reports auto responder volume under the same domain as campaigns
+- **Four new configuration settings.** `JOURNEY_ACTION_FAILURE_MAX_ATTEMPTS`, `JOURNEY_ACTION_FAILURE_RETRY_BASE_SECONDS`, `JOURNEY_ACTION_FAILURE_RETRY_MAX_SECONDS` and `CAMPAIGN_SENDER_DOMAIN_AUTO_BRANDING`. All ship with working defaults and need no action. See [Octeth Configuration](/v5.9.6/getting-started/octeth-configuration)
+- **Journey enrolment history starts at deployment.** The new per-day enrolment counts on `journey.get` and `journey.list` are recorded from the moment this version is deployed. There is no backfill, so a window reaching back before the upgrade shows zeros for those days. The existing lifetime enrolment figure is unaffected and remains complete
+- **`journey.list` engagement totals increase.** `JourneyStats.AggregatedEmailActions` was windowed to the last 30 days on this endpoint while `journey.get` returned it all-time. The two now agree and both are all-time. Read the new `JourneyStats.WindowedEmailActions` for the previous windowed figure
+
 ### Deprecations
 
 None

@@ -638,6 +638,7 @@ export default defineConfig({
                         {text: 'Backup Add-On Setup', link: '/v5.9.6/getting-started/backup-addon-setup'},
                         {text: 'Link Proxy Add-On Setup', link: '/v5.9.6/getting-started/link-proxy-addon-setup'},
                         {text: 'Octeth Configuration', link: '/v5.9.6/getting-started/octeth-configuration'},
+                        {text: 'Whitelabel Deployment Checklist', link: '/v5.9.6/getting-started/whitelabel-deployment-checklist'},
                         {text: 'Google Postmaster Tools Integration', link: '/v5.9.6/getting-started/google-postmaster-integration'},
                         {text: 'Monitoring', link: '/v5.9.6/getting-started/monitoring'},
                         {text: 'Octeth CLI Tool', link: '/v5.9.6/getting-started/octeth-cli-tool'},

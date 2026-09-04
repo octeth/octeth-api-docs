@@ -14,9 +14,120 @@ Entries are added as fixes merge and the list is finalized at release. If you ar
 
 Looking for the previous release? See [API Behavior Changes in v5.9.5](/v5.9.5/api-reference/behavior-changes), which repointed the Email Gateway recipient domain report at the send queue, scoped per-domain statistics to the sender domain requested, and allowlisted segment rule fields and operators.
 
-## No changes recorded yet
+::: warning The two entries most likely to surprise you
+**Segment rules that negate now match subscribers with no value**, so existing segments and journey Decision branches select more people than they did. And **campaigns now brand with the account's verified sender domain by default**, which moves the envelope sender, `Message-ID` and tracking host off the shared platform domain. Both are described in Tier 2 below and both have an entry in the upgrade checklist.
+:::
 
-Nothing in this cycle has changed observable API behavior so far.
+## Tier 1: Calls that used to succeed now return an error
+
+- **A campaign will no longer send with an invalid `From` header.** No message leaves the send engine with a `From` that fails `FILTER_VALIDATE_EMAIL`. The affected queue row is marked `Failed` with the reason `Invalid From email address: "..."` instead of delivering a malformed message and counting the send as successful.
+
+  This was reachable in normal operation. Under sender domain management the stored `fromemail` holds only the local part, and the domain is recombined at send time. When the sender-domain gate failed, that recombination was skipped and the bare local part went out verbatim as `From: Cem <cem>`, unsigned by DKIM, recorded as a success.
+
+  Merge tags are unaffected. An address that still contains a `%...%` tag at that point is allowed through, because merge tags in the From address are a supported configuration and are expanded on the engine at the last moment (issue #2749).
+
+## Tier 2: Same call, different results
+
+No request change is needed, but the response values, the result set or the delivered message differ.
+
+### Segment and journey rules
+
+- **Negating rule operators now match subscribers with no value.** Four operators were rendered as bare SQL negations, and in SQL a comparison against `NULL` evaluates to `NULL` rather than true. A subscriber whose field was never populated therefore failed every one of those rules, which is the opposite of how each one reads in the rule builder.
+
+  | Operator | Before | Now |
+  |---|---|---|
+  | `is not` (and the legacy `Is not`) | `field != 'x'` | `(field != 'x' OR field IS NULL)` |
+  | `does not contain` (and the legacy `Does not contain`) | `field NOT LIKE '%x%'` | `(field NOT LIKE '%x%' OR field IS NULL)` |
+  | `not between` | `field NOT BETWEEN a AND b` | `(field NOT BETWEEN a AND b OR field IS NULL)` |
+  | `not in the last x days` | `field < date` | `(field < date OR field IS NULL)` |
+
+  An unset field is the normal state, not an edge case. Custom-field columns are created nullable with a null default, so every subscriber that predates the field, or that was imported or created without it, holds `NULL`. For a global custom field it is stronger still: an unset field is always `NULL`.
+
+  This affects list segments, campaign targeting, journey `Decision` actions, and every API or interface surface that evaluates segment rules. **Existing segments using these operators will grow.** In a segment the old behavior showed a visibly wrong count. In a journey `Decision` it was worse and silent: the Decision resolved false and routed the subscriber down the No branch, which in the reported production case led straight to `Exit this journey`, ending the journey with no email sent and no signal anywhere in the interface.
+
+  Empty strings were never affected: `'' != 'energy'` was already true and still is. A subscriber whose field equals the compared value is still excluded. The `OR ... IS NULL` is always parenthesized inside its own rule, so it cannot widen a neighbouring rule under either the "Match All Rules" or the "Match Any Rule" connector. Anyone who worked around this by pairing the negating rule with an `is empty` rule now double-counts harmlessly.
+
+  Not changed: `is not set` and `is not empty` were already null-correct. Positive operators (`is`, `contains`, `between`, `in the last x days` and the rest) are untouched, because an unset field does not equal, contain or fall inside anything. `not in the next x days` carries the same defect and was deliberately left out pending a separate decision, so note it if you rely on that operator (issue #2715).
+
+### Journey statistics
+
+- **`journey.list` `JourneyStats.AggregatedEmailActions` is now all-time.** It was windowed to `StatsStartDate`/`StatsEndDate`, which default to the last 30 days, while `journey.get` returned the same field all-time. The two endpoints disagreed under one key for the same journey, with nothing in either response naming a period. `journey.list` now matches `journey.get`.
+
+  **Values increase** for any journey with cached data older than the requested window. Nothing is renamed and no field is removed. Callers that wanted the windowed figure should read the new `JourneyStats.WindowedEmailActions`, which carries exactly the old `journey.list` semantics and key set. `upsender-frontend` is a known consumer of this field (issue #2753).
+
+- **The per-day series now includes the `StartDate` day.** `JourneyStats.AggregatedDaysEmailActions` on both endpoints, and each action's `DailyStats` on `journey.get`, zero-filled one day short, so the `StartDate` day was missing unless it happened to carry a real data row. A request where `StartDate == EndDate` returned an empty map.
+
+  The series now always contains every calendar day in the inclusive range. On a quiet journey the leading day appears as a zero row where it previously vanished, so the series gains one key. On a busy journey where that day already had data the key count is unchanged and the day simply moves from the end of the map into its correct chronological slot. Key order is unchanged: newest first for `AggregatedDaysEmailActions`, oldest first for `DailyStats`. No schema change and no backfill (issue #2754).
+
+### Sending identity and headers
+
+- **Campaigns now brand with the account's verified sender domain by default.** A campaign whose From address domain exactly matches one of the account's `Status='Enabled'` sender domains is now branded with that domain, even when the user group's `SenderDomainManagement` option is off. The envelope MFROM (return path), `Message-ID`, `List-Unsubscribe`, `X-Report-Abuse`, `X-Complaints-To` and the click and open tracking host all move from the shared platform delivery-server domain to the customer domain.
+
+  The Email Gateway already did this, gating only on the domain being `Enabled`. The campaign path additionally required the group flag and an explicit per-content selection, so for one and the same account the gateway mail was customer-branded and the campaigns were platform-branded. Mailbox providers then accumulate a single reputation record across every tenant on that delivery server, and per-customer domain verification bought the customer nothing on the channel that sends the most volume. DKIM signing is done by the MTA off the From and return-path domain, so correcting the campaign MFROM is a precondition for customer-domain DKIM on campaigns rather than a cosmetic change.
+
+  **Who is affected:** any install with accounts that hold a verified sender domain matching their campaign From address but whose group does not have `SenderDomainManagement` enabled. An account with no matching verified domain sends exactly the headers it sent before.
+
+  **Precedence:** an explicit per-content sender-domain selection still wins. The new From-domain match sits between that and the group `DefaultSenderDomain` fallback. Matching is exact, so a From on `mail.example.com` does not match a verified `example.com`.
+
+  **The tracking host is gated separately.** It only moves when the domain's verification actually covered that tracking record. If a customer verified their MFROM records but never pointed the tracking CNAME, the MFROM and `Message-ID` are branded while tracking stays on the platform host, because pointing links at an unprovisioned host would break every URL in the message.
+
+  To keep the previous behavior, set `CAMPAIGN_SENDER_DOMAIN_AUTO_BRANDING=false` in `.oempro_env`. Do that if you run a shared-IP warmup pool that depends on platform-branded campaign headers, since enabling this moves reputation onto a colder customer domain (issue #2750).
+
+- **Campaigns no longer brand off a sender domain that is not `Enabled`.** The campaign send path accepted any sender-domain row that was not `Deleted`, including `Disabled`, `Suspended` and `Approval Pending`. It now requires `Status='Enabled'`, which is what the Email Gateway and the `email.render` / `email.smtp.render` endpoints already required. A campaign whose selected sender domain has been disabled or suspended now falls back to the group `DefaultSenderDomain` if one is configured, and otherwise to platform branding, and the failure is logged. Previously it routed mail through the suspended domain (issue #2750).
+
+- **Auto responder `From:` headers now use the sender domain root.** Auto responder messages put the sending subdomain in the `From:` header, for example `newsletter@upm.example.com`, while campaigns, previews, test sends and the Email Gateway API all used the root, `newsletter@example.com`. Auto responders now use the root as well. The envelope sender is unchanged and stays on the sending subdomain, so bounce processing and SPF alignment behave exactly as before.
+
+  This was a defect rather than a preference. The sending subdomain is a CNAME to shared infrastructure whose inherited MX has no mailbox store, so replies to auto responders were discarded while replies to campaigns arrived normally, and RFC 1034 section 3.6.2 forbids publishing an MX record beside a CNAME, so no customer-side DNS could fix it.
+
+  **What operators will observe:** PowerMTA derives the DKIM `d=` from the `From:` header, so the auto responder stream's authenticated domain moves from the subdomain to the root. Google Postmaster Tools tracks reputation per authenticated domain, so auto responder volume now reports under the same domain as campaigns instead of a separate one. Accounts that already send campaigns consolidate onto an established reputation. Accounts that send auto responders and nothing else will see their history restart under the root domain. No action is required, and setting a per-domain `Options.CustomSubdomain` is not a way to opt out, because any subdomain is still a CNAME with no mailbox (issue #2745).
+
+- **Journey and Email Gateway tracking links now fall back to the delivery-server domain.** Tracking, opt-out, web-version and forward links in journey and Email Gateway mail were built from a per-sender-domain hostname that Octeth composed at send time and never asked anyone to create in DNS. Where that hostname was not provisioned, every link in the email was dead, including the opt-out link.
+
+  Those links now use the sender domain's own tracking host only when Sender Domain Management is enabled for the owner's group, **and** the domain is `Enabled`, **and** its stored DNS record set actually lists that exact tracking host. In every other case they fall back to the delivery-server tracking domain that campaigns, autoresponders and transactional mail already use, which cannot emit a hostname that does not resolve.
+
+  Two consequences. The shipped `EMAILGATEWAY_DNS_TEMPLATES` `Default` template requests no tracking CNAME, so on a default configuration these links move from the sender domain to the delivery-server tracking domain: tracking that was already working keeps working, and tracking that was silently dead starts working. Where the tracking host *is* requested by a custom DNS template, it is now composed from the `EMAILGATEWAY_DNS_*` settings rather than the `EMAILCAMPAIGN_DNS_*` ones, so on an install where those differ the advertised host changes to match the gateway template the operator actually configured (issue #2747).
+
+### Journeys
+
+- **A failed journey action no longer advances the subscriber.** A journey action that fails now holds the entry in place, retries it on a backoff, and dead-ends it with a recorded reason once the attempts run out, instead of advancing the subscriber as though the action had succeeded.
+
+  Failed runs also stop counting towards the action's `CompletedRuns`, so the Journey Builder node counters no longer overstate delivery: a node showing 33 completed used to be able to mean 33 emails or zero. An Email Gateway response that returns HTTP 2xx with no `MessageID` is treated as a failed send, because no queue row exists and no email is ever delivered.
+
+  Failures are recorded on `oempro_journeys_action_executions` with `ExecutionStatus='Failed'`, plus `ErrorMessage`, `ErrorCode`, and for a pending retry `SnoozedUntil` and `SnoozeReason`, and in the journey log. The retry schedule is configurable through the `JOURNEY_ACTION_FAILURE_*` settings in [Octeth Configuration](/v5.9.6/getting-started/octeth-configuration) (issue #2748).
+
+### Email content
+
+- **`email.update` no longer wipes `Options.SenderDomain` on a partial update.** `Options` is now merged onto the stored value rather than replaced wholesale, so an update that omits `senderdomain` leaves the stored selection alone. `plaincontentautoconvert` and `subjectsettotitleelement` keep their previous behavior of clearing when omitted, so no existing caller sees a different result for those two.
+
+  A read-modify-write round trip on a sender-domain-managed email is also idempotent now. Sending back the stored `fromemail`, which under sender domain management holds only the local part, previously derived a garbage domain and returned `ErrorCode 17`. Relatedly, the domain is no longer stripped off `fromemail` unless a sender domain actually resolved and is being stored alongside it (issue #2750).
+
+## Tier 3: Security closures
+
+These only affect callers doing something that was never intended to work. Listed for completeness and for anyone auditing.
+
+- **`campaigns.get`, and transitively `admin.campaigns.search`, now allowlists `orderfield`.** The parameter was passed straight into the `ORDER BY` clause. An `orderfield` that is not a real, sortable campaign field is now ignored and the endpoint sorts by the documented default, `CampaignName` ascending, rather than reaching the query unvalidated.
+
+  Legitimate sort fields are unchanged: any physical `oempro_campaigns` column, plus the named computed keys `Duration`, `SentRate`, `DeliveryRate`, `FailureRate`, `Velocity`, `Schedule`, `sort-by-status` and `sort-by-send-date`. `ordertype` is constrained to `ASC` or `DESC`, and any other value is treated as the default direction. This is a silent fallback rather than an error, so no working call changes and no client code that already sends a valid `orderfield` needs updating. This was the last named sink from the v5.9.5 injection audit (issue #2731).
+
+## Upgrade checklist
+
+1. **Do you have segments or journey `Decision` actions using `is not`, `does not contain`, `not between` or `not in the last x days` on a field that may be unset?** Their audiences will grow, which is the fix, but segment size is sometimes load-bearing. Review sending throttles and per-send limits keyed to an expected audience size, scheduled and recurring campaigns that will now reach more people on their next run, any external reporting or billing that reconciles against a segment count, and every journey whose Yes branch sends mail or changes subscriber state. Where you deliberately want to exclude subscribers with no value, add a companion `is not empty` rule to the same group.
+
+2. **Do your accounts hold verified sender domains that match their campaign From addresses?** Their campaigns now carry customer-domain MFROM, `Message-ID`, `List-Unsubscribe`, `X-Report-Abuse` and `X-Complaints-To`, and customer-domain tracking links where the tracking record verified. Confirm that is what you want before upgrading, particularly if you run a shared-IP warmup pool. Set `CAMPAIGN_SENDER_DOMAIN_AUTO_BRANDING=false` to keep platform branding.
+
+3. **Do you read `JourneyStats.AggregatedEmailActions` from `journey.list`?** It is now all-time rather than windowed to the last 30 days, so the values increase. If you wanted the windowed figure, switch to `JourneyStats.WindowedEmailActions`, which carries the old semantics and key set unchanged.
+
+4. **Do you chart `AggregatedDaysEmailActions` or a per-action `DailyStats` series?** Both now always contain every calendar day in the inclusive range, so a quiet series gains one key at the `StartDate` end. If you index by position rather than by date key, or if you assert a fixed key count, adjust for that.
+
+5. **Do you monitor auto responder deliverability separately from campaigns?** The authenticated domain moves from the sending subdomain to the sender domain root, so Google Postmaster Tools reports auto responder volume under the same domain as campaigns. If auto responders are the account's only stream, expect its reputation history to restart under the root domain.
+
+6. **Do you depend on journey or Email Gateway tracking links resolving on a sender-domain host?** They now fall back to the delivery-server tracking domain unless the domain's stored DNS record set lists that exact tracking host. On a default configuration those links move to the delivery-server domain. Links that were already resolving keep resolving.
+
+7. **Do you treat a journey action's `CompletedRuns` as a delivery count?** It no longer counts failed runs, so the figure drops to reflect actual sends. A failing action now holds its entry and retries it on a backoff before dead-ending, so entries can sit in a journey longer than they used to. Tune that with `JOURNEY_ACTION_FAILURE_MAX_ATTEMPTS` and the two retry-interval settings.
+
+8. **Do you call `email.update` with a partial `Options` object?** It now merges rather than replaces, so an update that omits `senderdomain` no longer clears the stored sender domain. If your integration relied on omission to clear that field, set it explicitly instead.
+
+9. **Do you build `orderfield` for `campaigns.get` from user input or another system?** An unrecognised value is now ignored and the default sort applies, instead of reaching `ORDER BY`. Check that the fields you send are real campaign columns or one of the named computed keys.
 
 ## One general note on error codes
 
@@ -41,19 +152,23 @@ Add entries AS FIXES MERGE, not at release time. A deliberate contract change re
 `fix:` in git log, so a changelog derived from commit subjects will miss it. That is exactly how
 v5.9.3 shipped with "Breaking Changes: None" while this page already documented 8 Tier-1 changes.
 
-Delete the "No changes recorded yet" section as soon as the first real entry lands. If it is still
-there at release, keep it and say so plainly. A release with no observable API change is a normal
-outcome and worth stating, not hiding.
+House style: NO em dashes anywhere in this repo's prose. Rewrite instead of substituting. A
+parenthetical takes commas or brackets, an explanation takes a colon, a hard turn starts a new
+sentence. Older pages predate the rule and were left alone; new text must not copy them.
 
-Watch list for this cycle, both carried over from the v5.9.5 window:
+Watch list for this cycle:
 
-- #2731 - campaigns browse SortField reaches ORDER BY unmapped. The last named sink from the #2720
-  audit, and the reason the v5.9.5 page's Tier 3 "Legacy criteria builder" bullet does not claim the
-  whole class is closed. If this ships here it is a Tier 3 security closure, and also a Tier 1 entry
-  if an invalid sort field starts returning an error rather than being silently accepted.
 - #2730 - subscribers.search returns Success:true with a non-zero TotalSubscribers and an empty
   Subscribers array when the ORDER BY column does not exist. A Tier 1 candidate: it converts a
   fabricated success into an explicit error, exactly the shape that breaks integrations treating an
   empty result as "no matches". Note the reachable trigger is ordering by a GLOBAL custom field,
   which has no column on the subscriber table.
+- #2720 residual - GetCriteriaString still emits Column/Operator/ValueWOQuote unescaped. #2731
+  closed the campaigns sort-field sink in this cycle; the segment rule-field ingress was closed in
+  v5.9.5. Anything left is a new sink, not a regression of those two.
+
+Shipped this cycle and already documented above, do not re-add: #2715, #2731, #2745, #2747, #2748,
+#2749, #2750, #2753, #2754. #2752 (journey enrolment counts) is deliberately NOT on this page: every
+new field is gated behind the existing IncludeActivityCounters opt-in and responses without the
+opt-in were verified byte-identical. It belongs in the changelog and on the journeys API page only.
 -->
