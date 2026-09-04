@@ -427,7 +427,17 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     - **Trade-off:** a static header is *not* a per-request HMAC. It does **not** stop replay of a captured valid POST, but — unlike a secret placed in the URL — it is **not written to access logs or referrers**, and it closes the unauthenticated-forgery vector entirely.
     - **Rotation:** because the secret derives from `OEMPRO_PASSWORD_SALT` and `ADMIN_API_KEY`, rotating either value changes the secret and requires updating every configured sender with the new header.
 
-33. **Trusted Proxies / Client IP Resolution**
+33. **Admin API Privilege Enforcement**
+
+    ```bash
+    ADMIN_API_ENFORCE_PRIVILEGES=true   # Check sub-admin privileges on admin API calls (opt-in on upgrades; on for fresh installs)
+    ```
+
+    Sub-admin accounts carry a privilege list (the same one that gates the admin screens). Historically the API never consulted it: any admin who could authenticate, with their own username and password, an `Admin.Login` session, or a per-sub-admin API key, could call every admin command. With this set to `true`, each admin command is checked against the privilege it declares and a call the sub-admin is not entitled to answers the standard `99999` (`Not enough privileges`) error. The master `ADMIN_API_KEY` resolves to the unrestricted master administrator and is never affected, so master-key integrations behave identically either way.
+
+    Absent or empty is treated as `false`, so an existing install keeps its pre-existing `.oempro_env` and today's behaviour after upgrading. The shipped `.oempro_env.example` sets it to `true`, so fresh installs enforce from day one. Turn it on after confirming every integration that authenticates as a sub-admin holds the privileges it needs. Per-sub-admin API keys are issued on the sub-admin edit screen and are accepted on `AdminAPIKey` regardless of this setting.
+
+34. **Trusted Proxies / Client IP Resolution**
 
     ```bash
     TRUSTED_PROXIES=                       # extra trusted reverse proxies (IPv4 / CIDR, comma-separated); loopback is always trusted
@@ -445,7 +455,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     A direct client (untrusted immediate peer) can never influence `REMOTE_ADDR`, so the admin IP allow-list can no longer be bypassed with a forged `X-Forwarded-For`. Loopback-originated requests (the internal health-check/cron probes) are exempt from the allow-list, so enabling it no longer breaks `system.health.check`. Note: audit/login rows written by an earlier version while behind a proxy may still contain a chain string in their IP column; the fix stops that going forward but does not rewrite historical rows.
 
-34. **New-List Suppression Default & Synchronous Import Threshold**
+35. **New-List Suppression Default & Synchronous Import Threshold**
 
     ```bash
     NEW_LIST_DEFAULT_ADD_TO_SUPPRESSION_LIST=false   # opt-outs on NEW lists feed the suppression lists by default (default: false)
@@ -460,7 +470,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **`RUN_IMPORT_IN_SYNC_FOR_SUBSCRIBERS_LESS_THAN`** sets the row count at or below which a CSV import through `POST api/v1/subscribers.import` is processed **synchronously**, inline within the API request, instead of being queued. Raising the default from 10 to 50 means imports of 11–50 rows now return `ImportType: sync` and the HTTP request blocks until the import finishes. If you have an API client with timeout assumptions built around the asynchronous path, either lower this value or extend that client's timeout.
 
-35. **Email Gateway Recipient Resolution Timeout**
+36. **Email Gateway Recipient Resolution Timeout**
 
     ```bash
     SENDEMAIL_RECIPIENT_RESOLUTION_TIMEOUT=30   # Total timeout (seconds) for resolving a list send's recipients (default: 30)
@@ -472,7 +482,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     It is deliberately a separate setting from `SUBSCRIBER_BROWSE_QUERY_TIMEOUT`, even though both bound the same backend. The browse page is an interactive render that an operator may reasonably want to fail fast; this is a send path, where failing fast drops mail. Tuning one should not silently change the other. A value of `0` or below is ignored and the 30-second default is used instead, because the underlying HTTP client treats a zero timeout as *wait forever*.
 
-36. **Container Resource Limits**
+37. **Container Resource Limits**
 
     ```bash
     # Data tier
@@ -559,7 +569,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     On a **fresh install**, `install:start` lowers `SENDENGINE_CPU_LIMIT` and `LINK_PROXY_CPU_LIMIT` to fit the host when it has fewer than four cores — see *Octeth Installation* for the sizing table. Existing installs are never adjusted automatically.
 
-37. **CSV Export Formula Protection**
+38. **CSV Export Formula Protection**
 
     ```bash
     CSV_EXPORT_FORMULA_PROTECTION=true      # Prefix formula-looking CSV cells with an apostrophe (default: true)
@@ -603,7 +613,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **API note.** The `emailgateway.exportevents` API endpoint has applied this prefixing since it shipped and continues to do so **unconditionally**, ignoring this setting, so existing API callers see no change in either direction.
 
-38. **Send-Engine Proactive Allocation Guard Rails**
+39. **Send-Engine Proactive Allocation Guard Rails**
 
     ```bash
     SENDENGINE_PROACTIVE_FAILURE_BUDGET=25          # Consecutive worker failures before slot refills stop (default: 25)
@@ -621,7 +631,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **Operator signal.** A campaign that exhausts its budget is logged once at `ERROR` and reported as `proactive_blocked` in `data/logs/sendengine_worker_allocation.log`. Deliberate pauses and stops are **not** counted as failures.
 
-39. **Journey Action Failure Retries**
+40. **Journey Action Failure Retries**
 
     ```bash
     JOURNEY_ACTION_FAILURE_MAX_ATTEMPTS=6            # Attempts before an entry is dead-ended (default: 6)
@@ -639,7 +649,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **Where failures are recorded.** On `oempro_journeys_action_executions` with `ExecutionStatus='Failed'`, plus `ErrorMessage`, `ErrorCode`, and for a pending retry `SnoozedUntil` and `SnoozeReason`. They also appear in the journey log.
 
-40. **Campaign Sender-Domain Auto Branding**
+41. **Campaign Sender-Domain Auto Branding**
 
     ```bash
     CAMPAIGN_SENDER_DOMAIN_AUTO_BRANDING=true       # Brand campaigns with a matching verified sender domain (default: true)

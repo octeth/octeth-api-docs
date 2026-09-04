@@ -108,6 +108,17 @@ curl https://your-domain.com/api.php \
   -F "adminapikey=admin-api-key"
 ```
 
+### Sub-admin API keys and privilege enforcement
+
+Sub-admin accounts (Settings, Sub Admin Accounts) carry a privilege list, the same one that decides which screens they can open in the admin area. Two things follow for the API:
+
+- **Each sub-admin can hold its own API key.** It is issued, regenerated or revoked on the sub-admin edit screen and is passed as `AdminAPIKey` exactly like the master key. The master `ADMIN_API_KEY` from `.oempro_env` keeps its meaning: it always authenticates as the unrestricted master administrator. A wrong key of either kind returns `99998`.
+- **Every admin command declares the privilege it needs.** When `ADMIN_API_ENFORCE_PRIVILEGES=true` in `.oempro_env`, a call made with a sub-admin key, a sub-admin `SessionID`, or a sub-admin username and password is checked against that list and answers `99999` (`Not enough privileges`) when the account lacks it. The master key and any admin account without restricted access are never affected. When the setting is off or absent, sub-admins are not restricted over the API (the behaviour of every release before v5.9.6). Fresh installs ship with it on; upgraded installs keep it off until an operator turns it on.
+
+The privilege a command needs mirrors the screen that owns it: for example `Settings.Update` needs `Settings`, `DeliveryServer.Update` needs `DeliveryServers`, `UserGroup.Create` needs `UserGroups`, `Users.Delete` needs `User.Delete` and `User.Switch` needs `User.Impersonate`. Commands contributed by plugins need `PluginAccess`.
+
+The response of `Admin.Login` never includes the sub-admin API key.
+
 ## Two-Factor Authentication
 
 When 2FA is enabled, include the verification code:
@@ -192,7 +203,7 @@ Authentication parameters for API calls are **PascalCase**:
 | Parameter | Scope | Description |
 |-----------|-------|-------------|
 | `APIKey` | User | User API key |
-| `AdminAPIKey` | Admin | Admin API key |
+| `AdminAPIKey` | Admin | Admin API key: the master `ADMIN_API_KEY` or a sub-admin's own key |
 | `SessionID` | Both | Session from login |
 
 ## Best Practices

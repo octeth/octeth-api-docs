@@ -948,7 +948,7 @@ Authenticates an administrator and creates a session. This endpoint supports bot
 | Username      | String  | Yes*     | Administrator username (*required unless using AdminAPIKey)                                      |
 | Password      | String  | Yes*     | Administrator password (*required unless using AdminAPIKey)                                      |
 | TFACode       | String  | Conditional | Two-Factor Authentication code (required if 2FA is enabled for the admin account)             |
-| AdminAPIKey   | String  | No       | Admin API Key for alternative authentication (bypasses username/password when valid)             |
+| AdminAPIKey   | String  | No       | Admin API Key for alternative authentication (bypasses username/password when valid). Either the master `ADMIN_API_KEY` from `.oempro_env`, which logs in the master administrator, or a sub-admin's own key issued on the sub-admin edit screen, which logs in that sub-admin (v5.9.6, #2774) |
 | Disable2FA    | Boolean | No       | Skip 2FA verification for this request. Honored **only** when `Disable2FAToken` is also supplied and valid (see note below). |
 | Disable2FAToken | String | Conditional | Server-derived token that authorizes `Disable2FA`. Required for `Disable2FA` to take effect. |
 
@@ -960,6 +960,10 @@ Disable2FAToken = HMAC_SHA256("admin.login.disable2fa", SCRTY_SALT)   // lowerca
 ```
 
 `SCRTY_SALT` is a server-side secret from `.oempro_env`, so only a trusted integration that has access to it can compute the token; an ordinary caller cannot forge it. If `SCRTY_SALT` is empty the token can never validate and `Disable2FA` is ignored. When the token is absent or invalid, normal 2FA handling applies — supply `TFACode`. Authenticating with `AdminAPIKey` is unaffected.
+:::
+
+::: tip Sub-admin keys and the response (v5.9.6, #2774)
+`AdminInfo` never contains the sub-admin `APIKey` column, whichever way the login was performed. When a sub-admin logs in and `ADMIN_API_ENFORCE_PRIVILEGES` is enabled on the install, the returned `SessionID` is limited to the commands that sub-admin's privileges allow; other admin commands answer `99999`. See [Authorization](/v5.9.6/api-reference/authorization#sub-admin-api-keys-and-privilege-enforcement).
 :::
 
 ::: code-group
