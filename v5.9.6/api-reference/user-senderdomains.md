@@ -19,7 +19,7 @@ These are the user-owned, list-bound sender domains visible at `/app/user/sender
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-Returns only user-owned, addressable sender domains. The synthetic group-default sender domain (`DomainID=0`) that the model normally prepends is intentionally excluded — every entry in the response has a real `DomainID` and is valid for `Get` / `Update` / `Delete` / `Verify` / `DNS`.
+Returns only user-owned, addressable sender domains. The synthetic group-default sender domain (`DomainID=0`) that the model normally prepends is intentionally excluded: every entry in the response has a real `DomainID` and is valid for `Get` / `Update` / `Delete` / `Verify` / `DNS`.
 
 ::: tip Admin usage (v5.9.6, #2775)
 This command also accepts admin authentication. Pass `AdminAPIKey` (or an admin `SessionID`), `Access=admin`, and `UserID` naming the account to act on; the response is exactly what that account's own API key would receive. Without `Access=admin` the call is treated as a user call, so existing integrations are unaffected. `UserID` is ignored under user authentication. Admin-only error codes: `5001` UserID missing or invalid, `5002` user not found, `5003` user outside the user groups a restricted sub-admin may access. Requires the `User.Edit` privilege when `ADMIN_API_ENFORCE_PRIVILEGES` is on.
@@ -82,7 +82,7 @@ curl -X GET "https://example.com/api/v1/user.senderdomains?APIKey=your-api-key"
 |------------------|------------------|-------------|
 | `LastVerifiedAt` | datetime / null  | Updated on every `user.senderdomain.verify` call (regardless of pass/fail). `null` when the domain has never been verified. |
 | `Volume7d`       | integer          | Total attributable sends in the last 7 days. |
-| `VolumeDelta`    | string / null    | Trailing-7-day volume change vs the prior 7-day window — for example `"+12%"`, `"-3%"`, `"new"` (no prior-window data), or `null` (no current-window volume). |
+| `VolumeDelta`    | string / null    | Trailing-7-day volume change vs the prior 7-day window, for example `"+12%"`, `"-3%"`, `"new"` (no prior-window data), or `null` (no current-window volume). |
 | `Reputation`     | integer / null   | 0–100 score over the last 30 days. `null` when there's no send volume to score. |
 | `ReputationBucket` | string / null  | One of `excellent` (≥90), `good` (≥70), `fair` (≥50), `poor`. `null` when `Reputation` is `null`. |
 | `DeliveryRate`   | float / null     | Last-30-day delivery percentage. Falls back to `(Sent − Bounced − Complaints) / Sent` when explicit `Delivered` events aren't recorded for the period (non-PMTA installs). |
@@ -100,7 +100,7 @@ curl -X GET "https://example.com/api/v1/user.senderdomains?APIKey=your-api-key"
 ```
 
 ```txt [Error Codes]
-(none — this endpoint has no business-logic error codes; an empty result returns SenderDomains: [])
+(none: this endpoint has no business-logic error codes; an empty result returns SenderDomains: [])
 ```
 
 :::
@@ -197,10 +197,10 @@ curl -X GET "https://example.com/api/v1/user.senderdomain?APIKey=your-api-key&Do
 
 ```txt [Error Codes]
 1: Missing DomainID parameter
-2: Sender domain not found (also returned when the domain exists but is owned by another user — to avoid leaking ownership)
+2: Sender domain not found (also returned when the domain exists but is owned by another user, to avoid leaking ownership)
 ```
 
-Days with no recorded activity are omitted from `Stats` rather than zero-filled — callers that need a full window should pad client-side.
+Days with no recorded activity are omitted from `Stats` rather than zero-filled. Callers that need a full window should pad client-side.
 
 :::
 
@@ -215,7 +215,7 @@ Days with no recorded activity are omitted from `Stats` rather than zero-filled 
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-The new domain starts in `Status='Approval Pending'`. The response includes the auto-generated `VerificationMeta.DNSRecords` array — these are the CNAME / A / MX / TXT records the user must add to their DNS zone before the domain can be verified.
+The new domain starts in `Status='Approval Pending'`. The response includes the auto-generated `VerificationMeta.DNSRecords` array: these are the CNAME / A / MX / TXT records the user must add to their DNS zone before the domain can be verified.
 
 If a `(SenderDomain, UserID)` pair already exists (e.g. it was previously soft-deleted), the model uses `ON DUPLICATE KEY UPDATE` to refresh the row's Status to `Approval Pending` rather than failing.
 
@@ -232,16 +232,16 @@ If a `(SenderDomain, UserID)` pair already exists (e.g. it was previously soft-d
 | UnsubscribeLink   | Boolean | No       | Whether to inject the unsubscribe link automatically. Default: `false`                                       |
 | CustomSubdomain   | String  | No       | Override the default MFROM/return-path subdomain. Letters, digits, and hyphens only; max 32 chars; no leading/trailing hyphens |
 | CustomTrackPrefix | String  | No       | Override the default click-tracking subdomain prefix. Same character rules as `CustomSubdomain`             |
-| UseTrackingSubdomain | Boolean | No | <Badge type="tip" text="New in v5.9.3" /> Whether the domain uses a separate tracking subdomain (e.g. `track-sl.example.com`). Stored inverted as `Options.TrackPrefixDisabled`, so `UseTrackingSubdomain=false` sets `TrackPrefixDisabled=true` and **removes the tracking record from the generated DNS record set**. When the parameter is omitted the key is not written to `Options` at all and a separate tracking subdomain is used — the previous, unchanged default. Mirrors the identically-named parameter on `user.senderdomain.update`. |
+| UseTrackingSubdomain | Boolean | No | <Badge type="tip" text="New in v5.9.3" /> Whether the domain uses a separate tracking subdomain (e.g. `track-sl.example.com`). Stored inverted as `Options.TrackPrefixDisabled`, so `UseTrackingSubdomain=false` sets `TrackPrefixDisabled=true` and **removes the tracking record from the generated DNS record set**. When the parameter is omitted the key is not written to `Options` at all and a separate tracking subdomain is used (the previous, unchanged default). Mirrors the identically-named parameter on `user.senderdomain.update`. |
 
 Parameter names are matched case-insensitively, as everywhere on `/api.php`.
 
-::: tip Changed in v5.9.3 — DNS records now honour your custom subdomains
+::: tip Changed in v5.9.3: DNS records now honour your custom subdomains
 The records returned in `SenderDomain.VerificationMeta.DNSRecords` are now generated with **this domain's** effective subdomain and tracking prefix.
 
-Previously the create response was built from the raw global DNS template, so a domain created with `CustomSubdomain` / `CustomTrackPrefix` received records whose host names carried the **global default** subdomain — the custom values only took effect after a subsequent `user.senderdomain.update`. `user.senderdomain.create` and `user.senderdomain.update` now produce the same records for the same domain and options.
+Previously the create response was built from the raw global DNS template, so a domain created with `CustomSubdomain` / `CustomTrackPrefix` received records whose host names carried the **global default** subdomain. The custom values only took effect after a subsequent `user.senderdomain.update`. `user.senderdomain.create` and `user.senderdomain.update` now produce the same records for the same domain and options.
 
-Note that the record set embeds two values that are regenerated on every call — a random host label and a verification hash (the TXT rdata) — so the records returned by a create and by a later update are equivalent but not literally identical strings. Always publish the record set most recently returned by the API.
+Note that the record set embeds two values that are regenerated on every call, a random host label and a verification hash (the TXT rdata), so the records returned by a create and by a later update are equivalent but not literally identical strings. Always publish the record set most recently returned by the API.
 :::
 
 **Example record set.** For a request carrying `SenderDomain=example.com`, `CustomSubdomain=foo`, `CustomTrackPrefix=bar` and `UseTrackingSubdomain=true`, the generated host names use `foo` and `bar-foo`:
@@ -328,10 +328,10 @@ curl -X POST https://example.com/api/v1/user.senderdomain \
 - Required permissions: `User.Update`
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
-- **PATCH requests must send all parameters in a JSON body** (`Content-Type: application/json`). The dispatcher does not parse query-string or form-encoded payloads for PATCH, so `?DomainID=...` and `?APIKey=...` will be ignored — include them in the JSON body alongside the other update fields.
+- **PATCH requests must send all parameters in a JSON body** (`Content-Type: application/json`). The dispatcher does not parse query-string or form-encoded payloads for PATCH, so `?DomainID=...` and `?APIKey=...` will be ignored. Include them in the JSON body alongside the other update fields.
 :::
 
-This is a **partial update**. Only fields explicitly present in the request body are modified — omitted fields keep their currently stored value (the API does not reset them to defaults).
+This is a **partial update**. Only fields explicitly present in the request body are modified. Omitted fields keep their currently stored value (the API does not reset them to defaults).
 
 If the request changes any DNS-affecting field (`CustomSubdomain`, `CustomTrackPrefix`, or `UseTrackingSubdomain` / `TrackPrefixDisabled`), the server automatically:
 
@@ -417,11 +417,11 @@ curl -X PATCH https://example.com/api/v1/user.senderdomain \
 6: Invalid CustomSubdomain or CustomTrackPrefix (letters, digits, and hyphens only; max 32 chars; no leading/trailing hyphens)
 7: Sender domain could not be retrieved after update (returned with HTTP 500)
 9: Invalid Status value. Allowed: Enabled, Disabled (issue #1890)
-10: Cannot enable an unverified domain — run user.senderdomain.verify first (issue #1890)
+10: Cannot enable an unverified domain: run user.senderdomain.verify first (issue #1890)
 ```
 
 ::: tip Pausing vs deleting (issue #1890)
-A domain in `Status='Disabled'` keeps its DNS records and stats history, but is filtered out by the send-time resolver (`SenderDomains::ResolveForEmail`) — campaigns and journeys that reference a paused domain fall back to the group's default sender domain until the user flips it back to `Enabled`. The flip is single round-trip: no DNS re-verification, no Redis cache invalidation.
+A domain in `Status='Disabled'` keeps its DNS records and stats history, but is filtered out by the send-time resolver (`SenderDomains::ResolveForEmail`). Campaigns and journeys that reference a paused domain fall back to the group's default sender domain until the user flips it back to `Enabled`. The flip is single round-trip: no DNS re-verification, no Redis cache invalidation.
 :::
 
 :::
@@ -437,7 +437,7 @@ A domain in `Status='Disabled'` keeps its DNS records and stats history, but is 
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-**Soft delete** — the row is not removed from the database. The model sets `Status='Deleted'` and fires the `Delete.SenderDomain` plugin hook so listeners can run cleanup logic (e.g., remove the domain from active campaigns). Subsequent `Get` / `List` calls will not return the domain.
+**Soft delete**: the row is not removed from the database. The model sets `Status='Deleted'` and fires the `Delete.SenderDomain` plugin hook so listeners can run cleanup logic (e.g., remove the domain from active campaigns). Subsequent `Get` / `List` calls will not return the domain.
 
 **Request Body Parameters:**
 
@@ -489,14 +489,14 @@ curl -X DELETE "https://example.com/api/v1/user.senderdomain?APIKey=your-api-key
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-Performs a **live DNS lookup** for each expected record (CNAME / A / MX / TXT). Results are cached for 60 seconds in Redis to avoid hammering DNS resolvers — calling this endpoint twice in quick succession will return the same outcome.
+Performs a **live DNS lookup** for each expected record (CNAME / A / MX / TXT). Results are cached for 60 seconds in Redis to avoid hammering DNS resolvers, so calling this endpoint twice in quick succession will return the same outcome.
 
 The endpoint **persists Status** based on the result (mirrors what the UI's edit page does on every load):
 
 - All records resolve correctly → `Status = 'Enabled'`
 - Any record fails → `Status = 'Approval Pending'`
 
-The latest per-record verified flags are merged into the existing `VerificationMeta` (other keys are preserved) so subsequent `Get` / `DNS` calls reflect the same state shown in the UI. The `Status` and `VerificationMeta` columns are only rewritten when the verified state actually changed, but `LastVerifiedAt` is **always** updated on every call (issue #1889) — this is what powers the "Checked X ago" subtitle in the sender-domain UI.
+The latest per-record verified flags are merged into the existing `VerificationMeta` (other keys are preserved) so subsequent `Get` / `DNS` calls reflect the same state shown in the UI. The `Status` and `VerificationMeta` columns are only rewritten when the verified state actually changed, but `LastVerifiedAt` is **always** updated on every call (issue #1889). This is what powers the "Checked X ago" subtitle in the sender-domain UI.
 
 **Request Body Parameters:**
 
@@ -594,11 +594,11 @@ Read-only. Returns the stored `VerificationMeta.DNSRecords` (the records the use
 
 `IsVerified` is **tri-state**:
 
-- `null` — this record has never been probed (e.g. domain was just created or its subdomain settings just changed)
-- `true` — the last probe by `user.senderdomain.verify` matched the expected value
-- `false` — the last probe ran but did not match (DNS not configured yet, or misconfigured)
+- `null`: this record has never been probed (e.g. domain was just created or its subdomain settings just changed)
+- `true`: the last probe by `user.senderdomain.verify` matched the expected value
+- `false`: the last probe ran but did not match (DNS not configured yet, or misconfigured)
 
-The records are kept fresh automatically — when `Update` changes a DNS-affecting setting, the server regenerates them. If the stored records are missing/empty (legacy or just-created edge case), this endpoint falls back to regenerating the template purely for display, without persisting.
+The records are kept fresh automatically: when `Update` changes a DNS-affecting setting, the server regenerates them. If the stored records are missing/empty (legacy or just-created edge case), this endpoint falls back to regenerating the template purely for display, without persisting.
 
 **Request Body Parameters:**
 
@@ -660,7 +660,7 @@ curl -X GET "https://example.com/api/v1/user.senderdomain.dns?APIKey=your-api-ke
 ::: tip API Usage Notes
 - Authentication required: User API Key
 - Required permissions: `User.Update`
-- Rate limit: **10 requests per 5 minutes** (stricter than the rest of the family — this dispatches real outbound mail)
+- Rate limit: **10 requests per 5 minutes** (stricter than the rest of the family, since this dispatches real outbound mail)
 - Legacy endpoint access via `/api.php` is also supported
 - Not available in demo mode (returns HTTP 403 with code 99)
 :::
@@ -740,7 +740,7 @@ curl -X POST https://example.com/api/v1/user.senderdomain.sendtest \
 
 Performs a server-side **NS lookup** for the apex of a sender domain and maps the nameservers to a known DNS provider label (`Cloudflare`, `Route 53`, `GoDaddy`, `Namecheap`, `DigitalOcean`, `Gandi`, `OVH`, `Bluehost`, `HostGator`, `eNom`, `Dynadot`, `Azure DNS`, `Google Domains`, `Google Cloud DNS`, `Hover`, `DreamHost`, `Linode`). The raw nameserver list is always returned so the UI can fall back to displaying them verbatim when the mapping is `unknown`.
 
-The endpoint never throws on lookup failure — a resolver error or unmapped nameserver surfaces as `DnsHost='unknown'` with the (possibly empty) raw nameserver list. The "DNS via X" subtitle is a nice-to-have for the user-facing UI, not a hard requirement, so callers can trust they'll always get an HTTP 200 once ownership is verified.
+The endpoint never throws on lookup failure. A resolver error or unmapped nameserver surfaces as `DnsHost='unknown'` with the (possibly empty) raw nameserver list. The "DNS via X" subtitle is a nice-to-have for the user-facing UI, not a hard requirement, so callers can trust they'll always get an HTTP 200 once ownership is verified.
 
 **Request Body Parameters:**
 
@@ -791,6 +791,257 @@ curl -X GET "https://example.com/api/v1/user.senderdomain.dnshost?APIKey=your-ap
 ```txt [Error Codes]
 1: Missing DomainID parameter
 2: Sender domain not found (also returned when the domain exists but is owned by another user)
+```
+
+:::
+
+## Get a User's Sender Domains (Admin)
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the sender domains of one user account exactly as the admin "Sender Domains" tab lists them: the
+Email Gateway domains tagged `Type: "EG"`, the campaign sender domains tagged `Type: "CA"` (only when the
+user's group has `SenderDomainManagement` enabled), and `Domains`, the two lists merged. Each row carries
+`Status` and the decoded `VerificationMeta`, `PolicyMeta` and `Options`. Since the sender-domain
+consolidation both types are stored in the same table, so a domain that qualifies for both lists appears
+twice in `Domains`, once per type, as it does on the screen.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.senderdomains.get` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Target user account |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.user.senderdomains.get",
+    "AdminAPIKey": "your-admin-api-key",
+    "UserID": 42
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserID": 42,
+  "SenderDomainManagementEnabled": true,
+  "EmailGatewayDomains": [
+    {
+      "DomainID": "7",
+      "SenderDomain": "mail.example.com",
+      "UserID": "42",
+      "CreatedAt": "2026-08-01 10:00:00",
+      "Status": "Approval Pending",
+      "LastVerifiedAt": null,
+      "VerificationMeta": {"DNSRecords": {}},
+      "PolicyMeta": {},
+      "Options": {},
+      "Type": "EG"
+    }
+  ],
+  "SenderDomains": [
+    {
+      "DomainID": "7",
+      "SenderDomain": "mail.example.com",
+      "Status": "Approval Pending",
+      "Type": "CA"
+    }
+  ],
+  "Domains": [],
+  "TotalDomains": 2
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 5002,
+  "ErrorText": "User not found"
+}
+```
+
+```txt [Error Codes]
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+```
+
+:::
+
+## Moderate a Sender Domain (Admin)
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Sets the moderation status of one of a user's sender domains: `Enabled` (activate), `Suspended`,
+`Blocked` or `Approval Pending` (unblock). The rule is the one the admin screen applies: the domain's
+current status must be one of `Enabled`, `Suspended`, `Blocked`, `Approval Pending`. A `Disabled`
+(user-controlled) or `Deleted` domain is never moderated. `DomainType` is `EG` (Email Gateway) or `CA`
+(campaign); both act on the same stored row. `Status` and `DomainType` are matched case-insensitively.
+This is the only way to reach `Suspended` and `Blocked` through the API; the user-auth
+`user.senderdomain.update` accepts only `Enabled` and `Disabled`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.senderdomain.status.update` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Owner of the domain |
+| DomainID | Integer | Yes | Domain to moderate (the DefaultSenderDomain, id 0, cannot be moderated) |
+| DomainType | String | Yes | `EG` or `CA` |
+| Status | String | Yes | `Enabled`, `Suspended`, `Blocked` or `Approval Pending` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.senderdomain.status.update",
+    "AdminAPIKey": "your-admin-api-key",
+    "UserID": 42,
+    "DomainID": 7,
+    "DomainType": "EG",
+    "Status": "Enabled"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserID": 42,
+  "DomainID": 7,
+  "DomainType": "EG",
+  "Status": "Enabled",
+  "Domain": {
+    "DomainID": "7",
+    "SenderDomain": "mail.example.com",
+    "Status": "Enabled",
+    "VerificationMeta": {"DNSRecords": {}},
+    "Type": "EG"
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 7,
+  "ErrorText": "A domain in status \"Disabled\" cannot be moderated; only Blocked, Enabled, Approval Pending, Suspended can"
+}
+```
+
+```txt [Error Codes]
+1: DomainID is missing or not a positive integer
+2: DomainType is missing
+3: Status is missing
+4: DomainType must be EG or CA
+5: Status must be one of Enabled, Suspended, Blocked, Approval Pending
+6: Sender domain not found for this user
+7: The domain's current status cannot be moderated
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+```
+
+:::
+
+## Get the Sender-Domain Moderation Queue (Admin)
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Install-wide work queue for domain moderation: every sender domain in status `Approval Pending` or
+`Blocked` (optionally only one of the two), joined to its owner (`UserID`, `Username`, `EmailAddress`,
+`RelUserGroupID`), oldest first, paginated. A restricted sub-admin only sees domains owned by users in the
+groups they may access. Each stored row appears once; pass either `DomainType` to
+`admin.senderdomain.status.update` to act on it. Before this command a client had to call
+`admin.user.senderdomains.get` for every account.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.senderdomains.pending.get` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| Status | String | No | `Approval Pending` or `Blocked`; default both |
+| RecordsFrom | Integer | No | Offset (default 0) |
+| RecordsPerRequest | Integer | No | Page size (default 25, maximum 500) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.senderdomains.pending.get",
+    "AdminAPIKey": "your-admin-api-key",
+    "Status": "Approval Pending",
+    "RecordsPerRequest": 50
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Statuses": ["Approval Pending"],
+  "RecordsFrom": 0,
+  "RecordsPerRequest": 50,
+  "Domains": [
+    {
+      "DomainID": "7",
+      "SenderDomain": "mail.example.com",
+      "UserID": "42",
+      "CreatedAt": "2026-08-01 10:00:00",
+      "Status": "Approval Pending",
+      "VerificationMeta": {"DNSRecords": {}},
+      "PolicyMeta": {},
+      "Options": {},
+      "Username": "acme",
+      "EmailAddress": "owner@example.com",
+      "RelUserGroupID": "3"
+    }
+  ],
+  "TotalDomains": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Status must be one of: Approval Pending, Blocked"
+}
+```
+
+```txt [Error Codes]
+1: Status is not a queue status
 ```
 
 :::

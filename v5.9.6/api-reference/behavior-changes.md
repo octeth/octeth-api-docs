@@ -26,6 +26,10 @@ Looking for the previous release? See [API Behavior Changes in v5.9.5](/v5.9.5/a
 
   Merge tags are unaffected. An address that still contains a `%...%` tag at that point is allowed through, because merge tags in the From address are a supported configuration and are expanded on the engine at the last moment (issue #2749).
 
+- **`settings.update` now rejects values that would break the install.** `DEFAULT_LANGUAGE` and `USER_SIGNUP_LANGUAGE` must name an installed language pack, `USER_SIGNUP_GROUPID` and `USER_SIGNUP_GROUPIDS` must name existing user groups, and `DEFAULT_THEMEID` must name an existing theme (`ErrorCode` 8, 9 and 10). These values previously succeeded and left the install unusable: an unknown language code makes every page include a missing file. Empty values are unchanged. `EnabledPlugins` is validated against the plugins present on disk and rejects duplicates (`ErrorCode` 20 and 21), with whitespace around codes trimmed before the column is written. The literal `***REDACTED***`, which `settings.get` returns in place of secrets, is refused as a value for any field (`ErrorCode` 13) so a read-modify-write client cannot overwrite a secret with the marker (issue #2782).
+
+- **`users.get` with `LimitUtilizationStatus` can answer an error where the same call without it cannot.** The parameter is new and additive. An unknown bucket answers `ErrorCode 1`; a bucket the `user_limit_utilization` cron has not written yet answers `ErrorCode 2` rather than an empty list. Calls without the parameter are unchanged (issue #2779).
+
 ## Tier 2: Same call, different results
 
 No request change is needed, but the response values, the result set or the delivered message differ.
@@ -101,6 +105,24 @@ No request change is needed, but the response values, the result set or the deli
 
   A read-modify-write round trip on a sender-domain-managed email is also idempotent now. Sending back the stored `fromemail`, which under sender domain management holds only the local part, previously derived a garbage domain and returned `ErrorCode 17`. Relatedly, the domain is no longer stripped off `fromemail` unless a sender domain actually resolved and is being stored alongside it (issue #2750).
 
+### Admin and settings commands
+
+- **`admin.campaigns.search` works again without `UserID`.** After the admin-reach change (#2775) this command answered `ErrorCode 5001` when called without `UserID`, and with `UserID` it was locked to that one account, because it delegates to the `campaigns.get` handler and inherited its new prologue. The cross-tenant browse it exists for was unavailable on develop between the two changes; no tagged release carried it. Restored in #2790: no `UserID` is required, `FilterByUserID` narrows to one account again, and restricted sub-admins are scoped to their user groups. Callers that had started passing `UserID` as a workaround should switch to `FilterByUserID`; `UserID` is ignored.
+
+- **`users.get` reports the true total for the blocked-domain filter.** With `RelUserGroupID: "ActivationPendingSenderDomains"`, `TotalUsers` used to be the number of rows on the requested page, so pagination past page 1 was wrong. It is now the number of matching users (issue #2779).
+
+- **`global.customfields.get` returns a real `TotalFieldCount`.** It was computed from the list id and user id of the calling session, neither of which exists under admin authentication, so the value was meaningless. It is now the number of global fields matching `SearchKeyword`; `TotalCustomFields` carries the same number and `RecordsFrom` and `RecordsPerRequest` echo the paging in effect (issue #2788).
+
+- **`deliveryservers.delete` resets the user groups that pointed at the deleted server.** Every user group whose `TargetDeliveryServerID_Marketing`, `_Transactional` or `_AutoResponder` option referenced the server is reset to `0` (system default) after the Email Gateway per-user cache for those groups is invalidated. Before, the options kept pointing at a server that no longer existed. The response gains `UserGroupsReset`, the list of user group ids that were updated (issue #2788).
+
+- **`deliveryserver.create` persists `SenderRotation` and `SenderRotation_Settings`.** Both were accepted on create and silently dropped; only `deliveryserver.update` stored them. Create now stores them the same way (issue #2788).
+
+- **The admin Campaign Report screen and the new `admin.campaigns.*` commands share one implementation, and the screen changes as a result.** The report now applies the same sub-admin user-group scope as the API (it applied none before), the chart uses the same advanced-search translation as the table instead of a plain campaign-name `LIKE`, and the export supports all nine status buckets (it had six) (issue #2790).
+
+- **The admin "Account Activity" chart draws real values.** The screen looked its series up by a `date('M j')` label against `Y-m-d` keys and always drew zeros. It now renders the same series `admin.user.activityseries.get` returns (issue #2779).
+
+- **The delivery-server "Test" button can now pass its three CNAME checks.** The checks for the sender, link-tracking and open-tracking hosts read a `txt` key from a `DNS_CNAME` answer, whose key is `target`, so they could never pass on any install. `deliveryserver.verify` and the screen now read `target` (issue #2788).
+
 ## Tier 3: Security closures
 
 These only affect callers doing something that was never intended to work. Listed for completeness and for anyone auditing.
@@ -124,6 +146,10 @@ These only affect callers doing something that was never intended to work. Liste
 - **`AdminAPIKey` also accepts per-sub-admin keys.** Issued on the sub-admin edit screen. A value that is neither the master key nor a sub-admin key still returns `99998`, so no existing caller sees a different result. `Admin.Login` never returns the key in `AdminInfo`.
 
 - **Admin-key calls no longer lose `User.Update`'s admin-only fields when the master admin has 2FA enabled.** `AccountStatus`, `AvailableCredits`, `RelUserGroupID`, `ReputationLevel`, `APIKey`, `UserSince` and `SignUpIPAddress` were silently dropped under `Success: true` on installs where the master administrator had two-factor authentication on, because the key-based login demanded a TOTP it could never receive. The API key is the credential, so the internal login now bypasses the TOTP the same way user API keys already did. Calls that were affected now persist all fields (issue #2774).
+
+- **`TemplateThumbnailPath` on `email.template.create` and `email.template.update` is confined to the temp directory.** The value was concatenated onto the temp path with no check and then unlinked, so a relative path could read an arbitrary file into the thumbnail column (readable back through `email.template.get`) and delete it, under user authentication. Both handlers now accept only a bare file name as returned by `email.template.thumbnail.upload`; any value containing a path separator or `..` is ignored. `email.template.update` also now deletes the consumed temp file, as create always did (issue #2787).
+
+- **`settings.get` never returns secrets, and `settings.update` refuses the marker.** SMTP passwords, S2S keys, provider API keys and similar values come back as `***REDACTED***`. Writing that literal back is rejected with `ErrorCode 13`, so a client that reads settings, edits one field and writes the whole set back cannot overwrite a secret with the marker (issue #2782).
 
 ## Upgrade checklist
 

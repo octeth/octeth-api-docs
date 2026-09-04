@@ -4,7 +4,7 @@ layout: doc
 
 # Delivery Server API Documentation
 
-Delivery server management endpoints for creating, updating, deleting, and retrieving SMTP delivery servers. These endpoints are admin-only and manage the SMTP servers used to send email campaigns.
+Delivery server management endpoints for creating, updating, deleting, retrieving and verifying SMTP delivery servers. These endpoints are admin-only and manage the SMTP servers used to send email campaigns.
 
 ## Create a Delivery Server
 
@@ -36,6 +36,8 @@ Delivery server management endpoints for creating, updating, deleting, and retri
 | DomainSettings_EnforcedFrom | String | No | Enforced From email address (must be valid email format) |
 | SenderInfoAsMFrom | String | No | Use sender info as MFrom: "Enabled" or "Disabled" (default: "Disabled") |
 | SenderInfoAsFrom | String | No | Use sender info as From: "Enabled" or "Disabled" (default: "Disabled") |
+| SenderRotation | String | No | `Enabled` to store `Domains.sender_rotation = true` (default false). Before v5.9.6 this parameter was accepted by `deliveryserver.update` only and silently dropped on create |
+| SenderRotation_Settings | String | No | Stored as `Domains.sender_rotation_settings`. Before v5.9.6 this parameter was accepted by `deliveryserver.update` only and silently dropped on create |
 
 ::: code-group
 
@@ -106,6 +108,7 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Internal. This command only stores the booleans the caller sends; it is what the admin screen used to call after running the checks inline. Use `deliveryserver.verify` to run a real verification. It stays registered for backward compatibility (see issue #2769).
 :::
 
 **Request Body Parameters:**
@@ -203,7 +206,7 @@ curl -X POST https://example.com/api.php \
 | DomainSettings_OpenTracking | String | Yes | Domain for open tracking (e.g., "open.example.com") |
 | DomainSettings_MFrom | String | Yes | Mail From domain (e.g., "bounce.example.com") |
 | DomainSettings_EnforcedFrom | String | No | Enforced From email address (must be valid email format) |
-| SenderRotationSettings | String | No | Sender rotation configuration |
+| SenderRotation_Settings | String | No | Sender rotation configuration (JSON, stored as `Domains.sender_rotation_settings`) |
 | SenderInfoAsMFrom | String | No | Use sender info as MFrom: "Enabled" or "Disabled" |
 | SenderInfoAsFrom | String | No | Use sender info as From: "Enabled" or "Disabled" |
 | SenderRotation | String | No | Enable sender rotation: "Enabled" or "Disabled" |
@@ -279,6 +282,7 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Deleting a server resets every user group whose `TargetDeliveryServerID_Marketing`, `TargetDeliveryServerID_Transactional` or `TargetDeliveryServerID_AutoResponder` option pointed at it back to `0` (system default), after invalidating the Email Gateway per-user cache for those groups. `UserGroupsReset` in the response lists the user group ids that were updated.
 :::
 
 **Request Body Parameters:**
@@ -305,7 +309,8 @@ curl -X POST https://example.com/api.php \
 ```json [Success Response]
 {
   "Success": true,
-  "ErrorCode": 0
+  "ErrorCode": 0,
+  "UserGroupsReset": [2, 5]
 }
 ```
 
@@ -330,6 +335,7 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- The filter, ordering and paging parameters are all optional. The defaults reproduce the previous response: every server, `Name ASC`, unpaged.
 :::
 
 **Request Body Parameters:**
@@ -339,6 +345,11 @@ curl -X POST https://example.com/api.php \
 | Command | String | Yes | API command: `deliveryservers.get` |
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
+| DeliveryServerID | Integer | No | Return only this server (still keyed by id) |
+| OrderField | String | No | `Name` (default), `DeliveryServerID`, `VerificationLastCheckedAt` |
+| OrderType | String | No | `ASC` (default) or `DESC` |
+| RecordsFrom | Integer | No | Offset (default 0) |
+| RecordsPerRequest | Integer | No | Page size (default 0 = all, max 1000) |
 
 ::: code-group
 
@@ -355,6 +366,11 @@ curl -X POST https://example.com/api.php \
 {
   "Success": true,
   "ErrorCode": 0,
+  "TotalDeliveryServerCount": 1,
+  "RecordsFrom": 0,
+  "RecordsPerRequest": 0,
+  "OrderField": "Name",
+  "OrderType": "ASC",
   "DeliveryServers": {
     "123": {
       "DeliveryServerID": "123",
@@ -422,6 +438,11 @@ curl -X POST https://example.com/api.php \
 
 | Field | Type | Description |
 |-------|------|-------------|
+| TotalDeliveryServerCount | Integer | Real total number of servers matching the filter, independent of paging |
+| RecordsFrom | Integer | Offset in effect |
+| RecordsPerRequest | Integer | Page size in effect (0 = all) |
+| OrderField | String | Ordering field in effect |
+| OrderType | String | Ordering direction in effect |
 | DeliveryServers | Object | Map of delivery servers keyed by DeliveryServerID |
 | DeliveryServerID | String | Unique identifier for the delivery server |
 | Name | String | Display name of the delivery server |
@@ -431,3 +452,181 @@ curl -X POST https://example.com/api.php \
 | VerificationLastCheckedAt | String | Timestamp of last verification check |
 | UserGroupAssignments | Array | List of user groups assigned to this delivery server. Each entry contains `UserGroupID`, `GroupName`, and `Channels` (array of channel names: `Marketing`, `Transactional`, `AutoResponder`) |
 | IsAllocated | Boolean | Whether the delivery server is assigned to at least one user group channel |
+
+## Get a Delivery Server
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required admin privilege: `DeliveryServers`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- `ConnectionParams.smtp_password` is never returned; `HasSMTPPassword` says whether one is stored. `deliveryserver.update` replaces `ConnectionParams` as a whole, so a client editing a server must resend the password it holds.
+- `UserGroupAssignments` / `IsAllocated` are the same reverse map `deliveryservers.get` computes from every user group's `TargetDeliveryServerID_*` options.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `deliveryserver.get` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| DeliveryServerID | Integer | Yes | ID of the delivery server |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "deliveryserver.get",
+    "AdminAPIKey": "your-admin-api-key",
+    "DeliveryServerID": 123
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "DeliveryServer": {
+    "DeliveryServerID": 123,
+    "Name": "Primary SMTP Server",
+    "ConnectionParams": {
+      "smtp_host": "smtp.example.com",
+      "smtp_port": "587",
+      "smtp_secure": "tls",
+      "smtp_timeout": "30",
+      "smtp_auth": true,
+      "smtp_username": "smtp_user"
+    },
+    "HasSMTPPassword": true,
+    "Domains": {
+      "link_tracking": "track.example.com",
+      "open_tracking": "open.example.com",
+      "mfrom_domain": "bounce.example.com",
+      "enforced_from": "",
+      "sender_rotation_settings": "",
+      "senderinfo_as_mfrom": false,
+      "senderinfo_as_from": false,
+      "sender_rotation": false
+    },
+    "VerificationResults": {
+      "email_delivery": true,
+      "spf": true,
+      "dkim": true,
+      "dmarc": false,
+      "sender_domain": true,
+      "link_domain": true,
+      "open_domain": true
+    },
+    "VerificationLastCheckedAt": "2026-09-04 10:12:33",
+    "UserGroupAssignments": [
+      {"UserGroupID": "2", "GroupName": "Agencies", "Channels": ["Marketing", "Transactional"]}
+    ],
+    "IsAllocated": true
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Delivery server not found"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing DeliveryServerID
+2: Delivery server not found
+```
+
+:::
+
+## Verify a Delivery Server
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required admin privilege: `DeliveryServers`
+- Rate limited: 10 calls per 300 seconds. Every call sends a real test message through the server's SMTP credentials and performs six DNS lookups.
+- Not available when `DEMO_MODE_ENABLED` is on (error 4).
+- Runs the same verification as the admin screen's "Test" button (`DeliveryServers::Verify`): a test send, then SPF, DKIM (`DNS_DKIM_KEY._domainkey.<mfrom>`) and DMARC TXT checks on the MFROM domain, and CNAME checks on the MFROM, link-tracking and open-tracking hosts against `DNS_SENDER_DOMAIN`, `DNS_LINK_TRACKER` and `DNS_OPEN_TRACKER`. The seven booleans are persisted to `VerificationResults` together with `VerificationLastCheckedAt`, exactly as the screen does.
+- The test message goes to the authenticated admin's email address unless `To` is given.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `deliveryserver.verify` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| DeliveryServerID | Integer | Yes | ID of the delivery server |
+| To | String | No | Recipient of the test message (defaults to the admin's email address) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "deliveryserver.verify",
+    "AdminAPIKey": "your-admin-api-key",
+    "DeliveryServerID": 123,
+    "To": "postmaster@example.com"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "DeliveryServerID": 123,
+  "AllPassed": false,
+  "VerificationResults": {
+    "email_delivery": true,
+    "spf": true,
+    "dkim": true,
+    "dmarc": false,
+    "sender_domain": true,
+    "link_domain": true,
+    "open_domain": true
+  },
+  "Messages": {
+    "email_delivery": "",
+    "spf": "",
+    "dkim": "",
+    "dmarc": "DMARC record not found",
+    "sender_domain": "",
+    "link_domain": "",
+    "open_domain": ""
+  },
+  "VerificationLastCheckedAt": "2026-09-04 10:12:33",
+  "TestEmailSentTo": "postmaster@example.com"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Delivery server not found"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing DeliveryServerID
+2: Delivery server not found
+3: Invalid To email address
+4: Not available in demo mode
+```
+
+:::

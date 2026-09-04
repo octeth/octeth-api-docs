@@ -638,8 +638,7 @@ Searches and filters campaigns across all accounts with admin privileges. This e
 | Parameter               | Type    | Required | Description                                                                                      |
 |-------------------------|---------|----------|--------------------------------------------------------------------------------------------------|
 | Command                 | String  | Yes      | API command: `admin.campaigns.search`                                                            |
-| SessionID               | String  | No       | Session ID obtained from login                                                                   |
-| APIKey                  | String  | No       | API key for authentication                                                                       |
+| AdminAPIKey             | String  | Yes      | Admin API key                                                                                    |
 | CampaignStatus          | String  | No       | Filter by status: `Draft`, `Ready`, `Scheduled`, `Sending`, `Sent`, `Paused`. Note: 'Scheduled' is mapped to 'Ready' with ScheduleType='Future' |
 | SearchKeyword           | String  | No       | Search by campaign name or email subject (LIKE query)                                            |
 | FilterByUserID          | Integer | No       | Filter by account/user ID (empty for all accounts)                                              |
@@ -658,6 +657,10 @@ Searches and filters campaigns across all accounts with admin privileges. This e
 | IncludeTotalRecipients  | Boolean | No       | Include aggregate sums over the filtered window: TotalRecipients, TotalSent, TotalDelivered, TotalFailed, TotalOpens, UniqueOpens, TotalClicks, UniqueClicks, TotalHardBounces, TotalSoftBounces, TotalUnsubscriptions (default: false) |
 | IncludeBatchStats       | Boolean | No       | Include batch statistics for each campaign (default: false)                                     |
 | IncludeVelocity         | Boolean | No       | Include current sending velocity metrics for each campaign (default: false)                     |
+| HasFailed               | Boolean | No       | Only campaigns with `TotalFailed` > 0 (the report's "Failed Recipients" tab combines this with `CampaignStatus=Sent`). Default false |
+| SearchQuery             | String  | No       | Advanced search DSL, translated on the server and AND-ed with the other filters (see the shared filters under "Composite Campaign Statuses Used by the Admin Campaign Report" below). The generated SQL is never returned. Failure to translate is `ErrorCode 5` |
+
+> This command browses every account (`FilterByUserID` empty = all) and does not take the `UserID` parameter of the admin-reach commands. Restricted sub-admins only see the accounts of their allowed user groups. Owner decoration (`UserFirstName`, `UserLastName`, `UserEmailAddress`, `UserCompany`) is attached to every row.
 
 ::: code-group
 
@@ -666,7 +669,7 @@ curl -X POST https://example.com/api/v1/admin.campaigns.search \
   -H "Content-Type: application/json" \
   -d '{
     "Command": "admin.campaigns.search",
-    "APIKey": "your-admin-api-key",
+    "AdminAPIKey": "your-admin-api-key",
     "CampaignStatus": "Sending",
     "SearchKeyword": "newsletter",
     "RecordsPerRequest": 25,
@@ -745,9 +748,374 @@ curl -X POST https://example.com/api/v1/admin.campaigns.search \
 
 ```txt [Error Codes]
 0: Success
+5: SearchQuery could not be translated
 ```
 
 :::
+
+## Composite Campaign Statuses Used by the Admin Campaign Report
+
+The admin Campaign Report does not use raw `CampaignStatus` values. Every command in this group (`admin.campaigns.stuck`, `admin.campaigns.statuscounts`, `admin.campaigns.timeseries`, `admin.campaigns.export`) takes `Status` from the table below, `admin.campaigns.statuscounts` returns one counter per row, and each row's date range applies to its own date column. This is the mapping the admin Campaign Report screen uses: `campaigns.get` documents `SendProcessFinishedOn` for Sent, which the report does NOT use.
+
+All four commands require the Admin API key and the `Reports` sub-admin privilege (the privilege the admin Campaign Report screen checks). Restricted sub-admins (`Options.AccessLimited` with `AccessAllowedUserGroupIDs`) only see campaigns owned by accounts in their allowed user groups.
+
+| Status (bucket) | Definition | Date column for DateFrom / DateTo |
+|---|---|---|
+| `Sent` | `CampaignStatus` is `Sent` OR `Failed` | `SendProcessStartedOn` |
+| `Outbox` | `Sending` OR (`Ready` AND `ScheduleType` = `Immediate`) | `CreateDateTime` |
+| `Draft` | `Draft` OR (`Ready` AND `ScheduleType` = `Not Scheduled`) | `CreateDateTime` |
+| `Scheduled` | `Ready` AND `ScheduleType` IN (`Future`, `Recursive`) | `SendDate` |
+| `Paused` | `Paused` | `SendProcessStartedOn` |
+| `PendingApproval` | `Pending Approval` | `CreateDateTime` |
+| `Failed` | `Failed` | `SendProcessStartedOn` |
+| `HasFailed` | (`Sent` OR `Failed`) AND `TotalFailed` > 0 | `SendProcessStartedOn` |
+| `Stuck` | `Sending` AND the campaign health check reports `WorkerTracking.IsStuck` | none (always every stuck campaign) |
+
+A/B variation rows (`RelOriginalCampaignID` set) are excluded from every bucket. `admin.campaigns.overview` uses a different, unfiltered taxonomy and cannot drive the report sidebar; use `admin.campaigns.statuscounts` for that.
+
+### Shared filter parameters
+
+Every command in this group accepts these, with identical semantics to `admin.campaigns.search`:
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| FilterByUserID | Integer | No | Only this account's campaigns. Empty = every account |
+| DateFrom | String | No | `Y-m-d`. Applied on the bucket's date column (table above) |
+| DateTo | String | No | `Y-m-d`. Must not be before DateFrom |
+| SearchKeyword | String | No | Campaign name OR email subject `LIKE` match |
+| SearchQuery | String | No | Advanced search DSL (`name:"Weekly" recipient_count>1000`, keys: `name`, `type`, `sent_at`, `created_at`, `recipient_count`, `total_recipients`, `open_rate`, `click_rate`, `conversion_rate`, `unsubscribe_rate`, `hardbounce_rate`, ...). Translated on the server and AND-ed with the other filters. The generated SQL is never returned |
+
+Shared error codes: `1` invalid DateFrom, `2` invalid DateTo, `3` unknown Status, `4` invalid FilterByUserID, `5` SearchQuery could not be translated, `7` DateFrom after DateTo.
+
+## List Stuck Campaigns
+
+<Badge type="info" text="POST" /> `/api/v1/admin.campaigns.stuck`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Lists campaigns that are in `Sending` status but whose health check (`Campaigns::CalculateCampaignHealth`, the same verdict `admin.campaign.details` returns under `Health.WorkerTracking.IsStuck`) reports them stuck. This is the "Stuck Campaigns" tab of the admin Campaign Report and the campaign counterpart of `admin.journeys.stuck`. The verdict is computed per campaign, so the result is filtered and then paginated. There is no date filter.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.campaigns.stuck` |
+| AdminAPIKey | String | Yes | Admin API key |
+| FilterByUserID | Integer | No | See shared filters (0 or empty = all accounts) |
+| SearchKeyword | String | No | See shared filters |
+| SearchQuery | String | No | See shared filters |
+| DateFrom | Date | No | `Y-m-d`. Validated for symmetry with the other report commands but not applied: the stuck list has no date window |
+| DateTo | Date | No | `Y-m-d`. Same as DateFrom |
+| OrderField | String | No | `Started` (default), `Finished`, `Recipients`, `Delivered`, `Failed`, `CreateDateTime`, `SendDate` |
+| OrderType | String | No | `ASC` or `DESC` (default) |
+| RecordsPerRequest | Integer | No | Page size, 0 = all (default 0) |
+| RecordsFrom | Integer | No | Offset (default 0) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.campaigns.stuck \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.campaigns.stuck",
+    "AdminAPIKey": "your-admin-api-key",
+    "RecordsPerRequest": 25
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalStuckCampaigns": 1,
+  "Campaigns": [
+    {
+      "CampaignID": "812",
+      "RelOwnerUserID": "14",
+      "CampaignStatus": "Sending",
+      "CampaignName": "September newsletter",
+      "TotalRecipients": "52000",
+      "TotalSent": "12400",
+      "SendProcessStartedOn": "2026-09-04 08:00:02",
+      "UserFirstName": "Ada",
+      "UserLastName": "Lovelace",
+      "UserEmailAddress": "ada@example.com",
+      "UserCompany": "Analytical Engines",
+      "StuckReason": "No worker activity for 35 minutes",
+      "WorkerTracking": { "IsStuck": true, "StuckReason": "No worker activity for 35 minutes", "ActiveWorkers": 0 },
+      "Health": { "Status": "Critical", "Note": "...", "Issues": [], "Warnings": [], "WorkerTracking": { "IsStuck": true } }
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "FilterByUserID must be a positive integer"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: DateFrom is not a valid Y-m-d date
+2: DateTo is not a valid Y-m-d date
+4: FilterByUserID is not a whole number
+5: SearchQuery could not be translated
+7: DateFrom is after DateTo
+```
+
+:::
+
+Each row carries every `oempro_campaigns` column plus the owner decoration and the health verdict. Feed `CampaignID` to `admin.campaign.unstuck`, `admin.campaign.markfailed` or `admin.campaign.details`.
+
+## Get Campaign Report Status Counts
+
+<Badge type="info" text="POST" /> `/api/v1/admin.campaigns.statuscounts`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+The nine sidebar counters of the admin Campaign Report, under the same filters as the listing. Composite buckets and per-bucket date columns are in the table above; `DateFields` in the response repeats the mapping so a client can label its date picker. `Stuck` requires the health check of every `Sending` campaign and ignores the date range.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.campaigns.statuscounts` |
+| AdminAPIKey | String | Yes | Admin API key |
+| FilterByUserID | Integer | No | See shared filters |
+| DateFrom | String | No | See shared filters |
+| DateTo | String | No | See shared filters |
+| SearchKeyword | String | No | See shared filters |
+| SearchQuery | String | No | See shared filters |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.campaigns.statuscounts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.campaigns.statuscounts",
+    "AdminAPIKey": "your-admin-api-key",
+    "DateFrom": "2026-08-29",
+    "DateTo": "2026-09-04"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "StatusCounts": {
+    "Sent": 42, "Outbox": 1, "Draft": 7, "Scheduled": 3, "Paused": 0,
+    "PendingApproval": 0, "Failed": 2, "HasFailed": 5, "Stuck": 0
+  },
+  "DateFields": {
+    "Sent": "SendProcessStartedOn", "Outbox": "CreateDateTime", "Draft": "CreateDateTime",
+    "Scheduled": "SendDate", "Paused": "SendProcessStartedOn", "PendingApproval": "CreateDateTime",
+    "Failed": "SendProcessStartedOn", "HasFailed": "SendProcessStartedOn", "Stuck": null
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 7,
+  "ErrorText": "DateFrom must not be after DateTo"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: DateFrom is not a valid Y-m-d date
+2: DateTo is not a valid Y-m-d date
+4: FilterByUserID is not a whole number (0 or empty = all accounts)
+5: SearchQuery could not be translated
+7: DateFrom is after DateTo
+```
+
+:::
+
+## Get Campaign Report Time Series
+
+<Badge type="info" text="POST" /> `/api/v1/admin.campaigns.timeseries`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Per-day sums of `TotalRecipients` and `UniqueOpens` over the campaigns matching a status bucket and the filters, keyed on that bucket's date column (no `Status` = every status on `SendProcessStartedOn`). This is the chart on the admin Campaign Report. The window is `DateFrom`..`DateTo`, cut to the last 365 days ending on `DateTo`; with no dates it is the last 365 days ending today. Every day in the window is present, zero-filled, ascending. `Status=Stuck` is rejected (stuck is a per-campaign verdict, not an aggregate).
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.campaigns.timeseries` |
+| AdminAPIKey | String | Yes | Admin API key |
+| Status | String | No | A bucket from the table above except `Stuck`. Empty = all statuses |
+| FilterByUserID | Integer | No | See shared filters |
+| DateFrom | String | No | See shared filters |
+| DateTo | String | No | See shared filters |
+| SearchKeyword | String | No | See shared filters |
+| SearchQuery | String | No | See shared filters |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.campaigns.timeseries \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.campaigns.timeseries",
+    "AdminAPIKey": "your-admin-api-key",
+    "Status": "Sent",
+    "DateFrom": "2026-09-01",
+    "DateTo": "2026-09-03"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Status": "Sent",
+  "DateField": "SendProcessStartedOn",
+  "StartDate": "2026-09-01",
+  "EndDate": "2026-09-03",
+  "Days": 3,
+  "Series": [
+    { "Date": "2026-09-01", "TotalRecipients": 12000, "UniqueOpens": 3100 },
+    { "Date": "2026-09-02", "TotalRecipients": 0, "UniqueOpens": 0 },
+    { "Date": "2026-09-03", "TotalRecipients": 8400, "UniqueOpens": 1900 }
+  ],
+  "Totals": { "TotalRecipients": 20400, "UniqueOpens": 5000 }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Status=Stuck is not supported by the time series; use admin.campaigns.stuck"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: DateFrom is not a valid Y-m-d date
+2: DateTo is not a valid Y-m-d date
+3: Status is unknown, or is Stuck
+4: FilterByUserID is not a whole number (0 or empty = all accounts)
+5: SearchQuery could not be translated
+7: DateFrom is after DateTo
+8: The time series query failed
+```
+
+:::
+
+## Export Campaign Report
+
+<Badge type="info" text="POST" /> `/api/v1/admin.campaigns.export`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+The 19-column row set of the admin Campaign Report's CSV download, with the derived rates and the average throughput already computed, under the same filters as the other report commands. Rows are JSON objects by default; `Format=csv` returns one CSV string (header row included, no BOM) whose free-text cells are formula-protected (`Core::SanitizeCSVRow`, see `CSV_EXPORT_FORMULA_PROTECTION`). The result is capped at `CAMPAIGN_EXPORT_MAX_ROWS` (default 10000): when the filtered set is larger, the first `MaxRows` rows in sort order are returned and `Truncated` is `true`. Narrow the filters or page with `admin.campaigns.search` for larger sets.
+
+Columns: `CampaignID`, `CampaignName`, `UserID`, `UserName` (company, else first and last name, else `Unknown`), `Status` (raw `CampaignStatus`), `Started`, `Finished` (`Y-m-d H:i:s` or `N/A`), `Recipients`, `Sent`, `Delivered`, `Failed`, `OpenRate` (UniqueOpens / Sent), `ClickRate` (UniqueClicks / Sent), `CTOR` (UniqueClicks / UniqueOpens), `OptoutRate` (Unsubscriptions / Sent), `BounceRate` (HardBounces / (Sent + Failed)), `Progress` (Sent / Recipients), `Duration` (seconds), `Speed` (emails per second). Rates are strings with two decimals and a `%` sign, or `N/A` when the denominator is zero (`Progress` is `0%`). `Duration` and `Speed` are empty for statuses without a send window (`Campaigns::CalculateThroughput`).
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.campaigns.export` |
+| AdminAPIKey | String | Yes | Admin API key |
+| Status | String | No | A bucket from the table above. Default `Sent` |
+| FilterByUserID | Integer | No | See shared filters |
+| DateFrom | String | No | See shared filters |
+| DateTo | String | No | See shared filters |
+| SearchKeyword | String | No | See shared filters |
+| SearchQuery | String | No | See shared filters |
+| OrderField | String | No | As `admin.campaigns.stuck`. Default is the bucket's own order (Draft: CreateDateTime DESC, Scheduled: SendDate ASC, others: SendProcessStartedOn DESC) |
+| OrderType | String | No | `ASC` or `DESC` |
+| Format | String | No | `json` (default) or `csv` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.campaigns.export \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.campaigns.export",
+    "AdminAPIKey": "your-admin-api-key",
+    "Status": "Sent",
+    "DateFrom": "2026-08-01",
+    "DateTo": "2026-08-31"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Status": "Sent",
+  "Columns": ["CampaignID", "CampaignName", "UserID", "UserName", "Status", "Started", "Finished", "Recipients", "Sent", "Delivered", "Failed", "OpenRate", "ClickRate", "CTOR", "OptoutRate", "BounceRate", "Progress", "Duration", "Speed"],
+  "TotalRows": 1,
+  "TotalCampaigns": 1,
+  "MaxRows": 10000,
+  "Truncated": false,
+  "Rows": [
+    {
+      "CampaignID": 7746, "CampaignName": "August promotion", "UserID": 20, "UserName": "Acme Inc",
+      "Status": "Sent", "Started": "2026-08-30 06:00:01", "Finished": "2026-08-30 06:04:39",
+      "Recipients": 59157, "Sent": 59154, "Delivered": 58900, "Failed": 3,
+      "OpenRate": "24.10%", "ClickRate": "3.02%", "CTOR": "12.53%", "OptoutRate": "0.11%", "BounceRate": "0.40%",
+      "Progress": "99.99%", "Duration": 278, "Speed": 212.78
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 6,
+  "ErrorText": "Format must be json or csv"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: DateFrom is not a valid Y-m-d date
+2: DateTo is not a valid Y-m-d date
+3: Status is unknown
+4: FilterByUserID is not a whole number (0 or empty = all accounts)
+5: SearchQuery could not be translated
+6: Format is not json or csv
+7: DateFrom is after DateTo
+```
+
+:::
+
+With `Format=csv` the response carries `CSV` (the file contents as a string) and `Filename` (`campaign_report_YYYY-MM-DD_HH-MM-SS.csv`) instead of `Rows`.
 
 ## Get Email
 
@@ -2742,6 +3110,268 @@ curl -X GET "https://example.com/api/v1/admin.database.stats?APIKey=your-admin-a
 ```txt [Error Codes]
 0: Success
 1: Database query failed
+```
+
+:::
+
+## List DNS Template Names
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `Settings`)
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- The names of the sender-domain DNS record templates the install ships (`EMAILGATEWAY_DNS_TEMPLATES` and `EMAILCAMPAIGN_DNS_TEMPLATES`). Only names are returned; the record bodies are expanded per domain when a sender domain is created.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `admin.dnstemplates.get` |
+| SessionID | String | No       | Session ID obtained from login        |
+| APIKey    | String | No       | Admin API key for authentication      |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.dnstemplates.get", "APIKey": "your-admin-api-key"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "DNSTemplates": {"EmailGateway": ["Default"], "EmailCampaign": ["Default"]}
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998
+}
+```
+
+```txt [Error Codes]
+0: Success
+```
+
+:::
+
+## List Theme Templates
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `Settings`)
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- The UI templates installed under `templates/`, each with the CSS settings its stylesheet exposes to the theme editor. `theme.create` / `theme.update` take a `Template` code from this list.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `admin.themes.templates.get` |
+| SessionID | String | No       | Session ID obtained from login        |
+| APIKey    | String | No       | Admin API key for authentication      |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.themes.templates.get", "APIKey": "your-admin-api-key"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Templates": [
+    {
+      "Code": "weefive",
+      "Name": "Weefive",
+      "Description": "Default template",
+      "CSSSettings": [{"Tag": "PrimaryColor", "Description": "Primary colour", "Default": "#0057ff"}]
+    }
+  ],
+  "TotalTemplates": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998
+}
+```
+
+```txt [Error Codes]
+0: Success
+```
+
+:::
+
+## List Installed Plugins
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `Settings`)
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Every plugin under `plugins/` with a parsable header. `Enabled` reflects the `ENABLED_PLUGINS` setting.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `admin.plugins.get` |
+| SessionID | String | No       | Session ID obtained from login        |
+| APIKey    | String | No       | Admin API key for authentication      |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.plugins.get", "APIKey": "your-admin-api-key"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Plugins": [
+    {"Code": "lindris", "Name": "Lindris", "Description": "AI assistant", "MinOemproVersion": "5.0.0", "Enabled": true}
+  ],
+  "TotalPlugins": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998
+}
+```
+
+```txt [Error Codes]
+0: Success
+```
+
+:::
+
+## Enable Plugin
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `Settings`)
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Runs the same sequence as the admin Plugins screen: validates the code against the plugins on disk, adds it to `ENABLED_PLUGINS`, includes the plugin and runs its `enable_<code>()` lifecycle hook (table creation, option seeding), then its `load_<code>()`. This is what writing `EnabledPlugins` through `settings.update` does NOT do.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `admin.plugin.enable` |
+| SessionID | String | No       | Session ID obtained from login        |
+| APIKey    | String | No       | Admin API key for authentication      |
+| PluginCode | String | Yes     | Plugin code (directory name), see `admin.plugins.get` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.plugin.enable", "APIKey": "your-admin-api-key", "PluginCode": "lindris"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "PluginCode": "lindris",
+  "PluginName": "Lindris",
+  "EnabledPlugins": ["prometheus", "lindris"]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Plugin \"lindris\" is already enabled."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: PluginCode is missing
+2: PluginCode is not an installed plugin
+3: The plugin is already enabled
+NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
+```
+
+:::
+
+## Disable Plugin
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `Settings`)
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Removes the code from `ENABLED_PLUGINS` and runs the plugin's `disable_<code>()` lifecycle hook, exactly like the admin Plugins screen.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `admin.plugin.disable` |
+| SessionID | String | No       | Session ID obtained from login        |
+| APIKey    | String | No       | Admin API key for authentication      |
+| PluginCode | String | Yes     | Plugin code (directory name), see `admin.plugins.get` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.plugin.disable", "APIKey": "your-admin-api-key", "PluginCode": "lindris"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "PluginCode": "lindris",
+  "PluginName": "Lindris",
+  "EnabledPlugins": ["prometheus"]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Plugin \"nope\" is not installed. See admin.plugins.get."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: PluginCode is missing
+2: PluginCode is not an installed plugin
+3: The plugin is already disabled
+NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 ```
 
 :::

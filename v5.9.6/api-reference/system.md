@@ -155,13 +155,13 @@ The endpoint performs comprehensive health checks on the following components:
 
 <Badge type="tip" text="New in v5.9.3" />
 
-The `Vector` check talks to the Vector container directly, so it cannot see a broken load-balancer route. `WebsiteEventRouting` exercises the **routed** path instead — the same path the public website-event tracker uses — so that failure mode is actually detected. Both checks are kept, so a genuine Vector outage stays distinguishable from broken routing.
+The `Vector` check talks to the Vector container directly, so it cannot see a broken load-balancer route. `WebsiteEventRouting` exercises the **routed** path instead, the same path the public website-event tracker uses, so that failure mode is actually detected. Both checks are kept, so a genuine Vector outage stays distinguishable from broken routing.
 
 This exists because of a real, long-lived outage: a startup DNS race left the Vector backend with no available server for roughly four weeks. The load balancer resolved the container name once at boot, failed while the container was still starting, and permanently disabled the server. Vector itself stayed healthy the whole time, so the health check reported `OK` while the public website-event endpoint returned HTTP 503 to every visitor.
 
 How it probes:
 
-- It issues a **GET** to the website-event path through the load balancer. `GET` is deliberate — Vector's HTTP source only accepts `POST`, so a `GET` is rejected before ingestion. A synthetic `POST` would be forwarded downstream and inject a junk website event on every health-check tick.
+- It issues a **GET** to the website-event path through the load balancer. `GET` is deliberate: Vector's HTTP source only accepts `POST`, so a `GET` is rejected before ingestion. A synthetic `POST` would be forwarded downstream and inject a junk website event on every health-check tick.
 - It is also deliberately **not** an `OPTIONS` request: `OPTIONS` on the website-event paths is answered by a static backend that never touches Vector, so an `OPTIONS` probe would have stayed green throughout the outage described above.
 - The assertion is the presence of the `X-Server: oempro_vector` **response header**, which only the Vector backend adds. The load balancer's internally generated "no server available" 503 is produced before those backend response rules run and therefore carries no such header. Matching the header rather than the status code proves the response really came from Vector through the intended route.
 
@@ -276,10 +276,10 @@ Returns a unified snapshot of every Octeth configuration value the running insta
 
 The endpoint surfaces four sources:
 
-1. **`ConfigFiles`** — every `*.php` file under `config/global/` (each returns an array). The `app.php` file is intentionally skipped because it declares the `SystemConfig` class and has side effects; its values are already represented in `EnvSettings.octeth` and `DefinedConstants`.
-2. **`EnvSettings`** — `SystemConfig::$Config`, populated from the six `.oempro_*_env` files: `octeth`, `mysql`, `redis`, `rabbitmq`, `clickhouse`, `supervisor`.
-3. **`RuntimeOptions`** — every row in the `oempro_options` table (the runtime-editable options used by `OemproOptions::get()`/`set()`). JSON-encoded values are decoded automatically when they are arrays.
-4. **`DefinedConstants`** — `get_defined_constants(true)['user']`: every constant registered by `ConfigLoader` plus library `define()` calls.
+1. **`ConfigFiles`**: every `*.php` file under `config/global/` (each returns an array). The `app.php` file is intentionally skipped because it declares the `SystemConfig` class and has side effects; its values are already represented in `EnvSettings.octeth` and `DefinedConstants`.
+2. **`EnvSettings`**: `SystemConfig::$Config`, populated from the six `.oempro_*_env` files: `octeth`, `mysql`, `redis`, `rabbitmq`, `clickhouse`, `supervisor`.
+3. **`RuntimeOptions`**: every row in the `oempro_options` table (the runtime-editable options used by `OemproOptions::get()`/`set()`). JSON-encoded values are decoded automatically when they are arrays.
+4. **`DefinedConstants`**: `get_defined_constants(true)['user']`: every constant registered by `ConfigLoader` plus library `define()` calls.
 
 **Sensitive value redaction:** any key whose name contains a known secret substring (case-insensitive: `PASSWORD`, `PASSWD`, `_PASS`, `SECRET`, `SALT`, `TOKEN`, `API_KEY`, `APIKEY`, `CLIENT_SECRET`, `ENCRYPTION_KEY`, `HMAC`, `ERLANG_COOKIE`, `LICENSE_KEY`, `AUTH_CODE`, `BUGSNAG_API`, `SENTRY_API`, `PRIVATE_KEY`, `WEBHOOK_SECRET`) has its value replaced with the literal string `"***REDACTED***"`. The key itself remains visible. Empty values pass through untouched so callers can distinguish "configured but blank" from "configured with a value, redacted".
 
@@ -363,3 +363,51 @@ curl -X GET "https://example.com/api/v1/system-settings?Section=EnvSettings&admi
 - Support escalations where the operator needs to share a redacted config snapshot
 - Verifying that a setting (env var, runtime option, or constant) is actually present and reaching the application
 - Auditing which secrets are configured without exposing their values
+
+## List Installed Language Packs
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `Settings`)
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- The only values `settings.update` accepts for `DEFAULT_LANGUAGE` and `USER_SIGNUP_LANGUAGE`.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `system.languages.get` |
+| SessionID | String | No       | Session ID obtained from login        |
+| APIKey    | String | No       | Admin API key for authentication      |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "system.languages.get", "APIKey": "your-admin-api-key"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Languages": [{"Code": "en", "Name": "English"}],
+  "TotalLanguages": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998
+}
+```
+
+```txt [Error Codes]
+0: Success
+```
+
+:::

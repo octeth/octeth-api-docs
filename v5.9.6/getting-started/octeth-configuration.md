@@ -678,6 +678,15 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     **When to turn it off.** Set it to `false` if you run a shared-IP warmup pool that depends on platform-branded campaign headers. Enabling this moves reputation onto a colder customer domain.
 
 
+43. **Email Template Thumbnail Upload Limit**
+
+    ```bash
+    TEMPLATE_THUMBNAIL_MAX_FILESIZE=2097152    # Max decoded thumbnail size in bytes for email.template.thumbnail.upload (default: 2 MB)
+    ```
+
+    Maximum decoded size, in bytes, of a thumbnail accepted by the `email.template.thumbnail.upload` API command (gif, png or jpeg, the same allow-list as the admin "create email template" form). The image is stored base64-encoded in the `TemplateThumbnail` column of the templates table, so keep it small. Clamped to `[10240, 20971520]`; values outside that range fall back to the default. Introduced in v5.9.6 (issue #2787).
+
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::

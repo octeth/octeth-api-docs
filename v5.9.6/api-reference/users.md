@@ -130,13 +130,13 @@ curl -X POST https://example.com/api.php \
 | Disable2FAToken | String | Conditional | Server-derived token that authorizes `Disable2FA`. Required for `Disable2FA` to take effect. |
 
 ::: warning Behavior change (v5.9.3, #2333)
-`Disable2FA` alone no longer skips two-factor authentication. In earlier versions **any** client could send `Disable2FA=true` and bypass 2FA — a security hole. It is now honored only when accompanied by a matching `Disable2FAToken`:
+`Disable2FA` alone no longer skips two-factor authentication. In earlier versions **any** client could send `Disable2FA=true` and bypass 2FA, a security hole. It is now honored only when accompanied by a matching `Disable2FAToken`:
 
 ```
 Disable2FAToken = HMAC_SHA256("user.login.disable2fa", SCRTY_SALT)   // lowercase hex
 ```
 
-`SCRTY_SALT` is a server-side secret from `.oempro_env`, so only a trusted integration that has access to it (for example a custom SSO bridge running on the same host) can compute the token; an ordinary API caller cannot forge it. If `SCRTY_SALT` is empty the token can never validate and `Disable2FA` is ignored. When the token is absent or invalid, the request falls through to normal 2FA handling — supply `TFACode` (or `TFARecoveryCode`). Callers authenticating with `APIKey` are unaffected.
+`SCRTY_SALT` is a server-side secret from `.oempro_env`, so only a trusted integration that has access to it (for example a custom SSO bridge running on the same host) can compute the token; an ordinary API caller cannot forge it. If `SCRTY_SALT` is empty the token can never validate and `Disable2FA` is ignored. When the token is absent or invalid, the request falls through to normal 2FA handling: supply `TFACode` (or `TFARecoveryCode`). Callers authenticating with `APIKey` are unaffected.
 :::
 
 ::: code-group
@@ -311,7 +311,7 @@ curl -X POST https://example.com/api.php \
 
 An explicit, user-safe projection of the authenticated user's **user group**. It intentionally exposes only capability flags and plan quotas the user is already subject to.
 
-::: warning Not exposed here — by design
+::: warning Not exposed here, by design
 Delivery-server records and their `ConnectionParams`, the group's `SendMethod*` SMTP settings (including `SendMethodSMTPPassword`), all `Payment*` values, and the `ThresholdImport` / `ThresholdEmailSend` abuse-moderation thresholds are **not** returned by `user.current`. They remain reachable only through the admin-authenticated `user.get`.
 :::
 
@@ -343,7 +343,7 @@ Delivery-server records and their `ConnectionParams`, the group's `SendMethod*` 
 
 `Permissions` is **not** an array. It is either:
 
-- a **comma-separated string** of permission names, e.g. `"Campaign.Create,Campaign.Update,Campaigns.Get,List.Create"` — no spaces after the commas; or
+- a **comma-separated string** of permission names, e.g. `"Campaign.Create,Campaign.Update,Campaigns.Get,List.Create"`, with no spaces after the commas; or
 - the single-character **sentinel `"*"`**, meaning *all permissions are granted*.
 
 A client-side permission check must handle the sentinel explicitly:
@@ -359,14 +359,14 @@ The `"*"` sentinel is emitted when an administrator is impersonating the user wi
 
 #### Defaults for older groups
 
-`SenderDomainManagement`, `EnableSenderInfo`, `ForcedSenderInfo` and `DefaultSenderDomainActivate` come from the group's options blob, and groups created before those options existed do not carry them. The endpoint always returns one of the two defined string values and never `null` — an absent option is reported as `"Disabled"`, which matches how the application itself evaluates it.
+`SenderDomainManagement`, `EnableSenderInfo`, `ForcedSenderInfo` and `DefaultSenderDomainActivate` come from the group's options blob, and groups created before those options existed do not carry them. The endpoint always returns one of the two defined string values and never `null`. An absent option is reported as `"Disabled"`, which matches how the application itself evaluates it.
 
 #### Duplicated quota values
 
 `LimitEmailSendPerPeriod` and `LimitEmailSendLifetime` also appear in the response as `Usage.Limit_Monthly` and `Usage.Limit_Lifetime`. Both names carry the same value. The `Usage.*` names are retained unchanged for backwards compatibility; `GroupInfo` repeats them so the group's quota set is complete in one place.
 
 ::: tip New in v5.9.3
-Everything below `DefaultSenderDomain` in the table above was added in v5.9.3. Previously these were readable only through the admin-authenticated `user.get`, which forced frontend integrations to hold an admin API key purely to render a user's own UI. The change is **purely additive** — the four pre-existing `GroupInfo` keys are unchanged in name and value.
+Everything below `DefaultSenderDomain` in the table above was added in v5.9.3. Previously these were readable only through the admin-authenticated `user.get`, which forced frontend integrations to hold an admin API key purely to render a user's own UI. The change is **purely additive**: the four pre-existing `GroupInfo` keys are unchanged in name and value.
 :::
 
 ## Get User Information
@@ -477,7 +477,7 @@ curl -X POST https://example.com/api.php \
 | AvailableCredits | Integer | No | Available credits (admin only) |
 | RelUserGroupID | Integer | No | User group ID (admin only) |
 | ReputationLevel | String | No | Reputation level (admin only) |
-| RateLimits | String | No | JSON string of rate limits, normalised before storage to `{"EmailGateway":{Minute,Hour,Day,Week,Month,Year},"SMS":{…}}` with integer values (`-1` = unlimited; an omitted interval becomes `-1`). Omit to keep the existing row's value; pass an **empty string** to clear it, which means "no user-level override — inherit the user group's default rate limits" (an empty value is stored as-is, never normalised into an all-unlimited document). |
+| RateLimits | String | No | JSON string of rate limits, normalised before storage to `{"EmailGateway":{Minute,Hour,Day,Week,Month,Year},"SMS":{…}}` with integer values (`-1` = unlimited; an omitted interval becomes `-1`). Omit to keep the existing row's value; pass an **empty string** to clear it, which means "no user-level override, inherit the user group's default rate limits" (an empty value is stored as-is, never normalised into an all-unlimited document). |
 | CustomEmailHeaders | String | No | Custom email headers. Omit to keep the existing row's value; pass an empty string to clear it. |
 | WhiteListedEmailAddresses | String | No | Whitelisted email addresses. Omit to keep the existing row's value; pass an empty string to clear it. |
 | Enable2FA | String | No | Set to 'true' to enable 2FA |
@@ -667,7 +667,7 @@ curl -X POST https://example.com/api/v1/user.stats \
 
 **Top-level overall fields**
 
-The response is the merge of two payloads: a stat-strip header (the overall fields below) plus the time-series breakdown for each metric (keyed by metric title — `New Subscribers`, `Sent Emails`, `Opens`, etc).
+The response is the merge of two payloads: a stat-strip header (the overall fields below) plus the time-series breakdown for each metric (keyed by metric title: `New Subscribers`, `Sent Emails`, `Opens`, etc).
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -681,7 +681,7 @@ The response is the merge of two payloads: a stat-strip header (the overall fiel
 | `AvgForwardRate30dWeighted` | Float \| null | Subscriber-weighted average 30-day forward rate. Same shape as `AvgOpenRate30dWeighted` with `UniqueForwards` in the numerator. (Added in v5.9.1, issue #1960.) |
 | `AvgBrowserViewRate30dWeighted` | Float \| null | Subscriber-weighted average 30-day "view in browser" rate. Same shape as `AvgOpenRate30dWeighted` with `UniqueBrowserViews` in the numerator. (Added in v5.9.1, issue #1960.) |
 
-**Migration note (v5.9.x):** `TotalActiveSubscribers` previously summed across **all** lists (including archived) using a slightly stricter criterion (`BounceType = 'Not Bounced'`, excluding soft bounces). Both changes were intentional: the new value (a) excludes archived lists — matching the lists.get browse display — and (b) uses `BounceType != 'Hard'` to align with `Subscribers::GetActiveTotal`. For a user with no archived lists and a clean deliverability footprint the difference is negligible. For users with many archived lists or noticeable soft-bounce volume the value will shift; treat the new figure as the canonical "subscribers I currently market to."
+**Migration note (v5.9.x):** `TotalActiveSubscribers` previously summed across **all** lists (including archived) using a slightly stricter criterion (`BounceType = 'Not Bounced'`, excluding soft bounces). Both changes were intentional: the new value (a) excludes archived lists, matching the lists.get browse display, and (b) uses `BounceType != 'Hard'` to align with `Subscribers::GetActiveTotal`. For a user with no archived lists and a clean deliverability footprint the difference is negligible. For users with many archived lists or noticeable soft-bounce volume the value will shift; treat the new figure as the canonical "subscribers I currently market to."
 
 ## Switch to User Account
 
@@ -932,7 +932,7 @@ curl -X POST https://example.com/api/v1/user.apikey \
 |----------------|------------------|-------------|
 | APIKey         | String           | The generated API key token. |
 | Note           | String           | Administrative note supplied at creation. |
-| IPAddress      | String           | **Deprecated** — kept for backward compatibility. Same value as `BoundIPAddress`. Prefer `BoundIPAddress` in new integrations. |
+| IPAddress      | String           | **Deprecated**: kept for backward compatibility. Same value as `BoundIPAddress`. Prefer `BoundIPAddress` in new integrations. |
 | BoundIPAddress | String           | IP address the key is bound to, or `""` if unbound. |
 | CreatedAt      | String (DATETIME)| Creation timestamp (UTC, `YYYY-MM-DD HH:MM:SS`). |
 | LastUsedAt     | String \| null   | Last time this key was used to authenticate (always `null` for a freshly created key). |
@@ -940,7 +940,7 @@ curl -X POST https://example.com/api/v1/user.apikey \
 | RequestCount   | Integer          | Lifetime number of authentications with this key (always `0` for a freshly created key). |
 
 ::: info Counter semantics
-`RequestCount` and `LastUsedAt` are bumped each time the key is used to start a session via `User.Login` (with the `APIKey` parameter). They do **not** count every individual REST request made within a session — once a client has a `SessionID`, subsequent calls authenticate with session credentials and do not re-touch the API key. Treat `RequestCount` as "how many times has this integration checked in?", which is what an operator cares about when answering "is this key still in use anywhere?".
+`RequestCount` and `LastUsedAt` are bumped each time the key is used to start a session via `User.Login` (with the `APIKey` parameter). They do **not** count every individual REST request made within a session. Once a client has a `SessionID`, subsequent calls authenticate with session credentials and do not re-touch the API key. Treat `RequestCount` as "how many times has this integration checked in?", which is what an operator cares about when answering "is this key still in use anywhere?".
 :::
 
 :::
@@ -1064,7 +1064,7 @@ No specific error codes for this endpoint
 | APIKey         | String           | The API key token. |
 | Note           | String           | Administrative note supplied at creation. |
 | BoundIPAddress | String           | IP address the key is bound to, or `""` if unbound. |
-| CreatedAt      | String (DATETIME)| Creation timestamp. Keys that pre-date the usage-tracking migration return the sentinel `"1970-01-01 00:00:00"` — clients should render this as "Unknown". |
+| CreatedAt      | String (DATETIME)| Creation timestamp. Keys that pre-date the usage-tracking migration return the sentinel `"1970-01-01 00:00:00"`. Clients should render this as "Unknown". |
 | LastUsedAt     | String \| null   | Last time this key was used to authenticate, or `null` if the key has never been used. |
 | LastUsedIP     | String \| null   | Client IP recorded at last use (IPv4 or IPv6), `null` if never used. |
 | RequestCount   | Integer          | Lifetime number of authentications with this key. See counter semantics on the Create endpoint above. |
@@ -1089,7 +1089,7 @@ No specific error codes for this endpoint
 | APIKey    | String | No       | API key for authentication            |
 | RecordsPerRequest | Integer | No | Number of records per page (default: 25) |
 | RecordsFrom | Integer | No | Starting record offset (default: 0) |
-| OrderField | String | No | Field to order by (default: `UserID`). Must be a plain column identifier — letters, digits and underscores only, starting with a letter or underscore. Pipe-separate for multi-column sort (e.g. `AccountStatus\|UserID`). See the sorting note below. |
+| OrderField | String | No | Field to order by (default: `UserID`). Must be a plain column identifier: letters, digits and underscores only, starting with a letter or underscore. Pipe-separate for multi-column sort (e.g. `AccountStatus\|UserID`). See the sorting note below. |
 | OrderType | String | No | Order direction: 'ASC' or 'DESC' (default: `ASC`). Pipe-separate to match a multi-column `OrderField`. See the sorting note below. |
 | RelUserGroupID | Mixed | No | User group ID, array of IDs, or special value ('Online', 'Enabled', 'Disabled', 'Trusted', 'Untrusted') |
 | RelUserCategoryID | Integer | No | User category ID (-1 for uncategorized) |
@@ -1097,14 +1097,25 @@ No specific error codes for this endpoint
 | SearchKeyword | String | No | Search keyword |
 | ReturnStats | Boolean | No | Set to true to include statistics |
 | IncludeLimitUtilization | Boolean | No | Set to true to include limit utilization data |
+| LimitUtilizationStatus | String | No | `OK`, `Warning` or `Exceeded`: only users whose cached limit-utilization status is that bucket. Combines with every other filter. The buckets are written by the `user_limit_utilization` cron; until it has run the call answers `ErrorCode 2` rather than an empty list. |
 
 ::: warning Sorting parameters are format-filtered (v5.9.3)
 `OrderField` and `OrderType` are validated for **shape**, not against a list of sortable columns. Each pipe-separated segment of `OrderField` must be a plain identifier, and each segment of `OrderType` must be `ASC` or `DESC`.
 
-- A value containing anything else (backticks, quotes, spaces, parentheses or any other metacharacter) is **silently discarded**. When that happens the pair is reset together — ordering falls back to `UserID ASC` even if only one of the two parameters was malformed. The response is still HTTP `200` with `Success: true` and no error code.
-- Because there is no column allow-list, a value that *is* identifier-shaped but names a column that does not exist (for example `OrderField: "Bogus"`) is passed through to the query and surfaces as a **database error** — it does not fall back to the default.
+- A value containing anything else (backticks, quotes, spaces, parentheses or any other metacharacter) is **silently discarded**. When that happens the pair is reset together. Ordering falls back to `UserID ASC` even if only one of the two parameters was malformed. The response is still HTTP `200` with `Success: true` and no error code.
+- Because there is no column allow-list, a value that *is* identifier-shaped but names a column that does not exist (for example `OrderField: "Bogus"`) is passed through to the query and surfaces as a **database error**. It does not fall back to the default.
 
-Neither case returns a validation error. If results come back in an unexpected order after upgrading, your sort parameter is being rejected silently — check it against the shape rules above.
+Neither case returns a validation error. If results come back in an unexpected order after upgrading, your sort parameter is being rejected silently. Check it against the shape rules above.
+:::
+
+::: tip Limit-utilization filter and blocked-domain totals (v5.9.6)
+- `LimitUtilizationStatus` intersects the request with the cron's status bucket in SQL, so a client no
+  longer has to page through every user and filter on `LimitUtilization` itself. An unknown value
+  answers `ErrorCode 1`; a bucket the cron has not written yet answers `ErrorCode 2`. Both are new codes
+  and only reachable when the parameter is supplied; calls without it are unchanged.
+- `RelUserGroupID: "ActivationPendingSenderDomains"` now reports the true number of matching users in
+  `TotalUsers`. It used to report the number of rows on the requested page, so pagination past page 1
+  was wrong.
 :::
 
 ::: code-group
@@ -1147,6 +1158,8 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
+1: LimitUtilizationStatus is not OK, Warning or Exceeded
+2: The limit-utilization status buckets are not available yet (the cron has not run)
 ```
 
 :::
@@ -1295,7 +1308,7 @@ curl -X GET https://example.com/api/v1/users.status \
 | ForceRejectOptLink | String | Yes | 'Enabled' or 'Disabled' |
 | DefaultRateLimits | String | No | JSON-encoded rate limits with `SMS` and `EmailGateway` buckets, each containing `Minute`/`Hour`/`Day`/`Week`/`Month`/`Year` integer counts (`-1` = unlimited). Posted values are deep-merged over the canonical defaults, so a partial payload (only one bucket, or only some intervals) preserves the missing keys at `-1`. Omit to store the full all-`-1` defaults. |
 | CustomEmailHeaders | String | No | JSON-encoded SMTP header overrides for users in this group (e.g. `{"Add":{"X-Header":"value"},"Remove":["X-Other"]}`). |
-| Options | Object | No | JSON object of per-group options (e.g. `TargetDeliveryServerID_Marketing`, `EmailGatewayDNSTemplate`, `DefaultSenderDomain`, `EnableSenderInfo`). Pass as an object — the endpoint JSON-encodes it. |
+| Options | Object | No | JSON object of per-group options (e.g. `TargetDeliveryServerID_Marketing`, `EmailGatewayDNSTemplate`, `DefaultSenderDomain`, `EnableSenderInfo`). Pass as an object. The endpoint JSON-encodes it. |
 | SubscriptionPlan | String | No | Subscription plan identifier for the group. |
 
 ::: code-group
@@ -1383,7 +1396,7 @@ curl -X POST https://example.com/api.php \
 | ForceRejectOptLink | String | Yes | 'Enabled' or 'Disabled' |
 | DefaultRateLimits | String | No | JSON-encoded rate limits with `SMS` and `EmailGateway` buckets, each containing `Minute`/`Hour`/`Day`/`Week`/`Month`/`Year` integer counts (`-1` = unlimited). Posted values are deep-merged over the canonical defaults, so a partial payload (only one bucket, or only some intervals) preserves the missing keys at `-1`. Omit the field entirely to keep the existing row's value. |
 | CustomEmailHeaders | String | No | JSON-encoded SMTP header overrides for users in this group (e.g. `{"Add":{"X-Header":"value"},"Remove":["X-Other"]}`). Omit to keep the existing row's value. |
-| Options | Object | No | JSON object of per-group options (e.g. `TargetDeliveryServerID_Marketing`, `EmailGatewayDNSTemplate`, `DefaultSenderDomain`, `EnableSenderInfo`). Pass as an object — the endpoint JSON-encodes it. Omit to keep the existing row's value. |
+| Options | Object | No | JSON object of per-group options (e.g. `TargetDeliveryServerID_Marketing`, `EmailGatewayDNSTemplate`, `DefaultSenderDomain`, `EnableSenderInfo`). Pass as an object. The endpoint JSON-encodes it. Omit to keep the existing row's value. |
 | SubscriptionPlan | String | No | Subscription plan identifier for the group. Omit to keep the existing row's value. |
 
 ::: code-group
@@ -1453,12 +1466,12 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
-- **Partial update.** Only the fields present in the request body are written. Every other column of the user group is left untouched — it is not included in the `UPDATE` statement at all.
+- **Partial update.** Only the fields present in the request body are written. Every other column of the user group is left untouched. It is not included in the `UPDATE` statement at all.
 :::
 
 ### Why this exists alongside `usergroup.update`
 
-`usergroup.update` rebuilds the entire user group row from the request body. Around 30 optional columns are written unconditionally, so any field the caller omits is persisted as an empty string, and `PaymentSystem` / `CreditSystem` are written as `Disabled` whenever their key is absent — silently switching those systems off for every user in the group.
+`usergroup.update` rebuilds the entire user group row from the request body. Around 30 optional columns are written unconditionally, so any field the caller omits is persisted as an empty string, and `PaymentSystem` / `CreditSystem` are written as `Disabled` whenever their key is absent, silently switching those systems off for every user in the group.
 
 The only safe way to change a single value through `usergroup.update` is to read the whole group back with `usergroup.get` and echo every field, which forces the client to hold and re-transmit `SendMethodSMTPPassword`.
 
@@ -1471,7 +1484,7 @@ The only safe way to change a single value through `usergroup.update` is to read
 | Command   | String | Yes      | API command: `usergroup.patch`        |
 | SessionID | String | No       | Session ID obtained from admin login  |
 | APIKey    | String | No       | Admin API key for authentication      |
-| UserGroupID | Integer | Yes | The user group to patch. This is the only required field — a request carrying just `UserGroupID` is a valid no-op |
+| UserGroupID | Integer | Yes | The user group to patch. This is the only required field. A request carrying just `UserGroupID` is a valid no-op |
 | GroupName | String | No | Name of the user group |
 | RelThemeID | Integer | No | Theme ID. Must reference an existing theme |
 | SubscriberAreaLogoutURL | String | No | Subscriber area logout URL |
@@ -1524,14 +1537,14 @@ The only safe way to change a single value through `usergroup.update` is to read
 
 Parameter names are matched case-insensitively, as everywhere on `/api.php`.
 
-**Not patchable:** `LimitCampaignSendPeriod`, `LimitEmailSendPeriod`, `PaymentAutoRespondersChargePeriod`, `PaymentDesignPrevChargePeriod` and `PaymentSystemChargePeriod` are fixed to `Monthly` by the product. `PaymentCreditSystem`, `PaymentCreditPricing`, `SendMethodSMTPDebug`, `SendMethodSMTPKeepAlive` and `SendMethodSMTPMsgConn` are not settable through any user group API command. `SubscriptionPlanIsDefault` is deliberately excluded — `usergroup.update` cannot set it either, and the "one default per subscription plan" rule is enforced by the admin interface.
+**Not patchable:** `LimitCampaignSendPeriod`, `LimitEmailSendPeriod`, `PaymentAutoRespondersChargePeriod`, `PaymentDesignPrevChargePeriod` and `PaymentSystemChargePeriod` are fixed to `Monthly` by the product. `PaymentCreditSystem`, `PaymentCreditPricing`, `SendMethodSMTPDebug`, `SendMethodSMTPKeepAlive` and `SendMethodSMTPMsgConn` are not settable through any user group API command. `SubscriptionPlanIsDefault` is deliberately excluded. `usergroup.update` cannot set it either, and the "one default per subscription plan" rule is enforced by the admin interface.
 
 ::: tip Clearing a value
-An empty string is a supplied value: sending `"XMailer": ""` clears the field. A field sent as `null` is treated as absent and is never written, because these columns are `NOT NULL`. Integer fields reject an empty string rather than storing it — see error code 32.
+An empty string is a supplied value: sending `"XMailer": ""` clears the field. A field sent as `null` is treated as absent and is never written, because these columns are `NOT NULL`. Integer fields reject an empty string rather than storing it (see error code 32).
 :::
 
 ::: warning Send-method settings are not connectivity-tested
-`usergroup.update` sends a live test email whenever `SendMethod` is not `System`. `usergroup.patch` validates the **format** of every send-method field it is given — so no value MySQL would silently coerce to an empty string or a zero can be stored — but does not perform that live test, because a partial payload does not describe a complete send configuration. Use `usergroup.update`, the admin interface, or `settings.emailsendingtest` when you want the connection verified.
+`usergroup.update` sends a live test email whenever `SendMethod` is not `System`. `usergroup.patch` validates the **format** of every send-method field it is given, so no value MySQL would silently coerce to an empty string or a zero can be stored, but does not perform that live test, because a partial payload does not describe a complete send configuration. Use `usergroup.update`, the admin interface, or `settings.emailsendingtest` when you want the connection verified.
 :::
 
 **Response Fields:**
@@ -1561,7 +1574,7 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```json [Success Response — no-op]
+```json [Success Response (no-op)]
 {
   "Success": true,
   "ErrorCode": 0,
@@ -1584,20 +1597,20 @@ curl -X POST https://example.com/api.php \
 20: Missing UserGroupID parameter (returned as an array, [20])
 21: User group not found
 22: Invalid send method
-23: Invalid SendMethodSMTPSecure — must be 'ssl', 'tls' or ''
-24: Invalid SendMethodSMTPAuth — must be 'true' or 'false'
+23: Invalid SendMethodSMTPSecure: must be 'ssl', 'tls' or ''
+24: Invalid SendMethodSMTPAuth: must be 'true' or 'false'
 26: Invalid Enabled/Disabled value; the offending field is returned in ErrorField
-27: Invalid TrialGroup value — must be 'Yes' or 'No' (or the 'Enabled'/'Disabled' aliases)
-28: Invalid Options payload — must be an object, or a JSON string decoding to one
-29: Invalid DefaultRateLimits payload — must be an object, or a JSON string decoding to one
-30: Invalid Permissions payload — must be a comma-separated string, or an array whose
+27: Invalid TrialGroup value: must be 'Yes' or 'No' (or the 'Enabled'/'Disabled' aliases)
+28: Invalid Options payload: must be an object, or a JSON string decoding to one
+29: Invalid DefaultRateLimits payload: must be an object, or a JSON string decoding to one
+30: Invalid Permissions payload: must be a comma-separated string, or an array whose
     every element is a string
 31: Non-scalar value supplied for a scalar field; the offending field is returned in
     ErrorField
 32: Invalid integer value; the offending field is returned in ErrorField. The value must
     be a base-10 integer within the signed 32-bit column range (-2147483648..2147483647).
     Floats ('1.5'), scientific notation ('1e3') and hexadecimal ('0x1A') are rejected
-    rather than silently coerced by MySQL — '0x1A' would otherwise store 0, which on a
+    rather than silently coerced by MySQL: '0x1A' would otherwise store 0, which on a
     Limit* column means unlimited. Negative values are accepted: -1 is an established
     "unlimited" sentinel.
 ```
@@ -1963,7 +1976,7 @@ This endpoint is deprecated and will be removed in a future version. There is no
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
-Returns a single account's current usage figures and which features it actually uses, in one strictly **read-only** call — safe to poll on a billing-page render or to gate a plan downgrade. Unlike `user.get`, it performs **no writes**: it never materialises a `oempro_users_payment_log` period and never triggers the active-subscriber-count write-through.
+Returns a single account's current usage figures and which features it actually uses, in one strictly **read-only** call, safe to poll on a billing-page render or to gate a plan downgrade. Unlike `user.get`, it performs **no writes**: it never materialises a `oempro_users_payment_log` period and never triggers the active-subscriber-count write-through.
 
 The response reports the two limit-reset periods **separately** because they run on different clocks: `LimitEmailSendPerPeriod` resets on the calendar month, `LimitCampaignSendPerPeriod` on the payment-log window. Each usage figure carries its own freshness ceiling (`MaxStalenessSeconds`). The active-subscriber count **excludes archived lists** (`Definition: "SubscribedNotHardBounced,ArchivedExcluded"`).
 
@@ -2026,7 +2039,7 @@ curl -X POST https://example.com/api.php \
 1: Missing UserID parameter
 2: Invalid UserID (must be a positive integer)
 3: User not found
-4: A feature-usage count query failed (usage temporarily unavailable — do not treat missing counts as zero)
+4: A feature-usage count query failed (usage temporarily unavailable, do not treat missing counts as zero)
 ```
 
 :::
@@ -2046,7 +2059,7 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
-Returns date-ranged usage for **many users** in a single call — a per-day "emails sent" series plus the current active-subscriber count per account — for a daily billing/metering job. The emails-sent figure uses the same enforcement-backed source as `user.usage.get` (campaign + Email Gateway + auto-responder sends), so display and metering agree. It is bulk (a fixed number of grouped queries regardless of user count) and issues no Redis `KEYS` scan.
+Returns date-ranged usage for **many users** in a single call, a per-day "emails sent" series plus the current active-subscriber count per account, for a daily billing/metering job. The emails-sent figure uses the same enforcement-backed source as `user.usage.get` (campaign + Email Gateway + auto-responder sends), so display and metering agree. It is bulk (a fixed number of grouped queries regardless of user count) and issues no Redis `KEYS` scan.
 
 Absent periods are **omitted** (never padded with synthesized zeros) so a consumer can distinguish "no activity recorded" from "genuinely zero." The active-subscriber count **excludes archived lists**.
 
@@ -2120,3 +2133,542 @@ curl -X POST https://example.com/api.php \
 - When `UserIDs` is supplied, every requested user appears in `Users` (with an empty `Metrics` map and `0` subscribers when they have no data), giving deterministic per-account rows. When omitted, only users with sends or active subscribers in scope are returned.
 - Days with no activity are omitted from each `Metrics` series; `weekly`/`monthly`/`yearly` fold those daily buckets in the response.
 - `TotalActiveSubscribers` is always the current live value; it does not honor the date range.
+
+## Get User Categories
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Users`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+All user categories with the number of users in each, plus the number of users with no category, as
+the admin user browse sidebar shows them.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.usercategories.get` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.usercategories.get", "AdminAPIKey": "your-admin-api-key"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Categories": [
+    {"CategoryID": 3, "CategoryName": "Agencies", "CreatedDateTime": "2026-01-10 09:00:00", "UpdateTime": "2026-01-10 09:00:00", "UserCount": 12}
+  ],
+  "TotalCategories": 1,
+  "UncategorizedUserCount": 40
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999
+}
+```
+
+```txt [Error Codes]
+0: Success
+```
+
+:::
+
+## Create a User Category
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Users`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Creates a category. Before this command a category could only be created as a side effect of
+`user.update` with `Category=New Category`. Names are unique, compared case-insensitively, and at most
+100 characters.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.usercategory.create` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| CategoryName | String | Yes | Category name (1 to 100 characters) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.usercategory.create", "AdminAPIKey": "your-admin-api-key", "CategoryName": "Agencies"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Category": {"CategoryID": 3, "CategoryName": "Agencies", "CreatedDateTime": "2026-09-04 12:00:00", "UpdateTime": "2026-09-04 12:00:00", "UserCount": 0}
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "A category with this name already exists"
+}
+```
+
+```txt [Error Codes]
+1: CategoryName is missing
+2: CategoryName is longer than 100 characters
+3: A category with this name already exists
+4: Category could not be created
+```
+
+:::
+
+## Rename a User Category
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Users`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.usercategory.update` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| CategoryID | Integer | Yes | Category to rename |
+| CategoryName | String | Yes | New name (1 to 100 characters, unique) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.usercategory.update", "AdminAPIKey": "your-admin-api-key", "CategoryID": 3, "CategoryName": "Partner agencies"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Category": {"CategoryID": 3, "CategoryName": "Partner agencies", "CreatedDateTime": "2026-01-10 09:00:00", "UpdateTime": "2026-09-04 12:05:00"}
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Category not found"
+}
+```
+
+```txt [Error Codes]
+1: CategoryID is missing or not a positive integer
+2: CategoryName is missing
+3: Category not found
+4: CategoryName is longer than 100 characters
+5: Another category already carries this name
+6: Category could not be renamed
+```
+
+:::
+
+## Delete a User Category
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Users`
+- Not available in demo mode
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Deletes a category. Users in it become uncategorized; no user account is deleted.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.usercategory.delete` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| CategoryID | Integer | Yes | Category to delete |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.usercategory.delete", "AdminAPIKey": "your-admin-api-key", "CategoryID": 3}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "CategoryID": 3
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Category not found"
+}
+```
+
+```txt [Error Codes]
+1: CategoryID is missing or not a positive integer
+2: Category not found
+3: Category could not be deleted
+NOT AVAILABLE IN DEMO MODE.: Demo mode is enabled
+```
+
+:::
+
+## Get a User's Activity Series (Admin)
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+One per-day series of the admin "Account Activity" chart for a user, one point per calendar day ending
+today, zero-filled. Point keys depend on `Metric`: `Unsubscriptions` gives `Unsubscriptions` (campaign
+unsubscriptions), `Bounces` gives `HardBounces`, `Spam` gives `SpamComplaints`, `Subscriptions` gives
+`Subscriptions` and `Unsubscriptions` (list activity). Values are summed across the user's lists.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.activityseries.get` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Target user account |
+| Metric | String | Yes | `Unsubscriptions`, `Bounces`, `Spam` or `Subscriptions` (case-insensitive) |
+| Days | Integer | No | Number of points, today inclusive; clamped to 1..365 (default 30) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.user.activityseries.get", "AdminAPIKey": "your-admin-api-key", "UserID": 42, "Metric": "Bounces", "Days": 7}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserID": 42,
+  "Metric": "Bounces",
+  "Days": 7,
+  "FromDate": "2026-08-29",
+  "ToDate": "2026-09-04",
+  "Series": [
+    {"Date": "2026-08-29", "HardBounces": 0},
+    {"Date": "2026-08-30", "HardBounces": 3}
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Metric must be one of: Unsubscriptions, Bounces, Spam, Subscriptions"
+}
+```
+
+```txt [Error Codes]
+1: Metric is missing
+2: Metric is unknown
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+```
+
+:::
+
+## Get a User's Send Activity (Admin)
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Per-day campaign send totals for a user, the data behind the sparkline on the admin user list. `From`
+and `To` are `Y-m-d` dates, both inclusive; the default window is the list's own, seven days back to
+today (eight points). The window may span at most 366 days.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.sendactivity.get` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Target user account |
+| From | String | No | Start date `Y-m-d` (default: today minus 7 days) |
+| To | String | No | End date `Y-m-d` (default: today) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.user.sendactivity.get", "AdminAPIKey": "your-admin-api-key", "UserID": 42, "From": "2026-09-01", "To": "2026-09-04"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserID": 42,
+  "FromDate": "2026-09-01",
+  "ToDate": "2026-09-04",
+  "TotalSent": 1250,
+  "Series": [
+    {"Date": "2026-09-01", "TotalSent": 0},
+    {"Date": "2026-09-02", "TotalSent": 1250},
+    {"Date": "2026-09-03", "TotalSent": 0},
+    {"Date": "2026-09-04", "TotalSent": 0}
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "From must be a valid date in Y-m-d format"
+}
+```
+
+```txt [Error Codes]
+1: From is not a valid Y-m-d date
+2: To is not a valid Y-m-d date
+3: From is after To
+4: The window exceeds 366 days
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+```
+
+:::
+
+## Send a Message to a User (Admin)
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- Not available in demo mode
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Emails a message to the user's account address through the system notification template, exactly as
+the "Send message" action on the admin user screen does. The subject is prefixed with the product name;
+line breaks in `Message` are preserved.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.message.send` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Target user account |
+| Subject | String | Yes | Message subject |
+| Message | String | Yes | Message body (plain text) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.user.message.send", "AdminAPIKey": "your-admin-api-key", "UserID": 42, "Subject": "Sending limit raised", "Message": "Your monthly limit is now 500,000."}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserID": 42,
+  "EmailAddress": "owner@example.com",
+  "Subject": "Sending limit raised"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Message could not be sent: Connection refused"
+}
+```
+
+```txt [Error Codes]
+1: Subject is missing
+2: Message is missing
+3: Delivery failed (ErrorText carries the transport error)
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+NOT AVAILABLE IN DEMO MODE.: Demo mode is enabled
+```
+
+:::
+
+## Get a Payment Period
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+One payment period (invoice) of a user by `LogID`, the row the admin invoice screen renders. The period
+must belong to the user; a `LogID` of another account answers error `2` rather than the row.
+`user.paymentperiods` returns every period of the account.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `user.paymentperiod.get` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Owner of the period |
+| LogID | Integer | Yes | Payment period id |
+| ReturnFormatted | String | No | `Yes` to format amounts and dates as `user.paymentperiods` does |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "user.paymentperiod.get", "AdminAPIKey": "your-admin-api-key", "UserID": 42, "LogID": 918}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserID": 42,
+  "PaymentPeriod": {
+    "LogID": "918",
+    "RelUserID": "42",
+    "PeriodStartDate": "2026-08-01",
+    "PeriodEndDate": "2026-08-31",
+    "CampaignsSent": "4",
+    "TotalAmount": "129.5",
+    "PaymentStatus": "Unpaid",
+    "PaymentStatusDate": "2026-08-31"
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Payment period not found for this user"
+}
+```
+
+```txt [Error Codes]
+1: LogID is missing or not a positive integer
+2: Payment period not found for this user
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+```
+
+:::
+
+## Get the Limit-Utilization Summary
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Users`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+The aggregate limit-utilization counts the admin user browse sidebar shows (`Total`, `OK`, `Warning`,
+`Exceeded`, plus `Unknown` for users not yet classified). They come from the cache the
+`user_limit_utilization` cron writes every 15 minutes; `Available` is `false` and every count `0` until
+it has run, and `CalculatedAt` tells how old the figures are. A restricted sub-admin receives the counts
+for the users in the groups they may access (`Scoped: true`), never the install-wide figures.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.users.limitutilization.summary` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.users.limitutilization.summary", "AdminAPIKey": "your-admin-api-key"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Available": true,
+  "Scoped": false,
+  "CalculatedAt": 1788000000,
+  "CalculatedAtFormatted": "2026-09-04 12:00:00",
+  "Counts": {"Total": 150, "OK": 120, "Warning": 20, "Exceeded": 7, "Unknown": 3}
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999
+}
+```
+
+```txt [Error Codes]
+0: Success
+```
+
+:::

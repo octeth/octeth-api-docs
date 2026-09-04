@@ -110,7 +110,7 @@ For choice-type fields (`Drop down`, `Multiple choice`, `Checkboxes`), the field
 :::
 
 ::: warning Behavior change (v5.9.3, #2341 / #2492)
-`SubscriberListID` is now **immutable** on update — a custom field cannot be moved to a different list.
+`SubscriberListID` is now **immutable** on update: a custom field cannot be moved to a different list.
 
 A custom field is a real column on that list's subscriber table, and this endpoint only updates the field's metadata; it does not move or recreate the column. Honoring a changed `SubscriberListID` would leave the field's metadata pointing at a list whose subscriber table has no matching column. To have the field on a different list, create it there with `customfield.create`.
 
@@ -131,7 +131,7 @@ The parameter is still accepted so existing integrations that echo the field's c
 | CustomFieldID | Integer | Yes | ID of the custom field to update |
 | FieldName | String | Yes | Name of the custom field |
 | FieldType | String | Yes | Type of field: "Single line", "Paragraph text", "Multiple choice", "Drop down", "Checkboxes", "Hidden field", "Date field", "Time field" |
-| SubscriberListID | Integer | No | ID of the subscriber list. **Immutable** — must match the field's current list if sent; a different list returns error `14`, a list you do not own returns error `13`. Omit to leave the field's list unchanged. A value that is not a positive integer (for example `"abc"`, `0`, `-1`, or an array) fails the format check and is silently ignored with `Success: true` — neither `13` nor `14` is returned. See the behavior-change note above. |
+| SubscriberListID | Integer | No | ID of the subscriber list. **Immutable**: must match the field's current list if sent; a different list returns error `14`, a list you do not own returns error `13`. Omit to leave the field's list unchanged. A value that is not a positive integer (for example `"abc"`, `0`, `-1`, or an array) fails the format check and is silently ignored with `Success: true`, and neither `13` nor `14` is returned. See the behavior-change note above. |
 | DefaultValue | String | No | Default value for the custom field |
 | ValidationMethod | String | No | Validation method: "Disabled", "Numbers", "Letters", "Numbers and letters", "Email address", "URL", "Date", "Time", "Custom" |
 | ValidationRule | String | Conditional | Validation rule (required if ValidationMethod is "Date", "Time", or "Custom") |
@@ -402,7 +402,7 @@ The documented `Years` requirement for `Date field` is now **enforced**. Creatin
 
 Both an omitted `Years` and an empty string count as missing. If you relied on the old implicit default, send the range explicitly (for example `"Years": "2015-2035"`).
 
-This applies at creation time only — existing date fields are unaffected, and `global.customfield.update` is unchanged.
+This applies at creation time only. Existing date fields are unaffected, and `global.customfield.update` is unchanged.
 :::
 
 **Request Body Parameters:**
@@ -619,6 +619,7 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- `TotalFieldCount` is the real number of global fields matching `SearchKeyword`. Before v5.9.6 it was computed from variables that do not exist under admin auth, so it was wrong. `TotalCustomFields` carries the same number; `RecordsFrom` and `RecordsPerRequest` echo the paging in effect.
 :::
 
 **Request Body Parameters:**
@@ -630,6 +631,9 @@ curl -X POST https://example.com/api.php \
 | APIKey | String | No | API key for authentication |
 | OrderField | String | No | Field to order by: "FieldName", "CustomFieldID", "FieldType", "IsRequired", "IsUnique", "Visibility", "IsGlobal" (default: "FieldName") |
 | OrderType | String | No | Order direction: "ASC" or "DESC" (default: "ASC") |
+| SearchKeyword | String | No | Case-insensitive substring match on FieldName and MergeTagAlias |
+| RecordsFrom | Integer | No | Offset (default 0) |
+| RecordsPerRequest | Integer | No | Page size (default 0 = all, max 1000) |
 
 ::: code-group
 
@@ -650,6 +654,9 @@ curl -X POST https://example.com/api.php \
   "ErrorCode": 0,
   "ErrorText": "",
   "TotalFieldCount": 3,
+  "TotalCustomFields": 3,
+  "RecordsFrom": 0,
+  "RecordsPerRequest": 0,
   "CustomFields": [
     {
       "CustomFieldID": "789",
@@ -677,6 +684,85 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
+```
+
+:::
+
+## Get a Global Custom Field
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required admin privilege: `CustomFields`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Only system-global fields are returned (`RelOwnerUserID = 0`, `RelListID = 0`, `IsGlobal = Yes`). A tenant-owned field id returns error 2.
+- `Options` and `SelectedOptions` are the two view fields the admin edit screen derives: `FieldOptions` with the selected-marker asterisks stripped, and the comma list of selected option indexes in `ArrayOptions`.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `global.customfield.get` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| CustomFieldID | Integer | Yes | ID of the global custom field |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "global.customfield.get",
+    "AdminAPIKey": "your-admin-api-key",
+    "CustomFieldID": 789
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "CustomField": {
+    "CustomFieldID": "789",
+    "RelOwnerUserID": "0",
+    "RelListID": "0",
+    "FieldName": "Industry Sector",
+    "FieldType": "Drop down",
+    "FieldDefaultValue": "",
+    "FieldOptions": "[[Retail]||[retail]],,,[[Finance]||[finance]]*",
+    "ValidationMethod": "Disabled",
+    "ValidationRule": "",
+    "IsRequired": "No",
+    "IsUnique": "No",
+    "Visibility": "Public",
+    "IsGlobal": "Yes",
+    "MergeTagAlias": "industry",
+    "ArrayOptions": [
+      {"label": "Retail", "value": "retail", "is_selected": "false"},
+      {"label": "Finance", "value": "finance", "is_selected": "true"}
+    ],
+    "Options": "[[Retail]||[retail]],,,[[Finance]||[finance]]",
+    "SelectedOptions": "1"
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Global custom field not found"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing CustomFieldID
+2: Global custom field not found
 ```
 
 :::

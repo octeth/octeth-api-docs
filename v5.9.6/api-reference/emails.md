@@ -127,19 +127,19 @@ curl -X POST https://example.com/api.php \
 
 This endpoint operates in two modes:
 
-- **Legacy list mode** (no `EmailIDs` parameter) — returns every email the
+- **Legacy list mode** (no `EmailIDs` parameter): returns every email the
   calling user owns. Per-row shape is the raw database row: `Options` is a
   JSON string, no `Attachments` key. Default order: `EmailName ASC`.
-- **Bulk-by-IDs mode** (with `EmailIDs` parameter) — returns only the
+- **Bulk-by-IDs mode** (with `EmailIDs` parameter): returns only the
   requested rows that the calling user owns. Per-row shape mirrors
   `email.get`: `Options` is JSON-decoded into an object, and `Attachments`
   is attached when the full shape is requested OR when `Attachments` is
   explicitly listed in `Fields`. Soft-deleted rows are excluded. Response
-  order is **not guaranteed** — re-key by `EmailID` if order matters.
+  order is **not guaranteed**. Re-key by `EmailID` if order matters.
   Non-owned and non-existent IDs are silently dropped (compare input length
   vs. response length to detect drops).
 
-The optional `Fields` parameter is honored in both modes — additive
+The optional `Fields` parameter is honored in both modes, additive
 projection that restricts which keys appear on each returned row.
 
 **Request Body Parameters:**
@@ -154,7 +154,7 @@ projection that restricts which keys appear on each returned row.
 
 ::: code-group
 
-```bash [Example Request — Legacy List Mode]
+```bash [Example Request: Legacy List Mode]
 curl -X POST https://example.com/api.php \
   -H "Content-Type: application/json" \
   -d '{
@@ -163,7 +163,7 @@ curl -X POST https://example.com/api.php \
   }'
 ```
 
-```bash [Example Request — Bulk by IDs]
+```bash [Example Request: Bulk by IDs]
 curl -X POST https://example.com/api.php \
   -H "Content-Type: application/json" \
   -d '{
@@ -856,8 +856,9 @@ curl -X POST https://example.com/api.php \
 | TemplateSubject        | String  | No       | Default subject line                           |
 | TemplateHTMLContent    | String  | Conditional | HTML template content (at least one required)|
 | TemplatePlainContent   | String  | Conditional | Plain text template content (at least one required)|
-| TemplateThumbnailPath  | String  | No       | Path to thumbnail image in tmp directory       |
+| TemplateThumbnailPath  | String  | No       | Bare file name returned by `email.template.thumbnail.upload`. Any value containing a path separator or `..` is ignored |
 | RelOwnerUserID         | Integer | No       | Owner user ID (admin only)                     |
+| IsCreatedByAdmin       | Boolean | No       | Admin auth only. When passed, stored as given. When omitted the historical derivation applies: `1` if no `RelOwnerUserID` was named, else `0`. Before v5.9.6 the parameter was ignored |
 | AccessType             | String  | No       | Access type setting                            |
 
 ::: code-group
@@ -1043,9 +1044,10 @@ curl -X POST https://example.com/api.php \
 | TemplateSubject        | String  | No       | Default subject line                  |
 | TemplateHTMLContent    | String  | No       | HTML template content                 |
 | TemplatePlainContent   | String  | No       | Plain text template content           |
-| TemplateThumbnailPath  | String  | No       | Path to thumbnail image in tmp directory |
+| TemplateThumbnailPath  | String  | No       | Bare file name returned by `email.template.thumbnail.upload`. The temp file is deleted after it is read |
 | RelOwnerUserID         | Integer | No       | Owner user ID (admin only)            |
 | AccessType             | String  | No       | Access type setting (admin only)      |
+| ClearFields            | String  | No       | Comma-separated list of fields to empty: `TemplateDescription`, `TemplateSubject`, `TemplateHTMLContent`, `TemplatePlainContent`, `TemplateThumbnail` (also clears `TemplateThumbnailType`). Applied after the value parameters, so a field named in both is cleared. Sending an empty value without `ClearFields` still leaves the field unchanged (historical behaviour) |
 
 ::: code-group
 
@@ -1079,6 +1081,8 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing required parameter TemplateID
 2: Template not found or access denied
+3: Invalid ClearFields entry
+4: ClearFields would leave the template with neither an HTML nor a plain content
 ```
 
 :::
@@ -1133,6 +1137,164 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing required parameter Templates
 2: No templates found or access denied for deletion
+```
+
+:::
+
+## Upload an Email Template Thumbnail
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or User API Key (pass `Access=user` with a user key, the command is registered admin first like the rest of `email.template.*`)
+- Required user permission: `EmailTemplates.Manage`; required admin privilege: `Settings`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- The returned `TemplateThumbnailPath` is consumed by `email.template.create` or `email.template.update` (their existing `TemplateThumbnailPath` parameter). The temp file is deleted when it is consumed. Files that are never consumed stay in `data/tmp/`.
+- The image type is detected from the bytes and must be gif, png or jpeg (the same allow-list as the admin form). `ThumbnailType` must agree with the detected type.
+- Size cap: `TEMPLATE_THUMBNAIL_MAX_FILESIZE` (default 2 MB, decoded bytes).
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `email.template.thumbnail.upload` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| ThumbnailData | String | Yes | Base64-encoded image bytes. A `data:image/png;base64,` prefix is accepted and stripped |
+| ThumbnailType | String | Yes | Declared type: `gif`, `png`, `jpg` or `jpeg` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "email.template.thumbnail.upload",
+    "AdminAPIKey": "your-admin-api-key",
+    "ThumbnailData": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+    "ThumbnailType": "png"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TemplateThumbnailPath": "templatethumbnail_3f0c1c8e9d0b4a2f8e7d6c5b4a3f2e1d",
+  "ThumbnailType": "image/png",
+  "ThumbnailSize": 68,
+  "Width": 1,
+  "Height": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [6],
+  "ErrorText": ["ThumbnailData is not a gif, png or jpeg image, or does not match ThumbnailType"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing ThumbnailData
+2: Missing ThumbnailType
+3: Invalid ThumbnailType (gif, png, jpg, jpeg)
+4: ThumbnailData is not valid base64
+5: Thumbnail exceeds TEMPLATE_THUMBNAIL_MAX_FILESIZE bytes
+6: ThumbnailData is not a gif, png or jpeg image, or does not match ThumbnailType
+7: Thumbnail could not be written to the temp directory
+```
+
+:::
+
+## Search Email Templates (Admin)
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required admin privilege: `Settings`
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Metadata only: the HTML and plain bodies and the base64 thumbnail are not returned. Fetch a single template with `email.template.get` for those.
+- `email.templates.get` is unchanged (five columns, unpaged, bodies included). Third-party admin UIs should list with this command.
+- `RelOwnerUserID` follows the ownership convention of the admin screen: `0` = all users, a negative value `-<UserGroupID>` = one user group, a positive `UserID` = one user.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `email.templates.search` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| RelOwnerUserID | Integer | No | Exact owner filter (0, negative group id or user id). Omit for all owners |
+| IsCreatedByAdmin | Boolean | No | `true` = admin-created templates only, `false` = user-created only |
+| SearchKeyword | String | No | Case-insensitive substring match on TemplateName, TemplateDescription and TemplateSubject |
+| OrderField | String | No | `TemplateID`, `TemplateName` (default), `RelOwnerUserID`, `IsCreatedByAdmin` |
+| OrderType | String | No | `ASC` (default) or `DESC` |
+| RecordsFrom | Integer | No | Offset (default 0) |
+| RecordsPerRequest | Integer | No | Page size (default 25, max 1000) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "email.templates.search",
+    "AdminAPIKey": "your-admin-api-key",
+    "RelOwnerUserID": 0,
+    "SearchKeyword": "newsletter",
+    "OrderField": "TemplateName",
+    "OrderType": "ASC",
+    "RecordsFrom": 0,
+    "RecordsPerRequest": 25
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalTemplateCount": 42,
+  "RecordsFrom": 0,
+  "RecordsPerRequest": 25,
+  "OrderField": "TemplateName",
+  "OrderType": "ASC",
+  "Templates": [
+    {
+      "TemplateID": "500",
+      "TemplateName": "Monthly Newsletter",
+      "TemplateDescription": "Two column layout",
+      "TemplateSubject": "Newsletter",
+      "RelOwnerUserID": "0",
+      "IsCreatedByAdmin": "1",
+      "Options": {"AccessType": "Public"},
+      "TemplateThumbnailType": "image/png",
+      "HasThumbnail": true,
+      "TemplateMD5ID": "...",
+      "AccessType": "Public"
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [1],
+  "ErrorText": ["Invalid RelOwnerUserID"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Invalid RelOwnerUserID (must be numeric)
 ```
 
 :::
@@ -1463,18 +1625,18 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-Stateless utility endpoint that converts an HTML email body into its plain-text equivalent. Useful when generating the `PlainContent` variant of a campaign email programmatically — e.g., during automated campaign creation or before sending through `email.render`.
+Stateless utility endpoint that converts an HTML email body into its plain-text equivalent. Useful when generating the `PlainContent` variant of a campaign email programmatically, for example during automated campaign creation or before sending through `email.render`.
 
 Internally calls the same `Soundasleep\Html2Text` library used by the campaign-create UI's "Generate plain text from HTML" button, the email model's auto-conversion (when `PlainContentAutoConvert` is enabled), and the queue worker. Conversion options are hard-coded to match the UI verbatim (`ignore_errors=true`, `drop_links=false`), so the output is byte-for-byte identical to what users see in the in-app editor.
 
 **Behavior details:**
 
 - Link URLs are preserved inline (e.g. `<a href="https://example.com">Click</a>` becomes `Click [https://example.com]`).
-- Merge tags such as `[SUBSCRIBER_FIRSTNAME]` are preserved verbatim — the library only strips HTML markup, and merge tags live in text nodes.
+- Merge tags such as `[SUBSCRIBER_FIRSTNAME]` are preserved verbatim: the library only strips HTML markup, and merge tags live in text nodes.
 - Malformed HTML is tolerated; the library returns partial output rather than throwing.
 - An empty `HTMLContent` value returns an empty `PlainContent`.
 - Character encoding is auto-detected via `mb_detect_encoding`; UTF-8 is handled safely.
-- The endpoint performs no database access and has no per-user resource ownership — it is purely a stateless transform of the request payload.
+- The endpoint performs no database access and has no per-user resource ownership. It is purely a stateless transform of the request payload.
 
 **Request Body Parameters:**
 
@@ -1517,7 +1679,7 @@ curl -X POST https://example.com/api/v1/email.html2text \
 
 ```txt [Error Codes]
 1: Missing HTMLContent parameter (returned with HTTP 422)
-2: HTML conversion failed (returned with HTTP 500 — defensive catch for the rare case the library throws despite ignore_errors=true)
+2: HTML conversion failed (returned with HTTP 500, a defensive catch for the rare case the library throws despite ignore_errors=true)
 ```
 
 :::
