@@ -266,6 +266,7 @@ curl -X POST https://example.com/api.php \
 - Authentication required: User API Key
 - Required permissions: `CustomFields.Delete`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Every id in `CustomFields` must name a custom field owned by the authenticated account. The call is all-or-nothing: if any id is not numeric, does not exist, or belongs to another account, the whole request is refused with `ErrorCode 2` and nothing is deleted (changed in v5.9.6, issue #2768).
 :::
 
 **Request Body Parameters:**
@@ -305,9 +306,18 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Error Response: foreign or unknown id]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Invalid custom field id"]
+}
+```
+
 ```txt [Error Codes]
 0: Success
 1: Custom field ids are missing
+2: Invalid custom field id
 ```
 
 :::
@@ -566,6 +576,7 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Every id in `CustomFields` must name a system-global custom field (`RelOwnerUserID = 0`, `RelListID = 0`, `IsGlobal = Yes`). The call is all-or-nothing: if any id is not numeric, does not exist, or names a user-owned or list-local field, the whole request is refused with `ErrorCode 2` and nothing is deleted (changed in v5.9.6, issue #2768).
 :::
 
 **Request Body Parameters:**
@@ -605,9 +616,18 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Error Response: non-global id]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Invalid custom field id"]
+}
+```
+
 ```txt [Error Codes]
 0: Success
 1: Custom field ids are missing
+2: Invalid custom field id
 ```
 
 :::

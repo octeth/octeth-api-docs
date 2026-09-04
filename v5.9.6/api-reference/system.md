@@ -11,16 +11,18 @@ System health monitoring and diagnostics endpoints for infrastructure components
 <Badge type="info" text="GET" /> `/api/v1/system-health-check`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (via Bearer token or query parameter)
+- Authentication required: Admin API Key (via Bearer token or query parameter), or the dedicated health-check token when `SYSTEM_HEALTH_CHECK_AUTH_REQUIRED` is on
 - Legacy endpoint access via `/api.php` is also supported
+- Admin-key calls are subject to `ADMIN_API_ENFORCE_ALLOWED_IP`; token calls are not
 :::
 
 **Request Parameters:**
 
-| Parameter | Type   | Required | Description                                                    |
-|-----------|--------|----------|----------------------------------------------------------------|
-| Command   | String | Yes      | API command: `system.health.check` (only for legacy endpoint)  |
-| AdminAPIKey | String | No     | Admin API key for authentication (alternative to Bearer token) |
+| Parameter        | Type   | Required | Description                                                                                         |
+|------------------|--------|----------|-----------------------------------------------------------------------------------------------------|
+| Command          | String | Yes      | API command: `system.health.check` (only for legacy endpoint)                                       |
+| AdminAPIKey      | String | No       | Admin API key, master or per-sub-admin (alternative to Bearer token)                                |
+| HealthCheckToken | String | No       | The install's `SYSTEM_HEALTH_CHECK_TOKEN` (alternative to a Bearer token carrying the same value). Honoured only when `SYSTEM_HEALTH_CHECK_AUTH_REQUIRED` is on |
 
 **Authentication Methods:**
 
@@ -35,6 +37,37 @@ This endpoint supports two authentication methods:
    ```
    ?adminapikey=YOUR_ADMIN_API_KEY
    ```
+
+### Strict authentication mode (v5.9.6)
+
+With `SYSTEM_HEALTH_CHECK_AUTH_REQUIRED=true` in `.oempro_env` (the default for fresh installs), the endpoint accepts exactly two credentials:
+
+1. **Admin API key**, master or per-sub-admin, as `AdminAPIKey` or `Authorization: Bearer <key>`.
+2. **Health-check token**, the value of `SYSTEM_HEALTH_CHECK_TOKEN`, as `HealthCheckToken` or `Authorization: Bearer <token>`. Use this for external monitors so they never hold the master key; it grants the health report and nothing else.
+
+Any other call answers HTTP 401. With the switch off (upgraded installs that have not enabled it), the historical behaviour is unchanged: the master key only, refused with HTTP 500 and error `100005`.
+
+::: code-group
+
+```bash [Example Request (Monitor token)]
+curl -X GET https://example.com/api/v1/system-health-check \
+  -H "Authorization: Bearer YOUR_SYSTEM_HEALTH_CHECK_TOKEN"
+```
+
+```json [Error Response (HTTP 401, strict mode)]
+{
+  "Success": false,
+  "ErrorCode": 99998,
+  "ErrorMessage": "Invalid API key"
+}
+```
+
+:::
+
+| Code   | HTTP | Description                                                                 |
+|--------|------|-----------------------------------------------------------------------------|
+| 99998  | 401  | Strict mode: no valid admin key or health-check token was presented         |
+| 100005 | 500  | Legacy mode: the master admin key was missing or wrong                      |
 
 ::: code-group
 

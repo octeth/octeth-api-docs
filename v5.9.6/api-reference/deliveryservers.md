@@ -108,7 +108,24 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
-- Internal. This command only stores the booleans the caller sends; it is what the admin screen used to call after running the checks inline. Use `deliveryserver.verify` to run a real verification. It stays registered for backward compatibility (see issue #2769).
+- Since v5.9.6 this command runs the real verification (a test message through the server's own SMTP
+  credentials, then the SPF, DKIM and DMARC TXT checks and the CNAME checks on the MFROM, link-tracking and
+  open-tracking hosts) and stores what the check found. The `test_results` and `last_checked_at` values you
+  send are accepted for backward compatibility and ignored. Before v5.9.6 the command stored those values as
+  sent, with no check, so any admin caller could mark a server verified (issue #2769).
+- The test message is sent to the authenticated admin's email address, with the admin's name as sender name.
+  To pick another recipient, and to receive the results in the response instead of reading them back with
+  `deliveryserver.get`, call `deliveryserver.verify`.
+- Every call sends real mail and performs six DNS lookups, so since v5.9.6 this command is rate limited the
+  same way as `deliveryserver.verify`: 10 calls per 300 seconds per caller.
+- In demo mode the command answers `Success: true` without running or storing anything.
+- The recipient is always the authenticated admin's stored email address. If that address is empty or
+  invalid the test send fails and `email_delivery` is stored as false; the response does not say why, so
+  check the admin record if `deliveryserver.verify` reports a send failure that names the recipient.
+- Parameter names are matched after lowercasing, so send them exactly as `test_results` and `last_checked_at`
+  (with the underscores). Earlier versions of this page showed `TestResults` and `LastCheckedAt`; those
+  lowercase to `testresults` / `lastcheckedat`, never matched the handler, and always answered
+  `ErrorCode [2, 4]`.
 :::
 
 **Request Body Parameters:**
@@ -118,16 +135,9 @@ curl -X POST https://example.com/api.php \
 | Command | String | Yes | API command: `deliveryserver.testresults` |
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
-| DeliveryServerID | Integer | Yes | ID of the delivery server |
-| TestResults | Object | Yes | Verification test results object |
-| TestResults.SPF | Boolean | Yes | SPF record verification result |
-| TestResults.DKIM | Boolean | Yes | DKIM record verification result |
-| TestResults.DMARC | Boolean | Yes | DMARC record verification result |
-| TestResults.SenderDomain | Boolean | Yes | Sender domain verification result |
-| TestResults.LinkDomain | Boolean | Yes | Link tracking domain verification result |
-| TestResults.OpenDomain | Boolean | Yes | Open tracking domain verification result |
-| TestResults.EmailDelivery | Boolean | Yes | Email delivery test result |
-| LastCheckedAt | String | Yes | Last verification timestamp (format: "YYYY-MM-DD HH:MM:SS") |
+| DeliveryServerID | Integer | Yes | ID of the delivery server to verify |
+| test_results | Object | Yes | Accepted for backward compatibility, ignored. Any non-empty value satisfies the check (for example `{"spf": false}`) |
+| last_checked_at | String | Yes | Accepted for backward compatibility, ignored. The stored `VerificationLastCheckedAt` is the time the check ran |
 
 ::: code-group
 
@@ -138,16 +148,8 @@ curl -X POST https://example.com/api.php \
     "Command": "deliveryserver.testresults",
     "SessionID": "admin-session-id",
     "DeliveryServerID": 123,
-    "TestResults": {
-      "SPF": true,
-      "DKIM": true,
-      "DMARC": true,
-      "SenderDomain": true,
-      "LinkDomain": true,
-      "OpenDomain": true,
-      "EmailDelivery": true
-    },
-    "LastCheckedAt": "2025-12-28 10:30:00"
+    "test_results": {"spf": false},
+    "last_checked_at": "2025-12-28 10:30:00"
   }'
 ```
 
@@ -162,8 +164,8 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [1, 3],
-  "ErrorText": ["Missing deliveryserverid", "Invalid deliveryserverid"]
+  "ErrorCode": [3],
+  "ErrorText": ["Invalid deliveryserverid"]
 }
 ```
 
@@ -176,6 +178,10 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+Read the stored outcome back with `deliveryserver.get`: `VerificationResults` holds the seven booleans
+(`email_delivery`, `spf`, `dkim`, `dmarc`, `sender_domain`, `link_domain`, `open_domain`) and
+`VerificationLastCheckedAt` the time of the check.
 
 ## Update a Delivery Server
 
@@ -558,6 +564,7 @@ curl -X POST https://example.com/api.php \
 - Not available when `DEMO_MODE_ENABLED` is on (error 4).
 - Runs the same verification as the admin screen's "Test" button (`DeliveryServers::Verify`): a test send, then SPF, DKIM (`DNS_DKIM_KEY._domainkey.<mfrom>`) and DMARC TXT checks on the MFROM domain, and CNAME checks on the MFROM, link-tracking and open-tracking hosts against `DNS_SENDER_DOMAIN`, `DNS_LINK_TRACKER` and `DNS_OPEN_TRACKER`. The seven booleans are persisted to `VerificationResults` together with `VerificationLastCheckedAt`, exactly as the screen does.
 - The test message goes to the authenticated admin's email address unless `To` is given.
+- `deliveryserver.testresults` runs the same verification since v5.9.6 but answers only the `Success` envelope; prefer this command for a UI, it returns the results and the per-check messages.
 :::
 
 **Request Body Parameters:**

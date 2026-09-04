@@ -687,6 +687,53 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     Maximum decoded size, in bytes, of a thumbnail accepted by the `email.template.thumbnail.upload` API command (gif, png or jpeg, the same allow-list as the admin "create email template" form). The image is stored base64-encoded in the `TemplateThumbnail` column of the templates table, so keep it small. Clamped to `[10240, 20971520]`; values outside that range fall back to the default. Introduced in v5.9.6 (issue #2787).
 
 
+44. **System Health Check Authentication**
+
+    ```bash
+    SYSTEM_HEALTH_CHECK_AUTH_REQUIRED=true    # Strict credential check on system.health.check (default: false on upgrades, true in the shipped example)
+    SYSTEM_HEALTH_CHECK_TOKEN=                # Dedicated monitor credential, honoured only while the switch above is true (default: empty)
+    ```
+
+    `system.health.check` (`GET /api/v1/system-health-check`) has always required the master
+    `ADMIN_API_KEY`, as the `AdminAPIKey` parameter or an `Authorization: Bearer` header, which
+    meant every external uptime monitor held the one credential that unlocks every admin command.
+
+    With `SYSTEM_HEALTH_CHECK_AUTH_REQUIRED=true` the endpoint accepts a call only with a valid
+    `AdminAPIKey` (the master key or a per-sub-admin key), or with `SYSTEM_HEALTH_CHECK_TOKEN`
+    sent as the `HealthCheckToken` parameter or as `Authorization: Bearer <token>`. Anything else
+    answers HTTP 401 with `{"Success":false,"ErrorCode":99998,"ErrorMessage":"Invalid API key"}`
+    and no health data. The token grants the health report and nothing else, so a monitoring host
+    never needs the master key. Generate one with `openssl rand -hex 32`; leave it empty to keep
+    `AdminAPIKey` as the only credential.
+
+    Absent or empty is treated as off, so an upgraded install keeps the historical check (master
+    key only, refused with HTTP 500 and error `100005`). Fresh installs copy `.oempro_env.example`
+    and enforce from day one. The command's registration and its success response are unchanged.
+    Introduced in v5.9.6 (issue #2767).
+
+45. **Admin API IP Allow-List Enforcement**
+
+    ```bash
+    ADMIN_API_ENFORCE_ALLOWED_IP=true    # Apply the admin-area IP allow-list to admin-authenticated API calls (default: false on upgrades, true in the shipped example)
+    ```
+
+    The admin-area "Authorized IP Addresses" list (Settings, Security; one IPv4 address or CIDR
+    per line) was only ever checked when the admin login page rendered. `api.php` did not consult
+    it, so `AdminAPIKey`, an admin `SessionID` from `admin.login` and admin username/password all
+    worked from any address.
+
+    When this is `true` and the list is non-empty, every admin-authenticated API call from an
+    address outside the list answers the existing `99998` envelope. The address is the client IP
+    after `TRUSTED_PROXIES` / `TRUST_CLOUDFLARE_CONNECTING_IP` resolution. There is no exemption
+    for loopback or private ranges: an integration that calls `api.php` with an admin credential
+    from inside the Docker network, or from another server, must have its address or subnet added
+    to the list first. The product's own screens are unaffected because they call the API
+    in-process, not over HTTP. An empty list means no restriction in either mode, exactly as on the
+    login page.
+
+    Absent or empty is treated as off, so upgraded installs keep their current behaviour; fresh
+    installs enforce from day one. Introduced in v5.9.6 (issue #2770).
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::
@@ -2585,9 +2632,10 @@ If you need to disable 2FA (for example, if you lost your phone):
 
 **Method 1: Via the Security Settings (if you still have access):**
 1. Navigate to **Preferences** → **System Settings** → **Security**
-2. In the 2FA section, enter a valid 6-digit code
-3. Clear the code field or enter an invalid code
-4. Click **UPDATE SECURITY SETTINGS**
+2. In the **Two Factor Authentication Settings** section, enter your current administrator password in the **Current Password** field
+3. Click **DISABLE TWO FACTOR AUTHENTICATION** and confirm
+
+Your password is required so that an open browser session alone cannot switch off your second factor. If the password is wrong, 2FA stays enabled and an error is shown.
 
 **Method 2: Via Server Access (if you're locked out):**
 1. SSH into your Octeth server
