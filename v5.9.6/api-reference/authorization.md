@@ -119,6 +119,10 @@ The privilege a command needs mirrors the screen that owns it: for example `Sett
 
 The response of `Admin.Login` never includes the sub-admin API key.
 
+### Admin access to user-owned objects
+
+Some user commands also accept admin authentication so an admin UI can read another account's data without impersonating it: `lists.get`, `campaigns.get`, `segments.get`, `emailgateway.getdomains`, `user.senderdomain.list`, `lists.stats`, `list.getactivityseries`, `subscribers.get` and `media.upload` (v5.9.6, #2775). Pass `Access=admin` together with `UserID`; the handler then runs exactly as it would for that user's own key. Without `Access=admin` the call is a user call, so nothing changes for existing integrations. These calls need the `User.Edit` privilege when privilege enforcement is on, and a restricted sub-admin can only name accounts inside its allowed user groups. Error codes reserved for this path: `5001` (UserID missing or invalid), `5002` (user not found), `5003` (user outside the admin's allowed groups).
+
 ## Two-Factor Authentication
 
 When 2FA is enabled, include the verification code:

@@ -288,7 +288,7 @@ curl -X POST https://example.com/api.php \
 <Badge type="info" text="POST" /> `/api.php`
 
 ::: tip API Usage Notes
-- Authentication required: User API Key
+- Authentication required: User API Key. Admin authentication is also accepted with `Access=admin` and `UserID` (see Admin usage below)
 - Required permissions: `EmailGateway.ManageDomain`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
@@ -297,11 +297,16 @@ Returns every sender domain owned by the caller. By default the response shape i
 
 When `WithCounts=1` is supplied, each row is additionally enriched with **per-row API-key / SMTP / webhook counts** (one SQL aggregation) and **7-day Sent / BounceRate / LastActivityAt stats from ES** (one ES terms aggregation). This replaces the legacy 4×N pattern of calling `emailgateway.getapis` + `emailgateway.getsmtps` + `emailgateway.getwebhooks` + `emailgateway.domainstats` once per domain, which made the Overview unusable past ~20 domains.
 
+::: tip Admin usage (v5.9.6, #2775)
+This command also accepts admin authentication. Pass `AdminAPIKey` (or an admin `SessionID`), `Access=admin`, and `UserID` naming the account to act on; the response is exactly what that account's own API key would receive. Without `Access=admin` the call is treated as a user call, so existing integrations are unaffected. `UserID` is ignored under user authentication. Admin-only error codes: `5001` UserID missing or invalid, `5002` user not found, `5003` user outside the user groups a restricted sub-admin may access. Requires the `User.Edit` privilege when `ADMIN_API_ENFORCE_PRIVILEGES` is on.
+:::
+
 **Request Body Parameters:**
 
 | Parameter  | Type    | Required | Description                                                                                                                                                                                                                                          |
 |------------|---------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Command    | String  | Yes      | API command: `emailgateway.getdomains`                                                                                                                                                                                                              |
+| UserID | Integer | Admin only | Account to act on when calling with admin authentication and `Access=admin`. Ignored under user authentication (v5.9.6, #2775) |
 | SessionID  | String  | No       | Session ID obtained from login                                                                                                                                                                                                                       |
 | APIKey     | String  | No       | API key for authentication                                                                                                                                                                                                                            |
 | WithCounts | Mixed   | No       | When truthy (`1`, `'1'`, `'true'`, `'yes'`, `true`), each domain row is enriched with `APIKeyCount`, `SMTPCount`, `WebhookCount`, `Sent7d`, `BounceRate7d`, `LastActivityAt`. Any other value (missing, `0`, `'false'`, garbage) → no enrichment, legacy shape preserved. |

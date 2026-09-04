@@ -1151,9 +1151,13 @@ curl -X POST https://example.com/api/v1/subscribers.import \
 <Badge type="info" text="POST" /> `/api.php`
 
 ::: tip API Usage Notes
-- Authentication required: User API Key
+- Authentication required: User API Key. Admin authentication is also accepted with `Access=admin` and `UserID` (see Admin usage below)
 - Required permissions: `Subscribers.Get`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+::: tip Admin usage (v5.9.6, #2775)
+This command also accepts admin authentication. Pass `AdminAPIKey` (or an admin `SessionID`), `Access=admin`, and `UserID` naming the account to act on; the response is exactly what that account's own API key would receive. Without `Access=admin` the call is treated as a user call, so existing integrations are unaffected. `UserID` is ignored under user authentication. Admin-only error codes: `5001` UserID missing or invalid, `5002` user not found, `5003` user outside the user groups a restricted sub-admin may access. Requires the `User.Edit` privilege when `ADMIN_API_ENFORCE_PRIVILEGES` is on.
 :::
 
 **Request Body Parameters:**
@@ -1161,6 +1165,7 @@ curl -X POST https://example.com/api/v1/subscribers.import \
 | Parameter | Type   | Required | Description                           |
 |-----------|--------|----------|---------------------------------------|
 | Command   | String | Yes      | API command: `subscribers.get`        |
+| UserID | Integer | Admin only | Account to act on when calling with admin authentication and `Access=admin`. Ignored under user authentication (v5.9.6, #2775) |
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
 | SubscriberListID | Integer | Yes | ID of the subscriber list           |

@@ -523,18 +523,23 @@ curl -X POST https://example.com/api.php \
 <Badge type="info" text="POST" /> `/api.php`
 
 ::: tip API Usage Notes
-- Authentication required: User API Key
+- Authentication required: User API Key. Admin authentication is also accepted with `Access=admin` and `UserID` (see Admin usage below)
 - Required permissions: `Lists.Get`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
 Returns the authenticated user's subscriber lists with full per-row metadata. Supports pagination, free-text search across `Name` and `Description`, and filtering by archive state.
 
+::: tip Admin usage (v5.9.6, #2775)
+This command also accepts admin authentication. Pass `AdminAPIKey` (or an admin `SessionID`), `Access=admin`, and `UserID` naming the account to act on; the response is exactly what that account's own API key would receive. Without `Access=admin` the call is treated as a user call, so existing integrations are unaffected. `UserID` is ignored under user authentication. Admin-only error codes: `5001` UserID missing or invalid, `5002` user not found, `5003` user outside the user groups a restricted sub-admin may access. Requires the `User.Edit` privilege when `ADMIN_API_ENFORCE_PRIVILEGES` is on.
+:::
+
 **Request Body Parameters:**
 
 | Parameter          | Type    | Required | Description                                          |
 |--------------------|---------|----------|------------------------------------------------------|
 | Command            | String  | Yes      | API command: `lists.get`                             |
+| UserID | Integer | Admin only | Account to act on when calling with admin authentication and `Access=admin`. Ignored under user authentication (v5.9.6, #2775) |
 | SessionID          | String  | No       | Session ID obtained from login                       |
 | APIKey             | String  | No       | API key for authentication                           |
 | RecordsPerRequest  | Integer | No       | Number of records per page (default: 0 = all)        |
@@ -630,18 +635,23 @@ curl -X POST https://example.com/api.php \
 <Badge type="info" text="POST" /> `/api.php`
 
 ::: tip API Usage Notes
-- Authentication required: User API Key
+- Authentication required: User API Key. Admin authentication is also accepted with `Access=admin` and `UserID` (see Admin usage below)
 - Required permissions: `Lists.Get`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
 Returns aggregate per-list statistics over a configurable lookback window. Designed for the "Lists browse" page stat strip and per-row metrics — one round-trip across `oempro_subscriber_lists` joined with the pre-aggregated `oempro_stats_list_daily_aggregated` (opens / clicks / forwards / browser-views) and `oempro_stats_activity` (sent / subscriptions / unsubscriptions / imports / hard bounces) sources. Archived lists are excluded.
 
+::: tip Admin usage (v5.9.6, #2775)
+This command also accepts admin authentication. Pass `AdminAPIKey` (or an admin `SessionID`), `Access=admin`, and `UserID` naming the account to act on; the response is exactly what that account's own API key would receive. Without `Access=admin` the call is treated as a user call, so existing integrations are unaffected. `UserID` is ignored under user authentication. Admin-only error codes: `5001` UserID missing or invalid, `5002` user not found, `5003` user outside the user groups a restricted sub-admin may access. Requires the `User.Edit` privilege when `ADMIN_API_ENFORCE_PRIVILEGES` is on.
+:::
+
 **Request Body Parameters:**
 
 | Parameter | Type    | Required | Description                                                                 |
 |-----------|---------|----------|-----------------------------------------------------------------------------|
 | Command   | String  | Yes      | API command: `lists.stats`                                                  |
+| UserID | Integer | Admin only | Account to act on when calling with admin authentication and `Access=admin`. Ignored under user authentication (v5.9.6, #2775) |
 | SessionID | String  | No       | Session ID obtained from login                                              |
 | APIKey    | String  | No       | API key for authentication                                                  |
 | Days      | Integer | No       | Lookback window in days. Default `30`. Clamped to `[1, 365]`.               |
@@ -764,18 +774,23 @@ curl -X POST https://example.com/api.php \
 <Badge type="info" text="POST" /> `/api.php`
 
 ::: tip API Usage Notes
-- Authentication required: User API Key
+- Authentication required: User API Key. Admin authentication is also accepted with `Access=admin` and `UserID` (see Admin usage below)
 - Required permissions: `List.Get`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
 Returns a daily series of subscription / unsubscription activity for a single list over a configurable lookback window. Designed for the Reports tab → Overview growth chart and the per-list "net growth" KPI. Reads pre-aggregated rows from `oempro_stats_activity` (one row per list / owner / day) and gap-fills missing dates with zeros so the consumer always receives exactly `Days` ordered entries ending today.
 
+::: tip Admin usage (v5.9.6, #2775)
+This command also accepts admin authentication. Pass `AdminAPIKey` (or an admin `SessionID`), `Access=admin`, and `UserID` naming the account to act on; the response is exactly what that account's own API key would receive. Without `Access=admin` the call is treated as a user call, so existing integrations are unaffected. `UserID` is ignored under user authentication. Admin-only error codes: `5001` UserID missing or invalid, `5002` user not found, `5003` user outside the user groups a restricted sub-admin may access. Requires the `User.Edit` privilege when `ADMIN_API_ENFORCE_PRIVILEGES` is on.
+:::
+
 **Request Body Parameters:**
 
 | Parameter | Type    | Required | Description                                                                  |
 |-----------|---------|----------|------------------------------------------------------------------------------|
 | Command   | String  | Yes      | API command: `list.getactivityseries`                                        |
+| UserID | Integer | Admin only | Account to act on when calling with admin authentication and `Access=admin`. Ignored under user authentication (v5.9.6, #2775) |
 | SessionID | String  | No       | Session ID obtained from login                                               |
 | APIKey    | String  | No       | API key for authentication                                                   |
 | ListID    | Integer | Yes      | Subscriber list to query. Must be owned by the authenticated user.           |
