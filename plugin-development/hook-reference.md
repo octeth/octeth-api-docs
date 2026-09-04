@@ -484,6 +484,10 @@ layout: doc
 
 :construction_worker: We're still working on documenting this section. Your curiosity is ahead of us! If you need immediate information, please don't hesitate to <a href="mailto:support@octeth.com">contact us</a>.
 
+### <Badge type="tip" text="Action" /> `SSOSource.Keys.Regenerate.Post`
+
+Fires after `sso.keys.regenerate` (v5.9.6) has stored a fresh `Key1`/`Key2` pair for an SSO source, and only when the read-back confirms the new keys were persisted. Receives one argument, the `SourceID`. The keys themselves are not passed to the hook; read them with `Oempro_SSO::RetrieveByID()` if a plugin needs them.
+
 ### <Badge type="tip" text="Action" /> `System.Header.Load.Finished`
 
 :construction_worker: We're still working on documenting this section. Your curiosity is ahead of us! If you need immediate information, please don't hesitate to <a href="mailto:support@octeth.com">contact us</a>.

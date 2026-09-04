@@ -1341,29 +1341,105 @@ listid: Missing required parameter listid
 
 :::
 
+## Get Administrator Account
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Account`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the authenticated administrator's own profile without any credential. `APIKeyIssued` reports
+whether a per-sub-admin API key exists for the account without revealing it. Before this command the only
+way to read an admin profile was the `admin.login` round trip, which returns the password hash.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                   |
+|-------------|--------|----------|-----------------------------------------------|
+| Command     | String | Yes      | API command: `admin.get`                      |
+| SessionID   | String | No       | Session ID obtained from `admin.login`        |
+| AdminAPIKey | String | No       | Admin API key (master or per-sub-admin)       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.get",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Admin": {
+    "AdminID": 1,
+    "Name": "System Administrator",
+    "Username": "admin",
+    "EmailAddress": "admin@example.com",
+    "2FA_Enabled": "No",
+    "Options": [],
+    "APIKeyIssued": false
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Admin account not found."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Admin account not found
+```
+
+:::
+
 ## Update Administrator Account
 
 <Badge type="info" text="POST" /> `/api.php`
 
 ::: tip API Usage Notes
-- Authentication is done by Admin API Key
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Account`
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-Updates administrator account details including username, email address, name, and optionally password. Administrators can only update their own account information (AdminID must match the logged-in administrator). This endpoint is disabled in demo mode.
+Updates administrator account details including username, email address, name, and optionally password.
+Administrators can only update their own account information (AdminID must match the authenticated
+administrator). This endpoint is disabled in demo mode.
+
+<Badge type="tip" text="Changed in v5.9.6" /> `CurrentPassword` is an additive parameter. When it is supplied
+alongside `Password` it is always verified against the account's current password (`ErrorCode 10` when
+wrong). Whether omitting it alongside `Password` is refused (`ErrorCode 9`) is controlled by the
+`ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD` setting: it defaults to off on upgraded installs, so existing
+integrations that change the password without it keep working, and the shipped `.oempro_env.example`
+turns it on for fresh installs. The admin Account screen always sends it.
 
 **Request Body Parameters:**
 
-| Parameter    | Type    | Required | Description                                                                                      |
-|--------------|---------|----------|--------------------------------------------------------------------------------------------------|
-| Command      | String  | Yes      | API command: `admin.update`                                                                      |
-| SessionID    | String  | No       | Session ID obtained from login                                                                   |
-| APIKey       | String  | No       | API key for authentication                                                                       |
-| AdminID      | Integer | Yes      | Administrator ID to update (must match logged-in admin)                                          |
-| Name         | String  | Yes      | Administrator name                                                                               |
-| Username     | String  | Yes      | Administrator username                                                                           |
-| EmailAddress | String  | Yes      | Administrator email address (must be valid format)                                               |
-| Password     | String  | No       | New password (leave empty to keep existing password)                                             |
+| Parameter       | Type    | Required | Description                                                                  |
+|-----------------|---------|----------|------------------------------------------------------------------------------|
+| Command         | String  | Yes      | API command: `admin.update`                                                  |
+| SessionID       | String  | No       | Session ID obtained from `admin.login`                                       |
+| AdminAPIKey     | String  | No       | Admin API key (master or per-sub-admin)                                      |
+| AdminID         | Integer | Yes      | Administrator ID to update (must match the authenticated admin)              |
+| Name            | String  | Yes      | Administrator name                                                           |
+| Username        | String  | Yes      | Administrator username                                                       |
+| EmailAddress    | String  | Yes      | Administrator email address (must be valid format)                           |
+| Password        | String  | No       | New password (leave empty to keep the existing password)                     |
+| CurrentPassword | String  | No       | The current password. Verified whenever supplied with `Password`; required with `Password` when `ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD` is on |
 
 ::: code-group
 
@@ -1372,7 +1448,7 @@ curl -X POST https://example.com/api.php \
   -H "Content-Type: application/json" \
   -d '{
     "Command": "admin.update",
-    "APIKey": "your-admin-api-key",
+    "AdminAPIKey": "your-admin-api-key",
     "AdminID": 1,
     "Name": "System Administrator",
     "Username": "admin",
@@ -1385,12 +1461,13 @@ curl -X POST https://example.com/api.php \
   -H "Content-Type: application/json" \
   -d '{
     "Command": "admin.update",
-    "APIKey": "your-admin-api-key",
+    "AdminAPIKey": "your-admin-api-key",
     "AdminID": 1,
     "Name": "System Administrator",
     "Username": "admin",
     "EmailAddress": "admin@example.com",
-    "Password": "newSecurePassword123"
+    "Password": "newSecurePassword123",
+    "CurrentPassword": "theCurrentPassword"
   }'
 ```
 
@@ -1401,17 +1478,11 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```json [Error Response - Invalid Email]
+```json [Error Response - Wrong Current Password]
 {
   "Success": false,
-  "ErrorCode": 7
-}
-```
-
-```json [Error Response - Unauthorized]
-{
-  "Success": false,
-  "ErrorCode": 8
+  "ErrorCode": 10,
+  "ErrorText": "CurrentPassword is incorrect."
 }
 ```
 
@@ -1422,7 +1493,832 @@ name: Missing required parameter name
 username: Missing required parameter username
 emailaddress: Missing required parameter emailaddress
 7: Invalid email address format
-8: Admin account is not owned by logged in admin
+8: Admin account is not owned by the authenticated admin
+9: CurrentPassword is required when changing the password (only when ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD is on)
+10: CurrentPassword is incorrect
+NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+```
+
+:::
+
+## Admin Logout
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Account`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Ends the admin session behind the call, so a client that created a session with `admin.login` can
+invalidate it. Pass the `SessionID` to log out. With an `AdminAPIKey` call there is no persistent session
+to end and the command succeeds as a no-op.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                   |
+|-------------|--------|----------|-----------------------------------------------|
+| Command     | String | Yes      | API command: `admin.logout`                   |
+| SessionID   | String | No       | The session to end                            |
+| AdminAPIKey | String | No       | Admin API key (no-op, see above)              |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.logout",
+    "SessionID": "session-id-from-admin-login"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": ""
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998,
+  "ErrorText": "Authentication failure or session expired"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99998: Authentication failure or session expired
+```
+
+:::
+
+## Provision Two-Factor Authentication
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Security`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Issues the TOTP secret and recovery key for the authenticated administrator, or returns the pending ones
+when a secret was already provisioned but not yet enabled. This is the only command that returns the secret
+and recovery key; keep them, they are not retrievable afterwards. Nothing is enabled by this call: enrol
+the secret in an authenticator app (the `OTPAuthURL` or `QRCodeURL`), then confirm with
+`admin.2fa.enable`. Once two-factor authentication is enabled this command answers `ErrorCode 2`; disable
+first to re-enrol. Disabled in demo mode.
+
+**Request Body Parameters:**
+
+| Parameter   | Type    | Required | Description                                                              |
+|-------------|---------|----------|--------------------------------------------------------------------------|
+| Command     | String  | Yes      | API command: `admin.2fa.provision`                                       |
+| SessionID   | String  | No       | Session ID obtained from `admin.login`                                   |
+| AdminAPIKey | String  | No       | Admin API key (master or per-sub-admin)                                  |
+| Regenerate  | Boolean | No       | `true` replaces a provisioned, not yet enabled secret with a fresh one   |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.2fa.provision",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "SecretKey": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+  "RecoveryKey": "1a2b-3c4d-5e6f-7a8b-9c0d-1e2f-3a4b-5c6d",
+  "Issuer": "Octeth",
+  "OTPAuthURL": "otpauth://totp/Octeth%3Aadmin%40example.com?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&issuer=Octeth",
+  "QRCodeURL": "https://example.com/system/qr?data=otpauth://totp/..."
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Two-factor authentication is already enabled. Disable it before provisioning a new secret."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Admin account not found
+2: Two-factor authentication is already enabled
+NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+```
+
+:::
+
+## Enable Two-Factor Authentication
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Security`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Verifies a six-digit TOTP code against the secret issued by `admin.2fa.provision` and turns two-factor
+authentication on for the authenticated administrator. From then on `admin.login` requires `TFACode`.
+Disabled in demo mode.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                   |
+|-------------|--------|----------|-----------------------------------------------|
+| Command     | String | Yes      | API command: `admin.2fa.enable`               |
+| SessionID   | String | No       | Session ID obtained from `admin.login`        |
+| AdminAPIKey | String | No       | Admin API key (master or per-sub-admin)       |
+| Code        | String | Yes      | Current six-digit code from the authenticator |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.2fa.enable",
+    "AdminAPIKey": "your-admin-api-key",
+    "Code": "123456"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "2FA_Enabled": "Yes"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "The code could not be verified."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Code is required
+2: Admin account not found
+3: No two-factor secret is provisioned (call admin.2fa.provision first)
+4: The code could not be verified
+NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+```
+
+:::
+
+## Disable Two-Factor Authentication
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Security`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Clears the authenticated administrator's two-factor secret, recovery key and enabled flag after
+confirming the current password. This is the only operation that clears admin two-factor authentication;
+editing a sub-admin account no longer does. Disabled in demo mode.
+
+**Request Body Parameters:**
+
+| Parameter       | Type   | Required | Description                                   |
+|-----------------|--------|----------|-----------------------------------------------|
+| Command         | String | Yes      | API command: `admin.2fa.disable`              |
+| SessionID       | String | No       | Session ID obtained from `admin.login`        |
+| AdminAPIKey     | String | No       | Admin API key (master or per-sub-admin)       |
+| CurrentPassword | String | Yes      | The administrator's current password          |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.2fa.disable",
+    "AdminAPIKey": "your-admin-api-key",
+    "CurrentPassword": "theCurrentPassword"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "2FA_Enabled": "No"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "CurrentPassword is incorrect."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: CurrentPassword is required
+2: Admin account not found
+3: CurrentPassword is incorrect
+NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+```
+
+:::
+
+## Get Admin Privileges
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `SubAdmins`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns every privilege string a sub-admin's `AccessOptions` may contain, so a client can render a
+permission editor. `admin.subadmin.create` and `admin.subadmin.update` reject any value outside this list.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                   |
+|-------------|--------|----------|-----------------------------------------------|
+| Command     | String | Yes      | API command: `admin.privileges.get`           |
+| SessionID   | String | No       | Session ID obtained from `admin.login`        |
+| AdminAPIKey | String | No       | Admin API key (master or per-sub-admin)       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.privileges.get",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Privileges": ["Account", "Admin.Dashboard.Links", "Admin.Footer", "AdminTools", "Bounce", "CustomFields", "Dashboard", "DeliveryServers", "Email", "PluginAccess", "Processes", "Reports", "Search", "Security", "Settings", "Settings.General", "Settings.Segments", "Settings.SSO", "SMS", "SubAdmins", "SuperAuth", "Suppression", "System", "User.Activity", "User.Browse", "User.Create", "User.Delete", "User.Edit", "User.Impersonate", "User.PaymentHistory", "User.Update", "UserGroups", "Users"],
+  "TotalPrivileges": 33
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99999: Not enough privileges
+```
+
+:::
+
+## Get Sub-Admin Accounts
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `SubAdmins`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Lists every administrator account other than the master admin (AdminID 1). Each row carries only
+`AdminID`, `Name`, `Username`, `EmailAddress`, `2FA_Enabled`, `Options` and `APIKeyIssued`.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                   |
+|-------------|--------|----------|-----------------------------------------------|
+| Command     | String | Yes      | API command: `admin.subadmins.get`            |
+| SessionID   | String | No       | Session ID obtained from `admin.login`        |
+| AdminAPIKey | String | No       | Admin API key (master or per-sub-admin)       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.subadmins.get",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "SubAdmins": [
+    {
+      "AdminID": 2,
+      "Name": "Support Desk",
+      "Username": "support",
+      "EmailAddress": "support@example.com",
+      "2FA_Enabled": "No",
+      "Options": {
+        "AccessLimited": true,
+        "AccessAllowedUserGroupIDs": [3],
+        "AccessOptions": ["Users", "User.Browse", "User.Edit"]
+      },
+      "APIKeyIssued": true
+    }
+  ],
+  "TotalSubAdmins": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99999: Not enough privileges
+```
+
+:::
+
+## Get a Sub-Admin Account
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `SubAdmins`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns one sub-admin account with the same projection as `admin.subadmins.get`. AdminID 1 is refused:
+the master admin is not a sub-admin and is read through `admin.get` by its own credentials.
+
+**Request Body Parameters:**
+
+| Parameter   | Type    | Required | Description                                   |
+|-------------|---------|----------|-----------------------------------------------|
+| Command     | String  | Yes      | API command: `admin.subadmin.get`             |
+| SessionID   | String  | No       | Session ID obtained from `admin.login`        |
+| AdminAPIKey | String  | No       | Admin API key (master or per-sub-admin)       |
+| AdminID     | Integer | Yes      | Sub-admin id (greater than 1)                 |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.subadmin.get",
+    "AdminAPIKey": "your-admin-api-key",
+    "AdminID": 2
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "SubAdmin": {
+    "AdminID": 2,
+    "Name": "Support Desk",
+    "Username": "support",
+    "EmailAddress": "support@example.com",
+    "2FA_Enabled": "No",
+    "Options": {
+      "AccessLimited": true,
+      "AccessAllowedUserGroupIDs": [3],
+      "AccessOptions": ["Users", "User.Browse", "User.Edit"]
+    },
+    "APIKeyIssued": false
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "AdminID does not refer to a sub-admin account."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: AdminID is required
+2: AdminID does not refer to a sub-admin account (AdminID 1 or not a positive integer)
+3: Sub-admin account not found
+```
+
+:::
+
+## Create a Sub-Admin Account
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `SubAdmins`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Creates an access-limited sub-admin. The same validation the admin Sub Admin Accounts screen applies runs
+here: email and username must be unique across all administrators, `Username` may contain letters,
+digits, underscores and dashes, and `Permissions` must be an object with two lists,
+`AccessAllowedUserGroupIDs` (positive integers; empty means every user group) and `AccessOptions` (values
+from `admin.privileges.get`). `Permissions` may be sent as a JSON object in a JSON body or as a JSON
+string in a form-encoded body. On a validation failure `ErrorCode` is the list of every failed rule.
+Disabled in demo mode.
+
+**Request Body Parameters:**
+
+| Parameter    | Type          | Required | Description                                                   |
+|--------------|---------------|----------|---------------------------------------------------------------|
+| Command      | String        | Yes      | API command: `admin.subadmin.create`                          |
+| SessionID    | String        | No       | Session ID obtained from `admin.login`                        |
+| AdminAPIKey  | String        | No       | Admin API key (master or per-sub-admin)                       |
+| Name         | String        | Yes      | Display name                                                  |
+| EmailAddress | String        | Yes      | Unique email address                                          |
+| Username     | String        | Yes      | Unique login name (letters, digits, underscore, dash)         |
+| Password     | String        | Yes      | Initial password                                              |
+| Permissions  | Object/String | Yes      | `{"AccessAllowedUserGroupIDs": [...], "AccessOptions": [...]}` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.subadmin.create",
+    "AdminAPIKey": "your-admin-api-key",
+    "Name": "Support Desk",
+    "EmailAddress": "support@example.com",
+    "Username": "support",
+    "Password": "aStrongPassword",
+    "Permissions": {"AccessAllowedUserGroupIDs": [3], "AccessOptions": ["Users", "User.Browse", "User.Edit"]}
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "AdminID": 2,
+  "SubAdmin": {
+    "AdminID": 2,
+    "Name": "Support Desk",
+    "Username": "support",
+    "EmailAddress": "support@example.com",
+    "2FA_Enabled": "No",
+    "Options": {
+      "AccessLimited": true,
+      "AccessAllowedUserGroupIDs": [3],
+      "AccessOptions": ["Users", "User.Browse", "User.Edit"]
+    },
+    "APIKeyIssued": false
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [8, 13],
+  "ErrorText": "This email address is in use by another administrator. Permissions contain a privilege that does not exist."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Name is required
+2: EmailAddress is required
+3: Username is required
+4: Password is required
+5: Permissions is required
+6: EmailAddress is not a valid email address
+7: Username may only contain letters, digits, underscores and dashes
+8: This email address is in use by another administrator
+9: This username is in use by another administrator
+10: Permissions is not a JSON object
+11: AccessAllowedUserGroupIDs is missing, not a list, or contains a non-positive-integer value
+12: AccessOptions is missing or not a list
+13: AccessOptions contains a privilege that does not exist
+20: The sub-admin account could not be created
+NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+```
+
+:::
+
+## Update a Sub-Admin Account
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `SubAdmins`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Updates the supplied fields of an access-limited sub-admin; omitted fields are left unchanged. The
+validation rules and error codes 1 to 13 are those of `admin.subadmin.create`, applied to the fields
+present. Only accounts whose `Options.AccessLimited` is true can be edited, so the master admin is refused.
+The account's two-factor authentication is never touched by this command (the admin screen used to clear
+it on every save; that was a defect and is fixed). Disabled in demo mode.
+
+**Request Body Parameters:**
+
+| Parameter    | Type          | Required | Description                                                   |
+|--------------|---------------|----------|---------------------------------------------------------------|
+| Command      | String        | Yes      | API command: `admin.subadmin.update`                          |
+| SessionID    | String        | No       | Session ID obtained from `admin.login`                        |
+| AdminAPIKey  | String        | No       | Admin API key (master or per-sub-admin)                       |
+| AdminID      | Integer       | Yes      | Sub-admin id                                                  |
+| Name         | String        | No       | New display name                                              |
+| EmailAddress | String        | No       | New unique email address                                      |
+| Username     | String        | No       | New unique login name                                         |
+| Password     | String        | No       | New password                                                  |
+| Permissions  | Object/String | No       | Replacement `AccessAllowedUserGroupIDs` and `AccessOptions`   |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.subadmin.update",
+    "AdminAPIKey": "your-admin-api-key",
+    "AdminID": 2,
+    "Name": "Support Desk (EMEA)",
+    "Permissions": {"AccessAllowedUserGroupIDs": [3, 4], "AccessOptions": ["Users", "User.Browse"]}
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "SubAdmin": {
+    "AdminID": 2,
+    "Name": "Support Desk (EMEA)",
+    "Username": "support",
+    "EmailAddress": "support@example.com",
+    "2FA_Enabled": "Yes",
+    "Options": {
+      "AccessLimited": true,
+      "AccessAllowedUserGroupIDs": [3, 4],
+      "AccessOptions": ["Users", "User.Browse"]
+    },
+    "APIKeyIssued": true
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 22,
+  "ErrorText": "This admin account cannot be edited."
+}
+```
+
+```txt [Error Codes]
+0: Success
+6-13: Validation failures, as listed for admin.subadmin.create (ErrorCode is a list)
+20: AdminID is required
+21: Sub-admin account not found
+22: This admin account cannot be edited (not AccessLimited, e.g. the master admin)
+23: Nothing to update (pass at least one of Name, EmailAddress, Username, Password, Permissions)
+NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+```
+
+:::
+
+## Delete Sub-Admin Accounts
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `SubAdmins`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Deletes one or more sub-admin accounts. Ids that do not exist, accounts that are not access-limited (the
+master admin) and the calling admin's own account are skipped and reported in `SkippedAdminIDs`, so the
+call is idempotent and can never remove the master admin or the caller. Disabled in demo mode.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                          |
+|-------------|--------|----------|------------------------------------------------------|
+| Command     | String | Yes      | API command: `admin.subadmin.delete`                 |
+| SessionID   | String | No       | Session ID obtained from `admin.login`               |
+| AdminAPIKey | String | No       | Admin API key (master or per-sub-admin)              |
+| AdminIDs    | String | Yes      | Comma-separated sub-admin ids (a JSON list also works) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.subadmin.delete",
+    "AdminAPIKey": "your-admin-api-key",
+    "AdminIDs": "2,3"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "DeletedAdminIDs": [2, 3],
+  "SkippedAdminIDs": []
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "AdminIDs is required: a comma-separated list of sub-admin ids."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: AdminIDs is required
+NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+```
+
+:::
+
+## Regenerate a Sub-Admin API Key
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `SubAdmins`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Issues a per-sub-admin API key, or rotates the existing one. The key is returned exactly once, in this
+response; no other command ever returns it (`admin.get`, `admin.subadmin.get` and `admin.subadmins.get`
+only report `APIKeyIssued`). The previous key stops authenticating immediately. The key is accepted on the
+`AdminAPIKey` parameter and, when `ADMIN_API_ENFORCE_PRIVILEGES` is on, is limited to the account's
+`AccessOptions`. Only access-limited accounts can hold a key; the master admin uses `ADMIN_API_KEY`.
+Disabled in demo mode.
+
+**Request Body Parameters:**
+
+| Parameter   | Type    | Required | Description                                   |
+|-------------|---------|----------|-----------------------------------------------|
+| Command     | String  | Yes      | API command: `admin.subadmin.apikey.regenerate` |
+| SessionID   | String  | No       | Session ID obtained from `admin.login`        |
+| AdminAPIKey | String  | No       | Admin API key (master or per-sub-admin)       |
+| AdminID     | Integer | Yes      | Sub-admin id                                  |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.subadmin.apikey.regenerate",
+    "AdminAPIKey": "your-admin-api-key",
+    "AdminID": 2
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "AdminID": 2,
+  "APIKey": "3f9c2a7b1e4d5c6a8b9d0e1f2a3b4c5d"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "API keys can only be issued for AccessLimited sub-admin accounts. The master admin uses ADMIN_API_KEY."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: AdminID is required
+2: Sub-admin account not found
+3: Not an AccessLimited sub-admin account
+4: The API key could not be generated (no cryptographically strong random source)
+5: The API key change could not be saved (run the pending database migrations)
+NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+```
+
+:::
+
+## Revoke a Sub-Admin API Key
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `SubAdmins`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Removes the per-sub-admin API key so it stops authenticating immediately. Revoking an account that has
+no key succeeds. Disabled in demo mode.
+
+**Request Body Parameters:**
+
+| Parameter   | Type    | Required | Description                                   |
+|-------------|---------|----------|-----------------------------------------------|
+| Command     | String  | Yes      | API command: `admin.subadmin.apikey.revoke`   |
+| SessionID   | String  | No       | Session ID obtained from `admin.login`        |
+| AdminAPIKey | String  | No       | Admin API key (master or per-sub-admin)       |
+| AdminID     | Integer | Yes      | Sub-admin id                                  |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.subadmin.apikey.revoke",
+    "AdminAPIKey": "your-admin-api-key",
+    "AdminID": 2
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "AdminID": 2,
+  "APIKeyIssued": false
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Sub-admin account not found."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: AdminID is required
+2: Sub-admin account not found
+3: Not an AccessLimited sub-admin account
+4: The API key change could not be saved
 NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 ```
 
