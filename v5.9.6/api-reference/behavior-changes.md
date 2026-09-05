@@ -30,6 +30,12 @@ Looking for the previous release? See [API Behavior Changes in v5.9.5](/v5.9.5/a
 
 - **`users.get` with `LimitUtilizationStatus` can answer an error where the same call without it cannot.** The parameter is new and additive. An unknown bucket answers `ErrorCode 1`; a bucket the `user_limit_utilization` cron has not written yet answers `ErrorCode 2` rather than an empty list. Calls without the parameter are unchanged (issue #2779).
 
+- **A journey `Decision` whose rule names a custom field that is not on the entry's list now fails the action instead of routing to No.** Custom fields are per-list columns. A Decision rule naming a `CustomField<ID>` of another list (typically after the journey's trigger was re-pointed to a different list) or a field that no longer exists used to fail its query and silently route every subscriber down the No branch, which in the reported production case drained a journey for 27 hours with no signal anywhere. It is now an action failure: the entry is held in place, retried on the `JOURNEY_ACTION_FAILURE_*` schedule (by default 15m, 30m, 1h, 2h, 4h) and then dead-ended with `ErrorCode = decision_structural_error` recorded on `oempro_journeys_action_executions`. Fix the rule or the trigger list within that window and the held entries evaluate correctly on their next retry. Transient failures (query builder unreachable, timeout) still take the No branch as before (issue #2716).
+
+- **`journey.actions.update` rejects a Decision rule whose custom field cannot be evaluated on the trigger list.** Two new errors, each with one `Errors[]` entry per problem, returned before any stored action is changed: `Code 10` when the field exists but belongs to a list that is not a trigger list and is not global, and `Code 11` when no such field exists on the account. Global custom fields (`IsGlobal = Yes`) are accepted on any list; when the trigger has no list (Manual, email triggers) only existence is checked. Every payload used to be stored verbatim, so this only refuses input that would have failed at run time. The Journey Builder applies the same rule when saving the canvas (issue #2716).
+
+- **The segment engine refuses a rule naming a custom field that does not exist.** Previously the rule was silently dropped and a weaker query was built, so a segment count, a campaign audience or a Decision evaluated fewer conditions than the ones saved. `/system/subscribers_query_builder` now answers HTTP 422 with `{"status": false, "errorCode": "unknown_custom_field"}`, and a non-global custom field of another list answers `errorCode: custom_field_not_on_list` instead of the raw MySQL "Unknown column" error. This service is internal; callers of the public API see it only as the Decision failure and the save-time rejection above (issue #2716).
+
 ## Tier 2: Same call, different results
 
 No request change is needed, but the response values, the result set or the delivered message differ.
@@ -98,6 +104,8 @@ No request change is needed, but the response values, the result set or the deli
   Failed runs also stop counting towards the action's `CompletedRuns`, so the Journey Builder node counters no longer overstate delivery: a node showing 33 completed used to be able to mean 33 emails or zero. An Email Gateway response that returns HTTP 2xx with no `MessageID` is treated as a failed send, because no queue row exists and no email is ever delivered.
 
   Failures are recorded on `oempro_journeys_action_executions` with `ExecutionStatus='Failed'`, plus `ErrorMessage`, `ErrorCode`, and for a pending retry `SnoozedUntil` and `SnoozeReason`, and in the journey log. The retry schedule is configurable through the `JOURNEY_ACTION_FAILURE_*` settings in [Octeth Configuration](/v5.9.6/getting-started/octeth-configuration) (issue #2748).
+
+- **`journey.update` gains an additive `Warnings` array.** Present only when the request changed the trigger and at least one Decision action references a custom field that does not resolve on the new trigger list. Each entry names the `ActionID`, a `Message`, and a `Fields` list with `FieldID`, `FieldName`, `FieldListID` and a `Reason` of `foreign_list` or `missing`. The update has already been applied when warnings are returned; they tell you which Decision rules to fix next. Every existing key is unchanged and responses without warnings are byte-identical (issue #2716).
 
 ### Email content
 
@@ -179,6 +187,10 @@ These only affect callers doing something that was never intended to work. Liste
 
 - **Disabling administrator two-factor authentication now needs a POST, the page's CSRF token and the current password.** The Security screen's "Disable Two Factor Authentication" action used to clear the admin's 2FA on any request, GET included, with no token and no password check, so a logged-in administrator who loaded an attacker-controlled page could have their second factor switched off by an image tag. The action now accepts POST only, requires the session-backed `csrf_token` the Security page embeds, and requires the administrator's current password; a request failing any of these redirects back to the Security page with an error and changes nothing. Successful disables are logged with the AdminID. This is a screen-only change: `admin.2fa.disable` is unaffected (issue #2772).
 
+- **The remaining private `/system/*` services require the same shared-secret header (opt-in this release).** `/system/segment_query_builder`, `/system/subscribers_query_builder`, `/system/queue_query_builder`, `/system/mime_email_parser` and `/system/email/spamtest` were reachable through HAProxy from the internet with at most a source-address allow-list, and that allow-list included HAProxy's own address, so a public POST reached the segment SQL builder. All of Octeth's own callers now send `X-Octeth-Signature`. With `SYSTEM_INTERNAL_SIGNATURE_REQUIRED=true` an unsigned request answers `401`; with it off (the default on upgraded installs) unsigned requests are accepted and logged at WARNING so third-party plugin callers can be found before enforcing. HAProxy's address was removed from the allow-list and the `APP_ENV=local` bypass that disabled the guard entirely is gone in both modes. `mime_email_parser` additionally confines `RawEmailFilePath` to the antivirus spool directory, following symlinks, and the unused `/system/campaign` preview route was removed. See `SYSTEM_INTERNAL_SIGNATURE_REQUIRED` in [Octeth Configuration](/v5.9.6/getting-started/octeth-configuration) (issue #2813).
+
+- **Disabling a user's two-factor authentication now needs a POST, the page's CSRF token and the current password.** The user Account screen's "Disable Two Factor Authentication" action used to clear the user's 2FA on any request, GET included, with no token and no password check, the same defect fixed for administrators in #2772. The action now accepts POST only, requires the session-backed token the account page embeds, and requires the user's current password; a request failing any of these redirects back to the account page with an error and changes nothing. Successful disables are logged with the UserID. Screen-only: no API command is affected (issue #2812).
+
 ## Upgrade checklist
 
 1. **Do you have segments or journey `Decision` actions using `is not`, `does not contain`, `not between` or `not in the last x days` on a field that may be unset?** Their audiences will grow, which is the fix, but segment size is sometimes load-bearing. Review sending throttles and per-send limits keyed to an expected audience size, scheduled and recurring campaigns that will now reach more people on their next run, any external reporting or billing that reconciles against a segment count, and every journey whose Yes branch sends mail or changes subscriber state. Where you deliberately want to exclude subscribers with no value, add a companion `is not empty` rule to the same group.
@@ -200,6 +212,10 @@ These only affect callers doing something that was never intended to work. Liste
 9. **Do you build `orderfield` for `campaigns.get` from user input or another system?** An unrecognised value is now ignored and the default sort applies, instead of reaching `ORDER BY`. Check that the fields you send are real campaign columns or one of the named computed keys.
 
 10. **Do you call `deliveryserver.testresults` from an integration?** If any integration calls `deliveryserver.testresults`, note that it now sends a real test message to the admin's address and performs DNS lookups on every call, and that the stored `VerificationResults` are the check's outcome, not the request's. Check `VerificationResults` with `deliveryserver.get` after upgrading for any server that was previously marked verified through this command.
+
+11. **Do any of your journeys have Decision rules on a custom field of a list other than the trigger list?** This happens when a journey's trigger was re-pointed to another list, or a journey was cloned between lists. Those Decisions used to route everyone to No silently; they now fail, hold the entry and dead-end it after the retry window. Run `journey.get` on each journey and check its Decision criteria, or change the trigger list again through `journey.update` and read the `Warnings` array, then re-point the rules to the fields on the current list. New saves of such a rule are refused with `journey.actions.update` codes 10 and 11.
+
+12. **Do you run a third-party plugin or a script that posts to `/system/segment_query_builder`, `/system/subscribers_query_builder`, `/system/queue_query_builder`, `/system/mime_email_parser` or `/system/email/spamtest`?** Leave `SYSTEM_INTERNAL_SIGNATURE_REQUIRED` off for a few days after upgrading and grep the Laravel log for `[internal.signature]`. Every hit is an unsigned caller; update it to send `Core::InternalRequestHeaders()` and then enable the flag.
 
 ## One general note on error codes
 
@@ -240,7 +256,7 @@ Watch list for this cycle:
   v5.9.5. Anything left is a new sink, not a regression of those two.
 
 Shipped this cycle and already documented above, do not re-add: #2715, #2731, #2745, #2747, #2748,
-#2749, #2750, #2753, #2754. #2752 (journey enrolment counts) is deliberately NOT on this page: every
+#2749, #2750, #2753, #2754, #2716, #2812, #2813. #2752 (journey enrolment counts) is deliberately NOT on this page: every
 new field is gated behind the existing IncludeActivityCounters opt-in and responses without the
 opt-in were verified byte-identical. It belongs in the changelog and on the journeys API page only.
 -->

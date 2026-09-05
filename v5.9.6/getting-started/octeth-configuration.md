@@ -734,6 +734,49 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     Absent or empty is treated as off, so upgraded installs keep their current behaviour; fresh
     installs enforce from day one. Introduced in v5.9.6 (issue #2770).
 
+46. **Internal Service Signature**
+
+    ```bash
+    SYSTEM_INTERNAL_SIGNATURE_REQUIRED=true   # Require the X-Octeth-Signature header on the private /system/* services (default: false on upgrades, true in the shipped example)
+    ```
+
+    Octeth's own PHP processes call five private Laravel services in the `oempro_system` container
+    over HTTP: `/system/segment_query_builder`, `/system/subscribers_query_builder`,
+    `/system/queue_query_builder`, `/system/mime_email_parser` and `/system/email/spamtest`. HAProxy
+    routes every `/system/` request to that container, so these services were reachable from the
+    internet with at most a source-address allow-list in front of them.
+
+    Every caller shipped with Octeth now sends the `X-Octeth-Signature` header, the same shared
+    secret `/system/search_translator` and the bounce webhook use
+    (`sha256(OEMPRO_PASSWORD_SALT + ADMIN_API_KEY + OEMPRO_PASSWORD_SALT)`). Nothing needs to be
+    configured for the product's own callers.
+
+    - `true`: a request to one of these services without a valid header answers HTTP 401 with
+      `{"error":"unauthorized access"}`, whether it comes from inside the Docker network or from the
+      internet.
+    - `false` or absent: unsigned requests are still accepted, but each one is logged at WARNING in
+      the Laravel log (`system/storage/logs/laravel-YYYY-MM-DD.log`) with the route and the client
+      address, for example `[internal.signature] unsigned request to a private /system/ service
+      accepted because SYSTEM_INTERNAL_SIGNATURE_REQUIRED is off {"route":"system/segment_query_builder","remote_addr":"192.168.99.100"}`.
+      The subscriber, segment and queue builders also keep their source-address allow-lists in this
+      mode.
+
+    **Upgrade note.** After upgrading, leave the flag off for a few days and grep the Laravel log for
+    `[internal.signature]`. Every hit is an unsigned caller: a third-party plugin or an integration
+    script that posts to one of these services directly. Update it to pass
+    `Core::InternalRequestHeaders()` as the ninth argument of `Core::DataPostToRemoteURL()` (or
+    `Core::InternalRequestHeadersForURL($url)` when the target URL is configurable), then set the
+    flag to `true`. A `remote_addr` of `192.168.99.100` is HAProxy, which means the request came
+    from outside the install and should be blocked.
+
+    **`SPAM_FILTER_URL` and this flag.** The signature is sent to the spam test service only when
+    `SPAM_FILTER_URL` points at the `oempro_system` service itself (the default). If you point
+    `SPAM_FILTER_URL` at an external host, no secret is sent to it and the flag has no effect on
+    that call.
+
+    **Rotation.** Changing `OEMPRO_PASSWORD_SALT` or `ADMIN_API_KEY` changes the derived value on
+    both sides at once, so no coordinated update is needed. Introduced in v5.9.6 (issue #2813).
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::

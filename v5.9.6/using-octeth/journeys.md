@@ -497,6 +497,8 @@ Select how multiple criteria are combined:
 | **Website Events** | Evaluate website tracking events (page views, custom events, conversions) if event tracking is configured. |
 | **Suppression** | Check whether the subscriber *exists* or *does not exist* in a suppression list. |
 
+**Custom fields must belong to the trigger list.** Custom fields are stored per list, so a Decision can only evaluate custom fields of the journey's trigger list, plus global custom fields, which exist on every list. If a rule names a field of another list (this happens when you change the journey's trigger to a different list, or clone a journey between lists), the Decision configuration shows an inline error, the canvas shows a warning banner listing every affected Decision, and the journey cannot be saved until the rule or the trigger list is updated. The banner appears immediately after the trigger list is changed and on load for a journey that is already in this state. A journey that was already running with such a rule does not route subscribers to the False path any more: the Decision fails, the subscriber is held and retried for a few hours, and the failure is recorded in the journey log, which gives you time to fix the rule.
+
 ::: tip
 Use the Decision node to create personalized paths within your journey. For example, you could check whether a subscriber has opened a previous email — if yes, send a follow-up offer; if no, send a reminder.
 :::

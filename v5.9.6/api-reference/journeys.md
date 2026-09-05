@@ -854,6 +854,25 @@ curl -X PATCH https://example.com/api/v1/journey \
 
 :::
 
+**Warnings after a trigger change:** when the request changes the trigger list and one or more Decision actions reference a custom field that does not resolve on the new list, the response gains an additive `Warnings` array. The update has already been applied when warnings are returned; they tell you which Decision rules to fix next (see the codes 10 and 11 of `journey.actions.update`). `Warnings` is omitted entirely when there is nothing to warn about, so responses without it are unchanged. `Reason` is `foreign_list` (the field exists on another list) or `missing` (no such field).
+
+```json
+{
+  "Journey": { "JourneyID": "456", "Trigger": "ListSubscription", "TriggerParameters": { "ListID": 528 } },
+  "Warnings": [
+    {
+      "Code": 1,
+      "Type": "DecisionFieldNotOnTriggerList",
+      "ActionID": 3890,
+      "Message": "Decision action 3890 references CustomField882 (Lead Source) on list 546. These rules cannot be evaluated on the new trigger list 528 and the Decision will fail until they are updated.",
+      "Fields": [
+        { "FieldID": 882, "FieldName": "Lead Source", "FieldListID": 546, "Reason": "foreign_list" }
+      ]
+    }
+  ]
+}
+```
+
 ## Delete a Journey
 
 <Badge type="info" text="POST" /> `/api/v1/journey.delete`
@@ -1181,9 +1200,13 @@ curl -X PATCH https://example.com/api/v1/journey.actions \
 4: Invalid JourneyID parameter (Actions must be array)
 5: Journey not found
 6: Invalid action type or Journey not found
+10: Decision criteria references a custom field that belongs to another list (not the trigger list, not global)
+11: Decision criteria references a custom field that does not exist on this account
 ```
 
 :::
+
+**Decision field validation (codes 10 and 11):** custom fields are per-list columns, so a Decision rule can only be evaluated against fields of the journey's trigger list or global custom fields (`IsGlobal = Yes`). A rule naming a field of another list, or a field that no longer exists, is refused with one `Errors[]` entry per problem before any stored action is changed, so a rejected call leaves the journey exactly as it was. When the trigger has no list (`Manual`, email triggers) only existence is checked. Before v5.9.6 such a rule was stored and failed at run time, routing every subscriber down the No branch.
 
 ## Update Actions Published Status
 
