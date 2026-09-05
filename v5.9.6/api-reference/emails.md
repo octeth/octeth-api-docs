@@ -501,12 +501,12 @@ curl -X POST https://example.com/api.php \
 
 ## Test Email Delivery Settings
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/email.delivery.test`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Not available in demo mode
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/email.delivery.test`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -836,12 +836,12 @@ curl -X POST https://example.com/api.php \
 
 ## Create Email Template
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/email.template.create`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - Required permissions: `EmailTemplates.Manage`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/email.template.create`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -901,12 +901,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get Email Template
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/email.template.get`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - Required permissions: `EmailTemplates.Manage`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/email.template.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -964,12 +964,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get Email Templates List
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/email.templates.get`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - Required permissions: `EmailTemplates.Manage`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/email.templates.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -1023,12 +1023,12 @@ curl -X POST https://example.com/api.php \
 
 ## Update Email Template
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/email.template.update`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - Required permissions: `EmailTemplates.Manage`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/email.template.update`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -1089,13 +1089,13 @@ curl -X POST https://example.com/api.php \
 
 ## Delete Email Template
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/email.template.delete`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - Required permissions: `EmailTemplates.Manage`
 - Not available in demo mode
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/email.template.delete`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -1143,12 +1143,12 @@ curl -X POST https://example.com/api.php \
 
 ## Upload an Email Template Thumbnail
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/email.template.thumbnail.upload`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key or User API Key (pass `Access=user` with a user key, the command is registered admin first like the rest of `email.template.*`)
 - Required user permission: `EmailTemplates.Manage`; required admin privilege: `Settings`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/email.template.thumbnail.upload`. Legacy access via `/api.php` is also supported
 - The returned `TemplateThumbnailPath` is consumed by `email.template.create` or `email.template.update` (their existing `TemplateThumbnailPath` parameter). The temp file is deleted when it is consumed. Files that are never consumed stay in `data/tmp/`.
 - The image type is detected from the bytes and must be gif, png or jpeg (the same allow-list as the admin form). `ThumbnailType` must agree with the detected type.
 - Size cap: `TEMPLATE_THUMBNAIL_MAX_FILESIZE` (default 2 MB, decoded bytes).
@@ -1213,12 +1213,12 @@ curl -X POST https://example.com/api.php \
 
 ## Search Email Templates (Admin)
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/email.templates.search`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required admin privilege: `Settings`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/email.templates.search`. Legacy access via `/api.php` is also supported
 - Metadata only: the HTML and plain bodies and the base64 thumbnail are not returned. Fetch a single template with `email.template.get` for those.
 - `email.templates.get` is unchanged (five columns, unpaged, bodies included). Third-party admin UIs should list with this command.
 - `RelOwnerUserID` follows the ownership convention of the admin screen: `0` = all users, a negative value `-<UserGroupID>` = one user group, a positive `UserID` = one user.

@@ -8,11 +8,11 @@ Theme and white-label rebranding endpoints for customizing the Octeth interface 
 
 ## Create a Theme
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/theme.create`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/theme.create`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -68,11 +68,11 @@ curl -X POST https://example.com/api.php \
 
 ## Get a Theme
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/theme.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/theme.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -131,11 +131,11 @@ curl -X POST https://example.com/api.php \
 
 ## Update a Theme
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/theme.update`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/theme.update`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -215,11 +215,11 @@ curl -X POST https://example.com/api.php \
 
 ## Get All Themes
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/themes.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/themes.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -279,11 +279,11 @@ curl -X POST https://example.com/api.php \
 
 ## Delete Themes
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/theme.delete`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/theme.delete`. Legacy access via `/api.php` is also supported
 :::
 
 Deletes one or more themes. The system prevents deletion of the default theme and the last remaining theme to ensure at least one theme is always available.

@@ -33,12 +33,12 @@ Phone numbers must be in E.164 format with a leading `+` (e.g. `+15551234567`). 
 
 ## Browse SMS Suppression List
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/smssuppression.browse`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - The command is registered `user,admin`: a request carrying both credentials takes the **user** path unless `Access=admin` is passed. Existing user-key integrations are unaffected.
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/smssuppression.browse`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -164,14 +164,14 @@ curl -X POST https://example.com/api.php \
 
 ## SMS Suppression Stats
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/smssuppression.stats`
 
 Returns the total count and a per-type / per-reason breakdown for the authenticated user (user auth), or for the install or a chosen account (admin auth). All ENUM values are always present in `ByType` and `ByReason` (zero when absent) so typed clients see a stable shape.
 
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - The command is registered `user,admin`: a request carrying both credentials takes the **user** path unless `Access=admin` is passed. Existing user-key integrations are unaffected.
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/smssuppression.stats`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -249,7 +249,7 @@ curl -X POST https://example.com/api.php \
 
 ## Add to SMS Suppression List
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/smssuppression.add`
 
 Accepts a single phone number or a bulk payload. Phone numbers may be exact (e.g. `+15551234567`) or patterns (containing `*`). Pattern detection happens automatically: `+1555*` is stored as a pattern and matched at SMS send-time.
 
@@ -257,7 +257,7 @@ Accepts a single phone number or a bulk payload. Phone numbers may be exact (e.g
 - Authentication required: User API Key or Admin API Key
 - When using both auth types simultaneously, pass `Access=user` to disambiguate
 - System-wide entries (`Level=system`) require Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/smssuppression.add`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -363,14 +363,14 @@ curl -X POST https://example.com/api.php \
 
 ## Delete from SMS Suppression List
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/smssuppression.delete`
 
 Accepts either a single suppression ID or a bulk payload of IDs. Under user auth only entries owned by the authenticated user (and not `system`-level) can be deleted; admin auth widens this, see below.
 
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - The command is registered `user,admin`: a request carrying both credentials takes the **user** path unless `Access=admin` is passed. Existing user-key integrations are unaffected.
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/smssuppression.delete`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -462,14 +462,14 @@ curl -X POST https://example.com/api.php \
 
 ## Browse SMS Suppression Patterns
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/smssuppression.patterns.browse`
 
 Returns wildcard pattern entries (numbers containing `*`) owned by the authenticated user (user auth), or across the install or a chosen account (admin auth). Useful for rendering a dedicated "patterns" tab without filtering through the full `smssuppression.browse` payload.
 
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - The command is registered `user,admin`: a request carrying both credentials takes the **user** path unless `Access=admin` is passed. Existing user-key integrations are unaffected.
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/smssuppression.patterns.browse`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -551,14 +551,14 @@ curl -X POST https://example.com/api.php \
 
 ## Add SMS Suppression Pattern
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/smssuppression.patterns.add`
 
 Adds a single wildcard pattern entry. The class auto-detects pattern entries by the presence of `*`. Passing a non-pattern phone number will create an exact-match suppression instead. Reason is hardcoded to `manual` for parity with the Octeth UI; use `smssuppression.add` if you need a different `Reason`.
 
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - When using both auth types simultaneously, pass `Access=user` to disambiguate
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/smssuppression.patterns.add`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -625,14 +625,14 @@ curl -X POST https://example.com/api.php \
 
 ## Delete SMS Suppression Pattern
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/smssuppression.patterns.delete`
 
 Removes pattern entries by `SuppressionID`. Functionally identical to `smssuppression.delete`, provided as a separate endpoint for consistency with the patterns namespace.
 
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - The command is registered `user,admin`: a request carrying both credentials takes the **user** path unless `Access=admin` is passed. Existing user-key integrations are unaffected.
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/smssuppression.patterns.delete`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -713,7 +713,7 @@ curl -X POST https://example.com/api.php \
 
 ## Clear SMS Suppression Cache
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/smssuppression.cache.clear`
 
 <Badge type="tip" text="New in v5.9.6" />
 
@@ -721,7 +721,7 @@ Flushes every SMS suppression cache entry in Redis, the "Clear cache" action of 
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `SMS`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/smssuppression.cache.clear`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**

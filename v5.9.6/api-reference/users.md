@@ -8,11 +8,11 @@ User management endpoints for creating, authenticating, and managing user accoun
 
 ## Create a User
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/user.create`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/user.create`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -371,11 +371,11 @@ Everything below `DefaultSenderDomain` in the table above was added in v5.9.3. P
 
 ## Get User Information
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/user.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/user.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -437,12 +437,12 @@ curl -X POST https://example.com/api.php \
 
 ## Update User
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/user.update`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key or User API Key
 - Required permissions: `User.Update`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/user.update`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -527,11 +527,11 @@ curl -X POST https://example.com/api.php \
 
 ## Get Monthly User Snapshot
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/user.snapshot`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key or User API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/user.snapshot`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -685,11 +685,11 @@ The response is the merge of two payloads: a stat-strip header (the overall fiel
 
 ## Switch to User Account
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/user.switch`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/user.switch`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -746,11 +746,11 @@ curl -X POST https://example.com/api.php \
 
 ## Send Password Reminder
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/user.passwordremind`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/user.passwordremind`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -807,11 +807,11 @@ curl -X POST https://example.com/api.php \
 
 ## Reset User Password
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/user.passwordreset`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/user.passwordreset`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -1073,11 +1073,11 @@ No specific error codes for this endpoint
 
 ## Get Users List
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/users.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/users.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -1179,13 +1179,13 @@ curl -X POST https://example.com/api.php \
 
 ## Search Users (Admin)
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.users.search`
 
 <Badge type="tip" text="New in v5.9.6" />
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (sub-admins need the `Users` privilege)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/admin.users.search`. Legacy access via `/api.php` is also supported
 - Cross-tenant by design. A restricted sub-admin (`AccessLimited` with `AccessAllowedUserGroupIDs`) only sees users in its allowed user groups.
 :::
 
@@ -1256,11 +1256,11 @@ curl -X POST https://example.com/api.php \
 
 ## Delete Users
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/users.delete`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/users.delete`. Legacy access via `/api.php` is also supported
 - Note: Not available in demo mode
 :::
 
@@ -1372,11 +1372,11 @@ curl -X GET https://example.com/api/v1/users.status \
 
 ## Create User Group
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/usergroup.create`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/usergroup.create`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -1466,11 +1466,11 @@ curl -X POST https://example.com/api.php \
 
 ## Update User Group
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/usergroup.update`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/usergroup.update`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -1556,13 +1556,13 @@ curl -X POST https://example.com/api.php \
 
 ## Patch a User Group
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/usergroup.patch`
 
 <Badge type="tip" text="New in v5.9.3" />
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/usergroup.patch`. Legacy access via `/api.php` is also supported
 - **Partial update.** Only the fields present in the request body are written. Every other column of the user group is left untouched. It is not included in the `UPDATE` statement at all.
 :::
 
@@ -1728,13 +1728,13 @@ curl -X POST https://example.com/api.php \
 
 ## Patch User Group Options
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/usergroup.options.patch`
 
 <Badge type="tip" text="New in v5.9.6" />
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (sub-admins need the `UserGroups` privilege)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/usergroup.options.patch`. Legacy access via `/api.php` is also supported
 - **Merge semantics.** Only the keys present in `Options` are written into the group's stored Options JSON. Every other key, including keys written by plugins, is preserved verbatim. The whole-blob `Options` parameter of `usergroup.update` / `usergroup.patch` is unchanged and still replaces the entire JSON.
 - **An unreadable stored blob is refused, not overwritten.** If the group's stored `Options` column is not empty and does not decode to a JSON array or object, the command answers `ErrorCode 8` and writes nothing, rather than merging into an empty set and thereby discarding whatever was stored. An empty column, and the literal `null` that `usergroup.create` writes when it is given no `Options` at all, both mean "no options yet" and patch normally.
 :::
@@ -1822,11 +1822,11 @@ curl -X POST https://example.com/api.php \
 
 ## Get User Group
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/usergroup.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/usergroup.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -1880,11 +1880,11 @@ curl -X POST https://example.com/api.php \
 
 ## Delete User Group
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/usergroup.delete`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/usergroup.delete`. Legacy access via `/api.php` is also supported
 - Note: Not available in demo mode
 :::
 
@@ -1933,11 +1933,11 @@ curl -X POST https://example.com/api.php \
 
 ## Duplicate User Group
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/usergroup.duplicate`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/usergroup.duplicate`. Legacy access via `/api.php` is also supported
 :::
 
 ::: tip Copy name (v5.9.6)
@@ -1990,11 +1990,11 @@ curl -X POST https://example.com/api.php \
 
 ## Get All User Groups
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/usergroups.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/usergroups.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -2087,12 +2087,12 @@ curl -X POST https://example.com/api.php \
 
 ## Add Credits
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/user.addcredits`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `User.Update`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/user.addcredits`. Legacy access via `/api.php` is also supported
 :::
 
 Adds `Credits` to the user's `AvailableCredits` balance and returns the new total. The value is added as an integer with no floor and no check that the user group runs the credit system: a negative `Credits` reduces the balance and can take it below zero. To set an absolute balance use `user.update` with `AvailableCredits` instead.
@@ -2199,12 +2199,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get Payment Periods
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/user.paymentperiods`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `User.PaymentHistory`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/user.paymentperiods`. Legacy access via `/api.php` is also supported
 :::
 
 Every payment period (invoice row) of one user from `oempro_users_payment_log`, newest `PeriodEndDate` first, optionally filtered by `PaymentStatus`. Read-only: unlike the send path, this call never creates a period for the current month. Use [Get a Payment Period](#get-a-payment-period) (`user.paymentperiod.get`) for a single row by `LogID`.
@@ -2285,12 +2285,12 @@ When the user has no matching periods the response carries `"PaymentPeriods": ""
 
 ## Update a Payment Period
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/user.paymentperiods.update`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `User.PaymentHistory`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/user.paymentperiods.update`. Legacy access via `/api.php` is also supported
 :::
 
 Updates one payment period of a user and returns the stored row. This is the API behind the admin invoice edit screen, and it behaves like that screen: on every call the charge columns (`ChargePerCampaignSent`, `ChargeAutoResponderPeriod`, `ChargeSystemPeriod`, `ChargeTotalCampaignRecipients`, `ChargeTotalAutoRespondersSent`), `Tax` and `TotalAmount` are recomputed from the user group's current pricing and the row's usage counters, whether or not you passed `Discount`, `IncludeTax` or `PaymentStatus`. `PaymentStatusDate` is always set to today's date, even when `PaymentStatus` is unchanged. The period must belong to `UserID`; a `LogID` of another account answers error `4`.
@@ -2478,11 +2478,11 @@ curl -X POST https://example.com/api.php \
 
 ## Get Per-User Usage and Feature Adoption
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/user.usage.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/user.usage.get`. Legacy access via `/api.php` is also supported
 :::
 
 Returns a single account's current usage figures and which features it actually uses, in one strictly **read-only** call, safe to poll on a billing-page render or to gate a plan downgrade. Unlike `user.get`, it performs **no writes**: it never materialises a `oempro_users_payment_log` period and never triggers the active-subscriber-count write-through.
@@ -2561,11 +2561,11 @@ curl -X POST https://example.com/api.php \
 
 ## Get Bulk User Usage Metering
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/users.usage.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/users.usage.get`. Legacy access via `/api.php` is also supported
 :::
 
 Returns date-ranged usage for **many users** in a single call, a per-day "emails sent" series plus the current active-subscriber count per account, for a daily billing/metering job. The emails-sent figure uses the same enforcement-backed source as `user.usage.get` (campaign + Email Gateway + auto-responder sends), so display and metering agree. It is bulk (a fixed number of grouped queries regardless of user count) and issues no Redis `KEYS` scan.
@@ -2645,12 +2645,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get User Categories
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.usercategories.get`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `Users`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/admin.usercategories.get`. Legacy access via `/api.php` is also supported
 :::
 
 All user categories with the number of users in each, plus the number of users with no category, as
@@ -2698,12 +2698,12 @@ curl -X POST https://example.com/api.php \
 
 ## Create a User Category
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.usercategory.create`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `Users`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.usercategory.create`. Legacy access via `/api.php` is also supported
 :::
 
 Creates a category. Before this command a category could only be created as a side effect of
@@ -2753,12 +2753,12 @@ curl -X POST https://example.com/api.php \
 
 ## Rename a User Category
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.usercategory.update`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `Users`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.usercategory.update`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -2807,13 +2807,13 @@ curl -X POST https://example.com/api.php \
 
 ## Delete a User Category
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.usercategory.delete`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `Users`
 - Not available in demo mode
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.usercategory.delete`. Legacy access via `/api.php` is also supported
 :::
 
 Deletes a category. Users in it become uncategorized; no user account is deleted.
@@ -2861,12 +2861,12 @@ NOT AVAILABLE IN DEMO MODE.: Demo mode is enabled
 
 ## Get a User's Activity Series (Admin)
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.user.activityseries.get`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `User.Edit`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/admin.user.activityseries.get`. Legacy access via `/api.php` is also supported
 :::
 
 One per-day series of the admin "Account Activity" chart for a user, one point per calendar day ending
@@ -2928,12 +2928,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get a User's Send Activity (Admin)
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.user.sendactivity.get`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `User.Edit`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/admin.user.sendactivity.get`. Legacy access via `/api.php` is also supported
 :::
 
 Per-day campaign send totals for a user, the data behind the sparkline on the admin user list. `From`
@@ -2997,13 +2997,13 @@ curl -X POST https://example.com/api.php \
 
 ## Send a Message to a User (Admin)
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.user.message.send`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `User.Edit`
 - Not available in demo mode
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.user.message.send`. Legacy access via `/api.php` is also supported
 :::
 
 Emails a message to the user's account address through the system notification template, exactly as
@@ -3060,12 +3060,12 @@ NOT AVAILABLE IN DEMO MODE.: Demo mode is enabled
 
 ## Get a Payment Period
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/user.paymentperiod.get`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `User.Edit`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/user.paymentperiod.get`. Legacy access via `/api.php` is also supported
 :::
 
 One payment period (invoice) of a user by `LogID`, the row the admin invoice screen renders. The period
@@ -3128,12 +3128,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get the Limit-Utilization Summary
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.users.limitutilization.summary`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `Users`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/admin.users.limitutilization.summary`. Legacy access via `/api.php` is also supported
 :::
 
 The aggregate limit-utilization counts the admin user browse sidebar shows (`Total`, `OK`, `Warning`,

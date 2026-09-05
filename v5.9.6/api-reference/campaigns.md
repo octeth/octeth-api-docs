@@ -6,6 +6,61 @@ layout: doc
 
 Manage email marketing campaigns through programmatic API access. Create, update, monitor, and control campaign lifecycles.
 
+## Approve a Campaign
+
+<Badge type="info" text="POST" /> `/api/v1/campaign.approve`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Reports` (enforced when `ADMIN_API_ENFORCE_PRIVILEGES` is on)
+- v1 REST alias: `POST /api/v1/campaign.approve`. Legacy access via `/api.php` is also supported
+:::
+
+Approves a campaign that is waiting for administrator approval by setting its `CampaignStatus` to `Ready`, so the delivery engine can pick it up. This is the API equivalent of the approve action on the admin campaign screens. The campaign is looked up by `CampaignID` alone, so an administrator may approve a campaign in any account.
+
+**Request Body Parameters:**
+
+| Parameter  | Type    | Required | Description                                |
+|------------|---------|----------|--------------------------------------------|
+| Command    | String  | Yes      | API command: `campaign.approve`            |
+| SessionID  | String  | No       | Admin session ID obtained from login       |
+| AdminAPIKey| String  | No       | Admin API key for authentication           |
+| CampaignID | Integer | Yes      | ID of the campaign to approve              |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/campaign.approve \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "campaign.approve",
+    "AdminAPIKey": "your-admin-api-key",
+    "CampaignID": 12345
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [1]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing required parameter (CampaignID)
+2: Campaign not found
+```
+
+:::
+
 ## Cancel a Campaign
 
 <Badge type="info" text="POST" /> `/api.php` (legacy)
@@ -318,14 +373,14 @@ curl -X POST https://example.com/api.php \
 
 ## Get Campaign Recipients
 
-<Badge type="info" text="POST" /> `/api.php` (legacy)
+<Badge type="info" text="GET" /> `/api/v1/campaign.recipients.get`
 
 ::: tip API Usage Notes
 - Authentication is done by User API Key or Admin API Key
 - Required permissions: `Campaign.Get`
 - This endpoint only works for unsent campaigns (Draft, Ready, Pending Approval)
 - For sent campaigns, use campaign statistics or queue endpoints instead
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/campaign.recipients.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -706,12 +761,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get Campaigns List
 
-<Badge type="info" text="POST" /> `/api.php` (legacy)
+<Badge type="info" text="GET" /> `/api/v1/campaigns.get`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key. Admin authentication is also accepted with `Access=admin` and `UserID` (see Admin usage below)
 - Required permissions: `Campaigns.Get`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/campaigns.get`. Legacy access via `/api.php` is also supported
 :::
 
 ::: tip Admin usage (v5.9.6, #2775)
@@ -1655,12 +1710,12 @@ curl -X GET "https://example.com/api/v1/campaigns.export?Command=campaigns.expor
 
 ## Get Campaign Link Clicks
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/campaign.linkclicks.get`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key (or Admin API Key)
 - Required permissions: `Campaign.Get`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/campaign.linkclicks.get`. Legacy access via `/api.php` is also supported
 :::
 
 Returns the per-link click ranking ("most clicked links") of a sent campaign, or the per-subscriber click breakdown ("who clicked"), depending on `GroupBy`. Results are ordered by click count (descending) and paginated. Automated/bot clicks are excluded (`IsAutomated=0`), so the numbers match the bundled campaign report. Access is owner-scoped; admins (via Admin API Key) may read any campaign.
@@ -1728,12 +1783,12 @@ When `GroupBy` is `Subscribers`, the response returns a `Subscribers` array inst
 
 ## Get Campaign Recipients Activity
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/campaign.recipients.activity.get`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key (or Admin API Key)
 - Required permissions: `Campaign.Get`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/campaign.recipients.activity.get`. Legacy access via `/api.php` is also supported
 :::
 
 For a **sent** campaign, returns the per-subscriber engagement breakdown for a single activity type ("who opened", "who clicked", "who bounced", etc.), read from the MySQL `oempro_stats_*` tables. Results are grouped per subscriber (one row per subscriber/list), ordered by most recent activity, and paginated. This is the sent-campaign counterpart to `campaign.recipients.get`, which only previews the audience of unsent campaigns. Automated/bot opens and clicks are excluded (`IsAutomated=0`). Access is owner-scoped.
@@ -1808,12 +1863,12 @@ Each row carries `ListName` (the subscriber's list name) alongside `ListID`. Whe
 
 ## Get Campaign A/B Test & Auto-Resend Uplift
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/campaign.abtest.get`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key (or Admin API Key)
 - Required permissions: `Campaign.Get`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/campaign.abtest.get`. Legacy access via `/api.php` is also supported
 :::
 
 Exposes the per-variation A/B (MVT) statistics and the auto-resend uplift metrics that the bundled campaign report assembles. Per-variation metrics exclude seed-list recipients so the numbers reflect the weighted audience split. The response always contains `ABTest`, `AutoResend`, and `ParentCampaign` keys; `AutoResend` and `ParentCampaign` are `null` when not applicable, and `ABTest.IsABTest` is `false` for non-A/B campaigns. Access is owner-scoped.

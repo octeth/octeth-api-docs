@@ -285,12 +285,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get All Sender Domains
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/emailgateway.getdomains`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key. Admin authentication is also accepted with `Access=admin` and `UserID` (see Admin usage below)
 - Required permissions: `EmailGateway.ManageDomain`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/emailgateway.getdomains`. Legacy access via `/api.php` is also supported
 :::
 
 Returns every sender domain owned by the caller. By default the response shape is byte-for-byte identical to the pre-#1996 endpoint — useful for the legacy dashboard.
@@ -1852,12 +1852,12 @@ By default a list send resolves and delivers to **at most the first 250 recipien
 
 ## Send Email via SMTP Relay
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/emailgateway.smtprelay`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required permissions: `EmailGateway.ManageDomain`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/emailgateway.smtprelay`. Legacy access via `/api.php` is also supported
 - This is an internal endpoint used by the SMTP relay server
 :::
 

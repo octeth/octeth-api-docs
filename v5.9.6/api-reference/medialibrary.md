@@ -80,7 +80,7 @@ curl -X POST https://example.com/api.php \
 
 ## Delete Media File
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/media.delete`
 
 ::: warning DEPRECATION WARNING
 This endpoint is deprecated and will be removed in a future Octeth release. There are no alternative or replacement API endpoints available.
@@ -89,7 +89,7 @@ This endpoint is deprecated and will be removed in a future Octeth release. Ther
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - Required permissions: `Media.Delete`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/media.delete`. Legacy access via `/api.php` is also supported
 :::
 
 Delete a media file from the media library.
@@ -325,7 +325,7 @@ curl -X POST https://example.com/api.php \
 
 ## Upload Media File
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/media.upload`
 
 ::: warning DEPRECATION WARNING
 This endpoint is deprecated and will be removed in a future Octeth release. There are no alternative or replacement API endpoints available.
@@ -334,7 +334,7 @@ This endpoint is deprecated and will be removed in a future Octeth release. Ther
 ::: tip API Usage Notes
 - Authentication required: User API Key. Admin authentication is also accepted with `Access=admin` and `UserID` (see Admin usage below)
 - Required permissions: `Media.Upload`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/media.upload`. Legacy access via `/api.php` is also supported
 :::
 
 Upload a new media file to the media library.

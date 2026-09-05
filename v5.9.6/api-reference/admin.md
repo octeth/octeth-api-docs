@@ -2023,11 +2023,11 @@ curl -X POST https://example.com/api/v1/admin.revenue.series \
 
 ## Get Email
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.email.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/admin.email.get`. Legacy access via `/api.php` is also supported
 :::
 
 Retrieves complete email information for admin users without user restrictions. This allows administrators to view email details from any account, useful for debugging and cross-account support.
@@ -2616,11 +2616,11 @@ NOT AVAILABLE IN DEMO MODE.: DEMO_MODE_ENABLED is on
 
 ## Delete All Subscribers from a List
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.subscribers.delete.all`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.subscribers.delete.all`. Legacy access via `/api.php` is also supported
 :::
 
 Deletes all subscribers from a specific list for a given user account. This endpoint is restricted to administrators and allows deletion across any user account by specifying the UserID. All subscriber records and their tag associations are permanently removed from the specified list. Optionally, the actual tag entities can also be deleted.
@@ -2680,12 +2680,12 @@ listid: Missing required parameter listid
 
 ## Get Administrator Account
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.get`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `Account`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/admin.get`. Legacy access via `/api.php` is also supported
 :::
 
 Returns the authenticated administrator's own profile without any credential. `APIKeyIssued` reports
@@ -2745,12 +2745,12 @@ curl -X POST https://example.com/api.php \
 
 ## Update Administrator Account
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.update`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `Account`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.update`. Legacy access via `/api.php` is also supported
 :::
 
 Updates administrator account details including username, email address, name, and optionally password.
@@ -2840,12 +2840,12 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ## Admin Logout
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.logout`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `Account`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.logout`. Legacy access via `/api.php` is also supported
 :::
 
 Ends the admin session behind the call, so a client that created a session with `admin.login` can
@@ -2896,12 +2896,12 @@ curl -X POST https://example.com/api.php \
 
 ## Provision Two-Factor Authentication
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.2fa.provision`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `Security`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.2fa.provision`. Legacy access via `/api.php` is also supported
 :::
 
 Issues the TOTP secret and recovery key for the authenticated administrator, or returns the pending ones
@@ -2963,12 +2963,12 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ## Enable Two-Factor Authentication
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.2fa.enable`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `Security`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.2fa.enable`. Legacy access via `/api.php` is also supported
 :::
 
 Verifies a six-digit TOTP code against the secret issued by `admin.2fa.provision` and turns two-factor
@@ -3026,12 +3026,12 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ## Disable Two-Factor Authentication
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.2fa.disable`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `Security`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.2fa.disable`. Legacy access via `/api.php` is also supported
 :::
 
 Clears the authenticated administrator's two-factor secret, recovery key and enabled flag after
@@ -3088,12 +3088,12 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ## Get Admin Privileges
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.privileges.get`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `SubAdmins`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/admin.privileges.get`. Legacy access via `/api.php` is also supported
 :::
 
 Returns every privilege string a sub-admin's `AccessOptions` may contain, so a client can render a
@@ -3145,12 +3145,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get Sub-Admin Accounts
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.subadmins.get`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `SubAdmins`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/admin.subadmins.get`. Legacy access via `/api.php` is also supported
 :::
 
 Lists every administrator account other than the master admin (AdminID 1). Each row carries only
@@ -3216,12 +3216,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get a Sub-Admin Account
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.subadmin.get`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `SubAdmins`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/admin.subadmin.get`. Legacy access via `/api.php` is also supported
 :::
 
 Returns one sub-admin account with the same projection as `admin.subadmins.get`. AdminID 1 is refused:
@@ -3288,12 +3288,12 @@ curl -X POST https://example.com/api.php \
 
 ## Create a Sub-Admin Account
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.subadmin.create`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `SubAdmins`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.subadmin.create`. Legacy access via `/api.php` is also supported
 :::
 
 Creates an access-limited sub-admin. The same validation the admin Sub Admin Accounts screen applies runs
@@ -3386,12 +3386,12 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ## Update a Sub-Admin Account
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.subadmin.update`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `SubAdmins`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.subadmin.update`. Legacy access via `/api.php` is also supported
 :::
 
 Updates the supplied fields of an access-limited sub-admin; omitted fields are left unchanged. The
@@ -3471,12 +3471,12 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ## Delete Sub-Admin Accounts
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.subadmin.delete`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `SubAdmins`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.subadmin.delete`. Legacy access via `/api.php` is also supported
 :::
 
 Deletes one or more sub-admin accounts. Ids that do not exist, accounts that are not access-limited (the
@@ -3532,12 +3532,12 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ## Regenerate a Sub-Admin API Key
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.subadmin.apikey.regenerate`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `SubAdmins`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.subadmin.apikey.regenerate`. Legacy access via `/api.php` is also supported
 :::
 
 Issues a per-sub-admin API key, or rotates the existing one. The key is returned exactly once, in this
@@ -3600,12 +3600,12 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ## Revoke a Sub-Admin API Key
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.subadmin.apikey.revoke`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `SubAdmins`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.subadmin.apikey.revoke`. Legacy access via `/api.php` is also supported
 :::
 
 Removes the per-sub-admin API key so it stops authenticating immediately. Revoking an account that has
@@ -3663,11 +3663,11 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ## Get User Activity
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.users.activity`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/admin.users.activity`. Legacy access via `/api.php` is also supported
 :::
 
 Retrieves a paginated list of users with their email sending activity status. Users are classified as "Active" or "Idle" based on whether they sent any campaigns or journey emails within the specified activity period. This endpoint provides detailed activity metrics including recent campaign and journey email counts, with support for filtering, searching, and sorting.
@@ -3793,11 +3793,11 @@ curl -X POST https://example.com/api.php \
 
 ## Get User Activity Summary
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.users.activity.summary`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/admin.users.activity.summary`. Legacy access via `/api.php` is also supported
 :::
 
 Retrieves summary statistics of user activity, showing counts and percentages of Active vs. Idle users. Users are classified based on whether they sent any campaigns or journey emails within the specified activity period. This endpoint is useful for dashboard displays and quick activity overview.
@@ -4329,11 +4329,11 @@ NOT AVAILABLE IN DEMO MODE.: DEMO_MODE_ENABLED is on
 
 ## List DNS Template Names
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.dnstemplates.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/admin.dnstemplates.get`. Legacy access via `/api.php` is also supported
 - The names of the sender-domain DNS record templates the install ships (`EMAILGATEWAY_DNS_TEMPLATES` and `EMAILCAMPAIGN_DNS_TEMPLATES`). Only names are returned; the record bodies are expanded per domain when a sender domain is created.
 :::
 
@@ -4376,11 +4376,11 @@ curl -X POST https://example.com/api.php \
 
 ## List Theme Templates
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.themes.templates.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/admin.themes.templates.get`. Legacy access via `/api.php` is also supported
 - The UI templates installed under `templates/`, each with the CSS settings its stylesheet exposes to the theme editor. `theme.create` / `theme.update` take a `Template` code from this list.
 :::
 
@@ -4431,11 +4431,11 @@ curl -X POST https://example.com/api.php \
 
 ## List Installed Plugins
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.plugins.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/admin.plugins.get`. Legacy access via `/api.php` is also supported
 - Every plugin under `plugins/` with a parsable header. `Enabled` reflects the `ENABLED_PLUGINS` setting.
 :::
 
@@ -4481,11 +4481,11 @@ curl -X POST https://example.com/api.php \
 
 ## Enable Plugin
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.plugin.enable`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/admin.plugin.enable`. Legacy access via `/api.php` is also supported
 - Runs the same sequence as the admin Plugins screen: validates the code against the plugins on disk, adds it to `ENABLED_PLUGINS`, includes the plugin and runs its `enable_<code>()` lifecycle hook (table creation, option seeding), then its `load_<code>()`. This is what writing `EnabledPlugins` through `settings.update` does NOT do.
 :::
 
@@ -4536,11 +4536,11 @@ NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 
 ## Disable Plugin
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.plugin.disable`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/admin.plugin.disable`. Legacy access via `/api.php` is also supported
 - Removes the code from `ENABLED_PLUGINS` and runs the plugin's `disable_<code>()` lifecycle hook, exactly like the admin Plugins screen.
 :::
 

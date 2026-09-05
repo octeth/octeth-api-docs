@@ -8,11 +8,11 @@ System settings management endpoints for configuring Octeth application settings
 
 ## Test Email Sending Configuration
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/settings.emailsendingtest`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/settings.emailsendingtest`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -81,11 +81,11 @@ NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 
 ## Get System Settings
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/settings.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/settings.get`. Legacy access via `/api.php` is also supported
 - Read counterpart of `settings.update`. Column names come from the `oempro_config` row itself, so a column added in a later version appears here without a client change.
 :::
 
@@ -148,11 +148,11 @@ curl -X POST https://example.com/api.php \
 
 ## Update System Settings
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/settings.update`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/settings.update`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -365,11 +365,11 @@ NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 
 ## Get Delivery Routes
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/deliveryroutes.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/deliveryroutes.get`. Legacy access via `/api.php` is also supported
 - The recipient MX to delivery-server routing map (admin Settings > Delivery Routes). Each entry's `Pattern` is either an exact MX host name or a PCRE pattern (the delivery workers try `preg_match` first, then an exact comparison). Entries are an ordered list: the first match wins.
 :::
 
@@ -416,11 +416,11 @@ curl -X POST https://example.com/api.php \
 
 ## Update Delivery Routes
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/deliveryroutes.update`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/deliveryroutes.update`. Legacy access via `/api.php` is also supported
 - Replaces the WHOLE routing map. Send the complete list every time; an empty list clears it. Order is significant.
 - `Pattern` values are stored verbatim. Do not send the map as a JSON object keyed by pattern: request object keys are lowercased, which would rewrite a PCRE pattern.
 - Written through the cached options writer, so the delivery workers pick the change up immediately.
@@ -485,11 +485,11 @@ NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 
 ## Get SMS Settings
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/sms.settings.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `SMS`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/sms.settings.get`. Legacy access via `/api.php` is also supported
 - The three settings of admin Settings > SMS.
 :::
 
@@ -536,11 +536,11 @@ curl -X POST https://example.com/api.php \
 
 ## Update SMS Settings
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/sms.settings.update`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `SMS`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/sms.settings.update`. Legacy access via `/api.php` is also supported
 - Partial update: omitted parameters are left unchanged. At least one must be sent.
 :::
 
@@ -596,11 +596,11 @@ NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 
 ## List Email Headers
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/emailheaders.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/emailheaders.get`. Legacy access via `/api.php` is also supported
 - System-wide custom email headers (admin Settings > Email Delivery > Headers). `DeliveryServerID` 0 means the header applies on every delivery server.
 :::
 
@@ -646,11 +646,11 @@ curl -X POST https://example.com/api.php \
 
 ## Create Email Header
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/emailheader.create`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/emailheader.create`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -711,11 +711,11 @@ NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 
 ## Delete Email Headers
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/emailheaders.delete`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/emailheaders.delete`. Legacy access via `/api.php` is also supported
 - Ids that do not exist are reported in `MissingHeaderIDs`; the others are still deleted.
 :::
 

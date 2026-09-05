@@ -8,11 +8,11 @@ Single Sign-On (SSO) source management endpoints for creating, reading, updating
 
 ## Create an SSO Source
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/sso.create`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/sso.create`. Legacy access via `/api.php` is also supported
 - `Key1` and `Key2` are returned since v5.9.6 (#2777) so the integration can be finished from the API. Existing fields and error codes are unchanged. Store both keys: they are the cipher and HMAC keys your application uses to sign SSO tokens. They can be re-read later with `sso.get` and replaced with `sso.keys.regenerate`.
 :::
 
@@ -88,11 +88,11 @@ curl -X POST https://example.com/api.php \
 
 ## Update an SSO Source
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/sso.update`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/sso.update`. Legacy access via `/api.php` is also supported
 :::
 
 ::: warning Behavior change (v5.9.3, #2352)
@@ -172,11 +172,11 @@ curl -X POST https://example.com/api.php \
 
 ## Delete an SSO Source
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/sso.delete`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/sso.delete`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -223,13 +223,13 @@ curl -X POST https://example.com/api.php \
 
 ## Get an SSO Source
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/sso.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required privilege for sub-administrators: `Settings.SSO`
 - Returns the full source record including `Key1` and `Key2`. This is one of three places the key material is returned (with `sso.create` and `sso.keys.regenerate`); `ssosources.get` never includes it.
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/sso.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -296,13 +296,13 @@ curl -X POST https://example.com/api.php \
 
 ## List SSO Sources
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/ssosources.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required privilege for sub-administrators: `Settings.SSO`
 - Ordered by `SourceName` ascending. `Key1` and `Key2` are never part of this listing; call `sso.get` for one source to read them.
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/ssosources.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -366,14 +366,14 @@ curl -X POST https://example.com/api.php \
 
 ## Get SSO Source Statistics
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/sso.stats.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required privilege for sub-administrators: `Settings.SSO`
 - Returns one entry per calendar day for the last `Days` days ending today, newest first, with days that saw no activity zero-filled. This is the same window the admin SSO edit screen renders.
 - `Days` defaults to 30 and is clamped to the range 1 to 365. A non-numeric value falls back to 30.
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/sso.stats.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -437,14 +437,14 @@ curl -X POST https://example.com/api.php \
 
 ## Regenerate SSO Source Keys
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/sso.keys.regenerate`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required privilege for sub-administrators: `Settings.SSO`
 - Mints a new `Key1` (32 bytes) and `Key2` (64 bytes) pair exactly as `sso.create` does, stores them, updates `UpdatedAt`, and returns both. Tokens signed with the previous keys stop validating immediately, so update the integrating application first or during a maintenance window.
 - Not available in demo mode.
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/sso.keys.regenerate`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**

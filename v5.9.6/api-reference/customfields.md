@@ -400,11 +400,11 @@ curl -X POST https://example.com/api.php \
 
 ## Create a Global Custom Field
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/global.customfield.create`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/global.customfield.create`. Legacy access via `/api.php` is also supported
 :::
 
 ::: warning Behavior change (v5.9.3, #2378)
@@ -489,11 +489,11 @@ curl -X POST https://example.com/api.php \
 
 ## Update a Global Custom Field
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/global.customfield.update`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/global.customfield.update`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -571,11 +571,11 @@ curl -X POST https://example.com/api.php \
 
 ## Delete Global Custom Fields
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/global.customfields.delete`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/global.customfields.delete`. Legacy access via `/api.php` is also supported
 - Every id in `CustomFields` must name a system-global custom field (`RelOwnerUserID = 0`, `RelListID = 0`, `IsGlobal = Yes`). The call is all-or-nothing: if any id is not numeric, does not exist, or names a user-owned or list-local field, the whole request is refused with `ErrorCode 2` and nothing is deleted (changed in v5.9.6, issue #2768).
 :::
 
@@ -634,11 +634,11 @@ curl -X POST https://example.com/api.php \
 
 ## Get Global Custom Fields
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/global.customfields.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/global.customfields.get`. Legacy access via `/api.php` is also supported
 - `TotalFieldCount` is the real number of global fields matching `SearchKeyword`. Before v5.9.6 it was computed from variables that do not exist under admin auth, so it was wrong. `TotalCustomFields` carries the same number; `RecordsFrom` and `RecordsPerRequest` echo the paging in effect.
 :::
 
@@ -710,12 +710,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get a Global Custom Field
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/global.customfield.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required admin privilege: `CustomFields`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/global.customfield.get`. Legacy access via `/api.php` is also supported
 - Only system-global fields are returned (`RelOwnerUserID = 0`, `RelListID = 0`, `IsGlobal = Yes`). A tenant-owned field id returns error 2.
 - `Options` and `SelectedOptions` are the two view fields the admin edit screen derives: `FieldOptions` with the selected-marker asterisks stripped, and the comma list of selected option indexes in `ArrayOptions`.
 :::

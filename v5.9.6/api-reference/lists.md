@@ -520,12 +520,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get All Lists
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/lists.get`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key. Admin authentication is also accepted with `Access=admin` and `UserID` (see Admin usage below)
 - Required permissions: `Lists.Get`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/lists.get`. Legacy access via `/api.php` is also supported
 :::
 
 Returns the authenticated user's subscriber lists with full per-row metadata. Supports pagination, free-text search across `Name` and `Description`, and filtering by archive state.
@@ -632,12 +632,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get Per-List Statistics
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/lists.stats`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key. Admin authentication is also accepted with `Access=admin` and `UserID` (see Admin usage below)
 - Required permissions: `Lists.Get`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/lists.stats`. Legacy access via `/api.php` is also supported
 :::
 
 Returns aggregate per-list statistics over a configurable lookback window. Designed for the "Lists browse" page stat strip and per-row metrics — one round-trip across `oempro_subscriber_lists` joined with the pre-aggregated `oempro_stats_list_daily_aggregated` (opens / clicks / forwards / browser-views) and `oempro_stats_activity` (sent / subscriptions / unsubscriptions / imports / hard bounces) sources. Archived lists are excluded.
@@ -771,12 +771,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get List Activity Series
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/list.getactivityseries`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key. Admin authentication is also accepted with `Access=admin` and `UserID` (see Admin usage below)
 - Required permissions: `List.Get`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/list.getactivityseries`. Legacy access via `/api.php` is also supported
 :::
 
 Returns a daily series of subscription / unsubscription activity for a single list over a configurable lookback window. Designed for the Reports tab → Overview growth chart and the per-list "net growth" KPI. Reads pre-aggregated rows from `oempro_stats_activity` (one row per list / owner / day) and gap-fills missing dates with zeros so the consumer always receives exactly `Days` ordered entries ending today.

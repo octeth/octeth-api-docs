@@ -1148,12 +1148,12 @@ curl -X POST https://example.com/api/v1/subscribers.import \
 
 ## Get Subscribers List
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/subscribers.get`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key. Admin authentication is also accepted with `Access=admin` and `UserID` (see Admin usage below)
 - Required permissions: `Subscribers.Get`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/subscribers.get`. Legacy access via `/api.php` is also supported
 :::
 
 ::: tip Admin usage (v5.9.6, #2775)

@@ -18,12 +18,12 @@ The commands that read Google-sourced data (`postmaster.oauth.url.get`, `postmas
 
 ## Get Integration Status
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/postmaster.status.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Privilege: `Settings`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/postmaster.status.get`. Legacy access via `/api.php` is also supported
 - `Connected` means a token row exists; `HasValidToken` means the access token has more than five minutes left. The collector refreshes an expired token with the stored refresh token automatically.
 :::
 
@@ -78,12 +78,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get OAuth Consent URL
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/postmaster.oauth.url.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Privilege: `Settings`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/postmaster.oauth.url.get`. Legacy access via `/api.php` is also supported
 - Open `AuthorizationURL` in a browser. Google redirects to the frontend callback route configured as `GOOGLE_POSTMASTER_REDIRECT_URI` (`/google-postmaster-oauth/callback`), which exchanges the code and stores the tokens. The callback is not an API command.
 - `State` is single-use and expires after `StateExpiresInSeconds` (600). Request a fresh URL if the consent flow is not completed in time.
 - Each call is logged with the acting admin's id.
@@ -136,12 +136,12 @@ curl -X POST https://example.com/api.php \
 
 ## Disconnect Google Account
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/postmaster.oauth.disconnect`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Privilege: `Settings`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/postmaster.oauth.disconnect`. Legacy access via `/api.php` is also supported
 - Deletes the stored OAuth tokens. Collected metrics are kept. Succeeds even when nothing was connected (`WasConnected: false`).
 - Not available in demo mode. Logged with the acting admin's id.
 :::
@@ -191,12 +191,12 @@ NOT AVAILABLE IN DEMO MODE.: Demo mode is enabled
 
 ## Get Dashboard
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/postmaster.dashboard.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Privilege: `Settings`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/postmaster.dashboard.get`. Legacy access via `/api.php` is also supported
 - The same data the admin dashboard renders: summary counters, every domain with collected metrics (latest values), the active sender IPs and the anomalies detected over the lookback window, sorted by severity (`critical`, `high`, `medium`) then date, most recent first.
 - Rates are fractions from Google (0 to 1), not percentages.
 :::
@@ -295,12 +295,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get Domain Metrics
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/postmaster.domain.metrics.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Privilege: `Settings`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/postmaster.domain.metrics.get`. Legacy access via `/api.php` is also supported
 - Daily rows for one domain over an inclusive window of at most 365 days, the latest row on record for the domain (any date) and the IP reputation rows recorded for that domain in the window.
 - `IncludeSendingActivity=true` adds `SendingActivity`, the day-by-day correlation of the metrics with Octeth's own campaign sends, bounces, complaints and unsubscribes (the "Sending Activity" panel of the domain detail screen).
 - Dates are UTC calendar dates. Google delivers metrics with a two to three day lag.
@@ -412,12 +412,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get Domain Anomalies
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/postmaster.domain.anomalies.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Privilege: `Settings`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/postmaster.domain.anomalies.get`. Legacy access via `/api.php` is also supported
 - Day-over-day detector: reputation drops of more than one level (`reputation_drop`, critical), spam rate up more than 50% relative (`spam_rate_spike`, high), SPF / DKIM / DMARC success down more than 10 points (`spf_failure`, `dkim_failure`, `dmarc_failure`, medium). Needs at least two days of data in the window.
 :::
 
@@ -484,12 +484,12 @@ curl -X POST https://example.com/api.php \
 
 ## Discover Sending Domains
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/postmaster.domains.discover`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Privilege: `Settings`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/postmaster.domains.discover`. Legacy access via `/api.php` is also supported
 - The candidate list for Postmaster monitoring, gathered from sender domains, email From addresses, delivery server domains and user group default sender domains, de-duplicated. Reads local tables only; the Google client is not required.
 :::
 
@@ -537,12 +537,12 @@ curl -X POST https://example.com/api.php \
 
 ## List Sender IPs
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/postmaster.ips.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Privilege: `Settings`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/postmaster.ips.get`. Legacy access via `/api.php` is also supported
 - Active rows only (soft-deleted rows are never listed). `TotalSenderIPs` is the full active count regardless of paging.
 :::
 
@@ -623,12 +623,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get IP Metrics
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/postmaster.ip.metrics.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Privilege: `Settings`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/postmaster.ip.metrics.get`. Legacy access via `/api.php` is also supported
 - `Metrics` holds one row per specific address, domain and day inside the window (a CIDR block yields rows for every address Google reported on). `Summary` groups all history of the configured IP by specific address, domain and reputation with the latest date and row count, as the IP detail screen shows.
 :::
 
@@ -722,12 +722,12 @@ curl -X POST https://example.com/api.php \
 
 ## Add Sender IP
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/postmaster.ip.add`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Privilege: `Settings`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/postmaster.ip.add`. Legacy access via `/api.php` is also supported
 - Accepts a single IPv4 or IPv6 address, or an IPv4 CIDR block (`a.b.c.d/0` to `/32`). A single address already inside an active CIDR block is refused: its reputation is collected under the block.
 - The address is unique. Re-adding a soft-deleted address reactivates the same row (`Reactivated: true`, same `IPID`) with the new description.
 - Not available in demo mode. Logged with the acting admin's id.
@@ -798,12 +798,12 @@ NOT AVAILABLE IN DEMO MODE.: Demo mode is enabled
 
 ## Delete Sender IP
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/postmaster.ip.delete`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Privilege: `Settings`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/postmaster.ip.delete`. Legacy access via `/api.php` is also supported
 - Soft delete: the row is marked `Deleted` and its collected metrics are kept. Deleting a row that is not active answers `ErrorCode: 2`.
 - Not available in demo mode. Logged with the acting admin's id.
 :::

@@ -399,11 +399,11 @@ curl -X GET "https://example.com/api/v1/system-settings?Section=EnvSettings&admi
 
 ## List Installed Language Packs
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/system.languages.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/system.languages.get`. Legacy access via `/api.php` is also supported
 - The only values `settings.update` accepts for `DEFAULT_LANGUAGE` and `USER_SIGNUP_LANGUAGE`.
 :::
 

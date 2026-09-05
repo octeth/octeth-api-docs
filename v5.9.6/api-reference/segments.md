@@ -289,12 +289,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get Segments
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/segments.get`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key. Admin authentication is also accepted with `Access=admin` and `UserID` (see Admin usage below)
 - Required permissions: `Segments.Get`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/segments.get`. Legacy access via `/api.php` is also supported
 :::
 
 ::: tip Admin usage (v5.9.6, #2775)
@@ -365,12 +365,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get Global Segments
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/global.segments.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required sub-admin privilege: `Settings.Segments`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/global.segments.get`. Legacy access via `/api.php` is also supported
 :::
 
 A global segment is an admin-managed segment that is not attached to any list or user (`RelOwnerUserID = 0`, `RelListID = 0`). It is what the admin **Settings > Segments** screen manages. Its `Options.UserGroupSettings` map drives per-user-group delivery-server routing at send time: when a recipient matches the segment, the campaign or transactional email of a user in that group is routed through the assigned delivery server.
@@ -437,12 +437,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get a Global Segment
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/global.segment.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required sub-admin privilege: `Settings.Segments`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/global.segment.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -501,12 +501,12 @@ curl -X POST https://example.com/api.php \
 
 ## Create a Global Segment
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/global.segment.create`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required sub-admin privilege: `Settings.Segments`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/global.segment.create`. Legacy access via `/api.php` is also supported
 - Not available when `DEMO_MODE_ENABLED` is on
 :::
 
@@ -578,12 +578,12 @@ NOT AVAILABLE IN DEMO MODE.: demo mode is enabled
 
 ## Update a Global Segment
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/global.segment.update`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required sub-admin privilege: `Settings.Segments`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/global.segment.update`. Legacy access via `/api.php` is also supported
 - Not available when `DEMO_MODE_ENABLED` is on
 :::
 
@@ -642,12 +642,12 @@ NOT AVAILABLE IN DEMO MODE.: demo mode is enabled
 
 ## Delete Global Segments
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/global.segments.delete`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required sub-admin privilege: `Settings.Segments`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/global.segments.delete`. Legacy access via `/api.php` is also supported
 - Not available when `DEMO_MODE_ENABLED` is on
 :::
 
@@ -695,13 +695,13 @@ NOT AVAILABLE IN DEMO MODE.: demo mode is enabled
 
 ## Get the Segment Rule Vocabulary
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/segments.rulevocabulary.get`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - Admin callers must pass `Access=admin` (the command is registered user-first so existing user-key calls are unchanged); sub-admins need the `Settings.Segments` privilege
 - No user permission is required
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/segments.rulevocabulary.get`. Legacy access via `/api.php` is also supported
 :::
 
 Returns the static vocabulary a rule builder needs: the default subscriber fields with their validation methods and enum values, the operator sets per validation method, the activity fields, and the exact allow-lists (`PhysicalFields`, `AllowedOperators`) that `segment.create`, `segment.update` and `global.segment.*` enforce on rule fields and operators. Custom fields are per install and come from `global.customfields.get` (admin) or `customfields.get` (user).

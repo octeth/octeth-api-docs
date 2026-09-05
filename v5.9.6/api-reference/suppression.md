@@ -389,14 +389,14 @@ curl -X POST https://example.com/api.php \
 
 ## Import to Suppression List
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/suppression.import`
 
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - Under a **User API Key** the addresses are written to the caller's own list (`RelOwnerUserID` = caller), or to one of the caller's lists when `ListID` is given.
 - Under an **Admin API Key** the addresses are written **system-wide** (`RelOwnerUserID = 0`, `RelListID = 0`): they suppress delivery for every account on the install. This is the API form of the admin Suppression screen's "Add email addresses" box. Pass `SuppressionSource=Administrator` to match what the screen writes (the default is `User`). `ListID` is not supported under admin auth and fails with `ErrorCode: 4`.
 - The command is registered `admin,user`, so a request carrying both credentials takes the admin path unless `Access=user` is passed.
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/suppression.import`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -500,7 +500,7 @@ curl -X POST https://example.com/api.php \
 
 ## Browse System-Wide Suppression List
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/global.suppression.browse`
 
 <Badge type="tip" text="New in v5.9.6" />
 
@@ -509,7 +509,7 @@ Pages through the **system-wide** suppression rows (`RelListID = 0` and `RelOwne
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Suppression`)
 - Same filters and response shape as `suppression.browse`, including `SuppressedEmails: false` when nothing matches
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/global.suppression.browse`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -572,7 +572,7 @@ curl -X POST https://example.com/api.php \
 
 ## Search Suppression Across All Accounts
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/global.suppression.search`
 
 <Badge type="tip" text="New in v5.9.6" />
 
@@ -583,7 +583,7 @@ A restricted sub-admin (one with `AccessAllowedUserGroupIDs` set) only sees rows
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Suppression`)
 - `EmailAddress` is matched exactly unless it contains `*`, which acts as a wildcard. A literal `%` or `_` in the value is matched literally.
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/global.suppression.search`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -662,7 +662,7 @@ curl -X POST https://example.com/api.php \
 
 ## System-Wide Suppression Stats
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/global.suppression.stats`
 
 <Badge type="tip" text="New in v5.9.6" />
 
@@ -670,7 +670,7 @@ Install-wide counts by `SuppressionSource` over every account and every scope ti
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Suppression`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/global.suppression.stats`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -714,7 +714,7 @@ curl -X POST https://example.com/api.php \
 
 ## Delete Suppression Rows (Admin)
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/global.suppression.delete`
 
 <Badge type="tip" text="New in v5.9.6" />
 
@@ -726,7 +726,7 @@ Deletes email suppression rows as an admin, the counterpart of `suppression.impo
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Suppression`)
 - Not available when `DEMO_MODE_ENABLED` is on
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/global.suppression.delete`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -806,7 +806,7 @@ curl -X POST https://example.com/api.php \
 
 ## Get Suppression Patterns
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/suppression.patterns.get`
 
 <Badge type="tip" text="New in v5.9.6" />
 
@@ -816,7 +816,7 @@ Lists every email suppression pattern. Patterns have no owner: they are **system
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Suppression`)
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/suppression.patterns.get`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -867,7 +867,7 @@ curl -X POST https://example.com/api.php \
 
 ## Add Suppression Pattern
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/suppression.pattern.add`
 
 <Badge type="tip" text="New in v5.9.6" />
 
@@ -876,7 +876,7 @@ Creates a system-wide email suppression pattern. A `REGEXP` / `NOT REGEXP` patte
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Suppression`)
 - Not available when `DEMO_MODE_ENABLED` is on
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/suppression.pattern.add`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -932,7 +932,7 @@ curl -X POST https://example.com/api.php \
 
 ## Delete Suppression Pattern
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/suppression.pattern.delete`
 
 <Badge type="tip" text="New in v5.9.6" />
 
@@ -941,7 +941,7 @@ Deletes one system-wide email suppression pattern. The send-time pattern cache i
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Suppression`)
 - Not available when `DEMO_MODE_ENABLED` is on
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/suppression.pattern.delete`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**

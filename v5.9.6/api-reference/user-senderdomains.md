@@ -797,12 +797,12 @@ curl -X GET "https://example.com/api/v1/user.senderdomain.dnshost?APIKey=your-ap
 
 ## Get a User's Sender Domains (Admin)
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.user.senderdomains.get`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `User.Edit`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/admin.user.senderdomains.get`. Legacy access via `/api.php` is also supported
 :::
 
 Returns the sender domains of one user account exactly as the admin "Sender Domains" tab lists them: the
@@ -883,12 +883,12 @@ curl -X POST https://example.com/api.php \
 
 ## Moderate a Sender Domain (Admin)
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/admin.senderdomain.status.update`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `User.Edit`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `POST /api/v1/admin.senderdomain.status.update`. Legacy access via `/api.php` is also supported
 :::
 
 Sets the moderation status of one of a user's sender domains: `Enabled` (activate), `Suspended`,
@@ -968,12 +968,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get the Sender-Domain Moderation Queue (Admin)
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/admin.senderdomains.pending.get`
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
 - Required privilege: `User.Edit`
-- Legacy endpoint access via `/api.php` is also supported
+- v1 REST alias: `GET /api/v1/admin.senderdomains.pending.get`. Legacy access via `/api.php` is also supported
 :::
 
 Install-wide work queue for domain moderation: every sender domain in status `Approval Pending` or

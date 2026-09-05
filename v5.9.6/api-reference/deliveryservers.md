@@ -8,11 +8,11 @@ Delivery server management endpoints for creating, updating, deleting, retrievin
 
 ## Create a Delivery Server
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/deliveryserver.create`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/deliveryserver.create`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -103,11 +103,11 @@ curl -X POST https://example.com/api.php \
 
 ## Save Delivery Server Test Results
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/deliveryserver.testresults`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/deliveryserver.testresults`. Legacy access via `/api.php` is also supported
 - Since v5.9.6 this command runs the real verification (a test message through the server's own SMTP
   credentials, then the SPF, DKIM and DMARC TXT checks and the CNAME checks on the MFROM, link-tracking and
   open-tracking hosts) and stores what the check found. The `test_results` and `last_checked_at` values you
@@ -185,11 +185,11 @@ Read the stored outcome back with `deliveryserver.get`: `VerificationResults` ho
 
 ## Update a Delivery Server
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/deliveryserver.update`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/deliveryserver.update`. Legacy access via `/api.php` is also supported
 :::
 
 **Request Body Parameters:**
@@ -283,11 +283,11 @@ curl -X POST https://example.com/api.php \
 
 ## Delete Delivery Servers
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/deliveryservers.delete`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `POST /api/v1/deliveryservers.delete`. Legacy access via `/api.php` is also supported
 - Deleting a server resets every user group whose `TargetDeliveryServerID_Marketing`, `TargetDeliveryServerID_Transactional` or `TargetDeliveryServerID_AutoResponder` option pointed at it back to `0` (system default), after invalidating the Email Gateway per-user cache for those groups. `UserGroupsReset` in the response lists the user group ids that were updated.
 :::
 
@@ -336,11 +336,11 @@ curl -X POST https://example.com/api.php \
 
 ## Get Delivery Servers
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/deliveryservers.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/deliveryservers.get`. Legacy access via `/api.php` is also supported
 - The filter, ordering and paging parameters are all optional. The defaults reproduce the previous response: every server, `Name ASC`, unpaged.
 :::
 
@@ -461,12 +461,12 @@ curl -X POST https://example.com/api.php \
 
 ## Get a Delivery Server
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="GET" /> `/api/v1/deliveryserver.get`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required admin privilege: `DeliveryServers`
-- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- v1 REST alias: `GET /api/v1/deliveryserver.get`. Legacy access via `/api.php` is also supported
 - `ConnectionParams.smtp_password` is never returned; `HasSMTPPassword` says whether one is stored. `deliveryserver.update` replaces `ConnectionParams` as a whole, so a client editing a server must resend the password it holds.
 - `UserGroupAssignments` / `IsAllocated` are the same reverse map `deliveryservers.get` computes from every user group's `TargetDeliveryServerID_*` options.
 :::
@@ -555,12 +555,13 @@ curl -X POST https://example.com/api.php \
 
 ## Verify a Delivery Server
 
-<Badge type="info" text="POST" /> `/api.php`
+<Badge type="info" text="POST" /> `/api/v1/deliveryserver.verify`
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - Required admin privilege: `DeliveryServers`
 - Rate limited: 10 calls per 300 seconds. Every call sends a real test message through the server's SMTP credentials and performs six DNS lookups.
+- v1 REST alias: `POST /api/v1/deliveryserver.verify`. Legacy access via `/api.php` is also supported
 - Not available when `DEMO_MODE_ENABLED` is on (error 4).
 - Runs the same verification as the admin screen's "Test" button (`DeliveryServers::Verify`): a test send, then SPF, DKIM (`DNS_DKIM_KEY._domainkey.<mfrom>`) and DMARC TXT checks on the MFROM domain, and CNAME checks on the MFROM, link-tracking and open-tracking hosts against `DNS_SENDER_DOMAIN`, `DNS_LINK_TRACKER` and `DNS_OPEN_TRACKER`. The seven booleans are persisted to `VerificationResults` together with `VerificationLastCheckedAt`, exactly as the screen does.
 - The test message goes to the authenticated admin's email address unless `To` is given.
