@@ -777,6 +777,165 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     **Rotation.** Changing `OEMPRO_PASSWORD_SALT` or `ADMIN_API_KEY` changes the derived value on
     both sides at once, so no coordinated update is needed. Introduced in v5.9.6 (issue #2813).
 
+47. **New User Interface**
+
+    The Laravel application at `ui/`, served from its own `oempro_ui` container. Every key below
+    is read by that container's entrypoint, which renders them into `ui/.env` on each start.
+    Changing any of them therefore needs the container recreated, not merely restarted:
+    `./cli/octeth.sh docker:up`.
+
+    ```bash
+    UI_ENABLED=true                      # Master switch (default: false, so an upgrade changes nothing)
+    UI_APP_KEY=                          # Laravel app key; leave EMPTY on a fresh install and the container generates one
+    UI_LOG_LEVEL=error                   # debug, info, notice, warning, error, critical, alert, emergency
+    UI_MYSQL_DATABASE=oempro_ui          # Its OWN database. MUST NOT equal MYSQL_DATABASE
+    ```
+
+    With `UI_ENABLED=false` the container still starts and reports healthy but serves 404 for
+    every path, and the reverse proxy is not given its routing rules, so `/user/` and `/ui/` fall
+    through to the legacy application exactly as before. The legacy areas stay reachable at
+    `/app/user/` and `/app/admin/` either way. The two use **separate logins**: there is no single
+    sign-on between them yet.
+
+    `UI_APP_KEY` must not be changed once set. Changing it invalidates every session, makes
+    anything the interface has encrypted unreadable, and moves Livewire's endpoint paths, which
+    are derived from it.
+
+    `UI_MYSQL_DATABASE` is separate for safety, not tidiness. 212 of the interface's test files
+    use Laravel's `RefreshDatabase`, which runs `migrate:fresh`, which **drops every table in
+    whatever database is configured**. Pointed at Octeth's own database by a misconfiguration,
+    that destroys the install. The container refuses to start if the two names match. Creating the
+    database needs privileges the app user does not have, so it is done by the installer, by the
+    upgrade script, or by hand with `./cli/octeth.sh ui:db-setup`.
+
+    **Path mounting**
+
+    ```bash
+    UI_CUSTOMER_PREFIX=user              # Customer area
+    UI_STAFF_PREFIX=user                 # Staff area (same prefix on purpose, see below)
+    UI_SHARED_PREFIX=ui                  # Built assets, health endpoint, webhooks, brand assets
+    ```
+
+    These are the prefixes the reverse proxy forwards to the container. Changing one means
+    changing the matching `acl` line in `_dockerfiles/haproxy.cfg` as well, so leave them alone
+    unless a path genuinely collides with something else on your install.
+
+    The staff prefix equals the customer prefix because the interface has a single login form
+    serving both, so its staff screens live under `/user/staff/...`. That leaves `/admin/` free to
+    go on redirecting to the legacy admin area.
+
+    **Whitelabel: names and links**
+
+    ```bash
+    UI_BRAND_NAME=Octeth
+    UI_BRAND_LEGAL_NAME=
+    UI_BRAND_SUPPORT_EMAIL=
+    UI_BRAND_TERMS_URL=
+    UI_BRAND_PRIVACY_URL=
+    UI_BRAND_MAIL_FOOTER=
+    ```
+
+    Leaving a URL or an address empty is correct rather than incomplete: the interface hides the
+    link instead of pointing it somewhere wrong. `UI_BRAND_LEGAL_NAME` falls back to
+    `UI_BRAND_NAME` when empty.
+
+    **Whitelabel: logo and icon**
+
+    ```bash
+    UI_BRAND_LOGO_MARK=/ui/images/brand/brand-logo-mark-white.svg
+    UI_BRAND_LOGO_HORIZONTAL=/ui/images/brand/brand-logo-horizontal-black.svg
+    UI_BRAND_FAVICON=/ui/favicon.ico
+    ```
+
+    Four marks ship under `ui/public/ui/images/brand/`: a square mark and a horizontal wordmark,
+    each in a white and a black ink version. The defaults pair the **white mark** with the **black
+    wordmark**, because the sidebar is near-black and signed-out pages are white. Swap to the
+    opposite ink if you re-theme those surfaces, or point these at your own files.
+
+    **The leading `/ui/` is `UI_SHARED_PREFIX` and is part of the path.** The proxy forwards only
+    a fixed set of prefixes to this container, so a file served from the bare web root is handed
+    to the legacy application and answers 404. If you change `UI_SHARED_PREFIX`, move
+    `ui/public/ui/` to match and update these three values, or the interface renders with broken
+    images. The favicon follows the same rule for an additional reason: at the bare
+    `/favicon.ico` the legacy application answers, so a whitelabelled install could not otherwise
+    override the interface's tab icon.
+
+    **Whitelabel: palette**
+
+    ```bash
+    UI_BRAND_PRIMARY="#0A0A0A"           # Sidebar background and body text
+    UI_BRAND_PRIMARY_900="#000000"
+    UI_BRAND_PRIMARY_700="#262626"
+    UI_BRAND_ACCENT="#0A0A0A"            # Buttons, links, active navigation, focus rings
+    UI_BRAND_ACCENT_HOVER="#262626"
+    UI_BRAND_ACCENT_LIGHT="#F4F4F5"
+    UI_BRAND_ACCENT_600="#000000"
+    UI_BRAND_ACCENT_700="#000000"
+    UI_BRAND_ACCENT_100="#E4E4E7"
+    UI_BRAND_ACCENT_050="#FAFAFA"
+    ```
+
+    Two colours drive the interface: the primary, which is the sidebar background and the body
+    text colour, and the accent, which is buttons, links, active navigation and focus rings. The
+    remaining keys are shades derived from those two and only need setting if you want them to
+    differ from the defaults. They are applied as CSS variables when a page renders, so a change
+    takes effect on the next container start with no asset rebuild.
+
+    Octeth ships monochrome: both colours are near-black. Note that the sidebar renders its active
+    navigation in **white** rather than in the accent, because a black accent cannot be seen
+    against a black sidebar. If you set a coloured accent here, that sidebar rule stays white and
+    will no longer match it.
+
+    ::: warning Quote the hex values
+    A bare leading `#` is read as the start of a comment by the `.oempro_env` parser, so
+    `UI_BRAND_PRIMARY=#0A0A0A` resolves to an **empty** value on the PHP side while the
+    container's own reader sees the hex, leaving the two silently disagreeing. Written as
+    `UI_BRAND_PRIMARY="#0A0A0A"`, both read it correctly.
+
+    Each value must be a 3, 6 or 8 digit hex including the `#`. Anything else is dropped when the
+    page renders and the stylesheet default applies instead, so a typo shows up as an unchanged
+    colour rather than a broken page.
+    :::
+
+    **Outbound mail from the interface**
+
+    ```bash
+    UI_MAIL_MAILER=log                   # 'log' writes messages to the interface's log instead of sending
+    UI_MAIL_HOST=
+    UI_MAIL_PORT=587
+    UI_MAIL_FROM_ADDRESS=
+    ```
+
+    Used for the interface's own transactional mail (welcome, password reset, billing notices),
+    **not** for campaign delivery, which goes through Octeth's send engine as always. Set
+    `UI_MAIL_MAILER=smtp` and fill in the host to send for real.
+
+    **Subscription billing and the drag-and-drop builder**
+
+    ```bash
+    BRAND_FEATURE_BILLING=false          # The interface's own plans, invoicing, dunning, tax and gateways
+    UI_STRIPE_SECRET_KEY=
+    UI_STRIPE_PUBLISHABLE_KEY=
+    UI_STRIPE_WEBHOOK_SECRET=
+    UI_STRIPO_PLUGIN_ID=
+    UI_STRIPO_SECRET_KEY=
+    ```
+
+    Billing is separate from Octeth's existing payments and is off by default. With it off, every
+    account is treated as outside billing and no paywall applies, so the interface is fully usable.
+    Be aware it is also the interface's only per-feature gate, so with billing off there is no
+    per-feature gating at all. That is usually correct for a licensed on-premise install, but it
+    should be a decision rather than a surprise. The Stripe keys are read only when billing is on;
+    inbound webhooks are received at `<APP_URL>/ui/webhooks/<gateway>`.
+
+    The Stripo drag-and-drop email builder loads its JavaScript from `plugins.stripo.email` and
+    stores assets on Stripo's CDN, so an install with no outbound internet access cannot use it.
+    Leaving `UI_STRIPO_PLUGIN_ID` empty disables the option and leaves Custom HTML and Plain text,
+    which is the correct setting for those installs.
+
+    Introduced in v5.9.6 (issue #2837).
+
+
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
 :::
