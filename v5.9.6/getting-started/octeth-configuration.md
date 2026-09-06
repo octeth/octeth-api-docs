@@ -935,6 +935,33 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     Introduced in v5.9.6 (issue #2837).
 
+    **Demo backend (development only)**
+
+    ```bash
+    UI_DEMO_MODE=false
+    UI_DEMO_EMAIL=demo@meridiancoffee.test
+    UI_DEMO_PASSWORD=demo
+    ```
+
+    Replaces the interface's Octeth client with an in-process one that answers from a fictional
+    dataset: a coffee roaster with lists, campaigns, journeys and full engagement statistics. It
+    exists so product screenshots show realistic figures, because delivery and engagement counters
+    are written by the send pipeline and a fresh account therefore renders every chart empty.
+
+    It is read only. Every screen renders, and nothing can be saved. The dataset uses the reserved
+    `.test` domain, so no address or link in a screenshot can resolve to a real site.
+
+    Ignored unless `APP_ENV` is `local` or `testing`, so setting it true on a production install
+    does nothing at all. On a local install it does take effect, and the interface then shows
+    fictional numbers to whoever uses it next with no visible sign that anything is different.
+    Turn it off when you are finished. `php artisan about` reports the current state.
+
+    Changing this value takes effect on the next start of the `oempro_ui` container, so a
+    `docker compose restart oempro_ui` is enough: that container's entrypoint reads `.oempro_env`
+    directly and rewrites the interface's own configuration from it every time it starts.
+
+    Introduced in v5.9.6 (issue #2850).
+
 
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
