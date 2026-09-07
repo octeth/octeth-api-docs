@@ -649,6 +649,19 @@ export default defineConfig({
                     ]
                 },
                 {
+                    text: 'NEW USER INTERFACE',
+                    collapsed: true,
+                    items: [
+                        {text: 'Overview', link: '/v5.9.6/new-user-interface/'},
+                        {text: 'Branding', link: '/v5.9.6/new-user-interface/branding'},
+                        {text: 'Setting Up Billing', link: '/v5.9.6/new-user-interface/billing-setup'},
+                        {text: 'Payment Gateways', link: '/v5.9.6/new-user-interface/payment-gateways'},
+                        {text: 'Running Billing', link: '/v5.9.6/new-user-interface/billing-operations'},
+                        {text: 'Configuration Reference', link: '/v5.9.6/new-user-interface/configuration-reference'},
+                        {text: 'Troubleshooting', link: '/v5.9.6/new-user-interface/troubleshooting'}
+                    ]
+                },
+                {
                     text: 'USING OCTETH',
                     collapsed: true,
                     items: [

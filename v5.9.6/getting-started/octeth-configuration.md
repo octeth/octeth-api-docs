@@ -779,6 +779,12 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
 47. **New User Interface**
 
+    ::: tip
+    This section is the exhaustive parameter list. For step-by-step guides on turning the
+    interface on, branding it, and configuring its billing system, see
+    [The New User Interface](../new-user-interface/).
+    :::
+
     The Laravel application at `ui/`, served from its own `oempro_ui` container. Every key below
     is read by that container's entrypoint, which renders them into `ui/.env` on each start.
     Changing any of them therefore needs the container recreated, not merely restarted:
