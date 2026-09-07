@@ -105,6 +105,7 @@ curl -X POST https://example.com/api/v1/admin.campaign.batches \
 ```txt [Error Codes]
 0: Success
 1: campaignid parameter is required
+11: Access denied to this campaign (restricted sub-admin, issue #2856)
 ```
 
 :::
@@ -228,6 +229,7 @@ curl -X POST https://example.com/api/v1/admin.campaign.details \
 ```txt [Error Codes]
 0: Success
 1: campaignid parameter is required
+11: Access denied to this campaign (restricted sub-admin, issue #2856)
 ```
 
 :::
@@ -324,6 +326,7 @@ curl -X POST https://example.com/api/v1/admin.campaign.processes \
 ```txt [Error Codes]
 0: Success
 1: campaignid parameter is required
+11: Access denied to this campaign (restricted sub-admin, issue #2856)
 ```
 
 :::
@@ -443,6 +446,7 @@ curl -X POST https://example.com/api/v1/admin.campaign.queue \
 ```txt [Error Codes]
 0: Success
 1: campaignid parameter is required
+11: Access denied to this campaign (restricted sub-admin, issue #2856)
 ```
 
 :::
@@ -540,6 +544,7 @@ curl -X POST https://example.com/api/v1/admin.campaign.sending-velocity \
 3: Campaign not found
 4: Campaign must be in Sending or Sent status
 5: Queue table does not exist for this campaign
+11: Access denied to this campaign (restricted sub-admin, issue #2856)
 ```
 
 :::
@@ -3936,6 +3941,7 @@ curl -X POST https://example.com/api/v1/admin.campaign.unstuck \
 3: Campaign is not in Sending status. Only campaigns in Sending status can be unstuck.
 4: Campaign is not stuck. The campaign appears to be processing normally.
 5: Database error during unstuck operation
+11: Access denied to this campaign (restricted sub-admin, issue #2856)
 ```
 
 :::
@@ -4006,6 +4012,7 @@ curl -X POST https://example.com/api/v1/admin.campaign.markfailed \
 3: Campaign is not in Sending status. Only campaigns in Sending status can be marked as failed.
 4: Campaign is not stuck. Only stuck campaigns can be marked as failed.
 5: Database error during mark as failed operation
+11: Access denied to this campaign (restricted sub-admin, issue #2856)
 ```
 
 :::
@@ -4096,6 +4103,7 @@ curl -X POST https://example.com/api/v1/admin.campaign.retryfailed \
 5: No failed recipients found for this campaign
 6: Database error during retry operation, or the retry was committed but the campaign
    could not be dispatched to the delivery queue. The ErrorText distinguishes the two.
+11: Access denied to this campaign (restricted sub-admin, issue #2856)
 ```
 
 :::
