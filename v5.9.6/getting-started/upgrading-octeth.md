@@ -15,6 +15,12 @@ Octeth provides an automated upgrade command that handles the entire upgrade pro
 - All Docker containers running
 - The release zip file uploaded to your server
 
+::: warning Read the Upgrade Notes for your target version first
+The [changelog](/changelog) carries an **Upgrade Notes** section for every release. It is the only place that lists settings a release switches on for you, behavior that changes for existing data, and migrations that need scheduling. The upgrade adds any setting your `.oempro_env` does not already have, using the new version's default, so a release can change how your installation behaves without you editing anything.
+
+For v5.9.6 specifically, six of the fifty new settings change behavior, one of them can break an admin API integration, and the new user interface is switched on. Read them before you start.
+:::
+
 ### Download the New Version
 
 1. Log in to [Octeth Client Area](https://my.octeth.com/)
@@ -351,7 +357,7 @@ docker exec oempro_app bash -c "cd /var/www/html/templates/weefive/js/journey_bu
 
 **Keep the backup.** The upgrade creates a backup at `data/backups/`. Don't delete it until you've verified the new version is stable.
 
-**Review release notes.** Each version may introduce breaking changes or new configuration requirements. Read the changelog before upgrading.
+**Review release notes.** Each version may introduce breaking changes or new configuration requirements. Read the [Upgrade Notes for your target version](/changelog) before upgrading.
 
 **Test on staging first.** If you have a staging environment, upgrade it first to catch any issues before touching production.
 

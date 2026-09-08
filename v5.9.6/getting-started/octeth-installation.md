@@ -103,31 +103,36 @@ You should see a success screen like:
 
 System Health Status:
 
-┌─────────────────────┬────────────────────────────────────┐
-│ Service             │ Status                             │
-├─────────────────────┼────────────────────────────────────┤
-│ MySQL               │ ✓ OK                               │
-│ Redis               │ ✓ OK                               │
-│ RabbitMQ            │ ✓ OK                               │
-│ ElasticSearch       │ ✓ OK                               │
-│ ClickHouse          │ ✓ OK                               │
-│ Session             │ ✓ OK                               │
-│ System Container    │ ✓ OK                               │
-│ Vector              │ ✓ OK                               │
-│ HAProxy             │ ✓ OK                               │
-│ Cron                │ ✓ OK                               │
-│ Supervisor          │ ✓ OK                               │
-│ Send Engine         │ ✓ OK                               │
-│ Admin Frontend      │ ✓ OK                               │
-│ User Frontend       │ ✓ OK                               │
-│ File Permissions    │ ✓ OK                               │
-└─────────────────────┴────────────────────────────────────┘
+┌───────────────────────┬────────────────────────────────────┬────────────┐
+│ Service               │ Status                             │ Time (ms)  │
+├───────────────────────┼────────────────────────────────────┼────────────┤
+│ MySQL                 │ ✓ OK                               │       0.21 │
+│ Redis                 │ ✓ OK                               │       0.56 │
+│ RabbitMQ              │ ✓ OK                               │      47.26 │
+│ RabbitMQ Queues       │ ✓ OK                               │      10.22 │
+│ ClickHouse            │ ✓ OK                               │       4.93 │
+│ Session               │ ✓ OK                               │       0.25 │
+│ System Container      │ ✓ OK                               │      29.98 │
+│ Vector                │ ✓ OK                               │       0.69 │
+│ Website Event Routing │ ✓ OK                               │        0.9 │
+│ HAProxy               │ ✓ OK                               │      52.31 │
+│ Cron                  │ ✓ OK                               │       0.09 │
+│ Supervisor            │ ✓ OK                               │       3.99 │
+│ Send Engine           │ ✓ OK                               │       1.33 │
+│ Admin Frontend        │ ✓ OK                               │      31.52 │
+│ User Frontend         │ ✓ OK                               │      36.74 │
+│ File Permissions      │ ✓ OK                               │       0.22 │
+├───────────────────────┼────────────────────────────────────┼────────────┤
+│ Total                 │                                    │     221.28 │
+└───────────────────────┴────────────────────────────────────┴────────────┘
 
 Raw JSON response (for debugging):
-{"Checks":{"MySQL":"OK","ClickHouse":"OK","Elasticsearch":"OK","RabbitMQ":"OK","Redis":"OK","Session":"OK","SystemContainer":"OK","Vector":"OK","Haproxy":"OK","Cron":"OK","Supervisor":"OK","SendEngine":"OK","AdminFrontend":"OK","UserFrontend":"OK","FilePermissions":"OK"}}
+{"Checks":{"MySQL":"OK","ClickHouse":"OK","RabbitMQ":"OK","RabbitMQ Queues":"OK","Redis":"OK","Session":"OK","SystemContainer":"OK","Vector":"OK","WebsiteEventRouting":"OK","Haproxy":"OK","Cron":"OK","Supervisor":"OK","SendEngine":"OK","AdminFrontend":"OK","UserFrontend":"OK","FilePermissions":"OK"}}
 
 ℹ Health check completed
 ```
+
+All sixteen checks must report `✓ OK`. ElasticSearch is no longer part of the stack and no longer appears here.
 
 ## Container resource limits
 
