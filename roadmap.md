@@ -9,7 +9,7 @@ description: Track Octeth version releases, development status, and upcoming fea
 This roadmap shows all past and upcoming Octeth releases. Use this page to track version history, plan upgrades, and see what's coming next.
 
 ::: tip Current Version
-The latest stable release is **v5.9.5** (released August 28th, 2026). [View changelog](/changelog#v5-9-5) to see what's new.
+The latest stable release is **v5.9.6** (released September 11th, 2026). [View changelog](/changelog#v5-9-6) to see what's new.
 :::
 
 ## Understanding Version Numbers
@@ -64,10 +64,11 @@ Each version has a status badge indicating its current state:
 | v5.9.3  |           <Badge type="tip" text="Released" />           | Jul 30th, 2026 | Security & account-isolation hardening, account usage APIs, spreadsheet-safe CSV exports, worker resilience |
 | v5.9.4  |           <Badge type="tip" text="Released" />           | Aug 14th, 2026 | Subscriber API security hardening, silent-failure fixes across segments, journeys and gateway sends |
 | v5.9.5  |           <Badge type="tip" text="Released" />           | Aug 28th, 2026 | Segment rule security closure, Email Gateway recipient domain reporting repaired, upgrade and logging reliability |
+| v5.9.6  |           <Badge type="tip" text="Released" />           | Sep 11th, 2026 | New user interface, complete admin API with sub-admin authorization, journey and segment correctness |
 | v6.0.0  | <Badge type="warning" text="Collecting User Feedback" /> | Q3 2026        | Major architecture updates                           |
 
 ::: info What's Next?
-Octeth ships on a **two-week release cadence**, so expect a new version roughly every fortnight. The next release is due **September 11th, 2026**. **v6.0.0** with major architecture updates is targeted for Q3 2026.
+Octeth ships on a **two-week release cadence**, so expect a new version roughly every fortnight. The next release is due **September 25th, 2026**. **v6.0.0** with major architecture updates is targeted for Q3 2026.
 :::
 
 ## Release Schedule

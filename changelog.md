@@ -12,31 +12,58 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Scheduled for September 11th, 2026. Changelog will be updated upon release.
+Octeth v5.9.6 introduces a new user interface that runs alongside the one you have today, and completes the admin API so an administration console can be built entirely on top of Octeth rather than inside it.
+
+The new interface is a separate application with its own screens for campaigns, journeys, lists, transactional sending and reporting. It is switched on by this upgrade and reachable at `/user/`. Your existing areas are untouched and stay exactly where they are. The two have separate logins for now, so this release is an addition rather than a replacement, and you can turn the new interface off with a single setting.
+
+The admin API gained around sixty commands this cycle, covering the settings, reporting, suppression, sender domain, delivery server and sub-admin management screens that previously had no programmatic equivalent. It also gained an authorization model it never had: sub-admin privileges now apply to API calls, each sub-admin can hold their own API key, and your Authorized IP Addresses list is enforced on the API rather than only at the login page.
+
+The rest of the release is correctness work in journeys, segments and sender domains, and a set of upgrade fixes found by installing the release package on clean servers before shipping it. Read the Upgrade Notes below before upgrading. Six settings arrive with values that change how your installation behaves, and one of them can interrupt an integration that calls the admin API from your own network.
 
 ### New Features
 
-- (To be documented)
+- **A new user interface.** A complete second interface for your customers, with its own screens for campaigns, journeys, subscriber lists, transactional sending, templates, suppressions and reporting. It runs in its own container, keeps its own database, and never touches your Octeth data. Reachable at `/user/`, with the existing areas unchanged at `/app/user/` and `/app/admin/`. See [The New User Interface](/v5.9.6/new-user-interface/)
+- **Whitelabelling for the new interface.** Brand name, legal name, support address, terms and privacy links, logo, wordmark, favicon and a two colour palette, all set from your configuration file
+- **Around sixty new admin API commands.** Settings read and write, sub-admin management, global segments and the rule vocabulary, global email and SMS suppression, bounce processing, sender domain moderation, SMS gateways, SSO sources, Google Postmaster Tools, plugin management, system and database checks, the admin dashboard and live sending view, delivery server performance and revenue reports, and campaign reporting completions. Together these cover the admin screens that previously had no programmatic equivalent
+- **Per-sub-admin API keys.** Each sub-administrator can hold their own key rather than sharing the master one, so API activity is attributable and a key can be revoked individually
+- **Per-day journey enrolment counts.** `journey.get` and `journey.list` can now return how many subscribers entered a journey on each day of a window, alongside the existing lifetime figure
+- **A patient sync integration for Spry.** One way sync of patient records into per clinic subscriber lists, with per mapping control over which patient statuses sync and which fields are stored
 
 ### Enhancements
 
-- (To be documented)
+- **Campaigns brand with your customer's verified sender domain automatically.** When a campaign's From address matches a sender domain the account has verified, the campaign now carries that domain on its envelope sender, `Message-ID`, unsubscribe and abuse headers, and on its tracking links where the tracking record itself was verified. This previously required the user group's Sender Domain Management option, which meant the same account's gateway mail was branded while its campaigns were not
+- **Auto responder messages use the same sender domain as campaigns**, so Google Postmaster Tools reports the two under one domain rather than splitting them
+- **Journey email statistics agree between endpoints.** `journey.list` and `journey.get` previously disagreed about the period their engagement totals covered. Both are now all time, with a separate windowed figure available
+- **A failed journey action no longer loses the subscriber.** When a journey action failed to send, the subscriber used to advance as though they had been mailed and permanently miss that email. The action is now retried with a widening delay and, if it keeps failing, the reason is recorded rather than discarded, giving you most of a working day to fix a misconfigured sender domain or an unavailable gateway without losing the send
+- **Clearer failure reporting in the new interface.** A screen that cannot load a figure now says so, rather than showing an empty or placeholder value that reads as a real result
+- **The release package is now tested before release.** Each version is built as a release candidate and installed on clean servers, as a fresh install and as an upgrade from the previous version, before the real release is cut
 
 ### Bug Fixes
 
-- (To be documented)
+- **Segment rules that negate now include subscribers with no value.** Rules using "is not", "does not contain", "not between" or "not in the last x days" previously excluded every subscriber whose field was never filled in, which is the opposite of how each reads in the rule builder. Please read the Upgrade Notes: your existing segments will grow
+- **A journey Decision on a field that does not belong to the journey's list now fails visibly** instead of quietly routing every subscriber down the No branch
+- **Journey Builder branches attach to the right Decision.** A journey with more than one Decision node could attach a branch to the wrong one when reopened
+- **Journey suppression checks are scoped to the sending account and list**, so one account's suppression no longer affects another's send
+- **The Email Gateway relay matches sender domains on a proper suffix test.** A substring test could accept a domain that merely contained the permitted one
+- **Auto responder and campaign From headers are validated before sending**, so a malformed address cannot reach the envelope
+- **User group creation enforces one default plan per subscription plan**, matching the rule already applied when editing
+- **Campaign and API sort fields are validated against a known list**, so an unrecognised sort no longer produces a result set that silently disagrees with its own total
+- **Installations with no plugins no longer log plugin cron errors**
+- **Upgrade reliability.** Several faults in the upgrade process were found by installing the package on clean servers and are fixed here: the install directory could be left unreadable by the web server, so every page returned an error while the upgrade reported success; file permissions were not reapplied, so the built in health check failed afterwards; and the new interface's assets were omitted from the package. Two of these had been present since v5.9.4
 
 ### Security Patches
 
-- (To be documented)
+- **Your Authorized IP Addresses list now applies to the admin API.** It was previously checked only when the admin login page rendered, so an admin credential worked from any address. Please read the Upgrade Notes before upgrading
+- **Sub-administrator privileges now apply to API calls**, so a restricted administrator is held to the same limits over the API that the screens have always enforced, including when reading or acting on individual customer accounts
+- **Turning off two factor authentication now requires a deliberate, authenticated action** with the current password, for both administrator and customer accounts
+- **Octeth's private internal services are no longer reachable from the internet** and require a signed request from Octeth itself
+- **Credentials are no longer written to the log** during Google Postmaster Tools authorization
+- **Delivery server test results record the outcome of a real verification** rather than a value supplied by the caller
+- **Several administrative endpoints now confirm that the object being acted on belongs to the account making the request**
 
 ### Upgrade Notes
 
-::: info Seeded during the cycle, finalize at release
-These notes are added as fixes merge, because a deliberate contract change reads as an ordinary bug fix in the commit log and a changelog derived from commit subjects will miss it. Preserve and merge these at release rather than overwriting them.
-:::
-
-- **One database migration ships with this release.** Run it as part of the upgrade. It creates the daily journey enrolment cache table and is a fast create with no data movement
+- **Two database migrations ship with this release.** Both run as part of the upgrade and both are fast schema changes with no data movement. One creates the daily journey enrolment cache table; the other adds the API key column that per-sub-administrator keys are stored in
 - **Segment rules that negate now match subscribers with no value.** Rules using "is not", "does not contain", "not between" or "not in the last x days" previously excluded every subscriber whose field was never filled in, which is the opposite of how each one reads in the rule builder. They now include them. **Existing segments will grow and journey Decision branches will route differently**, so review any send limit, recurring campaign or journey Yes branch that depends on a segment's size before upgrading. Full detail and an upgrade checklist: [v5.9.6 API behavior changes](/v5.9.6/api-reference/behavior-changes)
 - **Campaigns now brand with the account's verified sender domain by default.** A campaign whose From address domain matches one of the account's verified sender domains now carries that domain on its envelope sender, `Message-ID`, `List-Unsubscribe` and abuse headers, and on its tracking links where the tracking record itself verified. Previously this required the user group's Sender Domain Management option. Set `CAMPAIGN_SENDER_DOMAIN_AUTO_BRANDING=false` to keep the previous behavior, which is worth doing if you run a shared-IP warmup pool that depends on platform-branded campaign headers
 - **Auto responder messages now use the sender domain root in their From header**, matching campaigns and gateway mail. The authenticated domain moves with it, so Google Postmaster Tools reports auto responder volume under the same domain as campaigns
