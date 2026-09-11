@@ -58,9 +58,10 @@ export default defineConfig({
 
         nav: [
             {
-                text: "v5.9.6",
+                text: "v6.0.0",
                 items: [
-                    {text: 'v5.9.6 (Current)', link: '/v5.9.6/'},
+                    {text: 'v6.0.0 (Current)', link: '/v6.0.0/'},
+                    {text: 'v5.9.6', link: '/v5.9.6/'},
                     {text: 'v5.9.5', link: '/v5.9.5/'},
                     {text: 'v5.9.4', link: '/v5.9.4/'},
                     {text: 'v5.9.3', link: '/v5.9.3/'},
@@ -762,10 +763,158 @@ export default defineConfig({
                 }
             ]
 
+            const v6_0_0_sidebar = [
+                {
+                    text: 'INTRODUCTION',
+                    collapsed: false,
+                    items: [
+                        {text: 'Changelog', link: '/changelog'},
+                        {text: 'Roadmap', link: '/roadmap'},
+                        {text: 'Support', link: '/support'}
+                    ]
+                },
+                {
+                    text: 'INSTALLATION GUIDE',
+                    collapsed: true,
+                    items: [
+                        {text: 'Server Requirements', link: '/v6.0.0/getting-started/server-requirements'},
+                        {text: 'Preparations', link: '/v6.0.0/getting-started/preparations'},
+                        {text: 'Server Initialization', link: '/v6.0.0/getting-started/server-initialization'},
+                        {text: 'Server Setup', link: '/v6.0.0/getting-started/server-setup'},
+                        {text: 'Upload Octeth To The Server', link: '/v6.0.0/getting-started/upload-octeth-to-server'},
+                        {text: 'Octeth Installation', link: '/v6.0.0/getting-started/octeth-installation'},
+                        {text: 'Backup Add-On Setup', link: '/v6.0.0/getting-started/backup-addon-setup'},
+                        {text: 'Link Proxy Add-On Setup', link: '/v6.0.0/getting-started/link-proxy-addon-setup'},
+                        {text: 'Octeth Configuration', link: '/v6.0.0/getting-started/octeth-configuration'},
+                        {text: 'Whitelabel Deployment Checklist', link: '/v6.0.0/getting-started/whitelabel-deployment-checklist'},
+                        {text: 'Google Postmaster Tools Integration', link: '/v6.0.0/getting-started/google-postmaster-integration'},
+                        {text: 'Monitoring', link: '/v6.0.0/getting-started/monitoring'},
+                        {text: 'Octeth CLI Tool', link: '/v6.0.0/getting-started/octeth-cli-tool'},
+                        {text: 'Sender Domain DNS Settings', link: '/v6.0.0/getting-started/sender-domain-dns-settings'},
+                        {text: 'SSL Certificates', link: '/v6.0.0/getting-started/ssl-certificates'},
+                        {text: 'Upgrading Octeth', link: '/v6.0.0/getting-started/upgrading-octeth'},
+                        {text: 'Troubleshooting', link: '/v6.0.0/getting-started/troubleshooting'}
+                    ]
+                },
+                {
+                    text: 'NEW USER INTERFACE',
+                    collapsed: true,
+                    items: [
+                        {text: 'Overview', link: '/v6.0.0/new-user-interface/'},
+                        {text: 'Branding', link: '/v6.0.0/new-user-interface/branding'},
+                        {text: 'Setting Up Billing', link: '/v6.0.0/new-user-interface/billing-setup'},
+                        {text: 'Payment Gateways', link: '/v6.0.0/new-user-interface/payment-gateways'},
+                        {text: 'Running Billing', link: '/v6.0.0/new-user-interface/billing-operations'},
+                        {text: 'Configuration Reference', link: '/v6.0.0/new-user-interface/configuration-reference'},
+                        {text: 'Troubleshooting', link: '/v6.0.0/new-user-interface/troubleshooting'}
+                    ]
+                },
+                {
+                    text: 'USING OCTETH',
+                    collapsed: true,
+                    items: [
+                        {
+                            text: 'Features', items: [
+                                {text: 'Users', link: '/v6.0.0/using-octeth/users'},
+                                {text: 'Subscribers', link: '/v6.0.0/using-octeth/subscribers'},
+                                {text: 'Lists', link: '/v6.0.0/using-octeth/lists'},
+                                {text: 'Email Campaigns', link: '/v6.0.0/using-octeth/email-campaigns'},
+                                {text: 'Journeys', link: '/v6.0.0/using-octeth/journeys'},
+                                {text: 'Segments', link: '/v6.0.0/using-octeth/segments'},
+                                {text: 'Tags', link: '/v6.0.0/using-octeth/tags'},
+                                {text: 'Custom Fields', link: '/v6.0.0/using-octeth/custom-fields'},
+                                {text: 'Auto Responders', link: '/v6.0.0/using-octeth/auto-responders'},
+                                {text: 'Sender Domains', link: '/v6.0.0/using-octeth/sender-domains'},
+                                {text: 'Email Builder', link: '/v6.0.0/using-octeth/email-builder'},
+                                {text: 'Email Personalization', link: '/v6.0.0/using-octeth/email-personalization'},
+                                {text: 'Event Tracking', link: '/v6.0.0/using-octeth/event-tracking'},
+                                {text: 'SMS Messages', link: '/v6.0.0/using-octeth/sms-messages'}
+                            ],
+                        }, {
+                            text: 'Email Deliverability', items: [
+                                {text: 'Email Sending', link: '/v6.0.0/using-octeth/email-deliverability/email-sending'},
+                                {text: 'Email Tracking', link: '/v6.0.0/using-octeth/email-deliverability/email-tracking'},
+                                {text: 'Bounce Processing', link: '/v6.0.0/using-octeth/email-deliverability/bounce-processing'},
+                                {text: 'Complaint Processing', link: '/v6.0.0/using-octeth/email-deliverability/complaint-processing'},
+                                {text: 'Unsubscriptions', link: '/v6.0.0/using-octeth/email-deliverability/unsubscriptions'},
+                                {text: 'Suppression Lists', link: '/v6.0.0/using-octeth/email-deliverability/suppression-lists'},
+                                {text: 'SPF/DKIM/DMARC', link: '/v6.0.0/using-octeth/email-deliverability/spf-dkim-dmarc'}
+                            ],
+                        }
+                    ]
+                },
+                {
+                    text: 'INTEGRATIONS',
+                    collapsed: true,
+                    items: [
+                        {text: 'Google Analytics', link: '/v6.0.0/using-octeth/integrations/google-analytics'},
+                        {text: 'Stripo Email Builder', link: '/v6.0.0/using-octeth/integrations/stripo-email-builder'},
+                        {text: 'Single Sign On (SSO)', link: '/v6.0.0/using-octeth/integrations/sso'},
+                        {text: 'n8n Integration', link: '/v6.0.0/using-octeth/integrations/n8n-integration'},
+                        {text: 'MCP Server (AI Assistant)', link: '/v6.0.0/using-octeth/integrations/mcp-server'}
+                    ]
+                },
+                {
+                    text: 'DEVELOPERS',
+                    collapsed: true,
+                    items: [
+                        {
+                            text: 'API Reference', items: [
+                                {text: 'Getting Started', link: '/v6.0.0/api-reference/getting-started'},
+                                {text: 'Authorization', link: '/v6.0.0/api-reference/authorization'},
+                                {text: 'Error Handling', link: '/v6.0.0/api-reference/error-handling'},
+                                {text: 'Behavior Changes in v6.0.0', link: '/v6.0.0/api-reference/behavior-changes'},
+                                {text: 'Admin', link: '/v6.0.0/api-reference/admin'},
+                                {text: 'Bounce Processing', link: '/v6.0.0/api-reference/bounce'},
+                                {text: 'Reports', link: '/v6.0.0/api-reference/reports'},
+                                {text: 'Auto Responders', link: '/v6.0.0/api-reference/autoresponders'},
+                                {text: 'Campaigns', link: '/v6.0.0/api-reference/campaigns'},
+                                {text: 'Saved Search Filters', link: '/v6.0.0/api-reference/search'},
+                                {text: 'Custom Fields', link: '/v6.0.0/api-reference/customfields'},
+                                {text: 'Delivery Servers', link: '/v6.0.0/api-reference/deliveryservers'},
+                                {text: 'SMS Gateways', link: '/v6.0.0/api-reference/sms-gateways'},
+                                {text: 'Google Postmaster Tools', link: '/v6.0.0/api-reference/postmaster'},
+                                {text: 'DNS', link: '/v6.0.0/api-reference/dns'},
+                                {text: 'Email Gateway', link: '/v6.0.0/api-reference/emailgateway'},
+                                {text: 'Journeys', link: '/v6.0.0/api-reference/journeys'},
+                                {text: 'Journey Actions', link: '/v6.0.0/api-reference/journey-actions'},
+                                {text: 'Lists', link: '/v6.0.0/api-reference/lists'},
+                                {text: 'Personalization', link: '/v6.0.0/api-reference/personalization'},
+                                {text: 'Re-Branding', link: '/v6.0.0/api-reference/rebranding'},
+                                {text: 'Clients (removed)', link: '/v6.0.0/api-reference/clients'},
+                                {text: 'Emails', link: '/v6.0.0/api-reference/emails'},
+                                {text: 'User Email Templates', link: '/v6.0.0/api-reference/user-email-templates'},
+                                {text: 'User Webhooks', link: '/v6.0.0/api-reference/user-webhooks'},
+                                {text: 'User Sender Domains', link: '/v6.0.0/api-reference/user-senderdomains'},
+                                {text: 'User Email Content', link: '/v6.0.0/api-reference/user-emailcontent'},
+                                {text: 'Media Library', link: '/v6.0.0/api-reference/medialibrary'},
+                                {text: 'SSO', link: '/v6.0.0/api-reference/sso'},
+                                {text: 'Suppression Lists', link: '/v6.0.0/api-reference/suppression'},
+                                {text: 'SMS Suppression Lists', link: '/v6.0.0/api-reference/sms-suppression'},
+                                {text: 'Settings', link: '/v6.0.0/api-reference/settings'},
+                                {text: 'Event Tracking', link: '/v6.0.0/api-reference/eventtracking'},
+                                {text: 'System', link: '/v6.0.0/api-reference/system'},
+                                {text: 'Monitoring', link: '/v6.0.0/api-reference/monitoring'},
+                                {text: 'Users', link: '/v6.0.0/api-reference/users'},
+                                {text: 'Segments', link: '/v6.0.0/api-reference/segments'},
+                                {text: 'Subscribers', link: '/v6.0.0/api-reference/subscribers'},
+                                {text: 'Internal', link: '/v6.0.0/api-reference/internal'}
+                            ]
+                        },
+                        {
+                            text: 'Plug-In Development', items: [
+                                {text: 'Hook Reference', link: '/v6.0.0/plugin-development/reference'}
+                            ]
+                        }
+                    ]
+                }
+            ]
+
             // Return sidebar config with shared reference
             return {
-                '/': v5_9_6_sidebar,  // Root pages use latest version sidebar
-                '/v5.9.6/': v5_9_6_sidebar,  // Reference same config
+                '/': v6_0_0_sidebar,  // Root pages use latest version sidebar
+                '/v6.0.0/': v6_0_0_sidebar,  // Reference same config
+                '/v5.9.6/': v5_9_6_sidebar,
                 '/v5.9.5/': v5_9_5_sidebar,
                 '/v5.9.4/': v5_9_4_sidebar,
                 '/v5.9.3/': v5_9_3_sidebar,
