@@ -41,9 +41,26 @@ Use the full `docker:up` command whenever you are unsure, because it is always c
 ## Step 1: Set your name
 
 ```ini
-UI_BRAND_NAME=Acme Mail
-UI_BRAND_LEGAL_NAME=Acme Communications Ltd.
+UI_BRAND_NAME="Acme Mail"
+UI_BRAND_LEGAL_NAME="Acme Communications Ltd."
 ```
+
+Quote any value that contains a space or a `#`. `.oempro_env` is read by more than one
+parser, and an unquoted space stops Octeth reading the file **at all**: every setting then
+falls back to its built-in default, so `MYSQL_HOST` becomes `localhost` and `ADMIN_API_KEY`
+becomes empty. An unquoted `#` starts a comment, which silently cuts the value short.
+
+::: warning A further catch on v5.9.6
+The new user interface writes some of these values into its own environment file without
+quotes, so a value containing a space stops that interface from starting even when you quoted
+it correctly here. The affected settings are the mail footer, the support address, the terms
+and privacy URLs and the three logo paths. Until you upgrade, nest the quotes for those:
+write `'"Sent from app.acmemail.com."'`, with single quotes around double quotes. `UI_BRAND_NAME`
+and `UI_BRAND_LEGAL_NAME` are unaffected and take one ordinary pair.
+
+v6.0.0 fixes this. Go back to a single pair of quotes when you upgrade, or the inner double
+quotes become part of the text (issue #2904).
+:::
 
 `UI_BRAND_NAME` is the name shown in the browser tab, on sign-in pages and as the sender
 name on the interface's own emails. `UI_BRAND_LEGAL_NAME` is the company name used where a
@@ -167,7 +184,7 @@ Octeth's sending engine as always.
 
 ```ini
 UI_MAIL_FROM_ADDRESS=no-reply@acmemail.com
-UI_BRAND_MAIL_FOOTER=Sent from app.acmemail.com.
+UI_BRAND_MAIL_FOOTER='"Sent from app.acmemail.com."'
 ```
 
 The sender name on these emails is your `UI_BRAND_NAME`, so there is no separate setting for

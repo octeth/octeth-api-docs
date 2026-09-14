@@ -714,7 +714,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 45. **Admin API IP Allow-List Enforcement**
 
     ```bash
-    ADMIN_API_ENFORCE_ALLOWED_IP=true    # Apply the admin-area IP allow-list to admin-authenticated API calls (default: false on upgrades, true in the shipped example)
+    ADMIN_API_ENFORCE_ALLOWED_IP=true    # Apply the admin-area IP allow-list to admin-authenticated API calls (default: false on upgrades, true in the shipped example). If you run the new user interface, see the warning below
     ```
 
     The admin-area "Authorized IP Addresses" list (Settings, Security; one IPv4 address or CIDR
@@ -727,9 +727,24 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     after `TRUSTED_PROXIES` / `TRUST_CLOUDFLARE_CONNECTING_IP` resolution. There is no exemption
     for loopback or private ranges: an integration that calls `api.php` with an admin credential
     from inside the Docker network, or from another server, must have its address or subnet added
-    to the list first. The product's own screens are unaffected because they call the API
-    in-process, not over HTTP. An empty list means no restriction in either mode, exactly as on the
+    to the list first. The legacy admin and user screens are unaffected because they call the API
+    in process, not over HTTP. An empty list means no restriction in either mode, exactly as on the
     login page.
+
+    ::: warning The new user interface is affected
+    The new user interface is a separate application that reaches `api.php` over HTTP from its own
+    container using the master admin key, so its admin-key calls **are** measured against this list.
+    With this setting on and a non-empty list, staff sign-in, signup, the password reminder, the
+    password reset, profile edits, the password change, the 2FA toggle and impersonation all fail,
+    and the interface reads the refusal as an expired session, so you see a sign-in loop rather than
+    an error. The Octeth log names the real cause: `Admin API call refused: address is outside
+    ADMIN_ALLOWED_IP`.
+
+    On v5.9.6, add `192.168.99.110`, the interface's container, to the list, or set this to `false`.
+    v6.0.0 exempts that container automatically, matched on the address the connection is received
+    from rather than on the resolved client address, so only a process inside that container can
+    produce it and no external caller gains anything (issue #2913).
+    :::
 
     Absent or empty is treated as off, so upgraded installs keep their current behaviour; fresh
     installs enforce from day one. Introduced in v5.9.6 (issue #2770).

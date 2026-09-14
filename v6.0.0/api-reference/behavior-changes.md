@@ -228,6 +228,14 @@ This is **not behind a flag**, deliberately: the list has no effect until an ope
 
 Requests from `127.0.0.1` and `::1` stay exempt, so `system.health.check` and the cron probes keep working. See the upgrade checklist for the `TRUSTED_PROXIES` warning, which is the way this change most commonly goes wrong.
 
+#### The admin API allow-list now exempts the new user interface
+
+`ADMIN_API_ENFORCE_ALLOWED_IP` no longer refuses admin-key calls that arrive from the new user interface's own container, while `UI_ENABLED` is `true`. On v5.9.6 those calls were refused like any other, which made the whole staff side of the interface unusable on an install with a non-empty list, and stopped customers signing up or recovering a password.
+
+Nothing else changes. A call from any other address is measured against the list exactly as before, including one presenting `X-Forwarded-For: 192.168.99.110`, and so is a call from any other container on the Docker network. The match is on the address the TCP connection was received from, not on the resolved client address, so no request header can influence it and external traffic, which always arrives from the bundled proxy, can never satisfy it.
+
+`UI_ENABLED` must be the literal lowercase `true`. `1`, `yes`, `on` and `TRUE` are read as off, here and by the container entrypoint, the reverse proxy and the command line tool alike, so an interface that is switched off grants no exemption. An operator who added `192.168.99.110` to the list as a v5.9.6 workaround can remove it; leaving it is harmless. Exemptions are recorded at DEBUG as `Admin API call exempted from ADMIN_ALLOWED_IP`.
+
 #### The admin "remember me" cookie is hardened
 
 It previously held a reversible encoding of a bare admin id with no timestamp, no nonce and no tie to the password, written without `HttpOnly` and without `Secure`. A copied value kept working after its browser expiry and after a password change, and it signed the admin in with no 2FA step.
@@ -242,6 +250,7 @@ Cookies issued before the upgrade are in the old format and are rejected, so tho
 - **Every absolute URL is built from `APP_URL` rather than the incoming request**, and `X-Forwarded-Host` is no longer honoured. `X-Forwarded-Proto`, `X-Forwarded-For` and `X-Forwarded-Port` are unchanged. Emailed password-reset and verification links used to be rooted at the request host while the interface trusted a client-supplied forwarded host from every peer.
 - **If `APP_URL` is not an absolute `scheme://host` URL**, the interface logs a critical error and the password-reset and registration flows answer "temporarily unavailable" rather than mailing a link a client can steer. Every other screen keeps working.
 - **Session payloads are encrypted**, so everyone signed in to the interface is signed out once when its container restarts after the upgrade. The legacy areas are unaffected.
+- **Self-signup now follows the admin user-signup setting** under Settings, ESP settings, the same setting the legacy signup page has always used. With signup off, the interface hides the signup link on every signed-out page and `/user/register` redirects to sign-in, where it previously offered a working form regardless. With signup on and the interface's own billing off, a new account lands in the user group named on that screen rather than in the interface's own default group. With billing on, placement is unchanged. Verification links issued before the setting was switched off still activate their accounts.
 - **A pending two-factor challenge expires after ten minutes**, and adding a second account from the account switcher is refused when that account has two-factor authentication enabled. That never worked: the challenge page is a signed-out page, so a signed-in user was redirected away from it.
 
 ## Tier 2: shape and value changes

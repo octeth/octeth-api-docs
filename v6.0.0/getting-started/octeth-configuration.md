@@ -837,7 +837,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     `./cli/octeth.sh docker:up`.
 
     ```bash
-    UI_ENABLED=true                      # Master switch (default: false, so an upgrade changes nothing)
+    UI_ENABLED=true                      # Master switch (default: false, so an upgrade changes nothing). Must be the literal lowercase true
     UI_APP_KEY=                          # Laravel app key; leave EMPTY on a fresh install and the container generates one
     UI_LOG_LEVEL=error                   # debug, info, notice, warning, error, critical, alert, emergency
     UI_MYSQL_DATABASE=oempro_ui          # Its OWN database. MUST NOT equal MYSQL_DATABASE
@@ -869,6 +869,13 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     `docker compose restart oempro_ui` has the same effect. Neither needs a rebuild: the flag is
     read at start time, not baked into the image. The shipped example value matches the application
     default, so an upgrade that adds this key does not change how your install behaves.
+
+    `UI_ENABLED` must be the **literal lowercase `true`**. `1`, `yes`, `on` and `TRUE` are all read
+    as off, by the container entrypoint, by the reverse proxy, by the command line tool and, since
+    v6.0.0, by Octeth itself. They are not synonyms here, and a value read as off leaves the
+    interface answering 404 for every path with the proxy not routing to it. Octeth reads this key
+    because the admin API IP allow-list exemption depends on it: set it to `false` while leaving the
+    container running and that exemption is withdrawn, which is intended (issue #2913).
 
     With `UI_ENABLED=false` the container still starts and reports healthy but serves 404 for
     every path, and the reverse proxy is not given its routing rules, so `/user/` and `/ui/` fall
@@ -917,6 +924,14 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     Leaving a URL or an address empty is correct rather than incomplete: the interface hides the
     link instead of pointing it somewhere wrong. `UI_BRAND_LEGAL_NAME` falls back to
     `UI_BRAND_NAME` when empty.
+
+    Quote any value containing a space or a `#`, for example `UI_BRAND_NAME="Acme Mail"` and
+    `UI_BRAND_TERMS_URL="https://acmemail.com/legal#terms"`. An unquoted space stops Octeth reading
+    `.oempro_env` at all, so every setting falls back to its built-in default, and an unquoted `#`
+    truncates the value at that point. The palette values in the next block need quotes for the same
+    reason: every one of them starts with a `#`. Use one pair of quotes, not two. If you nested
+    quotes on an earlier version to work around a brand value that stopped the interface starting,
+    undo that: from v6.0.0 the inner double quotes are kept as part of the text (issue #2904).
 
     **Whitelabel: logo and icon**
 
