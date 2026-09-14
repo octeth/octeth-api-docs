@@ -97,7 +97,23 @@ v6.0.0 is a security release. It remediates the findings of a full audit of the 
 
 - **Admin "remember me" cookies issued before this release stop working**, so those admins sign in once more, and an admin with two-factor authentication enabled is no longer signed in by the cookie at all.
 
-- **The built-in PayPal Express Checkout gateway has been removed.** Check Settings, ESP Settings, Payment Gateway before upgrading. If *PayPal Express Checkout* is ticked there, your customers will no longer be able to buy credits after the upgrade until you configure the *Third party payment gateway* option on the same screen, or install a plugin that provides a gateway. If it is not ticked, this change does not affect you. `payment.php` and `payment_result.php` now return 404, so remove any IPN or notification URL still pointing at them in your PayPal account. Your stored PayPal settings are left in the database untouched and no migration drops them.
+- **The built-in PayPal Express Checkout gateway has been removed.** Check Settings, ESP Settings, Payment Gateway before upgrading. If *PayPal Express Checkout* is ticked there, your customers will no longer be able to buy credits after the upgrade until you configure the *Third party payment gateway* option on the same screen, or install a plugin that provides a gateway. If it is not ticked, this change does not affect you. Remove any IPN or notification URL still pointing at `payment.php` or `payment_result.php` in your PayPal account. Your stored PayPal settings are left in the database untouched and no migration drops them. **On an upgraded installation those two files are still on disk and still answer until you remove them**, which is what the next note is about.
+
+- **An upgrade does not remove files that a release retired, so run `upgrade:remove-retired-files` after upgrading to v6.0.0.** This one matters more than it sounds, because the removal it completes is a security fix.
+
+  Upgrading syncs the new release over your installation without deleting anything, and that is deliberate: the same directory holds your data, your environment files, your custom templates and your plugins, none of which a release may remove. The cost is that a file an Octeth release deleted stays on your server and keeps being served. A fresh installation never has it; an upgraded one always does.
+
+  For v6.0.0 that leaves the PayPal Express Checkout endpoint live. The three files the release removes are self-contained, so `payment.php` on an upgraded install still answers, still accepts an unverified callback, and can still grant credits. Removing the gateway from the product does not reach you until you remove the files:
+
+  ```bash
+  cd /path/to/octeth
+  ./cli/octeth.sh upgrade:remove-retired-files            # preview, removes nothing
+  ./cli/octeth.sh upgrade:remove-retired-files --apply    # remove them
+  ```
+
+  It previews by default and names every file before it touches anything, it keeps a copy of each file under `data/backups/upgrade_*/retired_removed/` before deleting it, and running it twice is a no-op. It only ever removes paths named in `cli/retired-files.txt`, which ships with the release, and it refuses `data/`, any `.oempro_*env`, custom templates, `plugins/` and `docker-compose.yml` even if something has listed them. The list is cumulative, so one run cleans up an installation upgraded from any earlier version.
+
+  The upgrade now also reports, in normal output rather than only under `--debug`, how many paths in your installation the release does not ship. That warning has existed since the upgrade tool was written and had never once fired: it was built in a way that made it silent in every mode, which is why this gap went unnoticed for years. Read the list it points at as a prompt to look rather than a list to delete, because it also includes files you own, such as custom templates.
 
 - **If you use "Local MTA" as a send method, check the stored path** at Settings, Email Delivery and on every user group that overrides the send method. The path must now be absolute, contain no whitespace or arguments, name a file that exists and is executable, and have a conventional mail submission binary name. A path stored before this release that does not qualify is refused rather than run, so mail queued through that method fails until it is corrected.
 
