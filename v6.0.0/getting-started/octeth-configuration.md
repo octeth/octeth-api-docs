@@ -406,7 +406,28 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     The rebuild runs `ALTER TABLE … ENGINE=InnoDB` fully online (`ALGORITHM=INPLACE, LOCK=NONE`) when possible; a table carrying a `FULLTEXT` index (the `ft_email` search index) cannot rebuild in place, so it falls back to `ALGORITHM=COPY, LOCK=SHARED` (reads continue, writes are briefly blocked) — still off the request path. Notes: existing tables start with a counter of `0` (their historical accumulation is unknown without `PROCESS`), so the mechanism protects against **future** accumulation; run `php system/artisan oempro:rebuild-subscriber-tables --dry-run` to preview which tables would be rebuilt.
 
-32. **Bounce Webhook Authentication**
+32. **S2S Conversion Postback Guard Rails**
+
+    ```bash
+    S2S_POSTBACK_MAX_VALUE=1000000        # largest conversion amount accepted; out of range is refused, not clamped
+    S2S_POSTBACK_RATE_LIMIT=60            # postbacks per identifier and per source address within the window
+    S2S_POSTBACK_RATE_WINDOW_SECONDS=3600 # rolling window for the rate limit
+    ```
+
+    `https://{host}/system/s2s-postback` is a **public, unauthenticated** route by design: an advertiser's server posts to it when a click you sent turns into a sale. The only thing identifying the conversion is the `ocrid` parameter, and until v6.0.0 that carried no key at all, so the account, campaign, subscriber and list it named could be **constructed from nothing**. Anyone who found the endpoint could record conversions, with an amount of their choosing, against any account on the installation.
+
+    Identifiers are now signed with a keyed MAC, and a signed identifier that has been altered is refused with **HTTP 403**. Identifiers are generated at **click time** by the tracking redirect rather than embedded in sent email, so the signature covers every click from the moment you upgrade, including clicks on campaigns sent long before it. Nothing needs to change at your end and no conversion tracking breaks.
+
+    Identifiers **without** a signature are still accepted, with no cut-off date, because an advertiser may still be holding one captured from a click made before the upgrade. The settings above are what bound that remaining exposure:
+
+    - **`S2S_POSTBACK_MAX_VALUE`** is the largest amount accepted. The amount arrives straight off a public request and the column that stores it is a `varchar`, so before this release the figure written into revenue reporting was whatever the caller said, including a non-numeric string. A value that is not a number, is negative, or is above this bound is **refused with HTTP 422** rather than clamped, so your reports never contain a figure nobody actually sent. Clamped to `[0.01, 1000000000]`.
+    - **`S2S_POSTBACK_RATE_LIMIT`** / **`S2S_POSTBACK_RATE_WINDOW_SECONDS`** cap postbacks per identifier and per source address. An identical postback is already dropped as a duplicate, but varying the reported amount by a cent would sidestep that, so the rate limit is what actually bounds a replay campaign. Raise it if you have a high-volume advertiser integration and see legitimate postbacks refused with **HTTP 429**. Clamped to `[1, 100000]` and `[1, 86400]`.
+
+    Two further behaviours have no setting. A postback identical to one already recorded is answered as success but records nothing and does not increment the campaign's conversion count, since a retry after a timed-out request is the ordinary reason the same postback arrives twice; a genuinely **different** amount still records, because a subscriber converting twice is a real thing. And every accepted conversion now stores the address that submitted it and whether its identifier was signed.
+
+    **What cannot be repaired:** conversions recorded before this release carry no marker distinguishing a genuine one from a forged one, and none ever did. If revenue figures drive commission or billing for you, treat the historical numbers as unverified rather than assuming they can be cleaned.
+
+33. **Bounce Webhook Authentication**
 
     ```bash
     BOUNCE_WEBHOOK_AUTH_ENABLED=false   # Require a signature header on /system/bounce_webhook (opt-in; off by default on every install)
@@ -427,7 +448,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     - **Trade-off:** a static header is *not* a per-request HMAC. It does **not** stop replay of a captured valid POST, but — unlike a secret placed in the URL — it is **not written to access logs or referrers**, and it closes the unauthenticated-forgery vector entirely.
     - **Rotation:** because the secret derives from `OEMPRO_PASSWORD_SALT` and `ADMIN_API_KEY`, rotating either value changes the secret and requires updating every configured sender with the new header.
 
-33. **Admin API Privilege Enforcement**
+34. **Admin API Privilege Enforcement**
 
     ```bash
     ADMIN_API_ENFORCE_PRIVILEGES=true   # Check sub-admin privileges on admin API calls (opt-in on upgrades; on for fresh installs)
@@ -437,7 +458,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     Absent or empty is treated as `false`, so an existing install keeps its pre-existing `.oempro_env` and today's behaviour after upgrading. The shipped `.oempro_env.example` sets it to `true`, so fresh installs enforce from day one. Turn it on after confirming every integration that authenticates as a sub-admin holds the privileges it needs. Per-sub-admin API keys are issued on the sub-admin edit screen and are accepted on `AdminAPIKey` regardless of this setting.
 
-34. **Admin Password Change Confirmation**
+35. **Admin Password Change Confirmation**
 
     ```bash
     ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD=true   # Require CurrentPassword on admin.update when Password is present (opt-in on upgrades; on for fresh installs)
@@ -447,7 +468,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     Absent or empty is treated as `false`, so an existing install keeps its pre-existing `.oempro_env` and any integration that changes the admin password without the new parameter keeps working. The shipped `.oempro_env.example` sets it to `true`, so fresh installs enforce from day one.
 
-35. **User Password Change Confirmation**
+36. **User Password Change Confirmation**
 
     ```bash
     USER_UPDATE_REQUIRE_CURRENT_PASSWORD=true   # Require CurrentPassword on user.update when Password is present (opt-in on upgrades; on for fresh installs)
@@ -461,7 +482,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     The code default is `false`, so an install that already has this key keeps working. But an upgrade appends keys that are **absent** from your `.oempro_env` using the new version's example value, and the shipped example sets `true`. So an install upgrading from a version that predates this key starts enforcing it with no operator action, and an integration that changes a user's own password without sending `CurrentPassword` begins receiving `ErrorCode 9`. Either send the parameter or set the key to `false` explicitly.
     :::
 
-36. **Trusted Proxies / Client IP Resolution**
+37. **Trusted Proxies / Client IP Resolution**
 
     ```bash
     INTERNAL_PROXY_NETWORKS=192.168.99.0/24 # the bundled front end's own container network; change only if you changed the compose subnet
@@ -484,7 +505,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     A direct client (untrusted immediate peer) can never influence `REMOTE_ADDR`, so the admin IP allow-list can no longer be bypassed with a forged `X-Forwarded-For`. Loopback-originated requests (the internal health-check/cron probes) are exempt from the allow-list, so enabling it no longer breaks `system.health.check`. Note: audit/login rows written by an earlier version while behind a proxy may still contain a chain string in their IP column; the fix stops that going forward but does not rewrite historical rows.
 
-37. **New-List Suppression Default & Synchronous Import Threshold**
+38. **New-List Suppression Default & Synchronous Import Threshold**
 
     ```bash
     NEW_LIST_DEFAULT_ADD_TO_SUPPRESSION_LIST=false   # opt-outs on NEW lists feed the suppression lists by default (default: false)
@@ -499,7 +520,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **`RUN_IMPORT_IN_SYNC_FOR_SUBSCRIBERS_LESS_THAN`** sets the row count at or below which a CSV import through `POST api/v1/subscribers.import` is processed **synchronously**, inline within the API request, instead of being queued. Raising the default from 10 to 50 means imports of 11–50 rows now return `ImportType: sync` and the HTTP request blocks until the import finishes. If you have an API client with timeout assumptions built around the asynchronous path, either lower this value or extend that client's timeout.
 
-38. **Email Gateway Recipient Resolution Timeout**
+39. **Email Gateway Recipient Resolution Timeout**
 
     ```bash
     SENDEMAIL_RECIPIENT_RESOLUTION_TIMEOUT=30   # Total timeout (seconds) for resolving a list send's recipients (default: 30)
@@ -511,7 +532,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     It is deliberately a separate setting from `SUBSCRIBER_BROWSE_QUERY_TIMEOUT`, even though both bound the same backend. The browse page is an interactive render that an operator may reasonably want to fail fast; this is a send path, where failing fast drops mail. Tuning one should not silently change the other. A value of `0` or below is ignored and the 30-second default is used instead, because the underlying HTTP client treats a zero timeout as *wait forever*.
 
-39. **Container Resource Limits**
+40. **Container Resource Limits**
 
     ```bash
     # Data tier
@@ -598,7 +619,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     On a **fresh install**, `install:start` lowers `SENDENGINE_CPU_LIMIT` and `LINK_PROXY_CPU_LIMIT` to fit the host when it has fewer than four cores — see *Octeth Installation* for the sizing table. Existing installs are never adjusted automatically.
 
-40. **CSV Export Formula Protection**
+41. **CSV Export Formula Protection**
 
     ```bash
     CSV_EXPORT_FORMULA_PROTECTION=true      # Prefix formula-looking CSV cells with an apostrophe (default: true)
@@ -642,7 +663,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **API note.** The `emailgateway.exportevents` API endpoint has applied this prefixing since it shipped and continues to do so **unconditionally**, ignoring this setting, so existing API callers see no change in either direction.
 
-41. **Send-Engine Proactive Allocation Guard Rails**
+42. **Send-Engine Proactive Allocation Guard Rails**
 
     ```bash
     SENDENGINE_PROACTIVE_FAILURE_BUDGET=25          # Consecutive worker failures before slot refills stop (default: 25)
@@ -660,7 +681,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **Operator signal.** A campaign that exhausts its budget is logged once at `ERROR` and reported as `proactive_blocked` in `data/logs/sendengine_worker_allocation.log`. Deliberate pauses and stops are **not** counted as failures.
 
-42. **Journey Action Failure Retries**
+43. **Journey Action Failure Retries**
 
     ```bash
     JOURNEY_ACTION_FAILURE_MAX_ATTEMPTS=6            # Attempts before an entry is dead-ended (default: 6)
@@ -678,7 +699,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **Where failures are recorded.** On `oempro_journeys_action_executions` with `ExecutionStatus='Failed'`, plus `ErrorMessage`, `ErrorCode`, and for a pending retry `SnoozedUntil` and `SnoozeReason`. They also appear in the journey log.
 
-43. **Campaign Sender-Domain Auto Branding**
+44. **Campaign Sender-Domain Auto Branding**
 
     ```bash
     CAMPAIGN_SENDER_DOMAIN_AUTO_BRANDING=true       # Brand campaigns with a matching verified sender domain (default: true)
@@ -697,7 +718,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     **When to turn it off.** Set it to `false` if you run a shared-IP warmup pool that depends on platform-branded campaign headers. Enabling this moves reputation onto a colder customer domain.
 
 
-44. **Email Template Thumbnail Upload Limit**
+45. **Email Template Thumbnail Upload Limit**
 
     ```bash
     TEMPLATE_THUMBNAIL_MAX_FILESIZE=2097152    # Max decoded thumbnail size in bytes for email.template.thumbnail.upload (default: 2 MB)
@@ -706,7 +727,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     Maximum decoded size, in bytes, of a thumbnail accepted by the `email.template.thumbnail.upload` API command (gif, png or jpeg, the same allow-list as the admin "create email template" form). The image is stored base64-encoded in the `TemplateThumbnail` column of the templates table, so keep it small. Clamped to `[10240, 20971520]`; values outside that range fall back to the default. Introduced in v5.9.6 (issue #2787).
 
 
-45. **System Health Check Authentication**
+46. **System Health Check Authentication**
 
     ```bash
     SYSTEM_HEALTH_CHECK_AUTH_REQUIRED=true    # Strict credential check on system.health.check (default: false on upgrades, true in the shipped example)
@@ -730,7 +751,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     and enforce from day one. The command's registration and its success response are unchanged.
     Introduced in v5.9.6 (issue #2767).
 
-46. **Admin API IP Allow-List Enforcement**
+47. **Admin API IP Allow-List Enforcement**
 
     ```bash
     ADMIN_API_ENFORCE_ALLOWED_IP=true    # Apply the admin-area IP allow-list to admin-authenticated API calls (default: false on upgrades, true in the shipped example)
@@ -753,7 +774,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     Absent or empty is treated as off, so upgraded installs keep their current behaviour; fresh
     installs enforce from day one. Introduced in v5.9.6 (issue #2770).
 
-47. **Internal Service Signature**
+48. **Internal Service Signature**
 
     ```bash
     SYSTEM_INTERNAL_SIGNATURE_REQUIRED=true   # Require the X-Octeth-Signature header on the private /system/* services (default: false on upgrades, true in the shipped example)
@@ -796,7 +817,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     **Rotation.** Changing `OEMPRO_PASSWORD_SALT` or `ADMIN_API_KEY` changes the derived value on
     both sides at once, so no coordinated update is needed. Introduced in v5.9.6 (issue #2813).
 
-48. **New User Interface**
+49. **New User Interface**
 
     ::: tip
     This section is the exhaustive parameter list. For step-by-step guides on turning the

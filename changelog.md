@@ -45,6 +45,7 @@ v6.0.0 is a security release. It remediates the findings of a full audit of the 
 - Denied web access to the `data/` subdirectories, which included application logs.
 - Restricted and redacted the new user interface's API debug console, rooted its generated URLs at `APP_URL`, and stopped it holding a plaintext password while a two-factor challenge is pending.
 - Fixed client address resolution, which on a standard install recorded the address of Octeth's own front-end container instead of the visitor, for every request, on every install. The admin Authorized IP Addresses list, per-IP rate limits, geographic reporting and the subscription, opt-in and unsubscription IP columns were all affected.
+- Signed the conversion identifier used by the server-to-server postback endpoint, which carried no key at all, so a conversion and a monetary amount of any size could be recorded against any account's campaigns by anyone on the internet. Repeated postbacks no longer accumulate revenue, the amount is bounded and checked, the endpoint is rate limited, and the address that submitted each conversion is now recorded.
 
 ### Upgrade Notes
 
@@ -78,6 +79,16 @@ v6.0.0 is a security release. It remediates the findings of a full audit of the 
   **And one thing that cannot be repaired.** The `SubscriptionIP`, `OptInIP` and `UnsubscriptionIP` columns exist to evidence that a named person subscribed from a named address, and every value recorded before this upgrade holds a container address. The visitor's real address was never written anywhere, so there is nothing to recover it from and no migration can fix it. Records created from this upgrade onward carry the real address. If you are asked to produce consent evidence for a subscriber acquired before then, the IP column will not provide it.
 
   If you changed the bundled network's subnet in `docker-compose.yml`, set `INTERNAL_PROXY_NETWORKS` in `.oempro_env` to match, otherwise this fix does not apply to your install and the behaviour above stays as it was.
+
+- **Conversion postbacks are now signed, and existing conversion data cannot be assumed genuine.** This affects you only if you use server-to-server conversion tracking, which is off unless you have enabled it on a campaign.
+
+  The `ocrid` identifier that the postback endpoint accepted carried no key, so the campaign, subscriber and list it named could be constructed from nothing. Anyone who found the endpoint could record conversions, with an amount of their choosing, against any account on your install. Identifiers are now signed and a signed identifier that has been altered is refused.
+
+  **Nothing you need to do, and no conversion tracking breaks.** Identifiers are generated when a recipient clicks, not embedded in the email, so the signature covers every click from the moment you upgrade, including clicks on campaigns you sent months ago. Identifiers without a signature are still accepted with no cut-off date, because an advertiser may still be holding one captured from a click before the upgrade.
+
+  Three further changes bound what an unsigned identifier can still do. An identical postback repeated no longer records a second conversion or increments the campaign's conversion count, though a genuinely different amount still records, since a subscriber buying twice is a real thing. An amount that is not a number, is negative, or is above `S2S_POSTBACK_MAX_VALUE` (one million by default) is refused rather than stored. And the endpoint is rate limited per identifier and per source address, 60 an hour by default; raise `S2S_POSTBACK_RATE_LIMIT` if you have a high-volume advertiser integration and see legitimate postbacks refused with HTTP 429.
+
+  **What cannot be repaired.** Conversions recorded before this release carry no marker distinguishing a real one from a forged one, and none ever did. If your campaign revenue figures matter for commission or billing, treat the historical numbers as unverified rather than assuming they can be cleaned. From this release onward each conversion row records whether its identifier was signed and which address submitted it, so a forged run can at least be identified afterwards.
 
 - **Admin "remember me" cookies issued before this release stop working**, so those admins sign in once more, and an admin with two-factor authentication enabled is no longer signed in by the cookie at all.
 
