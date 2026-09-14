@@ -256,8 +256,25 @@ curl -X POST https://example.com/api.php \
 <Badge type="info" text="POST" /> `/api.php`
 
 ::: tip API Usage Notes
-- No authentication required
+- Authentication required: user `APIKey` or `SessionID`, or an admin credential. **Changed in v6.0.0**, see the warning below
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+::: danger Behavior change (v6.0.0)
+**This command now requires a credential.** It was previously dispatched with no authorization test, and it took the acting account from the `ListID` in the request rather than from a credential, so an anonymous request could name any list on the install and, through the `RulesJSON` branch, unsubscribe that list's entire audience in one call.
+
+Four changes:
+
+1. **A credential is required.** A user `APIKey` or `SessionID`, or an admin credential. Anything else answers HTTP 401 with `ErrorCode 99998`. (Octeth's own internal processes present a shared-secret header instead, which the gate also accepts; it is not a credential a customer integration can use.)
+2. **A user may only act on a list they own.** Another account's `ListID` answers `ErrorCode 4`, the same code an unknown list has always returned, so the response does not reveal whether that list exists. An admin credential still reaches any account's list.
+3. **The `RulesJSON` bulk branch requires a credential**, refused with the new `ErrorCode 12`.
+4. **`AddToGlobalSuppression=true` no longer suppresses across accounts.** The account-scoped suppression entry is still written for every caller, so the opt-out is fully honoured wherever that account sends. The install-wide entry is now written only for an admin credential.
+
+**Customer opt-outs are unaffected.** RFC 8058 one-click unsubscribe still works with no credential and no confirmation step, because Gmail and Yahoo POST to `u.php`, which never passes through `api.php`. Every unsubscribe link already delivered keeps working, the link format is unchanged, and the embeddable unsubscribe form posts to `unsubscribe.php`.
+
+You are affected only if you built an integration that posts this command to `api.php` with no credential. Add a user `APIKey`.
+
+This is separate from the `RulesJSON` validation added in v5.9.3, which is unchanged and still applies to every caller including an authenticated owner.
 :::
 
 **Request Body Parameters:**
@@ -896,13 +913,13 @@ Completed export result files are removed automatically after `EXPORT_FILE_RETEN
 | TriggerActions | Boolean | Yes | Trigger autoresponders and journeys   |
 | Tags      | Array  | Yes      | Array of tag names to apply to imported subscribers |
 | ImportFrom | Object | Yes     | Import source configuration           |
-| ImportFrom.CSV.URL | String | Conditional | URL to fetch CSV data (required if ImportFrom.CSV.Data not provided) |
+| ImportFrom.CSV.URL | String | Conditional | URL to fetch CSV data (required if ImportFrom.CSV.Data not provided). **Changed in v6.0.0:** must be a publicly reachable `http` or `https` URL. Any other scheme, or a host resolving to a loopback, private, link-local or carrier-grade NAT address, or a host that cannot be resolved, is refused with error 18 before the fetch is attempted |
 | ImportFrom.CSV.Data | String | Conditional | CSV data string (required if ImportFrom.CSV.URL not provided) |
 | ImportFrom.CSV.FieldTerminator | String | Yes (for CSV) | Field delimiter |
 | ImportFrom.CSV.FieldEncloser | String | No | Field encloser (default: empty) |
 | ImportFrom.CSV.EscapedBy | String | Yes (for CSV) | Escape character |
 | ImportFrom.CSV.MappedFields | Object | Yes (for CSV) | Field mapping (FieldName: CustomFieldID or EmailAddress) |
-| ImportStatusUpdateWebhookURL | String | No | Webhook URL to notify on import completion |
+| ImportStatusUpdateWebhookURL | String | No | Webhook URL to notify on import completion. **Changed in v6.0.0:** validated by the same rule as `ImportFrom.CSV.URL` and refused with the new error 28. This parameter had no validation before |
 
 ::: code-group
 
@@ -969,7 +986,8 @@ curl -X POST https://example.com/api/v1/subscribers.import \
 15: Fields are not mapped
 16: Missing EscapedBy parameter
 17: Field mapping is invalid
-18: ImportFrom.CSV.URL remote data fetch failure
+18: ImportFrom.CSV.URL remote data fetch failure, or (v6.0.0) the URL is not a publicly reachable http or https URL
+28: ImportStatusUpdateWebhookURL is not a publicly reachable http or https URL (v6.0.0)
 19: List not found
 20: Invalid ListID parameter / Failed to create import record
 21: Missing Tags parameter

@@ -6,6 +6,17 @@ layout: doc
 
 Custom field management endpoints for creating, updating, copying, deleting, and retrieving custom fields for subscriber lists.
 
+::: danger Behavior change (v6.0.0): list ids must be plain integers
+`customfields.get` (`SubscriberListID`) and `customfields.copy` (`SourceListID`, `TargetListID`) now require a digits-only value. Anything else is refused before any lookup runs, with the code that command already used for an id that does not resolve: `2` for `customfields.get`, and `3` and `4` for the two `customfields.copy` parameters.
+
+`7` and `007` are accepted exactly as before. `7 ` with a trailing space, `7abc`, `7.0`, `-1`, `0x07`, `1e3` and an array value are refused, where they were previously read as list 7, 0 or 1. A caller sending a genuine integer id, which is what every client library does, sees no change.
+
+**Also fixed on `customfields.copy`:** a zero-padded id such as `0007` now copies correctly. Every SQL comparison already resolved it to list 7 so the ownership checks passed, but the subscriber table name is built by string concatenation, so the copy tried to alter a table that does not exist. The metadata row had already been inserted and the failed alter was not checked, so the response was `Success: true` while the target list gained a field with no column behind it.
+
+One shape note: a non-integer `TargetListID` now answers a scalar `ErrorCode: 4` rather than the single-element array `ErrorCode: [4]` the later ownership lookup returned. A caller that indexes `ErrorCode[0]` should handle both.
+See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for the full list.
+:::
+
 ## Create a Custom Field
 
 <Badge type="info" text="POST" /> `/api.php`
@@ -252,8 +263,8 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing source subscriber list id
 2: Missing target subscriber list id
-3: Invalid source subscriber list id
-4: Invalid target subscriber list id
+3: Invalid source subscriber list id (v6.0.0: also when SourceListID is not a digits-only id)
+4: Invalid target subscriber list id (v6.0.0: also when TargetListID is not a digits-only id)
 ```
 
 :::

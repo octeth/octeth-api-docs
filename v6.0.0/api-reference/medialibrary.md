@@ -6,6 +6,13 @@ layout: doc
 
 Media library management endpoints for uploading, browsing, and managing media files and folders.
 
+::: danger Behavior change (v6.0.0): folder ids must be plain integers
+`media.folderdelete` now requires `FolderID` to be a digits-only value, refused with `ErrorCode 2`, which is the code the command already returned for an id resolving to no folder. `7 ` with a trailing space, `7abc`, `7.0`, `-1`, `0x07` and an array value are now refused.
+
+This one mattered more than the others: the folder id reached a SQL condition that was emitted without quoting, so a crafted value could widen the delete beyond the caller's own folders. A bare integer for a folder the caller owns behaves exactly as before, deleting the folder, its sub-folders, its files and their stored blobs, and a bare integer for a folder the caller does not own still answers `ErrorCode 3`.
+See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for the full list.
+:::
+
 ## Browse Media Library
 
 <Badge type="info" text="POST" /> `/api.php`

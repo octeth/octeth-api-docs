@@ -447,7 +447,21 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     Absent or empty is treated as `false`, so an existing install keeps its pre-existing `.oempro_env` and any integration that changes the admin password without the new parameter keeps working. The shipped `.oempro_env.example` sets it to `true`, so fresh installs enforce from day one.
 
-35. **Trusted Proxies / Client IP Resolution**
+35. **User Password Change Confirmation**
+
+    ```bash
+    USER_UPDATE_REQUIRE_CURRENT_PASSWORD=true   # Require CurrentPassword on user.update when Password is present (opt-in on upgrades; on for fresh installs)
+    ```
+
+    The same confirmation, for the user side. `user.update` gained an additive `CurrentPassword` parameter. A supplied value is **always** verified and a wrong one answers `ErrorCode 10`, whatever this setting says; the setting only decides whether **omitting** it alongside `Password` is refused, with `ErrorCode 9`.
+
+    It applies **only to a caller authenticated as the user**, that is a per-user API key or a `SessionID` from `user.login`. An admin-authenticated caller is never asked for it, because an administrator performing a reset cannot be expected to know the customer's password. The new user interface is unaffected: it verifies the current password itself and then writes through an admin-scoped call.
+
+    ::: warning This is the one key whose example value changes behaviour on an upgrade
+    The code default is `false`, so an install that already has this key keeps working. But an upgrade appends keys that are **absent** from your `.oempro_env` using the new version's example value, and the shipped example sets `true`. So an install upgrading from a version that predates this key starts enforcing it with no operator action, and an integration that changes a user's own password without sending `CurrentPassword` begins receiving `ErrorCode 9`. Either send the parameter or set the key to `false` explicitly.
+    :::
+
+36. **Trusted Proxies / Client IP Resolution**
 
     ```bash
     TRUSTED_PROXIES=                       # extra trusted reverse proxies (IPv4 / CIDR, comma-separated); loopback is always trusted
@@ -465,7 +479,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     A direct client (untrusted immediate peer) can never influence `REMOTE_ADDR`, so the admin IP allow-list can no longer be bypassed with a forged `X-Forwarded-For`. Loopback-originated requests (the internal health-check/cron probes) are exempt from the allow-list, so enabling it no longer breaks `system.health.check`. Note: audit/login rows written by an earlier version while behind a proxy may still contain a chain string in their IP column; the fix stops that going forward but does not rewrite historical rows.
 
-36. **New-List Suppression Default & Synchronous Import Threshold**
+37. **New-List Suppression Default & Synchronous Import Threshold**
 
     ```bash
     NEW_LIST_DEFAULT_ADD_TO_SUPPRESSION_LIST=false   # opt-outs on NEW lists feed the suppression lists by default (default: false)
@@ -480,7 +494,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **`RUN_IMPORT_IN_SYNC_FOR_SUBSCRIBERS_LESS_THAN`** sets the row count at or below which a CSV import through `POST api/v1/subscribers.import` is processed **synchronously**, inline within the API request, instead of being queued. Raising the default from 10 to 50 means imports of 11–50 rows now return `ImportType: sync` and the HTTP request blocks until the import finishes. If you have an API client with timeout assumptions built around the asynchronous path, either lower this value or extend that client's timeout.
 
-37. **Email Gateway Recipient Resolution Timeout**
+38. **Email Gateway Recipient Resolution Timeout**
 
     ```bash
     SENDEMAIL_RECIPIENT_RESOLUTION_TIMEOUT=30   # Total timeout (seconds) for resolving a list send's recipients (default: 30)
@@ -492,7 +506,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     It is deliberately a separate setting from `SUBSCRIBER_BROWSE_QUERY_TIMEOUT`, even though both bound the same backend. The browse page is an interactive render that an operator may reasonably want to fail fast; this is a send path, where failing fast drops mail. Tuning one should not silently change the other. A value of `0` or below is ignored and the 30-second default is used instead, because the underlying HTTP client treats a zero timeout as *wait forever*.
 
-38. **Container Resource Limits**
+39. **Container Resource Limits**
 
     ```bash
     # Data tier
@@ -579,7 +593,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     On a **fresh install**, `install:start` lowers `SENDENGINE_CPU_LIMIT` and `LINK_PROXY_CPU_LIMIT` to fit the host when it has fewer than four cores — see *Octeth Installation* for the sizing table. Existing installs are never adjusted automatically.
 
-39. **CSV Export Formula Protection**
+40. **CSV Export Formula Protection**
 
     ```bash
     CSV_EXPORT_FORMULA_PROTECTION=true      # Prefix formula-looking CSV cells with an apostrophe (default: true)
@@ -623,7 +637,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **API note.** The `emailgateway.exportevents` API endpoint has applied this prefixing since it shipped and continues to do so **unconditionally**, ignoring this setting, so existing API callers see no change in either direction.
 
-40. **Send-Engine Proactive Allocation Guard Rails**
+41. **Send-Engine Proactive Allocation Guard Rails**
 
     ```bash
     SENDENGINE_PROACTIVE_FAILURE_BUDGET=25          # Consecutive worker failures before slot refills stop (default: 25)
@@ -641,7 +655,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **Operator signal.** A campaign that exhausts its budget is logged once at `ERROR` and reported as `proactive_blocked` in `data/logs/sendengine_worker_allocation.log`. Deliberate pauses and stops are **not** counted as failures.
 
-41. **Journey Action Failure Retries**
+42. **Journey Action Failure Retries**
 
     ```bash
     JOURNEY_ACTION_FAILURE_MAX_ATTEMPTS=6            # Attempts before an entry is dead-ended (default: 6)
@@ -659,7 +673,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     **Where failures are recorded.** On `oempro_journeys_action_executions` with `ExecutionStatus='Failed'`, plus `ErrorMessage`, `ErrorCode`, and for a pending retry `SnoozedUntil` and `SnoozeReason`. They also appear in the journey log.
 
-42. **Campaign Sender-Domain Auto Branding**
+43. **Campaign Sender-Domain Auto Branding**
 
     ```bash
     CAMPAIGN_SENDER_DOMAIN_AUTO_BRANDING=true       # Brand campaigns with a matching verified sender domain (default: true)
@@ -678,7 +692,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     **When to turn it off.** Set it to `false` if you run a shared-IP warmup pool that depends on platform-branded campaign headers. Enabling this moves reputation onto a colder customer domain.
 
 
-43. **Email Template Thumbnail Upload Limit**
+44. **Email Template Thumbnail Upload Limit**
 
     ```bash
     TEMPLATE_THUMBNAIL_MAX_FILESIZE=2097152    # Max decoded thumbnail size in bytes for email.template.thumbnail.upload (default: 2 MB)
@@ -687,7 +701,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     Maximum decoded size, in bytes, of a thumbnail accepted by the `email.template.thumbnail.upload` API command (gif, png or jpeg, the same allow-list as the admin "create email template" form). The image is stored base64-encoded in the `TemplateThumbnail` column of the templates table, so keep it small. Clamped to `[10240, 20971520]`; values outside that range fall back to the default. Introduced in v5.9.6 (issue #2787).
 
 
-44. **System Health Check Authentication**
+45. **System Health Check Authentication**
 
     ```bash
     SYSTEM_HEALTH_CHECK_AUTH_REQUIRED=true    # Strict credential check on system.health.check (default: false on upgrades, true in the shipped example)
@@ -711,7 +725,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     and enforce from day one. The command's registration and its success response are unchanged.
     Introduced in v5.9.6 (issue #2767).
 
-45. **Admin API IP Allow-List Enforcement**
+46. **Admin API IP Allow-List Enforcement**
 
     ```bash
     ADMIN_API_ENFORCE_ALLOWED_IP=true    # Apply the admin-area IP allow-list to admin-authenticated API calls (default: false on upgrades, true in the shipped example)
@@ -734,7 +748,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     Absent or empty is treated as off, so upgraded installs keep their current behaviour; fresh
     installs enforce from day one. Introduced in v5.9.6 (issue #2770).
 
-46. **Internal Service Signature**
+47. **Internal Service Signature**
 
     ```bash
     SYSTEM_INTERNAL_SIGNATURE_REQUIRED=true   # Require the X-Octeth-Signature header on the private /system/* services (default: false on upgrades, true in the shipped example)
@@ -777,7 +791,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     **Rotation.** Changing `OEMPRO_PASSWORD_SALT` or `ADMIN_API_KEY` changes the derived value on
     both sides at once, so no coordinated update is needed. Introduced in v5.9.6 (issue #2813).
 
-47. **New User Interface**
+48. **New User Interface**
 
     ::: tip
     This section is the exhaustive parameter list. For step-by-step guides on turning the
@@ -795,7 +809,34 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     UI_APP_KEY=                          # Laravel app key; leave EMPTY on a fresh install and the container generates one
     UI_LOG_LEVEL=error                   # debug, info, notice, warning, error, critical, alert, emergency
     UI_MYSQL_DATABASE=oempro_ui          # Its OWN database. MUST NOT equal MYSQL_DATABASE
+    UI_DEBUG_CONSOLE_ENABLED=false       # Who may open the API debug console (default: false)
     ```
+
+    `UI_DEBUG_CONSOLE_ENABLED` governs the interface's API debug console. When the console is
+    open, the full backend response of every API call made while rendering a page is written into
+    that page's HTML, which is what makes it useful for diagnosing a field-name mismatch between
+    the interface and the backend, and what makes it unsafe to leave open.
+
+    The console requires a **staff** session, and either `APP_ENV=local` or this flag. A customer
+    cannot switch it on, and neither can a staff member on a production install until an operator
+    sets this to `true`. Credential-shaped fields are removed from the response bodies it renders
+    whatever this is set to, so the flag decides **who may open the console**, not how much it
+    discloses. Turn it on only while investigating something on a staging install, and turn it off
+    afterwards.
+
+    A change takes effect on the next **start** of the interface's container, which reads
+    `.oempro_env` off the bind mount each time it boots. The key is not referenced by the
+    container's Compose definition, so a plain `up -d oempro_ui` sees no change to that service and
+    leaves the running container alone, silently keeping the old setting in force. Recreate it
+    explicitly:
+
+    ```bash
+    docker compose -f docker-compose.yml --env-file .oempro_env up -d --force-recreate oempro_ui
+    ```
+
+    `docker compose restart oempro_ui` has the same effect. Neither needs a rebuild: the flag is
+    read at start time, not baked into the image. The shipped example value matches the application
+    default, so an upgrade that adds this key does not change how your install behaves.
 
     With `UI_ENABLED=false` the container still starts and reports healthy but serves 404 for
     every path, and the reverse proxy is not given its routing rules, so `/user/` and `/ui/` fall
@@ -2679,6 +2720,37 @@ The Authorized IP Addresses feature allows you to restrict access to the Octeth 
 
 When you add IP addresses to this field, only visitors connecting from those IP addresses will be able to access the administrator login page and dashboard. Anyone connecting from other IP addresses will be blocked from accessing the admin area.
 
+::: warning Changed in v6.0.0: the list is now checked on every admin request
+Before v6.0.0 the list was consulted **only while the admin login page rendered**. A session that was already open, and the "remember me" cookie, kept working from any address, so a stolen session cookie stayed usable for the full session lifetime from anywhere.
+
+From v6.0.0 the list is checked on every authenticated admin request: every admin screen, every plugin admin screen, and before the "remember me" cookie can sign anybody in. An admin whose address is not on the list is signed out on their next request, even if they are signed in right now.
+
+A refused request has its admin session **destroyed**, not merely rejected, and is sent to the login page, which explains that the address is not allowed. Removing the restriction afterwards does not revive the old session; the admin signs in again. Refusals are written to the application log at ERROR level with the address that was refused, so a lockout can be diagnosed from `data/logs/`.
+:::
+
+**Requests from the server itself are exempt.** A request whose resolved client address is `127.0.0.1` or `::1` is always allowed through. That is the server talking to itself: the internal health check and the cron probes. Without the exemption, turning the list on would make `system.health.check` report a failure. This is not a bypass for an outside visitor, because a request that arrived over the network never resolves to loopback.
+
+::: danger Check TRUSTED_PROXIES first, or the list will match the wrong address
+The address compared against this list is the one Octeth resolved for the visitor. If you have put your own load balancer, reverse proxy or CDN in front of Octeth at an address that is not loopback, and you have not listed it in `TRUSTED_PROXIES` in `.oempro_env`, then Octeth records **that proxy's** address for every visitor. The list then compares the proxy, which either admits everybody or locks everybody out, and in both cases it is not doing what you asked.
+
+Confirm the address Octeth sees **before** you enable the restriction. It is shown in the admin footer and in the login and audit logs. If it is the same for every visitor, set `TRUSTED_PROXIES` (and `TRUST_CLOUDFLARE_CONNECTING_IP=true` if you are behind Cloudflare), restart the app containers, and confirm the footer shows a real visitor address. Only then fill in Authorized IP Addresses.
+:::
+
+**A proxy rule on the `/app/admin/` path does not restrict the admin area.** It is tempting to add an IP restriction at the reverse proxy on that path prefix instead. It does not work: Octeth's front controller takes the route from the path or from the query string, so the admin area answers at several URL shapes that all reach the same controllers.
+
+```
+/app/admin/
+/app/index.php?/admin/
+/app/index.php?/admin
+/app/index.php/admin/
+/app/?/admin/
+/app/index.php?//admin/
+```
+
+A rule matching `/app/admin/` covers the first one only. Authorized IP Addresses is enforced in the authentication check, after the route has been resolved, so it covers every shape. Treat the in-app list as the authoritative control and any proxy rule as an extra layer on top of it.
+
+**Related setting.** `ADMIN_API_ENFORCE_ALLOWED_IP` in `.oempro_env` applies the same list to admin-authenticated API calls through `api.php`. It is a separate switch and it has **no loopback exemption**, so an integration that calls `api.php` with an admin credential from inside the Docker network needs its address added to the list. The admin-area enforcement described here is not behind a switch: it applies whenever the list is non-empty.
+
 **To configure authorized IP addresses:**
 
 1. Enter one IP address per line in the **Authorized IP Addresses** text area
@@ -2752,6 +2824,21 @@ If you enter IP addresses and save the settings, you will immediately lose acces
 3. You've tested the IP addresses are correct
 
 **To find your current IP address:** Search "what is my IP" in Google, or the security page may display it for you. Write it down before making changes.
+
+**If you do lock yourself out**, either of these gets you back in.
+
+1. **Sign in from the server itself.** Loopback is exempt, so an admin session opened on the server, for example through an SSH tunnel to the application's own port, still works. Clear the field from Settings, Security.
+2. **Clear the setting in the database.** The value lives in the `ADMIN_ALLOWED_IP` column of the single `oempro_config` row, and an empty value means no restriction. That row is cached, so drop the cache entry afterwards or the application keeps serving the old value.
+
+   ```sql
+   UPDATE oempro_config SET ADMIN_ALLOWED_IP = '' WHERE ConfigID = 1;
+   ```
+
+   ```bash
+   docker exec oempro_redis redis-cli DEL system_config_1
+   ```
+
+**Check the log first.** From v6.0.0 the refusal is logged at ERROR level with the address that was refused, which is often the whole answer: it shows you either the address to add, or that `TRUSTED_PROXIES` is the real problem.
 :::
 
 ::: tip Testing IP Restrictions Safely

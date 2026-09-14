@@ -14,6 +14,8 @@ This document tracks the complete release history of Octeth, including new featu
 
 Release in progress. Scheduled for September 25th, 2026. Changelog will be updated upon release.
 
+v6.0.0 is a security release. It remediates the findings of a full audit of the API surface, and most of its changes are refusals of requests that were previously accepted. Read the [behavior changes page](/v6.0.0/api-reference/behavior-changes) before upgrading: an integration can break even though no successful call changes shape.
+
 ### New Features
 
 - (To be documented)
@@ -28,15 +30,53 @@ Release in progress. Scheduled for September 25th, 2026. Changelog will be updat
 
 ### Security Patches
 
-- (To be documented)
+- Removed an `eval()` in the template engine that was reachable from the public internet with no credential.
+- Restricted outbound HTTP to the `http` and `https` schemes, and added a destination check that refuses loopback, private, link-local and carrier-grade NAT addresses, on the subscriber import URL, the import status callback, both email gateway webhook endpoints and the journey webhook action.
+- Required a shared-secret header on the `internal.*` API command namespace, which was previously reachable with no credential and could write suppression entries affecting every account on the install.
+- Required a credential on `Subscriber.Unsubscribe`, which previously took the acting account from the request rather than from a credential, and scoped its install-wide suppression writes to admin callers.
+- Validated ids that reach SQL on `customfields.get`, `customfields.copy` and `media.folderdelete`, and validated user segment rules when they are saved.
+- Removed password hashes, auth tokens, two-factor secrets, API keys and the user group's shared relay credentials from the responses of `user.get`, `users.get`, `user.switch`, `user.login`, `user.current` and `admin.login`.
+- Enforced object ownership on journey action references and on the `list.update` behaviour columns, at both ends: refused at ingress and owner-scoped on every read of a stored id.
+- Removed the built-in PayPal Express Checkout gateway, whose callback endpoint authenticated nothing and would grant credits on an unverified request.
+- Validated the local MTA path before it is saved and before it is used to send, on both mail engines.
+- Scoped nine admin API commands to a restricted sub-admin's allowed user groups.
+- Replaced the credential random number generator, closed session fixation, narrowed the two-factor window, made two-factor codes single use, and gave user password-reset tokens a one-hour expiry.
+- Enforced the admin Authorized IP Addresses list on every admin request rather than only when the login page renders, and hardened the admin "remember me" cookie.
+- Denied web access to the `data/` subdirectories, which included application logs.
+- Restricted and redacted the new user interface's API debug console, rooted its generated URLs at `APP_URL`, and stopped it holding a plaintext password while a two-factor challenge is pending.
 
 ### Upgrade Notes
 
-- (To be documented)
+- **`internal.*` API commands now require the `X-Octeth-Signature` header.** No action is needed for a standard install: every caller shipped with Octeth sends it. If you built an integration that posts `Internal.Bounce.Register` or `Internal.S2SPostback.Register` directly to `api.php`, add the header before upgrading, or those calls will answer HTTP 401 and the bounces or conversions they carry will not be recorded. The value is shown on the admin Bounce Processing screen.
+
+- **`Subscriber.Unsubscribe` now requires a credential.** Customer opt-outs are unaffected: the unsubscribe links in your sent email, the RFC 8058 one-click endpoint Gmail and Yahoo use, and the embeddable unsubscribe form all go through `u.php` or `unsubscribe.php`, none of which changed. The only calls that stop working are API calls that passed no credential. Add a user `APIKey`. Two further narrowings apply to authenticated callers: a user may no longer pass another account's `ListID`, and `AddToGlobalSuppression=true` writes the install-wide suppression entry only for an admin credential, while still writing the account-scoped one for everybody.
+
+- **Password-reset links issued before the upgrade stop working.** The user reset token now carries a one-hour expiry and a signature, so its format changes. There is nothing to migrate; the user requests a new link. Expect a small number of reports in the first hour after upgrading.
+
+- **`USER_UPDATE_REQUIRE_CURRENT_PASSWORD` is the one setting whose shipped example value differs from the code default.** The code default is `false` so an upgrade keeps working, but an upgrade that does not already have the key picks up the example's `true` when environment files are merged. An integration that changes a user's own password through `user.update` without sending `CurrentPassword` will then receive `ErrorCode 9`. Either send the parameter or set the key to `false`.
+
+- **Authorized IP Addresses is now enforced on every admin request.** If you have filled in Settings, Security, Authorized IP Addresses, check it before upgrading. From v6.0.0 the list is checked on every admin screen and before the "remember me" cookie signs anybody in, not only when the login page renders, so an admin whose address is not on the list loses access on their next request even if they are signed in right now.
+
+  Two things to check first. **One:** if you run your own load balancer, reverse proxy or CDN in front of Octeth, make sure `TRUSTED_PROXIES` in `.oempro_env` lists it, otherwise Octeth sees the proxy's address for every visitor and the list matches the wrong thing. **Two:** if you restrict the admin area at your proxy on the `/app/admin/` path prefix, note that this does not cover the admin area, because the front controller also answers at `/app/index.php?/admin/` and four more shapes. The in-app list is the authoritative control.
+
+  If you do lock yourself out: loopback is exempt, so an admin session opened on the server itself still works, and otherwise clear the setting with `UPDATE oempro_config SET ADMIN_ALLOWED_IP = '' WHERE ConfigID = 1;` followed by `docker exec oempro_redis redis-cli DEL system_config_1`. The refusal is logged at ERROR level with the address that was refused.
+
+- **Admin "remember me" cookies issued before this release stop working**, so those admins sign in once more, and an admin with two-factor authentication enabled is no longer signed in by the cookie at all.
+
+- **The built-in PayPal Express Checkout gateway has been removed.** Check Settings, ESP Settings, Payment Gateway before upgrading. If *PayPal Express Checkout* is ticked there, your customers will no longer be able to buy credits after the upgrade until you configure the *Third party payment gateway* option on the same screen, or install a plugin that provides a gateway. If it is not ticked, this change does not affect you. `payment.php` and `payment_result.php` now return 404, so remove any IPN or notification URL still pointing at them in your PayPal account. Your stored PayPal settings are left in the database untouched and no migration drops them.
+
+- **If you use "Local MTA" as a send method, check the stored path** at Settings, Email Delivery and on every user group that overrides the send method. The path must now be absolute, contain no whitespace or arguments, name a file that exists and is executable, and have a conventional mail submission binary name. A path stored before this release that does not qualify is refused rather than run, so mail queued through that method fails until it is corrected.
+
+- **Check that `APP_URL` is the hostname your users actually reach the install on**, and that it is an absolute `scheme://host` URL. The new user interface now roots its links, redirects and asset URLs there instead of following the request, so a stale value renders the interface unstyled rather than merely mailing the wrong link. If the value has no scheme, the password-reset and registration flows refuse to send rather than mail a link a client can steer.
+
+- **Everyone signed in to the new user interface is signed out once**, because its session payloads are now encrypted and an existing unencrypted session no longer decrypts. The legacy areas are unaffected. The interface's entrypoint is copied into its image, so this arrives with `docker compose build oempro_ui`, not with a recreate alone.
+
+- **Any install that has run the new user interface should clear its session store once after upgrading.** Until this release, a customer who started a two-factor sign-in and did not finish it left their password in that store in clear text for as long as the session lived. Flushing the interface's Redis session database signs users out of the new interface only and touches nothing else. A purge does not rewrite copies already taken, so treat Redis snapshots and any backup made while the interface was running as containing credentials, and let them expire under your normal retention policy.
 
 ### Deprecations
 
-None
+- The `PasswordEncrypted` parameter on `user.login` is removed. It was undocumented and had one caller inside the product. A request that still sends it is ignored rather than refused, so only an integration that sent a stored password hash in place of a password stops working.
+- The `disable2fa` and `disable2fatoken` parameters on `user.login` and `admin.login` are stripped from any request arriving over HTTP. They were never documented and were only ever meant for Octeth's own in-process callers.
 
 ## v5.9.6
 

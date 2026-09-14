@@ -6,6 +6,22 @@ layout: doc
 
 Admin-level endpoints for system administrators to manage and monitor campaigns, processes, and other administrative functions.
 
+::: danger Behavior changes in v6.0.0
+**`admin.login` no longer returns credential fields.** `AdminInfo.Password`, `.AuthToken`, `.2FA_SecretKey` and `.2FA_RecoveryKey` are gone. `AdminInfo` now carries the same field set `admin.get` returns, plus a new boolean `APIKeyIssued` so a client can render the regenerate and revoke state without holding the key.
+
+Two shape consequences of using that shared projection: **`AdminInfo.AdminID` is now a JSON number** where it used to be a quoted string, and `AdminInfo.Options` is always an object or array rather than sometimes a JSON string. Both match what `admin.get`, `admin.subadmin.get` and `admin.subadmins.get` have always returned, so a client that handles those handles this. `AdminID` is the only field whose type changes anywhere in this release.
+
+**Restricted sub-admin accounts are now scoped to their allowed user groups.** Nine commands enforced the sub-admin privilege list but never the allowed user groups, so a sub-admin limited to one group could read, modify, credit, impersonate and delete accounts in every other group. `User.Get`, `User.Create`, `User.Update`, `User.AddCredits`, `User.Switch`, `Users.Delete`, `User.PaymentPeriods` and `User.PaymentPeriods.Update` now refuse a target outside the caller's groups with `ErrorCode 5003`. `Users.Get` **filters** its listing instead, `TotalUsers` included, except for the blocked sender domains filter which is refused outright because it builds from a join that cannot carry a group restriction.
+
+`Users.Delete` is **all or nothing**: if any id in the list is outside the caller's groups, nothing is deleted, because the response has no field to report which ids were skipped.
+
+**Nothing changes for the master `ADMIN_API_KEY`**, which resolves to the unrestricted master administrator, for any admin account without the restriction flag, or for calls made under user authentication. `ErrorCode 5003` can only come from a restricted sub-admin.
+
+**`Disable2FA` and `Disable2FAToken` on `admin.login` are stripped from any request arriving over HTTP.** They now work only for Octeth's own in-process callers.
+
+See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for the full list.
+:::
+
 ## Get Campaign Batches
 
 <Badge type="info" text="POST" /> `/api/v1/admin.campaign.batches`

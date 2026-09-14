@@ -1088,7 +1088,9 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
-The `WebhookURL` is validated to prevent SSRF attacks: the scheme must be `http` or `https`, and the host cannot be `localhost`, `127.0.0.1`, `::1`, or end in `.local`. These checks live in the API itself (since #1999) so direct API callers can't bypass them by skipping the legacy UI flow.
+The `WebhookURL` is validated to prevent SSRF attacks: the scheme must be `http` or `https`, and the host must resolve to a publicly routable address. These checks live in the API itself (since #1999) so direct API callers can't bypass them by skipping the legacy UI flow.
+
+**Changed in v6.0.0:** the check used to compare the host against four literal strings (`localhost`, `127.0.0.1`, `::1` and any host ending `.local`). It now resolves the host and refuses any address that is not publicly routable, which additionally covers every RFC 1918 address, the link-local range, carrier-grade NAT, IPv6 unique-local addresses, the loopback shorthands such as `127.1` and `2130706433`, and any DNS name pointing at an internal address. An operator registering a webhook against a host that only resolves on their internal network must expose it on a publicly resolvable name. There is no setting to switch this off.
 
 **Request Body Parameters:**
 
@@ -1099,7 +1101,7 @@ The `WebhookURL` is validated to prevent SSRF attacks: the scheme must be `http`
 | APIKey     | String  | No       | API key for authentication                                                                                                           |
 | DomainID   | Integer | Yes      | Sender domain ID                                                                                                                     |
 | Event      | String  | Yes      | Event type. Possible values: `delivery`, `bounce`, `open`, `click`, `unsubscribe`, `complaint`                                       |
-| WebhookURL | String  | Yes      | Webhook URL to receive event notifications. Must be an `http`/`https` URL whose host is not `localhost` / `127.0.0.1` / `::1` / `*.local` |
+| WebhookURL | String  | Yes      | Webhook URL to receive event notifications. Must be an `http`/`https` URL whose host resolves to a publicly routable address (v6.0.0; previously a four-literal host check) |
 
 ::: code-group
 
@@ -1139,7 +1141,7 @@ curl -X POST https://example.com/api.php \
 4: Domain not found or access denied
 5: Missing required parameter (WebhookURL)
 6: WebhookURL is not a valid HTTP or HTTPS URL (e.g. ftp:// or malformed)
-7: WebhookURL host is forbidden (localhost, 127.0.0.1, ::1, or *.local)
+7: WebhookURL host is forbidden. v6.0.0: the host resolves to a loopback, private, link-local, carrier-grade NAT or IPv6 unique-local address, or cannot be resolved at all
 ```
 
 :::
@@ -1274,13 +1276,13 @@ curl -X POST https://example.com/api.php \
 
 **Request Body Parameters:**
 
-Like the private [`emailgateway.addwebhook`](#create-webhook) endpoint, the public endpoint validates `WebhookURL` to prevent SSRF: the scheme must be `http` or `https`, and the host cannot be `localhost`, `127.0.0.1`, `::1`, or end in `.local`. (Since v5.9.3 / #2349 — the public endpoint previously accepted any well-formed URL; it now enforces the same restrictions as the private endpoint.)
+Like the private [`emailgateway.addwebhook`](#create-webhook) endpoint, the public endpoint validates `WebhookURL` to prevent SSRF: the scheme must be `http` or `https`, and the host must resolve to a publicly routable address (v6.0.0; previously a four-literal host check). (Since v5.9.3 and #2349: the public endpoint previously accepted any well-formed URL, and it now enforces the same restrictions as the private endpoint.)
 
 | Parameter     | Type   | Required | Description                                                    |
 |---------------|--------|----------|----------------------------------------------------------------|
 | SenderAPIKey  | String | Yes      | API key for the sender domain (Bearer token)                   |
 | Event         | String | Yes      | Event type: delivered, bounced, opened, clicked, unsubscribed, complained |
-| WebhookURL    | String | Yes      | Webhook URL to receive event notifications. Must be an `http`/`https` URL whose host is not `localhost` / `127.0.0.1` / `::1` / `*.local` |
+| WebhookURL    | String | Yes      | Webhook URL to receive event notifications. Must be an `http`/`https` URL whose host resolves to a publicly routable address (v6.0.0; previously a four-literal host check) |
 
 ::: code-group
 

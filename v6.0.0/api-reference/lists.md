@@ -313,7 +313,17 @@ curl -X POST https://example.com/api.php \
 20: ClickBank secret key encryption failed
 21: ClickBank secret key must be exactly 8 characters
 22: ClickBank transaction-type action must be one of: subscribe, unsubscribe, ignore
+23: Invalid subscriber list id for <FieldName> (v6.0.0)
+24: Invalid email id for <FieldName> (v6.0.0)
 ```
+
+::: danger Behavior change (v6.0.0): the behaviour columns are validated
+`OptInSubscribeTo`, `OptInUnsubscribeFrom`, `OptOutSubscribeTo` and `OptOutUnsubscribeFrom` used to accept a list id belonging to another account and store it, and `OptInConfirmationEmailID` used to accept another account's email id. The stored id was then dereferenced with no owner filter, and the subscribe path is reachable from the unauthenticated `subscriber.subscribe`, so a foreign list id could be used to inject addresses into another account's list.
+
+All five are now validated against the caller before the update runs, so a refused call leaves every column unchanged. `ErrorCode 23` covers the four list ids and `ErrorCode 24` covers the confirmation email id. Both are also returned when the value is present but is not a digits-only id.
+
+These five columns are integers, so the value that is validated is now also the value that is stored: the endpoint writes the canonical integer rather than the raw request string. `0` and an empty string still clear the field, which is the documented way to turn a behaviour off, and an id the caller owns is stored exactly as before.
+:::
 
 :::
 

@@ -6,6 +6,16 @@ layout: doc
 
 User management endpoints for creating, authenticating, and managing user accounts and user groups.
 
+::: danger Credential fields removed in v6.0.0
+`user.get`, `users.get`, `user.switch`, `user.login` and `user.current` no longer return the account's password hash, `AuthToken`, two-factor secret or recovery key, `APIKey` or `PreviewMyEmailAPIKey`. On `user.get` and `user.switch` the `GroupInformation` block also no longer carries the user group's `SendMethod*` relay credentials, its `Payment*` values, or the `DeliveryServerInformation` block including each server's `ConnectionParams`.
+
+Nothing else about these responses changed: the same keys, the same names, the same nesting, minus those fields. The group relay values are **platform** credentials shared by every account in the group, which is why they are the most serious item.
+
+Replacements: read a delivery server through `deliveryserver.get`, which returns a `HasSMTPPassword` boolean instead of the password, and read group configuration through the user group endpoints under an admin credential. For two-factor enrolment, `user.current` still returns `MFA_SecretKey` and `MFA_QRCode` while two-factor authentication is off, and `MFA_RecoveryCode` while it is on.
+
+See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for the full table and the remediation steps if you believe these responses were captured.
+:::
+
 ## Create a User
 
 <Badge type="info" text="POST" /> `/api/v1/user.create`
@@ -123,7 +133,6 @@ curl -X POST https://example.com/api.php \
 | APIKey    | String | Conditional | API key for authentication (alternative to username/password) |
 | Username | String | Conditional | Username or email address (required if not using APIKey) |
 | Password | String | Conditional | User's password (required if not using APIKey) |
-| PasswordEncrypted | Boolean | No | Set to true if password is already MD5 hashed |
 | TFACode | String | Conditional | Two-factor authentication code (required if 2FA is enabled) |
 | TFARecoveryCode | String | No | Two-factor authentication recovery code |
 | Disable2FA | Boolean | No | Skip 2FA verification for this login. Honored **only** when `Disable2FAToken` is also supplied and valid (see note below). |
@@ -137,6 +146,16 @@ Disable2FAToken = HMAC_SHA256("user.login.disable2fa", SCRTY_SALT)   // lowercas
 ```
 
 `SCRTY_SALT` is a server-side secret from `.oempro_env`, so only a trusted integration that has access to it (for example a custom SSO bridge running on the same host) can compute the token; an ordinary API caller cannot forge it. If `SCRTY_SALT` is empty the token can never validate and `Disable2FA` is ignored. When the token is absent or invalid, the request falls through to normal 2FA handling: supply `TFACode` (or `TFARecoveryCode`). Callers authenticating with `APIKey` are unaffected.
+:::
+
+::: danger Behavior change (v6.0.0)
+**`PasswordEncrypted` is removed.** While it was truthy, `user.login` compared the supplied `Password` verbatim against the stored password hash instead of salting and hashing it first, which made the hash a working credential in its own right. It had no flag, no privilege check and no restriction to internal callers, and it was undocumented in every earlier version of this reference.
+
+Send the user's real password with the parameter omitted. A request that still sends it is **ignored, not rejected**, so an integration that sent it alongside a real password keeps working; only one that sent a hash stops working, and it answers the existing `ErrorCode 3` exactly as a wrong password always did.
+
+If your integration only ever held the hash, use a per-user API key from the user's API Keys screen, `user.switch` under admin authentication, or SSO.
+
+**`Disable2FA` and `Disable2FAToken` are stripped from any request arriving over HTTP.** They now work only for Octeth's own in-process callers, which is what they were always for. An external caller that sends them gets the ordinary two-factor challenge.
 :::
 
 ::: code-group
@@ -456,6 +475,7 @@ curl -X POST https://example.com/api.php \
 | EmailAddress | String | No | New email address |
 | Username | String | No | New username |
 | Password | String | No | New password (will be hashed) |
+| CurrentPassword | String | Conditional | The account's current password. Always verified when supplied (`ErrorCode 10` when wrong). Required alongside `Password` when `USER_UPDATE_REQUIRE_CURRENT_PASSWORD` is on and the caller is authenticated as the user, otherwise `ErrorCode 9`. An admin-authenticated caller is never asked for it. Added in v6.0.0 |
 | FirstName | String | No | First name |
 | LastName | String | No | Last name |
 | CompanyName | String | No | Company name |
@@ -521,6 +541,9 @@ curl -X POST https://example.com/api.php \
 4: Invalid 2FA code
 5: User not found
 6: Email address or username already exists
+9: CurrentPassword is required to change the password (v6.0.0)
+10: CurrentPassword is incorrect (v6.0.0)
+11: Password must be a string (v6.0.0)
 ```
 
 :::

@@ -74,8 +74,21 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Email sending test failed (check EmailSettingsErrorMessage for details)
 2: Invalid enum value (SendMethod, SendMethodSMTPSecure, SendMethodSMTPAuth, or MailEngine)
+3: SendMethodLocalMTAPath is not a valid local MTA path (v6.0.0, LocalMTA only)
 NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 ```
+
+::: danger Behavior change (v6.0.0): the local MTA path is validated
+The path that names the local mail submission binary was previously accepted verbatim and handed to the operating system, so a value containing a space was treated as a command with arguments rather than as a single path.
+
+A valid path is now absolute, contains no whitespace, control characters or shell metacharacters, has no relative or empty segment, names a file that exists on the server and is executable by the web server user, and has a file name containing one of `sendmail`, `qmail`, `smtp`, `exim`, `postfix`, `mta` or `mail`. So `sendmail`, `sendmail.postfix`, `qmail-inject`, `ssmtp`, `msmtp`, `exim4` and `mini_sendmail` all qualify.
+
+`settings.emailsendingtest` **sends** rather than saves, so when `SendMethod` is `LocalMTA` it needs a real executable path and an empty one is refused with `ErrorCode 3`, like any other value that cannot be run. The check applies only when `SendMethod` is `LocalMTA`; a test over any other method ignores the field. Sending with an empty local MTA path was never possible, and that has not changed.
+
+The same rule applies when the path is **saved**, on `settings.update` (`ErrorCode 22`) and on `usergroup.create`, `usergroup.update` and `usergroup.patch` (`ErrorCode 35`), where an empty value stays valid because it is the shipped default and the admin screens post the field on every save whatever the send method.
+
+Sending is also checked at the point of use on both mail engines, so a path stored before this release is refused rather than run: the message is not sent, the failure is reported to whatever asked for the send, and the reason is logged once per distinct path.
+:::
 
 :::
 
@@ -351,6 +364,7 @@ curl -X POST https://example.com/api.php \
 12: SeedList contains an invalid email address (see InvalidEntries)
 13: A value is the redaction marker ***REDACTED*** (omit the field to keep the stored value)
 14: ListFreshnessThresholds is not an object
+22: SEND_METHOD_LOCALMTA_PATH is not a valid local MTA path (v6.0.0; an empty value is accepted)
 15: FailedWebhookHandlerSettings is invalid (see ErrorText)
 16: LimitUtilizationWebhookSettings is invalid, or the webhook is Enabled with no NotifyTransitions flag set
 17: Stripo rejected the plugin id / secret key pair
@@ -361,6 +375,12 @@ curl -X POST https://example.com/api.php \
 NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 ```
 
+:::
+
+::: warning Behavior change (v6.0.0): the PayPal Express fields are no longer accepted
+`settings.update` no longer accepts `PAYPALEXPRESSSTATUS`, `PAYPALEXPRESSBUSINESSNAME`, `PAYPALEXPRESSPURCHASEDESCRIPTION` or `PAYPALEXPRESSCURRENCY`, because the built-in PayPal Express Checkout gateway has been removed. Sending one is **ignored rather than refused**, exactly as for any other unrecognised field, so an existing integration does not start returning errors. It simply no longer changes anything.
+
+`settings.get` and `system.getsettings` still return those values, because the columns remain on the configuration table and no migration drops them. They are historical data and nothing in the product reads them. See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for what to use instead.
 :::
 
 ## Get Delivery Routes
