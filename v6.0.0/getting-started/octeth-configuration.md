@@ -430,7 +430,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 33. **Bounce Webhook Authentication**
 
     ```bash
-    BOUNCE_WEBHOOK_AUTH_ENABLED=false   # Require a signature header on /system/bounce_webhook (opt-in; off by default on every install)
+    BOUNCE_WEBHOOK_AUTH_ENABLED=true    # Require a signature header on /system/bounce_webhook (fresh installs enforce; upgrades keep their existing value)
     ```
 
     `https://{host}/system/bounce_webhook` is internet-exposed by design — PMTA/Logstash/fluentd senders POST bounce events to it from external mail servers — and was historically **unauthenticated**, so anyone on the internet could forge hard bounces for arbitrary recipient addresses and corrupt bounce reporting.
@@ -443,7 +443,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     where `<secret>` is derived deterministically as `sha256(OEMPRO_PASSWORD_SALT + ADMIN_API_KEY + OEMPRO_PASSWORD_SALT)` — the same derivation pattern as `CADDY_DOMAIN_VERIFY_CODE`, so no new secret is stored. The admin **Bounce Processing** page displays the current secret and a ready-to-copy sender configuration (Logstash `http` output) that already embeds the header. Both the `type=pmta` and `type=fluentd` processing paths are gated; a missing or invalid signature returns **HTTP 401** and nothing is processed (no bounce is registered, no stats row is written).
 
-    - **Opt-in everywhere:** this is **off by default on every installation**, fresh or upgraded. Both the code default and the shipped `_dockerfiles/examples/.oempro_env.example` are `false`, and an absent or empty value is also treated as OFF. Turn it on deliberately, and only in the safe order below.
+    - **Fresh installations enforce; upgrades are unchanged.** From v6.0.0 the shipped `_dockerfiles/examples/.oempro_env.example` is `true`, so a new installation is authenticated from day one, when no sender exists yet to break. The **code** default stays `false`, and an absent or empty value is treated as OFF, so an upgrade keeps whatever you already have: the upgrade's environment merge only appends keys that are absent, and this key has shipped since v5.9.3. That split is deliberate. Flipping the code default would make every bounce POST answer 401 on installations whose sender has not been reconfigured, and that failure is visible only at the sender, so bounce processing would stop quietly.
     - **Enable it in this order:** first configure your sender to send the `X-Octeth-Signature` header (the admin **Bounce Processing** page shows the current secret and a ready-to-copy Logstash `http` output sample that already embeds it), *then* set this to `true` and restart. Reversing that order means every bounce POST is rejected with HTTP 401 in the interval — and because the failure happens at the sender, Octeth surfaces no error of its own. Bounce data drives suppression and deliverability, so the loss is quiet and compounding.
     - **Trade-off:** a static header is *not* a per-request HMAC. It does **not** stop replay of a captured valid POST, but — unlike a secret placed in the URL — it is **not written to access logs or referrers**, and it closes the unauthenticated-forgery vector entirely.
     - **Rotation:** because the secret derives from `OEMPRO_PASSWORD_SALT` and `ADMIN_API_KEY`, rotating either value changes the secret and requires updating every configured sender with the new header.

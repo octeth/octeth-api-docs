@@ -45,6 +45,7 @@ v6.0.0 is a security release. It remediates the findings of a full audit of the 
 - Denied web access to the `data/` subdirectories, which included application logs.
 - Restricted and redacted the new user interface's API debug console, rooted its generated URLs at `APP_URL`, and stopped it holding a plaintext password while a two-factor challenge is pending.
 - Fixed client address resolution, which on a standard install recorded the address of Octeth's own front-end container instead of the visitor, for every request, on every install. The admin Authorized IP Addresses list, per-IP rate limits, geographic reporting and the subscription, opt-in and unsubscription IP columns were all affected.
+- Authenticated the public bounce webhook on fresh installations. The endpoint could previously be posted to by anyone, and it reaches the suppression list that blocks delivery for every account on the installation. Existing installations keep the setting they already have.
 - Signed the conversion identifier used by the server-to-server postback endpoint, which carried no key at all, so a conversion and a monetary amount of any size could be recorded against any account's campaigns by anyone on the internet. Repeated postbacks no longer accumulate revenue, the amount is bounded and checked, the endpoint is rate limited, and the address that submitted each conversion is now recorded.
 
 ### Upgrade Notes
@@ -79,6 +80,10 @@ v6.0.0 is a security release. It remediates the findings of a full audit of the 
   **And one thing that cannot be repaired.** The `SubscriptionIP`, `OptInIP` and `UnsubscriptionIP` columns exist to evidence that a named person subscribed from a named address, and every value recorded before this upgrade holds a container address. The visitor's real address was never written anywhere, so there is nothing to recover it from and no migration can fix it. Records created from this upgrade onward carry the real address. If you are asked to produce consent evidence for a subscriber acquired before then, the IP column will not provide it.
 
   If you changed the bundled network's subnet in `docker-compose.yml`, set `INTERNAL_PROXY_NETWORKS` in `.oempro_env` to match, otherwise this fix does not apply to your install and the behaviour above stays as it was.
+
+- **Fresh installations now authenticate the bounce webhook. Your upgrade does not.** `BOUNCE_WEBHOOK_AUTH_ENABLED` ships `true` in the example environment file from v6.0.0, so a new installation requires the `X-Octeth-Signature` header on `/system/bounce_webhook` from day one. An upgrade adds only settings your `.oempro_env` does not already have, and this one has been there since v5.9.3, so **your value is kept and your bounce processing is unaffected**. Nothing to do.
+
+  Turning it on is worth doing, because the endpoint is reachable from the internet and reaches the suppression list that blocks delivery for every account on your installation, so anyone who finds it can forge hard bounces for addresses you are trying to mail. Do it in this order: configure your sender (PMTA, Logstash or fluentd) with the header first, copying the configuration from the admin Bounce Processing screen, which already includes it, then set the value to `true` and restart. Reversing that order means every bounce POST is refused in the interval, and that failure shows up only on the sender's side, so bounce processing stops without Octeth reporting anything.
 
 - **Conversion postbacks are now signed, and existing conversion data cannot be assumed genuine.** This affects you only if you use server-to-server conversion tracking, which is off unless you have enabled it on a campaign.
 
