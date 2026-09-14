@@ -97,6 +97,8 @@ curl -X GET "https://example.com/api.php?Command=system.health.check&adminapikey
     "Vector": "OK",
     "WebsiteEventRouting": "OK",
     "Haproxy": "OK",
+    "ClientIPResolution": "OK",
+    "ListUnsubscribeOneClick": "OK",
     "Cron": "OK",
     "Supervisor": "OK",
     "SendEngine": "OK",
@@ -120,6 +122,8 @@ curl -X GET "https://example.com/api.php?Command=system.health.check&adminapikey
     "Vector": "Timeout after 3 seconds",
     "WebsiteEventRouting": "HAProxy did not route /hello/message to backend_vector (HTTP 503; \"X-Server: oempro_vector\" response header missing). Check that backend_vector has an available server.",
     "Haproxy": "OK",
+    "ClientIPResolution": "WARNING: this request carried X-Forwarded-For (\"203.0.113.7\") but the client address resolved to 192.168.99.100, which is inside INTERNAL_PROXY_NETWORKS. The forwarded chain is being discarded ...",
+    "ListUnsubscribeOneClick": "WARNING: APP_URL is \"http://mail.example.com/\", which is not https, so every List-Unsubscribe URI this install emits is an http: URI. RFC 8058 requires https for one-click unsubscribe, so the List-Unsubscribe-Post header is being SUPPRESSED on all send paths ...",
     "Cron": "App container cron not executing (last run: 120 seconds ago)",
     "Supervisor": "# campaign_delivery_worker: STOPPED # journey_worker: FATAL ",
     "SendEngine": "No send engine containers running",
@@ -166,7 +170,10 @@ The endpoint performs comprehensive health checks on the following components:
 - **SystemContainer**: Laravel backend container health (`/system/ping`)
 - **Vector**: Log aggregation service health (probed directly)
 - **WebsiteEventRouting** <Badge type="tip" text="New in v5.9.3" />: The full load-balancer → Vector path used by the public website-event tracker
+
 - **Haproxy**: Load balancer connectivity
+- **ClientIPResolution** <Badge type="tip" text="New in v6.0.0" />: Whether the real visitor IP is being resolved, or a forwarded chain is being discarded and a container address recorded instead
+- **ListUnsubscribeOneClick** <Badge type="tip" text="New in v6.0.0" />: Whether this install can advertise RFC 8058 one-click unsubscribe, which requires an https `APP_URL`
 - **Cron**: App and system container cron job execution (heartbeat checks)
 - **Supervisor**: Process manager status for all managed processes
 - **SendEngine**: Send engine container discovery and supervisor process status
@@ -183,6 +190,39 @@ The endpoint performs comprehensive health checks on the following components:
 - The Cron check monitors heartbeat files updated every minute; considers cron failed if > 90 seconds since last update
 - The Supervisor check reports processes not in `RUNNING` state with format: `# process_name: STATE`
 - The SendEngine check discovers containers dynamically using Docker Compose project prefix detection
+
+### The `ClientIPResolution` check
+
+<Badge type="tip" text="New in v6.0.0" />
+
+This check reports whether the install is recording the real visitor IP, or a container address.
+
+Forwarded headers are only honoured when the request's immediate peer is trusted, which is loopback, the bundled composition's own network (`INTERNAL_PROXY_NETWORKS`), or a proxy you listed in `TRUSTED_PROXIES`. If you put your own load balancer, reverse proxy or CDN in front of Octeth at an address that is not in those sets, the `X-Forwarded-For` chain is discarded and that proxy's address is recorded as the visitor for every request.
+
+The symptoms are wide and none of them look like an IP problem:
+
+- the admin **Authorized IP Addresses** allow-list compares the wrong address, so it either locks everyone out or admits everyone;
+- per-IP rate limits treat all traffic as a single visitor;
+- geo attribution resolves every open and click to one place;
+- `SubscriptionIP`, `OptInIP` and `UnsubscriptionIP`, which exist as the consent audit trail, hold a container address. That one is **not recoverable**, because the real address was never stored.
+
+The check fires only on the combination that actually proves the fault: a forwarded chain arrived **and** the address resolution still settled on an internal one. A caller with no forwarded chain is a direct internal caller, which says nothing either way and is reported as `OK`, so a health check run from inside the install (a monitor container, the CLI, a cron) does not produce a false warning.
+
+If it warns, add your proxy's address or subnet to `TRUSTED_PROXIES`, or set `TRUST_CLOUDFLARE_CONNECTING_IP=true` if you are behind Cloudflare. If you changed the compose network, correct `INTERNAL_PROXY_NETWORKS` instead.
+
+### The `ListUnsubscribeOneClick` check
+
+<Badge type="tip" text="New in v6.0.0" />
+
+This check reports whether the install is able to advertise RFC 8058 one-click unsubscribe, which Gmail and Yahoo require of bulk senders.
+
+Every send path builds its `List-Unsubscribe` URI from `APP_URL`, replacing only the host with the tracking domain, so the **scheme is inherited from `APP_URL`**. RFC 8058 requires that URI to be https. On an install whose `APP_URL` starts with `http://`, Octeth therefore suppresses the `List-Unsubscribe-Post` header rather than advertise one-click against a URI that does not meet the specification, because a receiver that notices may distrust the header pair entirely.
+
+That suppression is invisible from outside the install: mail still delivers, recipients can still unsubscribe through the `List-Unsubscribe` URI, and nothing reports an error. This check is the only place an operator finds out it is happening. It returns `OK` when `APP_URL` is https, and a warning naming the current value otherwise.
+
+It reads configuration rather than the current request, so it reports the same result on every scrape.
+
+Note the tracking domain inherits the same scheme and takes its certificate from Caddy on-demand TLS. If issuance fails for an individual domain, the advertised URI is an https URI whose TLS handshake fails, which mailbox providers treat worse than an http one. That cannot be detected at send time and is not covered by this check, so confirm a new tracking domain resolves and serves https before sending volume through it.
 
 ### The `WebsiteEventRouting` check
 
