@@ -123,7 +123,7 @@ curl -X GET "https://example.com/api.php?Command=system.health.check&adminapikey
     "WebsiteEventRouting": "HAProxy did not route /hello/message to backend_vector (HTTP 503; \"X-Server: oempro_vector\" response header missing). Check that backend_vector has an available server.",
     "Haproxy": "OK",
     "ClientIPResolution": "WARNING: this request carried X-Forwarded-For (\"203.0.113.7\") but the client address resolved to 192.168.99.100, which is inside INTERNAL_PROXY_NETWORKS. The forwarded chain is being discarded ...",
-    "ListUnsubscribeOneClick": "WARNING: APP_URL is \"http://mail.example.com/\", which is not https, so every List-Unsubscribe URI this install emits is an http: URI. RFC 8058 requires https for one-click unsubscribe, so the List-Unsubscribe-Post header is being SUPPRESSED on all send paths ...",
+    "ListUnsubscribeOneClick": "WARNING: this install is not advertising RFC 8058 one-click unsubscribe on every path. APP_URL is \"http://mail.example.com/\", which is not https, so campaign and autoresponder messages emit an http: List-Unsubscribe URI and their List-Unsubscribe-Post header is SUPPRESSED ...",
     "Cron": "App container cron not executing (last run: 120 seconds ago)",
     "Supervisor": "# campaign_delivery_worker: STOPPED # journey_worker: FATAL ",
     "SendEngine": "No send engine containers running",
@@ -173,7 +173,7 @@ The endpoint performs comprehensive health checks on the following components:
 
 - **Haproxy**: Load balancer connectivity
 - **ClientIPResolution** <Badge type="tip" text="New in v6.0.0" />: Whether the real visitor IP is being resolved, or a forwarded chain is being discarded and a container address recorded instead
-- **ListUnsubscribeOneClick** <Badge type="tip" text="New in v6.0.0" />: Whether this install can advertise RFC 8058 one-click unsubscribe, which requires an https `APP_URL`
+- **ListUnsubscribeOneClick** <Badge type="tip" text="New in v6.0.0" />: Whether this install can advertise RFC 8058 one-click unsubscribe, which requires https from both `APP_URL` and `TRACKING_URL_PROTOCOL`
 - **Cron**: App and system container cron job execution (heartbeat checks)
 - **Supervisor**: Process manager status for all managed processes
 - **SendEngine**: Send engine container discovery and supervisor process status
@@ -216,13 +216,22 @@ If it warns, add your proxy's address or subnet to `TRUSTED_PROXIES`, or set `TR
 
 This check reports whether the install is able to advertise RFC 8058 one-click unsubscribe, which Gmail and Yahoo require of bulk senders.
 
-Every send path builds its `List-Unsubscribe` URI from `APP_URL`, replacing only the host with the tracking domain, so the **scheme is inherited from `APP_URL`**. RFC 8058 requires that URI to be https. On an install whose `APP_URL` starts with `http://`, Octeth therefore suppresses the `List-Unsubscribe-Post` header rather than advertise one-click against a URI that does not meet the specification, because a receiver that notices may distrust the header pair entirely.
+RFC 8058 requires the `List-Unsubscribe` URI paired with `List-Unsubscribe-Post` to be https. Where that URI's scheme comes from depends on the send path, and **two independent settings decide it**:
 
-That suppression is invisible from outside the install: mail still delivers, recipients can still unsubscribe through the `List-Unsubscribe` URI, and nothing reports an error. This check is the only place an operator finds out it is happening. It returns `OK` when `APP_URL` is https, and a warning naming the current value otherwise.
+| Setting | Governs |
+|---|---|
+| `APP_URL` | Campaign and autoresponder messages, which build the URI from `APP_URL` and replace only the host with the tracking domain |
+| `TRACKING_URL_PROTOCOL` | Email Gateway and opt-in confirmation messages sent on a sender domain's own tracking host, which do not consult `APP_URL` at all |
+
+Wherever the resulting URI would be `http:`, Octeth suppresses the `List-Unsubscribe-Post` header **on that path** rather than advertise one-click against a URI that does not meet the specification, because a receiver that notices may distrust the header pair entirely.
+
+So an https `APP_URL` on its own does not guarantee one-click everywhere. The check inspects both settings and names whichever is not https, along with the paths that setting governs, so a mismatch between the two cannot hide.
+
+That suppression is invisible from outside the install: mail still delivers, recipients can still unsubscribe through the `List-Unsubscribe` URI, and nothing reports an error. This check is the only place an operator finds out it is happening.
 
 It reads configuration rather than the current request, so it reports the same result on every scrape.
 
-Note the tracking domain inherits the same scheme and takes its certificate from Caddy on-demand TLS. If issuance fails for an individual domain, the advertised URI is an https URI whose TLS handshake fails, which mailbox providers treat worse than an http one. That cannot be detected at send time and is not covered by this check, so confirm a new tracking domain resolves and serves https before sending volume through it.
+Note a custom tracking domain takes its certificate from Caddy on-demand TLS. If issuance fails for an individual domain, the advertised URI is an https URI whose TLS handshake fails, which mailbox providers treat worse than an http one. That cannot be detected at send time and is not covered by this check, so confirm a new tracking domain resolves and serves https before sending volume through it. Out-of-band detection is tracked in issue #2972.
 
 ### The `WebsiteEventRouting` check
 
