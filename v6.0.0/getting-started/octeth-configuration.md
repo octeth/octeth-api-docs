@@ -464,6 +464,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 36. **Trusted Proxies / Client IP Resolution**
 
     ```bash
+    INTERNAL_PROXY_NETWORKS=192.168.99.0/24 # the bundled front end's own container network; change only if you changed the compose subnet
     TRUSTED_PROXIES=                       # extra trusted reverse proxies (IPv4 / CIDR, comma-separated); loopback is always trusted
     TRUST_CLOUDFLARE_CONNECTING_IP=false   # set true only when the app domain is served through Cloudflare (proxied DNS)
     ```
@@ -474,7 +475,11 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     The resolver now honours forwarded headers **only when the request's immediate peer is a trusted proxy**:
 
-    - **`TRUSTED_PROXIES`** — loopback (`127.0.0.1` / `::1`) is always trusted (the internal proxy). Add any *additional* reverse proxies in front of the app here, as comma-separated IPv4 addresses and/or IPv4 CIDRs. When the peer is trusted the chain is walked **right-to-left** and the first address that is **not** a trusted proxy is taken as the client IP. Leave empty unless you run an extra proxy that appends to `X-Forwarded-For`. A standard install (app behind the internal HAProxy/Caddy only) needs nothing here — the client IP is recovered automatically.
+    - **`INTERNAL_PROXY_NETWORKS`** (new in v6.0.0) is the bundled front end's own container network, and it is why a standard install now recovers the visitor's address with nothing to configure. Change it only if you changed the subnet in `docker-compose.yml`. Setting it empty leaves loopback as the only built-in trusted peer, which is the pre-v6.0.0 behaviour.
+
+        Until v6.0.0 this documentation stated that a standard install recovered the client IP automatically. It did not. The bundled HAProxy reaches the application over the container network rather than over loopback, so its address was never trusted, the forwarded chain was discarded, and Octeth recorded the container's address as the visitor on every install. The default here is the fix, and because it lives in Octeth's code rather than in this file it applies to upgraded installs as well as new ones. See the [v6.0.0 upgrade notes](/changelog) for what changes as a result, including the fact that historical subscription, opt-in and unsubscription IP values hold a container address and cannot be recovered.
+
+    - **`TRUSTED_PROXIES`** is for an **additional** proxy that *you* put in front of Octeth: your own load balancer, reverse proxy or CDN, as comma-separated IPv4 addresses and/or IPv4 CIDRs. It is not needed for the bundled front end, which `INTERNAL_PROXY_NETWORKS` covers. When the peer is trusted the chain is walked **right-to-left** and the first address that is **not** a trusted proxy is taken as the client IP. A browser is never a trusted peer, so a visitor cannot set their own address by sending the header.
     - **`TRUST_CLOUDFLARE_CONNECTING_IP`** — set `true` **only** when the app domain is served through Cloudflare (proxied DNS). The client IP is then read from the `CF-Connecting-IP` header, which Cloudflare sets and overwrites (so it cannot be spoofed past CF). Leaving it `false` (the default) is correct for every non-Cloudflare install; a spurious `true` would let a client behind a trusted proxy forge their IP via that header.
 
     A direct client (untrusted immediate peer) can never influence `REMOTE_ADDR`, so the admin IP allow-list can no longer be bypassed with a forged `X-Forwarded-For`. Loopback-originated requests (the internal health-check/cron probes) are exempt from the allow-list, so enabling it no longer breaks `system.health.check`. Note: audit/login rows written by an earlier version while behind a proxy may still contain a chain string in their IP column; the fix stops that going forward but does not rewrite historical rows.
@@ -2731,7 +2736,11 @@ A refused request has its admin session **destroyed**, not merely rejected, and 
 **Requests from the server itself are exempt.** A request whose resolved client address is `127.0.0.1` or `::1` is always allowed through. That is the server talking to itself: the internal health check and the cron probes. Without the exemption, turning the list on would make `system.health.check` report a failure. This is not a bypass for an outside visitor, because a request that arrived over the network never resolves to loopback.
 
 ::: danger Check TRUSTED_PROXIES first, or the list will match the wrong address
-The address compared against this list is the one Octeth resolved for the visitor. If you have put your own load balancer, reverse proxy or CDN in front of Octeth at an address that is not loopback, and you have not listed it in `TRUSTED_PROXIES` in `.oempro_env`, then Octeth records **that proxy's** address for every visitor. The list then compares the proxy, which either admits everybody or locks everybody out, and in both cases it is not doing what you asked.
+The address compared against this list is the one Octeth resolved for the visitor.
+
+**Before v6.0.0 that address was Octeth's own front-end container on every install**, so a list filled in on an older version was never comparing your visitors. If it contained a `192.168.99.x` address it was admitting everybody; if it contained a real public address it was refusing everybody. v6.0.0 resolves the real address, so review what is in the list when you upgrade.
+
+The same failure still applies to a proxy of your own: if you have put a load balancer, reverse proxy or CDN in front of Octeth at an address that is not loopback and have not listed it in `TRUSTED_PROXIES`, Octeth records **that proxy's** address for every visitor, and the list compares the proxy rather than the person.
 
 Confirm the address Octeth sees **before** you enable the restriction. It is shown in the admin footer and in the login and audit logs. If it is the same for every visitor, set `TRUSTED_PROXIES` (and `TRUST_CLOUDFLARE_CONNECTING_IP=true` if you are behind Cloudflare), restart the app containers, and confirm the footer shows a real visitor address. Only then fill in Authorized IP Addresses.
 :::

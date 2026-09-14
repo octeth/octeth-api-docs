@@ -44,6 +44,7 @@ v6.0.0 is a security release. It remediates the findings of a full audit of the 
 - Enforced the admin Authorized IP Addresses list on every admin request rather than only when the login page renders, and hardened the admin "remember me" cookie.
 - Denied web access to the `data/` subdirectories, which included application logs.
 - Restricted and redacted the new user interface's API debug console, rooted its generated URLs at `APP_URL`, and stopped it holding a plaintext password while a two-factor challenge is pending.
+- Fixed client address resolution, which on a standard install recorded the address of Octeth's own front-end container instead of the visitor, for every request, on every install. The admin Authorized IP Addresses list, per-IP rate limits, geographic reporting and the subscription, opt-in and unsubscription IP columns were all affected.
 
 ### Upgrade Notes
 
@@ -57,9 +58,26 @@ v6.0.0 is a security release. It remediates the findings of a full audit of the 
 
 - **Authorized IP Addresses is now enforced on every admin request.** If you have filled in Settings, Security, Authorized IP Addresses, check it before upgrading. From v6.0.0 the list is checked on every admin screen and before the "remember me" cookie signs anybody in, not only when the login page renders, so an admin whose address is not on the list loses access on their next request even if they are signed in right now.
 
-  Two things to check first. **One:** if you run your own load balancer, reverse proxy or CDN in front of Octeth, make sure `TRUSTED_PROXIES` in `.oempro_env` lists it, otherwise Octeth sees the proxy's address for every visitor and the list matches the wrong thing. **Two:** if you restrict the admin area at your proxy on the `/app/admin/` path prefix, note that this does not cover the admin area, because the front controller also answers at `/app/index.php?/admin/` and four more shapes. The in-app list is the authoritative control.
+  Two things to check first. **One:** read the client address note below before you do anything else, because until this release the list was being compared against a container address rather than against your visitors, which changes what you should expect to find in it. If you also run your own load balancer, reverse proxy or CDN in front of Octeth, make sure `TRUSTED_PROXIES` in `.oempro_env` lists it. **Two:** if you restrict the admin area at your proxy on the `/app/admin/` path prefix, note that this does not cover the admin area, because the front controller also answers at `/app/index.php?/admin/` and four more shapes. The in-app list is the authoritative control.
 
   If you do lock yourself out: loopback is exempt, so an admin session opened on the server itself still works, and otherwise clear the setting with `UPDATE oempro_config SET ADMIN_ALLOWED_IP = '' WHERE ConfigID = 1;` followed by `docker exec oempro_redis redis-cli DEL system_config_1`. The refusal is logged at ERROR level with the address that was refused.
+
+- **Octeth now records your visitors' real IP addresses, and on most installs it never did before.** This is worth reading even if you have changed nothing, because it is the one item in this release that can change behaviour you were relying on.
+
+  Octeth's bundled front end reaches the application over the internal container network rather than over loopback, which is not what the configuration notes claimed. The effect was that the visitor's address, which the front end was passing along correctly the whole time, was discarded, and Octeth recorded the container's own address instead. Every install did this, for every request, and it has been the case since the address handling was last changed. From v6.0.0 the bundled front end is trusted by default and the real address is recorded. Nothing to configure.
+
+  **Check Settings, Security, Authorized IP Addresses before upgrading.** If it is empty, nothing changes for you, and that covers most installs. If you filled it in, look at what is actually in it:
+
+  - A list containing an address starting `192.168.99.` was matching the container, not a person, which means it was admitting everyone who could reach your install. After the upgrade it matches nobody and you are locked out. Replace it with your real public address before upgrading.
+  - A list containing your real public address was matching nobody, so you were locked out and may have worked around it. It starts working as intended.
+
+  If you do get locked out, loopback is still exempt, so an admin session opened on the server itself works. Otherwise clear the setting with `UPDATE oempro_config SET ADMIN_ALLOWED_IP = '' WHERE ConfigID = 1;` followed by `docker exec oempro_redis redis-cli DEL system_config_1`.
+
+  **Two further consequences.** Per-IP rate limits were treating all of your traffic as a single visitor and now count each visitor separately, so a limit that never triggered may begin to. Geographic reporting on opens and clicks was attributing everything to one location and will now spread out, so historical and future geography are not comparable.
+
+  **And one thing that cannot be repaired.** The `SubscriptionIP`, `OptInIP` and `UnsubscriptionIP` columns exist to evidence that a named person subscribed from a named address, and every value recorded before this upgrade holds a container address. The visitor's real address was never written anywhere, so there is nothing to recover it from and no migration can fix it. Records created from this upgrade onward carry the real address. If you are asked to produce consent evidence for a subscriber acquired before then, the IP column will not provide it.
+
+  If you changed the bundled network's subnet in `docker-compose.yml`, set `INTERNAL_PROXY_NETWORKS` in `.oempro_env` to match, otherwise this fix does not apply to your install and the behaviour above stays as it was.
 
 - **Admin "remember me" cookies issued before this release stop working**, so those admins sign in once more, and an admin with two-factor authentication enabled is no longer signed in by the cookie at all.
 
