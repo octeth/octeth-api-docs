@@ -412,7 +412,7 @@ When creating or updating changelog/release notes, follow these standards to ens
 
 ### Required Sections (in order)
 
-Every version entry must have exactly these 6 sections:
+Every version entry must have exactly these 7 sections:
 
 1. **Release Summary**
    - Release date and development period (if applicable)
@@ -437,7 +437,12 @@ Every version entry must have exactly these 6 sections:
    - Security improvements
    - Use "None" if no security patches in this release
 
-6. **Deprecations**
+6. **Upgrade Notes**
+   - Required whenever upgrading changes behaviour without operator action: migrations, changed defaults, new `.oempro_env` keys whose example value differs from the code default, retired files to remove
+   - For each: what changes, who is affected, and the exact setting that restores the old behaviour, written as prose bullets
+   - Use "None" if the upgrade changes nothing an existing install can notice
+
+7. **Deprecations**
    - Deprecated or removed features
    - Migration guidance if needed
    - Use "None" if no deprecations in this release
@@ -455,10 +460,10 @@ Every version entry must have exactly these 6 sections:
 
 **Don't:**
 - ✗ Use emojis anywhere in changelog entries
-- ✗ Include code examples or configuration snippets
-- ✗ Add upgrade guides or step-by-step instructions
+- ✗ Include code examples or configuration snippets (naming a setting such as `UI_ENABLED` in Upgrade Notes is fine, a code block is not)
+- ✗ Add upgrade guides or step-by-step instructions (Upgrade Notes state what changed and how to restore it, not a walkthrough)
 - ✗ Include troubleshooting sections
-- ✗ Add migration notes or database details
+- ✗ Add database details or schema internals (the fact that a migration runs on upgrade belongs in Upgrade Notes)
 - ✗ Use marketing language ("We're excited...", "Welcome to...")
 - ✗ Include "Why It Matters" or "Use Case Examples"
 - ✗ Add tables of contents or "Should You Upgrade?" tables
