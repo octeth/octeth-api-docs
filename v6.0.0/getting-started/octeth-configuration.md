@@ -1004,6 +1004,22 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     **not** for campaign delivery, which goes through Octeth's send engine as always. Set
     `UI_MAIL_MAILER=smtp` and fill in the host to send for real.
 
+    **Product mode**
+
+    ```bash
+    UI_MODE=full                         # 'full' or 'gateway'
+    ```
+
+    `full` is the complete marketing product and the default. `gateway` turns the interface into
+    an email relay service: campaigns, journeys, SMS, lists, templates, header and footer, the
+    dashboard, analytics and deliverability are hidden and their pages return 404, the API page
+    hides its account webhooks tab, and the sidebar lists the transactional sections (API keys, SMTP,
+    webhooks, statistics, recipient domains) for a sending domain picked in a switcher. Users land
+    on the transactional overview after signing in. Any other value is treated as `full`. An
+    individual section can be switched back on with its `BRAND_FEATURE_<NAME>=true` key (for example
+    `BRAND_FEATURE_CAMPAIGNS=true`, which also needs `BRAND_FEATURE_LISTS=true`). Restart the
+    interface container after changing it.
+
     **Subscription billing and the drag-and-drop builder**
 
     ```bash
