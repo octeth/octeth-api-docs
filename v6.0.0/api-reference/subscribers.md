@@ -45,6 +45,15 @@ Subscriber management endpoints for managing email list subscribers, including c
 | TriggerAutoResponders | Boolean | No | Trigger autoresponders (default: false) |
 | Source    | String | No       | Acquisition source bucket persisted on the subscriber row. Possible values: `CSVImport`, `API`, `Webhook`, `Manual`, `Other`, `Unknown`. Defaults to `API` for this endpoint. Anything outside this set is coerced to `Unknown`. |
 | SourceRef | String | No       | Optional free-text source reference (e.g., a custom label or integration id). Truncated server-side to 64 characters. |
+| SMSPhoneNumber | String | No | <Badge type="tip" text="New in v6.0.0" /> Mobile number of a **phone-only contact**, in place of `EmailAddress`. The normalized number is also written to the list's configured mobile phone custom field, so the field and the address always agree. The number is normalized to E.164 and the contact's address is derived from it as `<digits>@sms.invalid`, a domain RFC 2606 reserves so it can never receive email. Supplying both this and `EmailAddress` is an error (`8007`), and supplying a raw `@sms.invalid` address as `EmailAddress` is refused (`8001`). |
+
+::: tip Phone-only contacts
+`SMSPhoneNumber` addresses a contact that has a mobile number and no email address, for SMS campaigns and SMS journey actions.
+
+Two spellings of one number always resolve to the same contact: `+1 (555) 010-0100`, `15550100100` and `5550100100` all normalize to `15550100100@sms.invalid`. A number without a country code is resolved using `SMS_SUPPRESSION_DEFAULT_COUNTRY_CODE`. A national number written with a trunk-prefix zero, such as the UK `07700900123`, is **not** converted and is rejected with `8002`; strip the trunk prefix or pass the number in international form.
+
+A phone-only contact is never sent email. Its address reads as suppressed everywhere in the product, it is excluded from every email campaign audience, and no opt-in confirmation is sent to it.
+:::
 
 ::: warning Custom-field content rules are only enforced on request
 By default `subscriber.create` validates that each submitted custom-field ID belongs to the caller and applies to the target list, but it does **not** check the field's own content rules — so a subscriber can be created that violates every required, unique and validation rule on the list. Pass `EnforceRequiredFields=true` to also enforce `IsRequired`, `IsUnique` and `ValidationMethod`.
@@ -141,6 +150,13 @@ curl -X POST https://example.com/api/v1/subscriber.create \
 26: Required custom field is empty or was omitted (EnforceRequiredFields only)
 27: Unique custom field value already exists (EnforceRequiredFields only)
 28: Custom field value failed its validation method (EnforceRequiredFields only)
+8001: A sms.invalid address was supplied as EmailAddress. Use SMSPhoneNumber instead
+8002: Invalid SMSPhoneNumber (not E.164 or convertible to it, or outside 8 to 15 digits)
+8003: The list has no mobile phone number field configured in its SMS settings
+8004: A phone-only contact cannot be added to a double opt-in list
+8005: A real email address cannot be added to an SMS-only list
+8006: Another contact on this list already has that phone number
+8007: Both EmailAddress and SMSPhoneNumber were supplied
 ```
 
 :::
@@ -551,6 +567,7 @@ curl -X POST https://example.com/api.php \
 | OnlyTotal | Boolean | No      | Return only total count (default: false) |
 | AddMustHaveFilters | Boolean | No | Add mandatory filters for segment rules (default: false) |
 | DebugQueryBuilder | Boolean | No | Return SQL query for debugging (default: false) |
+| SMSPhoneNumber | String | No | <Badge type="tip" text="New in v6.0.0" /> Look up a **phone-only contact** by mobile number. The number is normalized to E.164 and matched against the derived `<digits>@sms.invalid` address, so any spelling of one number finds the same contact. Cannot be combined with `RulesJSON` or `Rules`: it is a lookup for one number, and silently ANDing it into a filter the caller wrote would be worse than refusing. |
 
 ::: warning RulesJSON validation (new in v5.9.3)
 When `RulesJSON` is supplied it is validated **before** the search runs. A payload that cannot produce a filter is rejected with `ErrorCode 6`.
@@ -624,6 +641,8 @@ curl -X POST https://example.com/api.php \
 4: Problem with the segment engine
 5: Segment recursion limit exceeded
 6: Invalid RulesJSON syntax. It must be a properly formatted JSON payload
+8002: Invalid SMSPhoneNumber (not E.164 or convertible to it, or outside 8 to 15 digits)
+8007: SMSPhoneNumber was combined with RulesJSON or Rules
 ```
 
 :::
@@ -920,6 +939,18 @@ Completed export result files are removed automatically after `EXPORT_FILE_RETEN
 | ImportFrom.CSV.EscapedBy | String | Yes (for CSV) | Escape character |
 | ImportFrom.CSV.MappedFields | Object | Yes (for CSV) | Field mapping (FieldName: CustomFieldID or EmailAddress) |
 | ImportStatusUpdateWebhookURL | String | No | Webhook URL to notify on import completion. **Changed in v6.0.0:** validated by the same rule as `ImportFrom.CSV.URL` and refused with the new error 28. This parameter had no validation before |
+
+::: tip Importing phone-only contacts
+<Badge type="tip" text="New in v6.0.0" /> Map a column to `SMSPhoneNumber` instead of `EmailAddress` to import **phone-only contacts**. Each number is normalized to E.164, the subscriber's address is derived from it as `<digits>@sms.invalid`, and the normalized number is also written to the list's configured mobile phone custom field.
+
+Exactly one identity column is required, so a file mapping both `EmailAddress` and `SMSPhoneNumber` is refused: it would be supplying the identity twice.
+
+The target list must have a mobile phone number field configured in its SMS settings first, through `list.sms.settings.update`.
+
+A row whose number cannot be normalized is skipped rather than imported with a broken address, and counted in the processed total.
+
+Header detection differs for these files and you do not need to do anything about it. An ordinary CSV is treated as having a header when its first row contains no email address; a phone-only file contains none in any row, so the first row is instead judged by whether its phone column holds something that normalizes. A label does not, a number does, so a headerless file keeps its first contact.
+:::
 
 ::: code-group
 
@@ -1286,6 +1317,15 @@ curl -X POST https://example.com/api.php \
 | EnforceRequiredFields | Boolean | No | <Badge type="tip" text="New in v5.9.3" /> Opt in to the corrected custom-field checks. When `true`, a required multi-value field submitted as an **empty array** (`[]`, `[""]`, or an unfilled Date field's `["", "", ""]`) is rejected with `ErrorCode 8` instead of being accepted and stored blank, and the validation and uniqueness checks are evaluated against the submitted value. Defaults to `false`, which preserves historical behaviour. Same flag name and semantics as `subscriber.subscribe` and `subscriber.create`. See the warning below. |
 | IgnoreAllOtherCustomFieldsExceptGivenOnes | Boolean | No | Only update specified fields (default: false) |
 | TriggerEvents | Boolean | No   | Trigger journey events (default: true) |
+| SMSPhoneNumber | String | No | <Badge type="tip" text="New in v6.0.0" /> New mobile number for a phone-only contact. Changing it re-derives the contact's address and rewrites the list's mobile phone custom field together, so the two never disagree. Moving a contact onto a number another contact on the list already holds is refused (`8006`). The number is normalized to E.164 and the contact's address is derived from it as `<digits>@sms.invalid`, a domain RFC 2606 reserves so it can never receive email. Supplying both this and `EmailAddress` is an error (`8007`), and supplying a raw `@sms.invalid` address as `EmailAddress` is refused (`8001`). |
+
+::: tip Phone-only contacts
+`SMSPhoneNumber` addresses a contact that has a mobile number and no email address, for SMS campaigns and SMS journey actions.
+
+Two spellings of one number always resolve to the same contact: `+1 (555) 010-0100`, `15550100100` and `5550100100` all normalize to `15550100100@sms.invalid`. A number without a country code is resolved using `SMS_SUPPRESSION_DEFAULT_COUNTRY_CODE`. A national number written with a trunk-prefix zero, such as the UK `07700900123`, is **not** converted and is rejected with `8002`; strip the trunk prefix or pass the number in international form.
+
+A phone-only contact is never sent email. Its address reads as suppressed everywhere in the product, it is excluded from every email campaign audience, and no opt-in confirmation is sent to it.
+:::
 
 ::: tip Custom-field names in `Fields` are matched case-insensitively
 <Badge type="tip" text="Fixed in v5.9.3" /> The public API lowercases every request key, including the keys inside the nested `Fields` object. Until v5.9.3 this endpoint looked its custom-field values up in PascalCase, so **no** submission shape matched: on a list with a required custom field `subscriber.update` returned `ErrorCode 8` even when the value *was* submitted, and the validation and uniqueness checks were evaluated against an empty value rather than the submitted one (issue #2661).
@@ -1364,6 +1404,13 @@ curl -X POST https://example.com/api.php \
 9: Custom field value is not unique
 10: Invalid custom field value
 11: Unknown custom field ID(s) - ErrorCustomFieldIDs lists the invalid IDs
+8001: A sms.invalid address was supplied as EmailAddress. Use SMSPhoneNumber instead
+8002: Invalid SMSPhoneNumber (not E.164 or convertible to it, or outside 8 to 15 digits)
+8003: The list has no mobile phone number field configured in its SMS settings
+8004: A phone-only contact cannot be added to a double opt-in list
+8005: A real email address cannot be added to an SMS-only list
+8006: Another contact on this list already has that phone number
+8007: Both EmailAddress and SMSPhoneNumber were supplied
 ```
 
 :::
@@ -1395,6 +1442,15 @@ curl -X POST https://example.com/api.php \
 | IncludeRevenue | Boolean | No | Include revenue data (default: true) |
 | IncludeTags | Boolean | No | Include tags (default: true)          |
 | IncludeSegments | Boolean | No | Include segments (default: true)      |
+| SMSPhoneNumber | String | No | <Badge type="tip" text="New in v6.0.0" /> Look the contact up by mobile number instead of `EmailAddress`. Normalized to the same address the contact was created with, so callers never need to know the address format. The number is normalized to E.164 and the contact's address is derived from it as `<digits>@sms.invalid`, a domain RFC 2606 reserves so it can never receive email. Supplying both this and `EmailAddress` is an error (`8007`), and supplying a raw `@sms.invalid` address as `EmailAddress` is refused (`8001`). |
+
+::: tip Phone-only contacts
+`SMSPhoneNumber` addresses a contact that has a mobile number and no email address, for SMS campaigns and SMS journey actions.
+
+Two spellings of one number always resolve to the same contact: `+1 (555) 010-0100`, `15550100100` and `5550100100` all normalize to `15550100100@sms.invalid`. A number without a country code is resolved using `SMS_SUPPRESSION_DEFAULT_COUNTRY_CODE`. A national number written with a trunk-prefix zero, such as the UK `07700900123`, is **not** converted and is rejected with `8002`; strip the trunk prefix or pass the number in international form.
+
+A phone-only contact is never sent email. Its address reads as suppressed everywhere in the product, it is excluded from every email campaign audience, and no opt-in confirmation is sent to it.
+:::
 
 ::: code-group
 
@@ -1475,6 +1531,13 @@ curl -X POST https://example.com/api.php \
 3: Subscriber not found
 4: Invalid ListID
 429: Too many requests (rate limit exceeded)
+8001: A sms.invalid address was supplied as EmailAddress. Use SMSPhoneNumber instead
+8002: Invalid SMSPhoneNumber (not E.164 or convertible to it, or outside 8 to 15 digits)
+8003: The list has no mobile phone number field configured in its SMS settings
+8004: A phone-only contact cannot be added to a double opt-in list
+8005: A real email address cannot be added to an SMS-only list
+8006: Another contact on this list already has that phone number
+8007: Both EmailAddress and SMSPhoneNumber were supplied
 ```
 
 :::
@@ -1579,6 +1642,15 @@ curl -X POST https://example.com/api.php \
 | APIKey    | String | No       | API key for authentication            |
 | ListID    | Integer| Yes      | ID of the subscriber list             |
 | EmailAddress | String | Yes   | Email address to check                |
+| SMSPhoneNumber | String | No | <Badge type="tip" text="New in v6.0.0" /> Look the contact up by mobile number instead of `EmailAddress`. Normalized to the same address the contact was created with. The number is normalized to E.164 and the contact's address is derived from it as `<digits>@sms.invalid`, a domain RFC 2606 reserves so it can never receive email. Supplying both this and `EmailAddress` is an error (`8007`), and supplying a raw `@sms.invalid` address as `EmailAddress` is refused (`8001`). |
+
+::: tip Phone-only contacts
+`SMSPhoneNumber` addresses a contact that has a mobile number and no email address, for SMS campaigns and SMS journey actions.
+
+Two spellings of one number always resolve to the same contact: `+1 (555) 010-0100`, `15550100100` and `5550100100` all normalize to `15550100100@sms.invalid`. A number without a country code is resolved using `SMS_SUPPRESSION_DEFAULT_COUNTRY_CODE`. A national number written with a trunk-prefix zero, such as the UK `07700900123`, is **not** converted and is rejected with `8002`; strip the trunk prefix or pass the number in international form.
+
+A phone-only contact is never sent email. Its address reads as suppressed everywhere in the product, it is excluded from every email campaign audience, and no opt-in confirmation is sent to it.
+:::
 
 ::: code-group
 
@@ -1614,6 +1686,13 @@ curl -X POST https://example.com/api.php \
 1: Missing ListID parameter
 2: Missing EmailAddress parameter
 3: Invalid ListID
+8001: A sms.invalid address was supplied as EmailAddress. Use SMSPhoneNumber instead
+8002: Invalid SMSPhoneNumber (not E.164 or convertible to it, or outside 8 to 15 digits)
+8003: The list has no mobile phone number field configured in its SMS settings
+8004: A phone-only contact cannot be added to a double opt-in list
+8005: A real email address cannot be added to an SMS-only list
+8006: Another contact on this list already has that phone number
+8007: Both EmailAddress and SMSPhoneNumber were supplied
 ```
 
 :::

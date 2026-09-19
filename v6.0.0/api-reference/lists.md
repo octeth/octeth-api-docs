@@ -2444,3 +2444,168 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+## Get a List's SMS Settings
+
+<Badge type="info" text="GET" /> `/api/v1/list.sms.settings`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Get`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+<Badge type="tip" text="New in v6.0.0" /> Reads the SMS configuration of a list: which custom field holds the mobile phone number, and whether the list is SMS-only. Until this endpoint existed these settings could only be reached through the user-area SMS screen.
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `list.sms.settings.get`  |
+| SessionID | String | No       | Session ID obtained from login        |
+| APIKey    | String | No       | API key for authentication            |
+| ListID    | Integer| Yes      | ID of the subscriber list             |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.sms.settings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.sms.settings.get",
+    "APIKey": "your-api-key",
+    "ListID": 124
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "SMSSettings": {
+    "ListID": 124,
+    "MobilePhoneNumber": 8,
+    "MobilePhoneNumberCarrier": "",
+    "SMSOnly": false,
+    "IsSMSCapable": true
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorMessage": {
+    "Code": 2,
+    "Message": "Invalid ListID."
+  }
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing ListID parameter
+2: Invalid ListID (does not exist or does not belong to this account)
+```
+
+:::
+
+**Response fields:**
+
+| Field | Description |
+|-------|-------------|
+| MobilePhoneNumber | Custom field ID holding the mobile number, or `null` when none is configured |
+| MobilePhoneNumberCarrier | Optional carrier custom field value, or `null` |
+| SMSOnly | Whether the list holds only phone-only contacts |
+| IsSMSCapable | `false` when no phone field is configured. A list without one cannot be an SMS campaign audience at all |
+
+## Update a List's SMS Settings
+
+<Badge type="info" text="POST" /> `/api/v1/list.sms.settings`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `List.Update`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+<Badge type="tip" text="New in v6.0.0" /> Partial update: only the parameters supplied are changed, and the stored settings are merged rather than replaced.
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `list.sms.settings.update` |
+| SessionID | String | No       | Session ID obtained from login        |
+| APIKey    | String | No       | API key for authentication            |
+| ListID    | Integer| Yes      | ID of the subscriber list             |
+| MobilePhoneNumber | Integer | No | Custom field ID that holds the mobile phone number. The field must belong to this account and apply to this list. Cannot be changed once the list is SMS-only |
+| MobilePhoneNumberCarrier | String | No | Optional carrier value |
+| SMSOnly   | Boolean| No       | Mark the list as holding only phone-only contacts. See the warning below |
+
+::: warning Marking a list SMS-only rebuilds its table
+Setting `SMSOnly` to `true` is refused while the list holds any subscriber with a real email address, because such a contact could never be reached on an SMS-only list.
+
+It also drops the list's `ft_email` FULLTEXT index, which is dead weight once every address is a placeholder nobody searches by words, and still costs on every insert. MySQL can only drop a FULLTEXT index with `ALGORITHM=COPY`, which holds the table for the duration, so the request is **refused above 100,000 rows**. Set the flag before loading contacts.
+
+Turning the flag back off does not rebuild the index, because that would be a second copying rebuild on a table that may by then be large. Re-adding it is a deliberate operator action.
+
+The mobile phone number field cannot be repointed while the list is SMS-only: every contact's address was derived from the field it currently names, and nothing would repair them.
+:::
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.sms.settings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.sms.settings.update",
+    "APIKey": "your-api-key",
+    "ListID": 124,
+    "MobilePhoneNumber": 8,
+    "SMSOnly": true
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "SMSSettings": {
+    "ListID": 124,
+    "MobilePhoneNumber": 8,
+    "MobilePhoneNumberCarrier": "",
+    "SMSOnly": true,
+    "IsSMSCapable": true,
+    "FullTextIndexDropped": true
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "Errors": [
+    {
+      "Code": 8,
+      "Message": "This list holds 5 subscriber(s) with a real email address, so it cannot be marked SMS-only. Remove or move them first."
+    }
+  ],
+  "ErrorCode": 8
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing ListID parameter
+2: Invalid ListID (does not exist or does not belong to this account)
+3: MobilePhoneNumber is not a custom field id
+4: Invalid MobilePhoneNumber (field does not exist, is not owned by this account, or does not apply to this list)
+5: The mobile phone number field cannot be changed on an SMS-only list
+6: The subscriber table for this list does not exist
+7: The subscriber list could not be inspected, so SMSOnly was not changed
+8: The list holds subscribers with a real email address
+9: The list is too large to rebuild (above 100,000 rows)
+10: The SMSOnly flag could not be written
+```
+
+:::

@@ -1072,6 +1072,125 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     Introduced in v5.9.6 (issue #2850).
 
+50. **Bulk SMS Campaigns**
+
+    The bulk SMS campaign feature (issue #2742). The keys below fall into two groups that behave differently. **Deployment settings** are read out of `.oempro_env` into constants when a process boots, so a change takes effect only after the SMS workers are restarted. **Business setting defaults** are fallbacks: once an administrator saves the matching value on the SMS campaign settings page, the stored value wins and editing the key here changes nothing.
+
+    Every numeric value is clamped in code rather than validated where it is used, so one mistyped value in an env file cannot reach a worker loop. A value outside the stated range is silently replaced by the nearest allowed one, so check the range before assuming a change took effect.
+
+    **Phone-only contact lists**
+
+    ```bash
+    SMS_BULK_LOAD_CHUNK_SIZE=1000                        # Rows per batch for the bulk contact loader. Clamped 1 to 10000
+    SMS_ONLY_LIST_COUNT_CACHE_SECONDS=3600               # How long an SMS-only list's subscriber count is cached. Minimum 300
+    SMS_ONLY_LIST_COUNT_INVALIDATION_WINDOW_SECONDS=60   # Coalescing window for count invalidations. 0 disables coalescing
+    ```
+
+    `SMS_BULK_LOAD_CHUNK_SIZE` sizes the batches used by `cli/sms_contacts_bulk_load.php`, the operator tool for the initial load of a large phone-only contact file. Each batch costs exactly two statements, one existence `SELECT` and one multi-row `INSERT`, so this trades transaction size against round trips. Too low and the loader approaches one round trip per row, which makes a multi-million-row load take hours longer than it needs to. Too high and the single `INSERT` can exceed MySQL's `max_allowed_packet` on a list with several mapped attribute fields, which fails the batch rather than slowing it down. Ongoing additions go through the API and are unaffected.
+
+    `SMS_ONLY_LIST_COUNT_CACHE_SECONDS` is how long the active subscriber count of an SMS-only list is held in cache. An ordinary list holds it for 300 seconds. On a 60 million row SMS-only list a cache miss is a `COUNT(*)` over the whole table, and the figure is shown for information rather than used as a gate, so it is held far longer here. The clamp floor is the ordinary 300 seconds, because a shorter value would make an SMS-only list more expensive to display than a normal one.
+
+    `SMS_ONLY_LIST_COUNT_INVALIDATION_WINDOW_SECONDS` collapses repeated invalidations of that count. Each invalidation is a full Redis keyspace scan, and the STOP replies arriving after a campaign to a million recipients number in the thousands, so they are reduced to at most one scan per list per window. Set it to `0` to invalidate on every change, which is only worth doing if you need the count to be exact within seconds and accept the scan load.
+
+    **Deployment settings**
+
+    ```bash
+    SMS_CAMPAIGN_ENABLED=true                     # Master switch for the whole bulk SMS feature (default: true)
+    SMS_CAMPAIGN_ENQUEUE_PAGE_SIZE=500            # Recipients read per page while enqueueing. Clamped 50 to 5000
+    SMS_CAMPAIGN_CLAIM_TIMEOUT_SECONDS=600        # How long one worker's claim on a campaign survives. Minimum 60
+    SMS_CAMPAIGN_STUCK_MINUTES=15                 # Age at which a released message is treated as stuck. Minimum 5
+    SMS_CAMPAIGN_RELEASE_BACKLOG_SECONDS=60       # Seconds of measured throughput kept queued in RabbitMQ. Minimum 5
+    SMS_SEND_MAX_BATCH=1000                       # Messages a sender accumulates before dispatch. Clamped 1 to 10000
+    SMS_CAMPAIGN_ESTIMATE_TOKEN_TTL=900           # Seconds a confirmed cost estimate stays valid. Minimum 60
+    SMS_CAMPAIGN_QUEUE_PARTITION_AHEAD_MONTHS=3   # Months of queue partitions kept ahead of today. Minimum 1
+    SMS_LINK_SIGNING_KEY=                         # HMAC key for tracked short codes. Leave EMPTY, one is generated per install
+    SMS_EVENTS_BATCH_SIZE=1000                    # Events flushed to ClickHouse per batch. Clamped 1 to 50000
+    SMS_EVENTS_FLUSH_SECONDS=2                    # Seconds before a partial event batch is flushed anyway. Minimum 1
+    SMS_EVENTS_MAX_RETRIES=5                      # Retries before an event batch is dead-lettered. Minimum 1
+    SMS_DLR_MATCH_MAX_ATTEMPTS=20                 # Attempts to match a delivery report to its message. Minimum 1
+    SMS_ROLLUP_MAX_KEYS_PER_RUN=50000             # Dirty rollup keys processed per run. Minimum 1
+    ```
+
+    `SMS_CAMPAIGN_ENABLED` is the master switch for bulk SMS. With it set to `false` the release worker stops releasing and the API refuses bulk SMS operations with a message naming this key, so an install that does not use the feature carries none of its load.
+
+    `SMS_CAMPAIGN_ENQUEUE_PAGE_SIZE` is how many recipients the enqueue worker reads from the list in one page while building a campaign's queue. A small page makes the enqueue of a large audience take many more queries than it needs to and leaves the campaign sitting in its queueing state for longer. A large page holds more rows in worker memory per iteration and lengthens the individual query, which on a very large list can push the read past a query timeout. The default suits audiences up to a few million.
+
+    `SMS_CAMPAIGN_CLAIM_TIMEOUT_SECONDS` is how long one worker's claim on a campaign survives before another worker may take it over. It exists so a worker that dies mid-campaign does not leave that campaign frozen. Set it too low and two workers can both believe they own a campaign while the first is merely busy, which doubles the work and the log noise. Set it too high and a genuinely dead worker leaves its campaign untouched for that long, which is also how long a pause and resume can appear to hang.
+
+    `SMS_CAMPAIGN_RELEASE_BACKLOG_SECONDS` is the backlog allowance, expressed in seconds of measured throughput. The release worker measures how fast the senders are actually sending and keeps the RabbitMQ queue no deeper than this many seconds of that rate. A short window starves the senders, which idle between ticks and leave gateway capacity unused. A long window pushes work into the broker faster than it can leave, which makes pausing, cancelling or re-rating a campaign slow to take effect because messages already released are already committed.
+
+    `SMS_CAMPAIGN_STUCK_MINUTES` is how old a released message that never started sending must be before the sweep reclaims it and returns it to the queue. Set it too high and a message lost to a crashed sender sits undelivered for that long. Set it too low and the sweep reclaims messages that are simply waiting their turn in the broker, releases them again, and repeats forever while nothing is actually wrong.
+
+    ::: warning Keep the stuck threshold well above the backlog window
+    `SMS_CAMPAIGN_STUCK_MINUTES` and `SMS_CAMPAIGN_RELEASE_BACKLOG_SECONDS` are not independent. The release worker deliberately keeps up to `SMS_CAMPAIGN_RELEASE_BACKLOG_SECONDS` of work sitting in RabbitMQ, so every message in that backlog is waiting normally, not stuck. A stuck threshold shorter than the backlog window turns that normal backlog into a reclaim loop.
+
+    The code enforces a floor of five times the backlog window for exactly this reason: the effective threshold is the larger of `SMS_CAMPAIGN_STUCK_MINUTES` in seconds and `SMS_CAMPAIGN_RELEASE_BACKLOG_SECONDS` multiplied by five. Raising the backlog window therefore raises the effective stuck threshold whether or not you also raise the stuck setting, so if you increase one, review the other.
+    :::
+
+    `SMS_SEND_MAX_BATCH` is the most messages one sender process accumulates before it hands them to its gateway. It is a ceiling on batching rather than the batch size itself, because the batch is then split per gateway at that gateway's own maximum per request. Set it below what a connector advertises and you cap that connector below what the provider allows, sending more requests than necessary. Set it very high and the sender holds that many messages unacknowledged from the broker at once, since this value is also its RabbitMQ prefetch, so a sender that dies redelivers a correspondingly larger block.
+
+    `SMS_CAMPAIGN_ESTIMATE_TOKEN_TTL` is how long a confirmed cost estimate stays valid. After it expires the cost must be re-confirmed before the campaign can be sent. Shorten it if your audience changes quickly and you want the figure an operator approves to be close to what is actually charged. Lengthen it if operators routinely prepare a campaign well before sending it and find themselves re-confirming.
+
+    `SMS_CAMPAIGN_QUEUE_PARTITION_AHEAD_MONTHS` is how many months of campaign queue partitions the maintenance command keeps ahead of today. The minimum is 1. Keeping more costs nothing but empty partitions, and keeping too few risks a send arriving with no partition to write to if the maintenance command has not run recently.
+
+    `SMS_EVENTS_BATCH_SIZE` and `SMS_EVENTS_FLUSH_SECONDS` govern how SMS events reach ClickHouse. The worker flushes when it has this many events, or when a partial batch has waited this many seconds, whichever comes first. Larger batches and a longer linger mean fewer, more efficient ClickHouse inserts and a longer delay before events appear in reporting. Smaller values do the reverse.
+
+    `SMS_EVENTS_MAX_RETRIES` is how many times an event batch is retried before it is dead-lettered rather than dropped. Raising it makes the worker more patient with a ClickHouse outage at the cost of holding the batch longer.
+
+    `SMS_DLR_MATCH_MAX_ATTEMPTS` is how many times an unmatched delivery report is retried, 30 seconds apart, before it is given up on. A fast gateway can report delivery before the sender has finished recording the gateway's message ID, so an unmatched report is retried rather than discarded. The default covers roughly ten minutes. Raise it only if your gateway is known to report against messages you have not yet recorded for longer than that.
+
+    `SMS_ROLLUP_MAX_KEYS_PER_RUN` bounds how many dirty rollup keys one rollup run processes. It caps the length of a single run rather than the total work, so lowering it makes runs shorter and more frequent.
+
+    ::: danger Do not change `SMS_LINK_SIGNING_KEY` once campaigns have been sent
+    This is the HMAC key for tracked SMS short codes. Unlike every other key in this file, its example value is deliberately **empty**: installation generates one, and an upgrade generates one if it is still empty, so every deployment has its own. A shipped default would be shared by every Octeth install, and anyone could then forge a short code against all of them.
+
+    Every short code already sitting in a recipient's phone is signed with the current key. Changing it breaks all of them. It also signs cost estimate tokens, so with no key available at all the system refuses to issue an estimate rather than issuing an unsigned one.
+    :::
+
+    **Defaults for settings an administrator can change**
+
+    Each key below is a fallback used only until the matching value is saved on the SMS campaign settings page. After that the stored value wins and editing the key changes nothing, which the settings page shows per setting so an operator can tell which is in force. A stored value takes effect within about a minute without a restart. The clamps apply to both the stored value and this fallback.
+
+    ```bash
+    SMS_CAMPAIGN_MAX_RECIPIENTS=1000000                  # Largest audience one campaign may target. Clamped 1 to 100000000
+    SMS_CAMPAIGN_COST_PER_PART=0.0100                    # Assumed cost per message part when estimating. Clamped 0 to 1000
+    SMS_CAMPAIGN_COST_CURRENCY=USD                       # Currency label for the estimate
+    SMS_CAMPAIGN_COST_DRIFT_TOLERANCE=0.05               # Allowed drift from the confirmed estimate. Clamped 0 to 1 (0.05 is five percent)
+    SMS_CAMPAIGN_QUIET_HOURS_START=21:00                 # Default quiet hours start, in the campaign's own timezone
+    SMS_CAMPAIGN_QUIET_HOURS_END=09:00                   # Default quiet hours end, in the campaign's own timezone
+    SMS_CAMPAIGN_DEFAULT_SEND_RATE_PER_MINUTE=0          # Default send rate for new campaigns. 0 is unlimited
+    SMS_CAMPAIGN_JOURNEY_RESERVE_PERCENT=10              # Capacity reserved for journey and transactional SMS. Clamped 0 to 50
+    SMS_CAMPAIGN_OPTOUT_FOOTER_DEFAULT=" Reply STOP to opt out."   # Default opt-out footer. Quote it, it starts with a space
+    SMS_CAMPAIGN_OPTOUT_FOOTER_ENABLED_DEFAULT=true      # Whether new campaigns append that footer
+    SMS_OPTOUT_KEYWORDS=STOP,STOPALL,UNSUBSCRIBE,CANCEL,END,QUIT   # Inbound keywords treated as an opt-out
+    SMS_REPLY_ATTRIBUTION_DAYS=30                        # How far back a reply is matched to a sent message. Clamped 1 to 3650
+    SMS_EVENT_RETENTION_DAYS=365                         # Retention for SMS events. Clamped 30 to 3650
+    SMS_CAMPAIGN_QUEUE_RETENTION_DAYS=365                # Retention for campaign queue rows. Clamped 30 to 3650
+    SMS_INBOUND_RETENTION_DAYS=365                       # Retention for inbound messages. Clamped 30 to 3650
+    ```
+
+    `SMS_CAMPAIGN_MAX_RECIPIENTS` is the largest audience a single campaign may target. It is a guard against an accidental send to everybody, not a licence limit, so set it to the largest campaign you actually intend to run rather than to the size of your database.
+
+    `SMS_CAMPAIGN_COST_PER_PART` and `SMS_CAMPAIGN_COST_CURRENCY` are the rate used to estimate what a campaign will cost, and the currency that estimate is labelled with. This is a rate you configure, not a price quoted by the gateway, so the estimate is an estimate. Actual cost comes from delivery reports where the gateway provides one. Set the rate to your own negotiated price per message part.
+
+    `SMS_CAMPAIGN_COST_DRIFT_TOLERANCE` is how far the real cost may drift above the confirmed estimate before the send is stopped for re-confirmation, expressed as a fraction. `0.05` is five percent. Set it to `0` and any drift at all stops the send, which is rarely what you want on an audience with mixed destination countries. Set it high and a mis-estimated campaign runs to completion before anyone is told.
+
+    `SMS_CAMPAIGN_QUIET_HOURS_START` and `SMS_CAMPAIGN_QUIET_HOURS_END` are the quiet hours applied to new campaigns, in the campaign's own timezone. They are defaults for the campaign form, so changing them does not alter a campaign that has already been created.
+
+    `SMS_CAMPAIGN_DEFAULT_SEND_RATE_PER_MINUTE` is the send rate new campaigns start with. `0` means unlimited, and the per-gateway rate limit still applies on top of whatever is set here, so this is a way to slow a campaign down rather than a way to speed one up.
+
+    `SMS_CAMPAIGN_JOURNEY_RESERVE_PERCENT` is the share of a gateway's send capacity held back from campaigns so that journey and transactional SMS keep flowing while a large campaign is running. At `0` a big campaign can consume the whole gateway rate and delay a password reset message behind it. The clamp ceiling is 50, because reserving more than half the capacity would starve the campaigns the reserve exists to coexist with.
+
+    `SMS_CAMPAIGN_OPTOUT_FOOTER_DEFAULT` and `SMS_CAMPAIGN_OPTOUT_FOOTER_ENABLED_DEFAULT` set the opt-out footer appended to campaign messages by default. The footer counts toward the message length and therefore toward the number of parts and the cost, so a long footer can push a one-part message into two. Quote the value: the shipped default begins with a space, which separates it from the message body.
+
+    `SMS_OPTOUT_KEYWORDS` is the comma-separated list of inbound keywords treated as an opt-out. Add local-language keywords here if you send to recipients who will not reply in English.
+
+    `SMS_REPLY_ATTRIBUTION_DAYS` is how far back an inbound reply is matched against sent messages in order to attribute it to a campaign. A longer window attributes more late replies and raises the chance of attributing a reply to the wrong campaign where a recipient received several.
+
+    `SMS_EVENT_RETENTION_DAYS`, `SMS_CAMPAIGN_QUEUE_RETENTION_DAYS` and `SMS_INBOUND_RETENTION_DAYS` are the retention periods for SMS events, campaign queue rows and inbound messages. Reporting cannot look further back than the events retained, so cutting event retention cuts the reporting history with it. The clamp floor of 30 days exists because a retention of a day or two is easier to type than to notice, and would silently destroy the reporting the feature exists to provide.
+
+    Introduced in v6.0.0 (issue #2742).
+
 
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
