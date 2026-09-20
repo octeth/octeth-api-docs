@@ -96,6 +96,8 @@ curl -X POST https://example.com/api/v1/smscampaign.estimate \
 
 Poll this until `Status` is `Done` or `Failed`. A `ConfirmationToken` is returned only when the estimate is `Done` **and** the campaign still matches the one that was costed.
 
+"Still matches" is decided on the campaign's content, not only on its modification time. The estimate records a fingerprint of the audience, message, footer and gateway it measured, and that is compared with the campaign as it stands now. A modification time alone would not be enough: it has one second of resolution, so an edit landing in the same second as the measurement would leave the timestamp unchanged while the content it describes had moved on. When the two disagree the response carries `Stale: true` and a `StaleReason`, and no token, so run the estimate again.
+
 **Request Body Parameters:**
 
 | Parameter | Type | Required | Description |
@@ -144,7 +146,8 @@ curl -X GET https://example.com/api/v1/smscampaign.estimate \
     "CostCurrency": "USD",
     "CostPerPart": 0.01,
     "ProjectedCompletionAt": "2026-09-22 09:15:00",
-    "MeasuredAt": "2026-09-20 14:03:48"
+    "MeasuredAt": "2026-09-20 14:03:48",
+    "CampaignFingerprint": "6b1e...c04a"
   },
   "Stale": false,
   "ConfirmationToken": "1758377028.8f2c...",
@@ -200,4 +203,5 @@ curl -X GET https://example.com/api/v1/smscampaign.estimate \
 | `TotalParts` | Message parts across every sendable recipient |
 | `Encodings` | Sendable recipients by message encoding, `GSM7` and `UCS2` |
 | `ProjectedCost` | `TotalParts` multiplied by `CostPerPart` |
-| `ProjectedCompletionAt` | When the campaign would finish at the account's current send-rate limits, or `null` when no limit applies and there is nothing to project from |
+| `ProjectedCompletionAt` | When the campaign would finish at the account's current send-rate limits. `null` when there is nothing to project from, which includes an account with no configured limit and a send-rate counter that could not be read: an unknown schedule is reported as unknown rather than as immediate |
+| `CampaignFingerprint` | A fingerprint of the campaign content that was measured. Used to decide staleness; see below |
