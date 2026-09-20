@@ -580,7 +580,7 @@ curl -X GET https://example.com/api/v1/smscampaign.linkclicks \
 
 The export runs as a background job because a campaign's event set runs to millions of rows. Filters are validated when you submit, not when the job runs, so a mistake is reported immediately rather than becoming a failed job minutes later.
 
-Only one export per campaign per account can be queued or running at a time. Submitting again while one is in flight returns the existing `ExportID` with `AlreadyQueued: true`, so polling with POST cannot queue a job per poll.
+Only one export per campaign per account can be queued or running at a time, enforced by the database rather than by a check the request makes first, so two requests arriving together cannot both enqueue. Submitting again while one is in flight returns the existing `ExportID` with `AlreadyQueued: true`, so polling with POST cannot queue a job per poll. In that case `Status` reflects the existing job and is `Pending` or `Running`.
 
 ::: code-group
 
@@ -641,6 +641,12 @@ curl -X POST https://example.com/api/v1/smscampaign.events.export \
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
 | ExportID | Integer | Yes | The export job to read |
+
+::: tip An export that does not finish is failed, not left running
+If the worker handling an export dies partway through, a container restart is enough, the job would otherwise sit in `Running` forever and neither complete nor fail. Such a job is given up on after an hour and returned with `Status: "Failed"` and an `Error` saying so, which is your signal to submit it again.
+
+It is failed rather than retried deliberately: retrying a job whose original worker might still be alive would put two workers on the same file.
+:::
 
 ::: warning The download link is signed and expires
 `DownloadURL` carries a signature over the export and its owner and is valid for `DownloadExpiresInSeconds`. Request a fresh one when it expires rather than storing it.
