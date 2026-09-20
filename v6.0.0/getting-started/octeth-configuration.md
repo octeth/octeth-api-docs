@@ -1177,6 +1177,12 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     SMS_EVENT_RETENTION_DAYS=365                         # Retention for SMS events. Clamped 30 to 3650
     SMS_CAMPAIGN_QUEUE_RETENTION_DAYS=365                # Retention for campaign queue rows. Clamped 30 to 3650
     SMS_INBOUND_RETENTION_DAYS=365                       # Retention for inbound messages. Clamped 30 to 3650, or 0 to disable pruning
+    SMS_ANALYTICS_RETENTION_DAYS=365                     # Retention for SMS analytics rows
+    SMS_SUPPRESSION_DEFAULT_COUNTRY_CODE=+1              # Country code assumed for a number that arrives without one
+    SMS_LINK_EXPIRY_HOURS_DEFAULT=72                     # How long a tracked link stays valid after its message was sent
+    SMS_LINK_EXPIRY_HOURS_MAX=8760                       # The longest expiry a campaign may ask for
+    SMS_LINK_BOT_DETECTION=true                          # Screen link clicks for bots
+    SMS_LINK_CLICK_RATE_LIMIT=30                         # Clicks allowed per link per minute
     ```
 
     `SMS_CAMPAIGN_MAX_RECIPIENTS` is the largest audience a single campaign may target. It is a guard against an accidental send to everybody, not a licence limit, so set it to the largest campaign you actually intend to run rather than to the size of your database.
@@ -1200,6 +1206,16 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     `SMS_EVENT_RETENTION_DAYS`, `SMS_CAMPAIGN_QUEUE_RETENTION_DAYS` and `SMS_INBOUND_RETENTION_DAYS` are the retention periods for SMS events, campaign queue rows and inbound messages. Reporting cannot look further back than the events retained, so cutting event retention cuts the reporting history with it. The clamp floor of 30 days exists because a retention of a day or two is easier to type than to notice, and would silently destroy the reporting the feature exists to provide.
 
     `SMS_INBOUND_RETENTION_DAYS` alone also accepts `0`, which switches inbound pruning off entirely and keeps every inbound message. That is the one value below the floor that is honoured rather than raised to 30, because it is how an install says "never delete these", and raising it would delete the replies the operator was keeping. The other two have no such setting: to keep events or queue rows for longer, raise the number.
+
+    `SMS_SUPPRESSION_DEFAULT_COUNTRY_CODE` is the country code assumed when a phone number arrives without one. It decides how a bare national number is normalized, and therefore whether a suppression entry written in one form matches a number sent in another: a contact suppressed as `5550100001` and later sent as `+15550100001` is only recognised as the same person if this value turns the first into the second. Set it to the country the majority of your contacts are in, and store numbers in full international form wherever you can, which makes the setting irrelevant.
+
+    `SMS_LINK_EXPIRY_HOURS_DEFAULT` is how long a tracked link keeps working after the message carrying it was sent, and `SMS_LINK_EXPIRY_HOURS_MAX` is the longest a campaign may ask for. The expiry runs from the send rather than from the campaign, so a campaign paused for a week still gives every recipient the same window from the moment their own message went out.
+
+    `SMS_LINK_BOT_DETECTION` screens clicks for automated traffic, which matters more on SMS than on email because carrier and handset security scanners follow links. A click identified as a bot is flagged and left out of reports by default rather than discarded, so it is still there to look at; pass `IncludeBots=1` to the reporting endpoints to see it.
+
+    `SMS_LINK_CLICK_RATE_LIMIT` is how many clicks one link accepts per minute before further clicks are rate limited. It protects the click endpoint, which is public and unauthenticated, from being used to inflate a campaign's numbers.
+
+    `SMS_ANALYTICS_RETENTION_DAYS` is how long SMS analytics rows are kept.
 
     Introduced in v6.0.0 (issue #2742).
 
