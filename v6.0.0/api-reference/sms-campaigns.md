@@ -1035,9 +1035,10 @@ curl -X POST https://example.com/api/v1/smstemplate.create \
 
 ```txt [Error Codes]
 0: Success
-1: Missing TemplateName parameter
+1: Missing or invalid TemplateName parameter, including a non-string value
 2: TemplateName is longer than 255 characters
 3: The template could not be created
+4: MessageContent must be a string
 ```
 
 :::
@@ -1109,17 +1110,21 @@ curl -X GET https://example.com/api/v1/smstemplate.browse \
 ```txt [Error Codes]
 0: Success
 1: Missing or invalid TemplateID parameter (get, update, delete); read failure (browse)
-2: The template could not be read
+2: The template could not be read (get, update, delete); Search must be a string (browse)
 3: Template not found, including a template belonging to another account
 4: TemplateName cannot be empty (update)
 5: TemplateName is longer than 255 characters (update)
 6: Nothing to update; pass TemplateName, MessageContent or both
 7: The template could not be updated
+8: MessageContent must be a string (update)
+9: TemplateName must be a string (update)
 ```
 
 :::
 
 Asking for a template that belongs to another account answers `Template not found` rather than a permission error, and deleting one reports the same. There is no response that distinguishes "exists but is not yours" from "does not exist", so template ids cannot be probed.
+
+Every parameter that is expected to be a string is rejected when it is not one, rather than being coerced. `api.php` accepts nested structures, so a value can arrive as an array, and casting one to a string yields the literal `Array`: an endpoint that cast before validating would store a template named `Array`. "Empty" and "not a string" are separate codes on update, because they call for different corrections.
 
 ## Supporting endpoints
 
