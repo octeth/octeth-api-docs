@@ -186,7 +186,11 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     Note that the public delivery-report webhook endpoint keeps accepting and enqueueing reports regardless of this setting. With processing disabled, the durable `sms_delivery_reports` queue grows unbounded if your gateway is still configured to POST to it — point the gateway away from the webhook as well.
     :::
 
-    `SMS_DELIVERY_REPORT_RETENTION_DAYS` bounds the size of `oempro_sms_delivery_reports`. The worker prunes rows older than this every 1,000 processed messages. Set it to `0` to disable pruning entirely.
+    `SMS_DELIVERY_REPORT_RETENTION_DAYS` bounds the size of `oempro_sms_delivery_reports`. The scheduled command `sms:delivery-reports:prune` deletes rows older than this once a day, in bounded batches, so the delivery report worker keeps consuming while it runs. Set it to `0` to disable pruning entirely.
+
+    ::: tip Changed in v6.0.0
+    Pruning used to run inside the delivery report worker, as one unbounded `DELETE` every 1,000 processed messages. At campaign volume that is a multi-million row transaction inside the only consumer of a durable queue, which stops it consuming for as long as the delete takes. It is now a scheduled command and needs no configuration beyond this key.
+    :::
 
 12. **Google Postmaster Tools**
 
@@ -1108,6 +1112,8 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     SMS_EVENTS_FLUSH_SECONDS=2                    # Seconds before a partial event batch is flushed anyway. Minimum 1
     SMS_EVENTS_MAX_RETRIES=5                      # Retries before an event batch is dead-lettered. Minimum 1
     SMS_DLR_MATCH_MAX_ATTEMPTS=20                 # Attempts to match a delivery report to its message. Minimum 1
+    SMS_DLR_RETRY_TTL_SECONDS=30                  # Seconds an unmatched delivery report waits between attempts. Minimum 1
+    SMS_DLR_BATCH_SIZE=200                        # Delivery report callbacks settled per batch. Clamped 1 to 5000
     SMS_ROLLUP_MAX_KEYS_PER_RUN=50000             # Dirty rollup keys processed per run. Minimum 1
     ```
 
@@ -1137,7 +1143,11 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     `SMS_EVENTS_MAX_RETRIES` is how many times an event batch is retried before it is dead-lettered rather than dropped. Raising it makes the worker more patient with a ClickHouse outage at the cost of holding the batch longer.
 
-    `SMS_DLR_MATCH_MAX_ATTEMPTS` is how many times an unmatched delivery report is retried, 30 seconds apart, before it is given up on. A fast gateway can report delivery before the sender has finished recording the gateway's message ID, so an unmatched report is retried rather than discarded. The default covers roughly ten minutes. Raise it only if your gateway is known to report against messages you have not yet recorded for longer than that.
+    `SMS_DLR_MATCH_MAX_ATTEMPTS` is how many times an unmatched delivery report is retried before it is given up on. A fast gateway can report delivery before the sender has finished recording the gateway's message ID, so an unmatched report is retried rather than discarded. With the default spacing below this covers roughly ten minutes. Raise it only if your gateway is known to report against messages you have not yet recorded for longer than that.
+
+    `SMS_DLR_RETRY_TTL_SECONDS` is how long an unmatched delivery report waits before the next attempt, so it sets the spacing of the attempts above and, with them, how long the system is prepared to wait for a report and its message to meet. It is applied as a time-to-live on the retry queue itself, which means **changing it on a running install requires deleting the `sms_delivery_reports_retry` queue once** so it can be recreated with the new value. RabbitMQ refuses to redeclare a queue whose arguments have changed, and the delivery report worker logs exactly this instruction when that happens.
+
+    `SMS_DLR_BATCH_SIZE` is how many delivery report callbacks the processor holds before it settles them together. A gateway that reports in batches sends many messages in one callback, and the processor resolves a whole batch with one query per gateway instead of one per report. Raising it means fewer database round trips and more messages held unacknowledged from the broker, so a processor that dies redelivers a correspondingly larger block. Lowering it does the reverse.
 
     `SMS_ROLLUP_MAX_KEYS_PER_RUN` bounds how many dirty rollup keys one rollup run processes. It caps the length of a single run rather than the total work, so lowering it makes runs shorter and more frequent.
 
