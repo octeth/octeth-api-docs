@@ -91,8 +91,37 @@ curl -X POST https://example.com/api.php \
 3: Missing segment operator
 4: List not found or doesn't belong to user
 5: Invalid segment rule field or operator (issue #2720)
+12: An sms-events rule in RulesJSON is not valid (issue #2742)
 ```
 
+:::
+
+
+::: tip Segmenting on SMS behaviour <Badge type="tip" text="New in v6.0.0" />
+`RulesJSON` accepts a new leaf type, `sms-events`, alongside the existing ones:
+
+```json
+{
+  "type": "sms-events",
+  "operator": "clicked",
+  "value": 1234,
+  "time_filter": { "type": "in_last_x_days", "value": 30 },
+  "aggregation": { "operator": "at_least", "count": 2 }
+}
+```
+
+| Field | Values |
+|---|---|
+| `operator` | `sent`, `not sent`, `delivered`, `not delivered`, `failed`, `not failed`, `clicked`, `not clicked`, `replied`, `not replied`, `opted out`, `not opted out` |
+| `value` | An `SMSCampaignID`, or empty for any SMS |
+| `time_filter` | `in_last_x_days`, `not_in_last_x_days`, `after`, `before`. `between` and `not_between` only with a campaign `value` |
+| `aggregation` | `at_least`, `at_most`, `exactly` with `count`. Only with an empty `value` and no `time_filter`, and not with `opted out`, which has no counter |
+
+These rules are validated when the segment is saved, so an unknown operator, an unsupported combination, a campaign you do not own, or a campaign whose per-recipient detail has passed its retention window is refused with error code `12` rather than saved as a rule that silently matches nobody.
+
+A negative rule naming a specific campaign means "was a recipient of it and did not", not "is not in the matching set", so contacts who never received that campaign do not satisfy "did not click it".
+
+Segment results lag SMS activity by the rollup cycle, about one minute.
 :::
 
 ## Update a Segment
@@ -163,6 +192,7 @@ curl -X POST https://example.com/api.php \
 5: Invalid segment operator
 6: Invalid subscriber list id
 7: Invalid segment rule field or operator (issue #2720)
+12: An sms-events rule in RulesJSON is not valid (issue #2742)
 ```
 
 :::
