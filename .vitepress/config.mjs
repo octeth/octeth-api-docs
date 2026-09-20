@@ -891,6 +891,7 @@ export default defineConfig({
                                 {text: 'SSO', link: '/v6.0.0/api-reference/sso'},
                                 {text: 'Suppression Lists', link: '/v6.0.0/api-reference/suppression'},
                                 {text: 'SMS Suppression Lists', link: '/v6.0.0/api-reference/sms-suppression'},
+                                {text: 'SMS Campaigns', link: '/v6.0.0/api-reference/sms-campaigns'},
                                 {text: 'SMS Reporting', link: '/v6.0.0/api-reference/sms-reporting'},
                                 {text: 'Settings', link: '/v6.0.0/api-reference/settings'},
                                 {text: 'Event Tracking', link: '/v6.0.0/api-reference/eventtracking'},
