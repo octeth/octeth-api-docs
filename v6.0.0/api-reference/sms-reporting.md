@@ -273,7 +273,19 @@ curl -X GET https://example.com/api/v1/smscampaign.stats.breakdown \
 | SMSCampaignID | Integer | Yes | The campaign to read |
 | Status | String | No | Filter by delivery status. Possible values: `Queued`, `Released`, `Sending`, `Sent`, `Delivered`, `Failed`, `Expired`, `Rejected`, `Suppressed`, `Cancelled` |
 | Limit | Integer | No | Rows per page, 1 to 500. Default 50 |
-| Cursor | Integer | No | `NextCursor` from the previous page |
+| Cursor | Integer | No | `NextCursor` from the previous page. Ignored when `RecordsFrom` is sent |
+| RecordsFrom | Integer | No | Offset into the result set. Sending it switches this call from cursor paging to offset paging and implies `IncludeTotal` |
+| IncludeTotal | Boolean | No | Return `TotalRecipients`. Costs one extra `COUNT` over the same filters, so it is off unless asked for |
+
+::: tip Two ways to page, and when each one is right
+By default this endpoint pages by cursor, which steps forward cheaply however many rows a campaign has but cannot say "page 3 of 40" or jump to one.
+
+Send `RecordsFrom` to page by offset instead, which is what a numbered pagination control needs. That is sound here because the result set is bounded by a single campaign's audience; it would not be on `sms.replies.browse`, whose table grows with every reply the account ever receives.
+
+The two are mutually exclusive. A cursor is a position in the ordered set and an offset is a count into it, so honouring both at once would silently skip rows. `RecordsFrom` wins when both are sent.
+
+`TotalRecipients` is `null` when it was not asked for, which is not the same as `0`: one means "not counted", the other means "none".
+:::
 
 ::: warning Per-recipient detail expires
 Once a campaign's queue rows pass their retention window, this endpoint returns `DetailExpired: true` and an empty `Recipients` array rather than pretending the campaign reached nobody. The campaign's counters remain correct and available through `smscampaign.stats`.
