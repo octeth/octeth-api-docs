@@ -792,10 +792,21 @@ curl -X GET https://example.com/api/v1/sms.stats.account \
 | Command | String | Yes | API command: `sms.replies.browse` |
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
-| OptOutsOnly | Boolean | No | Return only replies that were treated as an opt-out |
-| IncludeUnattributed | Boolean | No | Include replies that could not be matched to a contact. Defaults to `true` |
+| OptOutsOnly | Boolean | No | Return only replies that were treated as an opt-out. Superseded by `Filter`, and ignored when `Filter` is sent |
+| Filter | String | No | One bucket of the feed. Possible values: `optouts`, `failedoptouts`, `unattributed`. Omit for everything |
+| IncludeUnattributed | Boolean | No | Include replies that could not be matched to a contact. Defaults to `true`, so send it explicitly as `false` to exclude them |
+| Order | String | No | Possible values: `oldest` (default), `newest`. See the note below before changing it |
+| SearchNumber | String | No | Return only replies from numbers containing these digits. Non-digits are stripped; at least 3 digits are required |
+| CreatedAfter | String | No | Only replies received at or after this point. `YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS`; a bare date means 00:00:00 |
+| CreatedBefore | String | No | Only replies received at or before this point. A bare date means 23:59:59, so the whole day is included |
 | Limit | Integer | No | Rows per page, 1 to 500. Default 50 |
 | Cursor | Integer | No | `NextCursor` from the previous page |
+
+::: warning A cursor belongs to one order
+`Order` changes the direction the cursor walks: ascending asks for `InboundID > Cursor`, descending asks for `InboundID < Cursor`. A cursor taken from one direction is meaningless in the other, so reset paging when you change `Order` rather than carrying a stored cursor across.
+
+The default stays `oldest` so existing integrations paging through history are unaffected. A reply feed shown to a person usually wants `newest`.
+:::
 
 ::: tip Unattributed replies
 A reply that could not be matched to a contact still belongs to somebody. Where the receiving gateway is assigned to your account alone, and is not a shared gateway, such replies are included here so they are not silently lost. On a shared gateway they are not, because they cannot be attributed unambiguously.
@@ -844,6 +855,90 @@ curl -X GET https://example.com/api/v1/sms.replies \
 
 ```txt [Error Codes]
 5: The replies could not be read
+6: Invalid Filter value
+7: Invalid Order value
+8: Invalid CreatedAfter or CreatedBefore value
+9: SearchNumber contains fewer than 3 digits
+```
+
+:::
+
+`Filter` and `IncludeUnattributed` can appear to contradict each other. `Filter=unattributed` wins: asking for the unattributed bucket while also excluding unattributed replies would otherwise answer an empty list rather than an error.
+
+## Get Account SMS Reply Counts
+
+<Badge type="info" text="GET" /> `/api/v1/sms.replies.summary.get`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `SMSCampaigns.Get`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+How many replies match a set of filters, broken down by the states worth acting on. `sms.replies.browse` is cursor-paged and returns no total on purpose, because the inbound table grows with every reply the system ever receives and counting it on every page turn is the cost cursor paging exists to avoid. Ask this once instead.
+
+Takes the same scope and the same filters as the feed, minus `Filter` itself: the response already breaks the buckets out separately, so narrowing to one would empty the others.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `sms.replies.summary.get` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| IncludeUnattributed | Boolean | No | Count replies that could not be matched to a contact. Defaults to `true` |
+| SearchNumber | String | No | Count only replies from numbers containing these digits. At least 3 digits |
+| CreatedAfter | String | No | Only replies received at or after this point, parsed as in `sms.replies.browse` |
+| CreatedBefore | String | No | Only replies received at or before this point |
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Total | Integer | Replies matching the filters |
+| OptOuts | Integer | Of those, the ones treated as an opt-out |
+| FailedOptOuts | Integer | Opt-outs the unsubscribe did not complete for. Any non-zero value needs attention: the person asked to be removed and was not |
+| Unattributed | Integer | Replies that could not be matched to a contact |
+| IncludesUnattributed | Boolean | Whether unattributed replies are actually inside these counts. Asking for them is not the same as getting them: they are only counted for gateways assigned to your account alone |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET https://example.com/api/v1/sms.replies.summary.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "sms.replies.summary.get",
+    "APIKey": "your-api-key",
+    "CreatedAfter": "2026-09-01"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "Total": 1284,
+  "OptOuts": 212,
+  "FailedOptOuts": 3,
+  "Unattributed": 41,
+  "IncludesUnattributed": true,
+  "SearchNumber": "",
+  "CreatedAfter": "2026-09-01 00:00:00",
+  "CreatedBefore": null
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "Errors": [{ "Code": 8, "Message": "Invalid createdafter value. Expected YYYY-MM-DD or YYYY-MM-DD HH:MM:SS." }],
+  "ErrorCode": 8
+}
+```
+
+```txt [Error Codes]
+5: The reply summary could not be read
+8: Invalid CreatedAfter or CreatedBefore value
+9: SearchNumber contains fewer than 3 digits
 ```
 
 :::
