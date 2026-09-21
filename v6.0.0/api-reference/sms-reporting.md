@@ -812,7 +812,14 @@ curl -X GET https://example.com/api/v1/sms.stats.account \
 | CreatedAfter | String | No | Only replies received at or after this point. `YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS`; a bare date means 00:00:00 |
 | CreatedBefore | String | No | Only replies received at or before this point. A bare date means 23:59:59, so the whole day is included |
 | Limit | Integer | No | Rows per page, 1 to 500. Default 50 |
-| Cursor | Integer | No | `NextCursor` from the previous page |
+| Cursor | Integer | No | `NextCursor` from the previous page. Ignored when `RecordsFrom` is sent |
+| RecordsFrom | Integer | No | Offset into the result set. Sending it switches this call from cursor paging to offset paging, which is what a numbered pagination control needs |
+
+::: tip Paging a feed that carries no total
+This endpoint returns no row count, deliberately: the table grows with every reply the account ever receives, and a `COUNT` on every page turn is the cost cursor paging exists to avoid.
+
+If you need page numbers, page by `RecordsFrom` and take the total from `sms.replies.summary.get`, which answers the same filters and breaks its counts out per bucket. That is what the interface does, so its page count costs no extra call. Take the count for the bucket you are showing, not `Total`, or a filtered feed gets the page count of the unfiltered one.
+:::
 
 ::: warning A cursor belongs to one order
 `Order` changes the direction the cursor walks: ascending asks for `InboundID > Cursor`, descending asks for `InboundID < Cursor`. A cursor taken from one direction is meaningless in the other, so reset paging when you change `Order` rather than carrying a stored cursor across.
