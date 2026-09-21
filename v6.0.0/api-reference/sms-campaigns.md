@@ -254,10 +254,13 @@ curl -X GET https://example.com/api/v1/smscampaign.get \
 |-----------|------|----------|-------------|
 | Command | String | Yes | API command: `smscampaign.browse` |
 | SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
 | Status | String | No | Filter by status. Possible values: `Draft`, `Scheduled`, `Queueing`, `Sending`, `Paused`, `Cancelling`, `Cancelled`, `Sent`, `Failed` |
 | ListID | Integer | No | Only campaigns targeting this list |
 | RecordsPerRequest | Integer | No | Page size, default 25, clamped to 200 |
 | RecordsFrom | Integer | No | Offset, default 0 |
+| CreatedAfter | String | No | Only campaigns created at or after this point. `YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS`; a bare date means 00:00:00 |
+| CreatedBefore | String | No | Only campaigns created at or before this point. `YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS`; a bare date means 23:59:59, so the whole day is included |
 
 ::: code-group
 
@@ -295,6 +298,109 @@ curl -X GET https://example.com/api/v1/smscampaign.browse \
 0: Success
 1: Invalid Status value
 2: The campaign list could not be read
+3: Invalid CreatedAfter or CreatedBefore value
+```
+
+:::
+
+Results are ordered newest first by `SMSCampaignID` and the order cannot be changed. A `CreatedAfter` or `CreatedBefore` value that cannot be parsed is refused with ErrorCode 3 rather than ignored, so a malformed date never silently widens the window.
+
+### Get a Campaign Summary
+
+<Badge type="info" text="GET" /> `/api/v1/smscampaign.summary.get`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `SMSCampaigns.Get`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Counts and totals across every campaign matching the filters, rather than across one page of `smscampaign.browse`. Intended for a dashboard header or a status rail: it answers how many campaigns sit in each status and what the whole selection sent, delivered, cost and lost to opt-outs, in two grouped queries rather than one call per status.
+
+Takes the same `ListID` and `CreatedAt` filters as `smscampaign.browse`, so a summary and a list read under the same parameters always describe the same campaigns. `Status` is deliberately not accepted: the response already breaks every status out separately.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `smscampaign.summary.get` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| ListID | Integer | No | Only campaigns targeting this list |
+| CreatedAfter | String | No | Only campaigns created at or after this point, parsed as in `smscampaign.browse` |
+| CreatedBefore | String | No | Only campaigns created at or before this point, parsed as in `smscampaign.browse` |
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| TotalCampaigns | Integer | Campaigns matching the filters |
+| StatusCounts | Object | One key per status, including the statuses at zero, so a caller rendering a fixed set of buckets never has to guess |
+| Totals | Object | `TotalAudience`, `TotalSent`, `TotalDelivered`, `TotalUndelivered`, `TotalOptOuts`, `TotalClicks` and `TotalParts`, summed across the selection |
+| Costs | Array | One entry per currency, each with `Currency`, `Campaigns`, `ActualCost` and `ConfirmedCost` |
+| CreatedAfter | String | The window's start as it was parsed, or `null` when none was sent |
+| CreatedBefore | String | The window's end as it was parsed, or `null` when none was sent |
+
+Money is returned per currency and is never pre-summed. `CostCurrency` is a per-campaign column, so an account holding both USD and EUR campaigns has two totals and no single one; adding them would produce a figure in no currency at all. A caller showing a single spend figure should check that `Costs` holds exactly one entry.
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET https://example.com/api/v1/smscampaign.summary.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "smscampaign.summary.get",
+    "SessionID": "your-session-id",
+    "CreatedAfter": "2026-08-01"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "TotalCampaigns": 16,
+  "StatusCounts": {
+    "Draft": 1,
+    "Scheduled": 0,
+    "Queueing": 0,
+    "Sending": 1,
+    "Paused": 0,
+    "Cancelling": 0,
+    "Sent": 12,
+    "Cancelled": 2,
+    "Failed": 0
+  },
+  "Totals": {
+    "TotalAudience": 143840,
+    "TotalSent": 138211,
+    "TotalDelivered": 133902,
+    "TotalUndelivered": 4309,
+    "TotalOptOuts": 512,
+    "TotalClicks": 18420,
+    "TotalParts": 148903
+  },
+  "Costs": [
+    { "Currency": "USD", "Campaigns": 15, "ActualCost": 2764.22, "ConfirmedCost": 2801.00 },
+    { "Currency": "EUR", "Campaigns": 1, "ActualCost": 41.60, "ConfirmedCost": 41.60 }
+  ],
+  "CreatedAfter": "2026-08-01 00:00:00",
+  "CreatedBefore": null
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "Errors": [{ "Code": 3, "Message": "Invalid createdafter value. Expected YYYY-MM-DD or YYYY-MM-DD HH:MM:SS." }],
+  "ErrorCode": 3
+}
+```
+
+```txt [Error Codes]
+0: Success
+2: The campaign summary could not be read
+3: Invalid CreatedAfter or CreatedBefore value
 ```
 
 :::
