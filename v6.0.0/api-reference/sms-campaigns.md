@@ -41,6 +41,8 @@ The usual sequence is: `smscampaign.create`, then `smscampaign.estimate` and `sm
 
 The campaign is created as a `Draft`. Its list must have a mobile phone number field configured, which `list.sms.settings.update` sets.
 
+The audience is the whole list, a saved segment of it (`SegmentID`), or conditions from the segment rule builder (`RulesJsonBundle`). It is never both a segment and conditions. While the campaign is a `Draft`, `smscampaign.update` can change it, and `smscampaign.audience.count` counts an audience before anything is saved.
+
 **Request Body Parameters:**
 
 | Parameter | Type | Required | Description |
@@ -52,7 +54,8 @@ The campaign is created as a `Draft`. Its list must have a mobile phone number f
 | ListID | Integer | Yes | The audience list. Must belong to the caller and have a phone field |
 | MessageContent | String | Yes | The message body. May contain merge tags from `sms.mergetags.get` |
 | GatewayID | Integer | No | The sending gateway. Must be active and assigned to the account |
-| SegmentID | Integer | No | Narrow the audience to a segment of that list |
+| SegmentID | Integer | No | Narrow the audience to a saved segment of that list. Cannot be combined with `RulesJsonBundle` |
+| RulesJsonBundle | String | No | Narrow the audience with conditions, as a JSON-encoded bundle holding exactly one criterion for `ListID`: `{"operator":"or","criteria":[{"list_id":42,"operator":"and","rules":[...]}]}`. `rules` takes the same shape as a saved segment's rules. The criterion's `operator` joins its rule groups, and the rules inside a group are joined the other way (see the example below). Possible values: `and`, `or`. Cannot be combined with `SegmentID`. Omit it to send to the whole list |
 | SenderID | String | No | The sender number or alphanumeric id to send from |
 | AppendOptOutFooter | Boolean | No | Append the opt-out footer. Defaults to the account setting |
 | OptOutFooterText | String | No | Override the footer text for this campaign |
@@ -96,16 +99,45 @@ curl -X POST https://example.com/api/v1/smscampaign.create \
 
 ```txt [Error Codes]
 0: Success
+1: Missing CampaignName parameter
+2: Missing ListID parameter
+3: Missing MessageContent parameter
 4: Invalid ListID
 5: The list has no mobile phone number field, so it cannot be an SMS audience
+6: A link in MessageContent could not be used
 7: MessageContent is empty
 8: Invalid GatewayID, or the gateway is not available to this account
 9: The message is too long for the gateway's concatenation limit
 10: The campaign could not be created
-11: Invalid SegmentID, or the segment does not belong to this list
+11: Invalid SegmentID, or the segment does not belong to this list (also returned when the campaign could not be created as a single transaction)
+12: The audience conditions in RulesJsonBundle cannot be used; the message says why
+13: SegmentID and RulesJsonBundle were both sent
 ```
 
 :::
+
+An audience narrowed by conditions. Here, contacts whose phone number starts with a UK mobile prefix and who have the tag with id 7. The two rules are in separate groups because the criterion's `operator` joins groups, while the rules inside one group are joined the other way: under `and`, a group's rules are alternatives. Putting both rules in one group would select contacts matching either of them.
+
+```json
+{
+  "operator": "or",
+  "criteria": [
+    {
+      "list_id": 42,
+      "operator": "and",
+      "rules": [
+        [ { "type": "fields", "field_id": "CustomField12", "operator": "begins with", "value": "447" } ],
+        [ { "type": "tags", "operator": "has this tag", "value": "7" } ]
+      ]
+    }
+  ]
+}
+```
+
+::: tip
+Conditions that could not be applied in full are refused rather than read as "everyone", so a bundle can never silently widen an audience. That covers empty rules, empty groups, and rules nested more than three levels deep (a top-level list of rules or groups, groups of rules or subgroups, subgroups of rules only), which the segment engine would otherwise ignore. To send to the whole list, omit `RulesJsonBundle`.
+:::
+
 
 ### Update a Campaign
 
@@ -120,14 +152,25 @@ curl -X POST https://example.com/api/v1/smscampaign.create \
 
 **Only a `Draft` campaign can be updated.** Every update bumps the campaign's modification time and changes its content fingerprint, which invalidates any estimate taken before it: after updating, run the estimate again before sending.
 
+**The audience can be changed too, while the campaign is a `Draft`.** Only what you send changes, with two rules:
+
+- `SegmentID` and `RulesJsonBundle` replace each other. Sending one clears the other, so `SegmentID=0` or `RulesJsonBundle=""` sends to the whole list.
+- Changing `ListID` without sending either of them resets the audience to the whole new list, because a segment and a set of conditions each belong to the old list.
+
+The audience is part of the content fingerprint, so an audience change invalidates an earlier estimate like any other edit.
+
 **Request Body Parameters:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | Command | String | Yes | API command: `smscampaign.update` |
 | SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
 | SMSCampaignID | Integer | Yes | The campaign to update. Must be in `Draft` |
 | CampaignName | String | No | A new name |
+| ListID | Integer | No | Move the campaign to another list. Must belong to the caller and have a phone field |
+| SegmentID | Integer | No | Narrow the audience to a saved segment of the list. `0` clears it. Cannot be combined with `RulesJsonBundle` |
+| RulesJsonBundle | String | No | Narrow the audience with conditions, in the same format as `smscampaign.create`. An empty string clears them. Cannot be combined with `SegmentID` |
 | MessageContent | String | No | A new message body |
 | GatewayID | Integer | No | A different gateway |
 | SenderID | String | No | A different sender id |
@@ -166,8 +209,100 @@ curl -X POST https://example.com/api/v1/smscampaign.update \
 ```txt [Error Codes]
 0: Success
 1: Missing or invalid SMSCampaignID parameter
+2: Campaign not found
+3: Only a Draft campaign can be edited
+4: A link in MessageContent could not be used
+5: MessageContent is empty
+6: Nothing to update
 7: The campaign could not be updated, so nothing was changed
+8: Invalid GatewayID, or the gateway is not available to this account
+9: The message is too long for the gateway's concatenation limit
 10: The campaign could not be updated as a single transaction, so nothing was changed
+11: The campaign, or its links, could not be read, so nothing was changed
+12: Invalid ListID
+13: The list has no mobile phone number field, so it cannot be an SMS audience
+14: Invalid SegmentID, or the segment does not belong to this list
+15: The audience conditions in RulesJsonBundle cannot be used; the message says why
+16: SegmentID and RulesJsonBundle were both sent
+```
+
+:::
+
+### Count an Audience
+
+<Badge type="info" text="POST" /> `/api/v1/smscampaign.audience.count`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `SMSCampaigns.Manage`
+- Rate limit: 60 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Counts an audience without saving anything, so it works before a campaign exists. It is the same count the estimate starts from: the list, narrowed by a saved segment or by conditions, limited to subscribed contacts.
+
+**It is not the number that will be sent.** Invalid numbers, suppressed numbers and duplicates are removed afterwards, by `smscampaign.estimate`, which remains the only number a send is confirmed against.
+
+The count is capped one above the per-campaign maximum. An audience above it is reported as the maximum with `ExceedsMaximum` set, and a campaign with that audience cannot be sent.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `smscampaign.audience.count` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| ListID | Integer | Yes | The list to count. Must belong to the caller and have a phone field |
+| SegmentID | Integer | No | Count a saved segment of the list. Cannot be combined with `RulesJsonBundle` |
+| RulesJsonBundle | String | No | Count the contacts matching these conditions, in the same format as `smscampaign.create`. Cannot be combined with `SegmentID` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/smscampaign.audience.count \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "smscampaign.audience.count",
+    "SessionID": "your-session-id",
+    "ListID": 42,
+    "SegmentID": 7
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "TotalAudience": 18240,
+  "ExceedsMaximum": false,
+  "MaxRecipients": 1000000
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "Errors": [
+    {
+      "Code": 7,
+      "Message": "This audience uses a segment that picks contacts at random, which an SMS campaign cannot use: every page of the send would pick a different set of contacts."
+    }
+  ],
+  "ErrorCode": 7
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing ListID parameter
+2: Invalid ListID
+3: The list has no mobile phone number field, so it cannot be an SMS audience
+4: Invalid SegmentID, or the segment does not belong to this list
+5: The audience conditions in RulesJsonBundle cannot be used; the message says why
+6: SegmentID and RulesJsonBundle were both sent
+7: The audience uses a segment that picks contacts at random, which an SMS campaign cannot use
+8: The audience uses a segment saved in an older rules format; open it in the segment editor and save it again
+9: The audience could not be counted right now
 ```
 
 :::
@@ -181,6 +316,8 @@ curl -X POST https://example.com/api/v1/smscampaign.update \
 - Required permissions: `SMSCampaigns.Get`
 - Legacy endpoint access via `/api.php` is also supported
 :::
+
+The campaign's audience is `RelListID`, narrowed by at most one of `RelSegmentID` (a saved segment) and `RulesJsonBundle` (conditions, as the JSON string it was saved as). Both are `null` when the campaign goes to the whole list.
 
 **Request Body Parameters:**
 
@@ -206,18 +343,22 @@ curl -X GET https://example.com/api/v1/smscampaign.get \
 {
   "Success": true,
   "ErrorCode": 0,
-  "Campaign": {
+  "SMSCampaign": {
     "SMSCampaignID": 4821,
     "CampaignName": "October promotion",
     "Status": "Sending",
     "StatusReason": "",
     "RelListID": 42,
+    "RelSegmentID": null,
+    "RulesJsonBundle": "{\"operator\":\"or\",\"criteria\":[{\"list_id\":42,\"operator\":\"and\",\"rules\":[[{\"type\":\"fields\",\"field_id\":\"CustomField12\",\"operator\":\"begins with\",\"value\":\"447\"}]]}]}",
     "RelGatewayID": 3,
     "MessageContent": "Hi {FirstName}, 20% off this week only.",
     "TotalAudience": 400318,
     "ConfirmedCost": "4315.66000",
     "CostCurrency": "USD"
-  }
+  },
+  "Links": [],
+  "IsEditable": false
 }
 ```
 
