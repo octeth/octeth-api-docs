@@ -601,6 +601,74 @@ curl -X POST https://example.com/api/v1/smscampaign.delete \
 
 :::
 
+### Duplicate a Campaign
+
+<Badge type="info" text="POST" /> `/api/v1/smscampaign.copy`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `SMSCampaigns.Manage`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Copies any campaign you own into a new Draft named "Copy of" followed by the original name, whatever the original's status. Resending a finished campaign is the usual reason.
+
+The copy keeps the audience (list, saved segment or conditions), the message and its tracked links, the sender, the gateway, the opt-out footer, link settings, timezone, quiet hours and send rate. It starts without the original's schedule and deadline, estimate, confirmed cost and statistics, so estimate it before sending.
+
+The audience is checked again the way `smscampaign.create` checks it, so a campaign whose list was deleted or no longer has a mobile phone field cannot be duplicated. A gateway that is no longer available to your account does not stop the copy: it is made with no gateway, `GatewayCleared` is `true`, and you choose one with `smscampaign.update` before sending.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `smscampaign.copy` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| SMSCampaignID | Integer | Yes | The campaign to duplicate |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/smscampaign.copy \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "smscampaign.copy",
+    "SessionID": "your-session-id",
+    "SMSCampaignID": 4821
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "SMSCampaignID": 4907,
+  "SourceSMSCampaignID": 4821,
+  "GatewayCleared": false,
+  "Links": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "Errors": [{ "Code": 3, "Message": "The campaign cannot be duplicated because its audience is no longer valid: Invalid ListID." }],
+  "ErrorCode": 3
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing or invalid SMSCampaignID parameter
+2: Campaign not found
+3: The campaign's audience is no longer valid (its list, segment or conditions)
+4: The campaign's links could not be read, so nothing was duplicated
+5: The campaign could not be duplicated, so nothing was created
+```
+
+:::
+
 ## Sending
 
 ### Send a Campaign
