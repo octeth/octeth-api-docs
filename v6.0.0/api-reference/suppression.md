@@ -395,7 +395,7 @@ curl -X POST https://example.com/api.php \
 - Authentication required: User API Key or Admin API Key
 - Under a **User API Key** the addresses are written to the caller's own list (`RelOwnerUserID` = caller), or to one of the caller's lists when `ListID` is given.
 - Under an **Admin API Key** the addresses are written **system-wide** (`RelOwnerUserID = 0`, `RelListID = 0`): they suppress delivery for every account on the install. This is the API form of the admin Suppression screen's "Add email addresses" box. Pass `SuppressionSource=Administrator` to match what the screen writes (the default is `User`). `ListID` is not supported under admin auth and fails with `ErrorCode: 4`.
-- The command is registered `admin,user`, so a request carrying both credentials takes the admin path unless `Access=user` is passed.
+- The credential you present selects the path: a user key writes to the caller's own list, an admin key writes system-wide. Send `Access=user` or `Access=admin` only when you want to choose explicitly, for example an admin key acting as a user.
 - v1 REST alias: `POST /api/v1/suppression.import`. Legacy access via `/api.php` is also supported
 :::
 

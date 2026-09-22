@@ -1146,7 +1146,7 @@ curl -X POST https://example.com/api.php \
 <Badge type="info" text="POST" /> `/api/v1/email.template.thumbnail.upload`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key or User API Key (pass `Access=user` with a user key, the command is registered admin first like the rest of `email.template.*`)
+- Authentication required: Admin API Key or User API Key
 - Required user permission: `EmailTemplates.Manage`; required admin privilege: `Settings`
 - v1 REST alias: `POST /api/v1/email.template.thumbnail.upload`. Legacy access via `/api.php` is also supported
 - The returned `TemplateThumbnailPath` is consumed by `email.template.create` or `email.template.update` (their existing `TemplateThumbnailPath` parameter). The temp file is deleted when it is consumed. Files that are never consumed stay in `data/tmp/`.
