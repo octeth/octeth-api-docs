@@ -59,7 +59,7 @@ The audience is the whole list, a saved segment of it (`SegmentID`), or conditio
 | SenderID | String | No | The sender number or alphanumeric id to send from |
 | AppendOptOutFooter | Boolean | No | Append the opt-out footer. Defaults to the account setting |
 | OptOutFooterText | String | No | Override the footer text for this campaign |
-| Timezone | String | No | The timezone quiet hours are evaluated in |
+| Timezone | String | No | The timezone quiet hours and the schedule are evaluated in, as an IANA name such as `Europe/Istanbul`. Defaults to the account's own timezone. An unknown name is refused |
 
 ::: code-group
 
@@ -115,6 +115,7 @@ curl -X POST https://example.com/api/v1/smscampaign.create \
 14: MessageContent uses a merge tag for a field this list does not have; the message names it
 15: The list's fields could not be read to check the merge tags, so nothing was created
 16: MessageContent has a merge tag that cannot be read (a misspelt or email-only scope, or a space after the colon), which would be sent as typed; the message lists them
+17: Timezone is not a known timezone
 ```
 
 :::
@@ -179,7 +180,7 @@ The audience is part of the content fingerprint, so an audience change invalidat
 | SenderID | String | No | A different sender id |
 | AppendOptOutFooter | Boolean | No | Whether to append the opt-out footer |
 | OptOutFooterText | String | No | Override the footer text |
-| Timezone | String | No | The quiet-hours timezone |
+| Timezone | String | No | The quiet-hours timezone, as an IANA name. An unknown name is refused |
 
 ::: code-group
 
@@ -230,6 +231,7 @@ curl -X POST https://example.com/api/v1/smscampaign.update \
 17: The message uses a merge tag for a field the campaign's list does not have, checked whenever the message or the list changes; the message names it
 18: The list's fields could not be read to check the merge tags, so nothing was changed
 19: The message has a merge tag that cannot be read, which would be sent as typed; the message lists them
+20: Timezone is not a known timezone
 ```
 
 :::
@@ -323,6 +325,8 @@ curl -X POST https://example.com/api/v1/smscampaign.audience.count \
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
+`QuietHours` says whether the campaign's quiet hours are holding it right now. While `Active` is true a Sending campaign sends nothing, and `ResumesAt` (UTC) is when it starts again. `Start` and `End` are in the campaign's `Timezone`, and both are null when the campaign has no quiet hours.
+
 The campaign's audience is `RelListID`, narrowed by at most one of `RelSegmentID` (a saved segment) and `RulesJsonBundle` (conditions, as the JSON string it was saved as). Both are `null` when the campaign goes to the whole list.
 
 **Request Body Parameters:**
@@ -358,13 +362,21 @@ curl -X GET https://example.com/api/v1/smscampaign.get \
     "RelSegmentID": null,
     "RulesJsonBundle": "{\"operator\":\"or\",\"criteria\":[{\"list_id\":42,\"operator\":\"and\",\"rules\":[[{\"type\":\"fields\",\"field_id\":\"CustomField12\",\"operator\":\"begins with\",\"value\":\"447\"}]]}]}",
     "RelGatewayID": 3,
-    "MessageContent": "Hi {FirstName}, 20% off this week only.",
+    "MessageContent": "Hi {{ Subscriber:FirstName | \"there\" }}, 20% off this week only.",
+    "Timezone": "America/New_York",
     "TotalAudience": 400318,
     "ConfirmedCost": "4315.66000",
     "CostCurrency": "USD"
   },
   "Links": [],
-  "IsEditable": false
+  "IsEditable": false,
+  "QuietHours": {
+    "Active": true,
+    "Start": "21:00",
+    "End": "09:00",
+    "Timezone": "America/New_York",
+    "ResumesAt": "2026-09-23 13:00:00"
+  }
 }
 ```
 
