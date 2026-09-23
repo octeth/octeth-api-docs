@@ -52,7 +52,7 @@ The audience is the whole list, a saved segment of it (`SegmentID`), or conditio
 | APIKey | String | No | API key for authentication |
 | CampaignName | String | Yes | A name for the campaign |
 | ListID | Integer | Yes | The audience list. Must belong to the caller and have a phone field |
-| MessageContent | String | Yes | The message body. May contain merge tags from `sms.mergetags.get` |
+| MessageContent | String | Yes | The message body. May contain merge tags from `sms.mergetags.get`, written as in email: <code v-pre>{{ Subscriber:FirstName }}</code>, or <code v-pre>{{ Subscriber:FirstName &#124; "there" }}</code> with a fallback. A tag naming a field the list does not have is refused |
 | GatewayID | Integer | No | The sending gateway. Must be active and assigned to the account |
 | SegmentID | Integer | No | Narrow the audience to a saved segment of that list. Cannot be combined with `RulesJsonBundle` |
 | RulesJsonBundle | String | No | Narrow the audience with conditions, as a JSON-encoded bundle holding exactly one criterion for `ListID`: `{"operator":"or","criteria":[{"list_id":42,"operator":"and","rules":[...]}]}`. `rules` takes the same shape as a saved segment's rules. The criterion's `operator` joins its rule groups, and the rules inside a group are joined the other way (see the example below). Possible values: `and`, `or`. Cannot be combined with `SegmentID`. Omit it to send to the whole list |
@@ -112,6 +112,9 @@ curl -X POST https://example.com/api/v1/smscampaign.create \
 11: Invalid SegmentID, or the segment does not belong to this list (also returned when the campaign could not be created as a single transaction)
 12: The audience conditions in RulesJsonBundle cannot be used; the message says why
 13: SegmentID and RulesJsonBundle were both sent
+14: MessageContent uses a merge tag for a field this list does not have; the message names it
+15: The list's fields could not be read to check the merge tags, so nothing was created
+16: MessageContent has a merge tag that cannot be read (a misspelt or email-only scope, or a space after the colon), which would be sent as typed; the message lists them
 ```
 
 :::
@@ -224,6 +227,9 @@ curl -X POST https://example.com/api/v1/smscampaign.update \
 14: Invalid SegmentID, or the segment does not belong to this list
 15: The audience conditions in RulesJsonBundle cannot be used; the message says why
 16: SegmentID and RulesJsonBundle were both sent
+17: The message uses a merge tag for a field the campaign's list does not have, checked whenever the message or the list changes; the message names it
+18: The list's fields could not be read to check the merge tags, so nothing was changed
+19: The message has a merge tag that cannot be read, which would be sent as typed; the message lists them
 ```
 
 :::
@@ -1227,6 +1233,8 @@ curl -X POST https://example.com/api/v1/smscampaign.test \
 9: The test message is too long for the gateway's concatenation limit
 10: SMS rate limit exceeded for an interval
 11: The test message could not be queued, so nothing was sent
+12: The message's merge tags could not be rendered, so nothing was sent
+13: The message has a merge tag that cannot be read, which would be sent as typed
 ```
 
 :::
@@ -1510,7 +1518,16 @@ curl -X GET https://example.com/api/v1/sms.gateways.get \
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-The merge tags a message for this list may use. Every tag is measured at its rendered length when the message is costed, so the parts reported by the estimate are the parts that will be sent.
+The merge tags a message for this list may use: its custom fields by merge tag alias (or `CustomField<ID>` when a field has none), its global custom fields, then the standard subscriber fields. Every tag is measured at its rendered length when the message is costed, so the parts reported by the estimate are the parts that will be sent.
+
+SMS merge tags use the email syntax and are rendered as plain text, never HTML-encoded:
+
+- <code v-pre>{{ Subscriber:FirstName }}</code> is the recipient's value, or nothing when it is empty.
+- <code v-pre>{{ Subscriber:FirstName | "there" }}</code> falls back to the quoted text when the value is empty.
+- Email helpers work, for example <code v-pre>{{ uppercase Subscriber:FirstName }}</code> or <code v-pre>{{ truncate-10 Subscriber:City }}</code>, and so do <code v-pre>{{ List:... }}</code> and <code v-pre>{{ User:... }}</code>.
+- <code v-pre>{{ Subscriber:EmailAddress }}</code> is empty for a contact without an email address and for an SMS-only contact, whose placeholder address is never sent.
+
+In a test send there is no recipient, so every subscriber tag renders its fallback.
 
 **Request Body Parameters:**
 
@@ -1533,9 +1550,14 @@ curl -X GET https://example.com/api/v1/sms.mergetags.get \
   "Success": true,
   "ErrorCode": 0,
   "MergeTags": [
-    { "Tag": "{FirstName}", "FieldName": "First name" },
-    { "Tag": "{CustomField12}", "FieldName": "Mobile number" }
-  ]
+    { "Tag": "{{ Subscriber:FirstName }}", "Field": "FirstName", "FieldName": "First name", "Group": "Custom", "CustomFieldID": 7, "IsPhoneField": false },
+    { "Tag": "{{ Subscriber:CustomField12 }}", "Field": "CustomField12", "FieldName": "Mobile number", "Group": "Custom", "CustomFieldID": 12, "IsPhoneField": true },
+    { "Tag": "{{ Subscriber:Tier }}", "Field": "Tier", "FieldName": "Loyalty tier", "Group": "Global", "CustomFieldID": 30, "IsPhoneField": false },
+    { "Tag": "{{ Subscriber:EmailAddress }}", "Field": "EmailAddress", "FieldName": "Email address", "Group": "Standard", "CustomFieldID": null, "IsPhoneField": false }
+  ],
+  "PhoneFieldID": 12,
+  "SupportsDefaultValueSyntax": true,
+  "DefaultValueExample": "{{ Subscriber:FirstName | \"there\" }}"
 }
 ```
 
@@ -1552,6 +1574,7 @@ curl -X GET https://example.com/api/v1/sms.mergetags.get \
 1: Missing ListID parameter
 2: Invalid ListID
 3: The list's SMS settings could not be read
+4: The list's fields could not be read
 ```
 
 :::
