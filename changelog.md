@@ -12,21 +12,35 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Scheduled for September 25th, 2026. Changelog will be updated upon release.
-
-v6.0.0 is a security release. It remediates the findings of a full audit of the API surface, and most of its changes are refusals of requests that were previously accepted. Read the [behavior changes page](/v6.0.0/api-reference/behavior-changes) before upgrading: an integration can break even though no successful call changes shape.
+v6.0.0 is a security release. It remediates the findings of a full audit of the API surface, and most of its changes are refusals of requests that were previously accepted. It also delivers bulk SMS campaigns to phone-only contacts through the API. Read the Upgrade Notes below and the [behavior changes page](/v6.0.0/api-reference/behavior-changes) before upgrading: an integration can break even though no successful call changes shape.
 
 ### New Features
 
-- (To be documented)
+- **Bulk SMS campaigns** - Send SMS campaigns to lists and segments through the API, including to contacts that have a phone number but no email address. Includes SMS templates, per-list SMS settings, cost estimates before sending, delivery reports, inbound replies with automatic opt-out handling, frequency caps and forbidden-word checks. Accounts need the new SMS campaign permissions on their user group before they can use it.
+- **SMS reporting and segmentation** - Campaign-level SMS reports and a full per-contact SMS event history, plus a new segment rule that targets contacts by their SMS activity.
+- **SMS administration** - New admin screens for SMS campaigns, inbound messages and bulk SMS settings.
 
 ### Enhancements
 
-- (To be documented)
+- **API rate limits enforced** - The per-command request budgets that each API command already declared are now applied to every call made through the API. A call over its budget receives HTTP 429 with a `Retry-After` header. See the Upgrade Notes.
+- **New user interface honours the signup setting** - Self-signup in the new user interface follows the admin user-signup setting.
+- **Email relay mode for the new user interface** - Setting `UI_MODE=gateway` turns the new user interface into an email relay product. Campaign, journey, SMS and list screens are hidden, and a gateway menu organized by sender domain covers API keys, SMTP, webhooks and statistics.
+- **Phone-only contacts in the new user interface** - A contact without an email address is shown by its phone number.
+- **Demo mode** - Thirteen more screens and the subscriber profile have demo data for product walkthroughs.
+- **Retired file cleanup** - A new `upgrade:remove-retired-files` command removes files that a release has retired from an upgraded installation.
 
 ### Bug Fixes
 
-- (To be documented)
+- **Visitor IP addresses** - Octeth now records the visitor's real IP address instead of the address of its own front-end container. See the Upgrade Notes.
+- **Upgrades with campaigns in flight** - The upgrade's check for campaigns that are currently sending works again, and a stalled sending batch can no longer block the recovery process permanently.
+- **Segment safety** - A segment rule of an unknown type now matches nothing instead of matching the whole list.
+- **SMS suppression** - SMS sending stops rather than proceeding when the suppression list cannot be read.
+- **SMS message length** - Messages that use non-Latin characters are counted correctly, so the segment count and cost estimate match what the carrier bills.
+- **New user interface configuration** - A brand setting that contains spaces or special characters no longer stops the new user interface from starting.
+- **User panel search** - The global search in the user panel returns results again. It had failed on every search since v5.9.1.
+- **Admin subscriber search** - The admin subscriber search screen follows the same layout and behaviour as the rest of the admin area.
+- **New user interface signup** - Signing up with a username or email address that already exists shows the reason instead of a "Temporarily unavailable" page.
+- **Journey API error codes** - `journey.actions.update` reports an invalid webhook URL with its own error code, 18, so it can no longer be confused with a Decision node error.
 
 ### Security Patches
 
@@ -46,6 +60,12 @@ v6.0.0 is a security release. It remediates the findings of a full audit of the 
 - Restricted and redacted the new user interface's API debug console, rooted its generated URLs at `APP_URL`, and stopped it holding a plaintext password while a two-factor challenge is pending.
 - Fixed client address resolution, which on a standard install recorded the address of Octeth's own front-end container instead of the visitor, for every request, on every install. The admin Authorized IP Addresses list, per-IP rate limits, geographic reporting and the subscription, opt-in and unsubscription IP columns were all affected.
 - Authenticated the public bounce webhook on fresh installations. The endpoint could previously be posted to by anyone, and it reaches the suppression list that blocks delivery for every account on the installation. Existing installations keep the setting they already have.
+- Validated the source of the forward-to-friend header and footer templates, which could be pointed at a file on the server.
+- Enforced account ownership on `dns.set`, `subscribers.get`, autoresponder lists, the StartJourney journey action and `event.track`, and limited the admin-only fields of `user.update` to admin credentials.
+- Allow-listed the comparison operator in the shared criteria builder used by list and subscriber queries.
+- Escaped account-supplied text in the admin area templates and added a report-only Content Security Policy.
+- Validated JSONP callback names and tightened the Referer check on public endpoints.
+- Kept the master admin API key out of application logs, URLs and the user interface.
 - Signed the conversion identifier used by the server-to-server postback endpoint, which carried no key at all, so a conversion and a monetary amount of any size could be recorded against any account's campaigns by anyone on the internet. Repeated postbacks no longer accumulate revenue, the amount is bounded and checked, the endpoint is rate limited, and the address that submitted each conversion is now recorded.
 
 ### Upgrade Notes
@@ -130,6 +150,8 @@ v6.0.0 is a security release. It remediates the findings of a full audit of the 
 - **Everyone signed in to the new user interface is signed out once**, because its session payloads are now encrypted and an existing unencrypted session no longer decrypts. The legacy areas are unaffected. The interface's entrypoint is copied into its image, so this arrives with `docker compose build oempro_ui`, not with a recreate alone.
 
 - **Any install that has run the new user interface should clear its session store once after upgrading.** Until this release, a customer who started a two-factor sign-in and did not finish it left their password in that store in clear text for as long as the session lived. Flushing the interface's Redis session database signs users out of the new interface only and touches nothing else. A purge does not rewrite copies already taken, so treat Redis snapshots and any backup made while the interface was running as containing credentials, and let them expire under your normal retention policy.
+
+- **API rate limits are enforced from this release, with no action on your part.** Each API command has always declared a request budget, usually 100 requests a minute, but only six commands applied theirs. From v6.0.0 every call made through the API is counted against its command's budget per signed-in account, or per client address for commands that need no credential, and a call over the budget receives HTTP 429 with a `Retry-After` header. Calls made by Octeth's own screens are not counted. An integration that sends bursts to a single command should handle 429 by waiting for the `Retry-After` period. To restore the previous behaviour, set `API_ENFORCE_RATE_LIMITS=false` in `.oempro_env`.
 
 ### Deprecations
 
