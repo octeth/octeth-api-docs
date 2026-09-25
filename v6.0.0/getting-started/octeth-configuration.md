@@ -1219,6 +1219,18 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
     Introduced in v6.0.0 (issue #2742).
 
+51. **API Rate Limit Enforcement**
+
+    ```bash
+    API_ENFORCE_RATE_LIMITS=true   # Enforce the request budget each API command declares (on by default, including on upgrades)
+    ```
+
+    Every API command declares a request budget, most of them 100 requests per 60 seconds. Before v6.0.0 only six commands applied theirs. With this set to `true`, every call that arrives through `api.php` is counted against its command's budget, per authenticated account (admin, user or subscriber), or per client address for a command that needs no credential. A call over the budget answers **HTTP 429** with a `Retry-After` header and the standard error envelope with code `429`. Calls that Octeth's own screens make internally are not counted, and if Redis is unavailable calls are allowed rather than refused.
+
+    Unlike most security settings added in this release, the code default is `true`, so an upgraded install starts enforcing with no action. Set it to `false` to restore the previous behaviour if you have a bulk integration you cannot reshape immediately, then pace that integration within the budgets and turn enforcement back on. The budgets themselves are part of each command's definition and cannot be changed from this file.
+
+    Introduced in v6.0.0 (issue #2887).
+
 
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
