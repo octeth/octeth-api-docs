@@ -1,0 +1,620 @@
+---
+layout: doc
+---
+
+# System API Documentation
+
+System health monitoring and diagnostics endpoints for infrastructure components.
+
+## Check System Health
+
+<Badge type="info" text="GET" /> `/api/v1/system-health-check`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (via Bearer token or query parameter), or the dedicated health-check token when `SYSTEM_HEALTH_CHECK_AUTH_REQUIRED` is on
+- Legacy endpoint access via `/api.php` is also supported
+- Admin-key calls are subject to `ADMIN_API_ENFORCE_ALLOWED_IP`; token calls are not
+:::
+
+**Request Parameters:**
+
+| Parameter        | Type   | Required | Description                                                                                         |
+|------------------|--------|----------|-----------------------------------------------------------------------------------------------------|
+| Command          | String | Yes      | API command: `system.health.check` (only for legacy endpoint)                                       |
+| AdminAPIKey      | String | No       | Admin API key, master or per-sub-admin (alternative to Bearer token)                                |
+| HealthCheckToken | String | No       | The install's `SYSTEM_HEALTH_CHECK_TOKEN` (alternative to a Bearer token carrying the same value). Honoured only when `SYSTEM_HEALTH_CHECK_AUTH_REQUIRED` is on |
+
+**Authentication Methods:**
+
+This endpoint supports two authentication methods:
+
+1. **Bearer Token (Recommended):** Include the Admin API Key in the Authorization header:
+   ```
+   Authorization: Bearer YOUR_ADMIN_API_KEY
+   ```
+
+2. **Query Parameter:** Pass the Admin API Key as a query parameter:
+   ```
+   ?adminapikey=YOUR_ADMIN_API_KEY
+   ```
+
+### Strict authentication mode (v5.9.6)
+
+With `SYSTEM_HEALTH_CHECK_AUTH_REQUIRED=true` in `.oempro_env` (the default for fresh installs), the endpoint accepts exactly two credentials:
+
+1. **Admin API key**, master or per-sub-admin, as `AdminAPIKey` or `Authorization: Bearer <key>`.
+2. **Health-check token**, the value of `SYSTEM_HEALTH_CHECK_TOKEN`, as `HealthCheckToken` or `Authorization: Bearer <token>`. Use this for external monitors so they never hold the master key; it grants the health report and nothing else.
+
+Any other call answers HTTP 401. With the switch off (upgraded installs that have not enabled it), the historical behaviour is unchanged: the master key only, refused with HTTP 500 and error `100005`.
+
+::: code-group
+
+```bash [Example Request (Monitor token)]
+curl -X GET https://example.com/api/v1/system-health-check \
+  -H "Authorization: Bearer YOUR_SYSTEM_HEALTH_CHECK_TOKEN"
+```
+
+```json [Error Response (HTTP 401, strict mode)]
+{
+  "Success": false,
+  "ErrorCode": 99998,
+  "ErrorMessage": "Invalid API key"
+}
+```
+
+:::
+
+| Code   | HTTP | Description                                                                 |
+|--------|------|-----------------------------------------------------------------------------|
+| 99998  | 401  | Strict mode: no valid admin key or health-check token was presented         |
+| 100005 | 500  | Legacy mode: the master admin key was missing or wrong                      |
+
+::: code-group
+
+```bash [Example Request (Bearer Token)]
+curl -X GET https://example.com/api/v1/system-health-check \
+  -H "Authorization: Bearer YOUR_ADMIN_API_KEY"
+```
+
+```bash [Example Request (Query Parameter)]
+curl -X GET "https://example.com/api/v1/system-health-check?adminapikey=YOUR_ADMIN_API_KEY"
+```
+
+```bash [Example Request (Legacy)]
+curl -X GET "https://example.com/api.php?Command=system.health.check&adminapikey=YOUR_ADMIN_API_KEY"
+```
+
+```json [Success Response (HTTP 200)]
+{
+  "Checks": {
+    "MySQL": "OK",
+    "ClickHouse": "OK",
+    "Elasticsearch": "OK",
+    "RabbitMQ": "OK",
+    "Redis": "OK",
+    "Session": "OK",
+    "SystemContainer": "OK",
+    "Vector": "OK",
+    "WebsiteEventRouting": "OK",
+    "Haproxy": "OK",
+    "ClientIPResolution": "OK",
+    "ListUnsubscribeOneClick": "OK",
+    "Cron": "OK",
+    "Supervisor": "OK",
+    "SendEngine": "OK",
+    "AdminFrontend": "OK",
+    "UserFrontend": "OK",
+    "FilePermissions": "OK"
+  }
+}
+```
+
+```json [Partial Failure Response (HTTP 503)]
+{
+  "Checks": {
+    "MySQL": "OK",
+    "ClickHouse": "OK",
+    "Elasticsearch": "Connection refused",
+    "RabbitMQ": "OK",
+    "Redis": "[111] Connection refused",
+    "Session": "OK",
+    "SystemContainer": "OK",
+    "Vector": "Timeout after 3 seconds",
+    "WebsiteEventRouting": "HAProxy did not route /hello/message to backend_vector (HTTP 503; \"X-Server: oempro_vector\" response header missing). Check that backend_vector has an available server.",
+    "Haproxy": "OK",
+    "ClientIPResolution": "WARNING: this request carried X-Forwarded-For (\"203.0.113.7\") but the client address resolved to 192.168.99.100, which is inside INTERNAL_PROXY_NETWORKS. The forwarded chain is being discarded ...",
+    "ListUnsubscribeOneClick": "WARNING: this install is not advertising RFC 8058 one-click unsubscribe on every path. APP_URL is \"http://mail.example.com/\", which is not https, so campaign and autoresponder messages emit an http: List-Unsubscribe URI and their List-Unsubscribe-Post header is SUPPRESSED ...",
+    "Cron": "App container cron not executing (last run: 120 seconds ago)",
+    "Supervisor": "# campaign_delivery_worker: STOPPED # journey_worker: FATAL ",
+    "SendEngine": "No send engine containers running",
+    "AdminFrontend": "OK",
+    "UserFrontend": "Backend user login form action is not found",
+    "FilePermissions": "logs/campaign_delivery.log: expected 0777, 0666 or 0644, found 0640"
+  }
+}
+```
+
+```json [Authentication Error (HTTP 403)]
+{
+  "Errors": [
+    {
+      "Code": 1,
+      "Message": "Authentication failed. Invalid admin API key."
+    }
+  ]
+}
+```
+
+```txt [Error Codes]
+0: Success - All health checks passed
+1: Authentication failed. Invalid admin API key.
+
+HTTP Status Codes:
+200: All health checks passed
+403: Authentication failed
+503: One or more health checks failed (see Checks object for details)
+```
+
+:::
+
+**Health Check Components:**
+
+The endpoint performs comprehensive health checks on the following components:
+
+- **MySQL**: Database connectivity and admin user existence
+- **ClickHouse**: Analytics database connectivity
+- **Elasticsearch**: Search engine connectivity and indices
+- **RabbitMQ**: Message queue connectivity
+- **Redis**: Cache server connectivity
+- **Session**: PHP session functionality
+- **SystemContainer**: Laravel backend container health (`/system/ping`)
+- **Vector**: Log aggregation service health (probed directly)
+- **WebsiteEventRouting** <Badge type="tip" text="New in v5.9.3" />: The full load-balancer → Vector path used by the public website-event tracker
+
+- **Haproxy**: Load balancer connectivity
+- **ClientIPResolution** <Badge type="tip" text="New in v6.0.0" />: Whether the real visitor IP is being resolved, or a forwarded chain is being discarded and a container address recorded instead
+- **ListUnsubscribeOneClick** <Badge type="tip" text="New in v6.0.0" />: Whether this install can advertise RFC 8058 one-click unsubscribe, which requires https from both `APP_URL` and `TRACKING_URL_PROTOCOL`
+- **Cron**: App and system container cron job execution (heartbeat checks)
+- **Supervisor**: Process manager status for all managed processes
+- **SendEngine**: Send engine container discovery and supervisor process status
+- **AdminFrontend**: Admin login page accessibility and form validation
+- **UserFrontend**: User login page accessibility and form validation
+- **FilePermissions**: Directory and log file permissions (expects 0777 for directories, 0777/0666/0644 for log files)
+
+**Response Details:**
+
+- Each check returns `"OK"` if successful
+- Failed checks return detailed error messages explaining the failure
+- HTTP status code 200 indicates all checks passed
+- HTTP status code 503 indicates one or more checks failed (response still includes all check results)
+- The Cron check monitors heartbeat files updated every minute; considers cron failed if > 90 seconds since last update
+- The Supervisor check reports processes not in `RUNNING` state with format: `# process_name: STATE`
+- The SendEngine check discovers containers dynamically using Docker Compose project prefix detection
+
+### The `ClientIPResolution` check
+
+<Badge type="tip" text="New in v6.0.0" />
+
+This check reports whether the install is recording the real visitor IP, or a container address.
+
+Forwarded headers are only honoured when the request's immediate peer is trusted, which is loopback, the bundled composition's own network (`INTERNAL_PROXY_NETWORKS`), or a proxy you listed in `TRUSTED_PROXIES`. If you put your own load balancer, reverse proxy or CDN in front of Octeth at an address that is not in those sets, the `X-Forwarded-For` chain is discarded and that proxy's address is recorded as the visitor for every request.
+
+The symptoms are wide and none of them look like an IP problem:
+
+- the admin **Authorized IP Addresses** allow-list compares the wrong address, so it either locks everyone out or admits everyone;
+- per-IP rate limits treat all traffic as a single visitor;
+- geo attribution resolves every open and click to one place;
+- `SubscriptionIP`, `OptInIP` and `UnsubscriptionIP`, which exist as the consent audit trail, hold a container address. That one is **not recoverable**, because the real address was never stored.
+
+The check fires only on the combination that actually proves the fault: a forwarded chain arrived **and** the address resolution still settled on an internal one. A caller with no forwarded chain is a direct internal caller, which says nothing either way and is reported as `OK`, so a health check run from inside the install (a monitor container, the CLI, a cron) does not produce a false warning.
+
+If it warns, add your proxy's address or subnet to `TRUSTED_PROXIES`, or set `TRUST_CLOUDFLARE_CONNECTING_IP=true` if you are behind Cloudflare. If you changed the compose network, correct `INTERNAL_PROXY_NETWORKS` instead.
+
+### The `ListUnsubscribeOneClick` check
+
+<Badge type="tip" text="New in v6.0.0" />
+
+This check reports whether the install is able to advertise RFC 8058 one-click unsubscribe, which Gmail and Yahoo require of bulk senders.
+
+RFC 8058 requires the `List-Unsubscribe` URI paired with `List-Unsubscribe-Post` to be https. Where that URI's scheme comes from depends on the send path, and **two independent settings decide it**:
+
+| Setting | Governs |
+|---|---|
+| `APP_URL` | Campaign and autoresponder messages, which build the URI from `APP_URL` and replace only the host with the tracking domain |
+| `TRACKING_URL_PROTOCOL` | Email Gateway and opt-in confirmation messages sent on a sender domain's own tracking host, which do not consult `APP_URL` at all |
+
+Wherever the resulting URI would be `http:`, Octeth suppresses the `List-Unsubscribe-Post` header **on that path** rather than advertise one-click against a URI that does not meet the specification, because a receiver that notices may distrust the header pair entirely.
+
+So an https `APP_URL` on its own does not guarantee one-click everywhere. The check inspects both settings and names whichever is not https, along with the paths that setting governs, so a mismatch between the two cannot hide.
+
+That suppression is invisible from outside the install: mail still delivers, recipients can still unsubscribe through the `List-Unsubscribe` URI, and nothing reports an error. This check is the only place an operator finds out it is happening.
+
+It reads configuration rather than the current request, so it reports the same result on every scrape.
+
+Note a custom tracking domain takes its certificate from Caddy on-demand TLS. If issuance fails for an individual domain, the advertised URI is an https URI whose TLS handshake fails, which mailbox providers treat worse than an http one. That cannot be detected at send time and is not covered by this check, so confirm a new tracking domain resolves and serves https before sending volume through it. Out-of-band detection is tracked in issue #2972.
+
+### The `WebsiteEventRouting` check
+
+<Badge type="tip" text="New in v5.9.3" />
+
+The `Vector` check talks to the Vector container directly, so it cannot see a broken load-balancer route. `WebsiteEventRouting` exercises the **routed** path instead, the same path the public website-event tracker uses, so that failure mode is actually detected. Both checks are kept, so a genuine Vector outage stays distinguishable from broken routing.
+
+This exists because of a real, long-lived outage: a startup DNS race left the Vector backend with no available server for roughly four weeks. The load balancer resolved the container name once at boot, failed while the container was still starting, and permanently disabled the server. Vector itself stayed healthy the whole time, so the health check reported `OK` while the public website-event endpoint returned HTTP 503 to every visitor.
+
+How it probes:
+
+- It issues a **GET** to the website-event path through the load balancer. `GET` is deliberate: Vector's HTTP source only accepts `POST`, so a `GET` is rejected before ingestion. A synthetic `POST` would be forwarded downstream and inject a junk website event on every health-check tick.
+- It is also deliberately **not** an `OPTIONS` request: `OPTIONS` on the website-event paths is answered by a static backend that never touches Vector, so an `OPTIONS` probe would have stayed green throughout the outage described above.
+- The assertion is the presence of the `X-Server: oempro_vector` **response header**, which only the Vector backend adds. The load balancer's internally generated "no server available" 503 is produced before those backend response rules run and therefore carries no such header. Matching the header rather than the status code proves the response really came from Vector through the intended route.
+
+On failure the check reports the observed HTTP status and states that the `X-Server: oempro_vector` header was missing, pointing the operator at the Vector backend's server availability.
+
+## Process PowerMTA Log File
+
+<Badge type="info" text="POST" /> `/api/v1/process_pmta_log_file`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (via Bearer token)
+- Rate limit: 100 requests per 60 seconds
+- This endpoint is designed for PowerMTA integration to process email delivery logs
+- Accepts batch processing of email events (delivery, bounce, etc.)
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                                     |
+|-------------|--------|----------|-----------------------------------------------------------------|
+| AdminAPIKey | String | Yes      | Admin API key for authentication (via Bearer token)             |
+| LogData     | Array  | Yes      | Array of PowerMTA log entries (JSON format in POST body)        |
+
+**PowerMTA Log Entry Format:**
+
+Each log entry in the array should contain PowerMTA event data following the PowerMTA log format specification.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/process_pmta_log_file \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ADMIN_API_KEY" \
+  -d '[
+    {
+      "type": "delivery",
+      "timeLogged": "2025-01-15T10:30:00Z",
+      "recipient": "user@example.com",
+      "messageId": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    {
+      "type": "bounce",
+      "timeLogged": "2025-01-15T10:31:00Z",
+      "recipient": "invalid@example.com",
+      "bounceType": "hard"
+    }
+  ]'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ProcessedCount": 2,
+  "ErrorCount": 0
+}
+```
+
+```json [Error Response - Auth]
+{
+  "Errors": [
+    {
+      "Code": 1,
+      "Message": "Invalid AdminAPIKey"
+    }
+  ]
+}
+```
+
+```json [Error Response - Invalid Data]
+{
+  "Errors": [
+    {
+      "Code": 2,
+      "Message": "Invalid or empty log data"
+    }
+  ]
+}
+```
+
+```txt [HTTP Status Codes]
+200: Success - Log data processed successfully
+400: Bad Request - Invalid or empty log data
+401: Unauthorized - Invalid Admin API Key
+429: Too many requests - Rate limit exceeded
+```
+
+```txt [Error Codes]
+1: Invalid AdminAPIKey
+2: Invalid or empty log data
+```
+
+:::
+
+**Processing Behavior:**
+
+- Accepts both JSON and form-encoded POST data
+- Processes events in batch for improved performance
+- Returns processing results with success/error counts
+- Failed events within a batch do not cause the entire batch to fail
+
+## Get System Settings
+
+<Badge type="info" text="GET" /> `/api/v1/system-settings`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (or logged-in admin session)
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns a unified snapshot of every Octeth configuration value the running instance can see. Settings are grouped by source so callers can drill into a specific layer without merging four separate views themselves.
+
+The endpoint surfaces four sources:
+
+1. **`ConfigFiles`**: every `*.php` file under `config/global/` (each returns an array). The `app.php` file is intentionally skipped because it declares the `SystemConfig` class and has side effects; its values are already represented in `EnvSettings.octeth` and `DefinedConstants`.
+2. **`EnvSettings`**: `SystemConfig::$Config`, populated from the six `.oempro_*_env` files: `octeth`, `mysql`, `redis`, `rabbitmq`, `clickhouse`, `supervisor`.
+3. **`RuntimeOptions`**: every row in the `oempro_options` table (the runtime-editable options used by `OemproOptions::get()`/`set()`). JSON-encoded values are decoded automatically when they are arrays.
+4. **`DefinedConstants`**: `get_defined_constants(true)['user']`: every constant registered by `ConfigLoader` plus library `define()` calls.
+
+**Sensitive value redaction:** any key whose name contains a known secret substring (case-insensitive: `PASSWORD`, `PASSWD`, `_PASS`, `SECRET`, `SALT`, `TOKEN`, `API_KEY`, `APIKEY`, `CLIENT_SECRET`, `ENCRYPTION_KEY`, `HMAC`, `ERLANG_COOKIE`, `LICENSE_KEY`, `AUTH_CODE`, `BUGSNAG_API`, `SENTRY_API`, `PRIVATE_KEY`, `WEBHOOK_SECRET`) has its value replaced with the literal string `"***REDACTED***"`. The key itself remains visible. Empty values pass through untouched so callers can distinguish "configured but blank" from "configured with a value, redacted". Never post the literal `***REDACTED***` back as a value: `settings.update` refuses it with `ErrorCode 13` (see [Update System Settings](./settings.md#update-system-settings)), and no other write command treats it specially, so writing it anywhere else stores the marker as the real value. Omit a field to keep its stored secret.
+
+**Request Parameters:**
+
+| Parameter   | Type   | Required | Description                                                                                                            |
+|-------------|--------|----------|------------------------------------------------------------------------------------------------------------------------|
+| Command     | String | Yes      | API command: `system.getsettings` (only for legacy endpoint)                                                            |
+| AdminAPIKey | String | No       | Admin API key for authentication (alternative to logged-in admin session). Sent as `adminapikey` query parameter.       |
+| Section     | String | No       | Restrict the response to a single source. Possible values: `ConfigFiles`, `EnvSettings`, `RuntimeOptions`, `DefinedConstants`. If omitted, all four sections are returned. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/system-settings?adminapikey=YOUR_ADMIN_API_KEY"
+```
+
+```bash [Example Request (Legacy)]
+curl -X GET "https://example.com/api.php?Command=System.GetSettings&adminapikey=YOUR_ADMIN_API_KEY"
+```
+
+```bash [Example Request (Filtered)]
+curl -X GET "https://example.com/api/v1/system-settings?Section=EnvSettings&adminapikey=YOUR_ADMIN_API_KEY"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "Settings": {
+    "ConfigFiles": {
+      "email_delivery": { "EMAIL_DELIVERY_BATCH_SIZE": 100 },
+      "sms": { "SMS_GATEWAY_TIMEOUT": 30 }
+    },
+    "EnvSettings": {
+      "octeth": {
+        "APP_URL": "https://example.com/",
+        "PRODUCT_VERSION": "5.9.1",
+        "MYSQL_PASSWORD": "***REDACTED***",
+        "LICENSE_KEY": "***REDACTED***",
+        "OEMPRO_PASSWORD_SALT": "***REDACTED***"
+      },
+      "mysql":      { "MYSQL_HOST": "oempro_mysql", "MYSQL_PASSWORD": "***REDACTED***" },
+      "redis":      { "REDIS_HOST": "oempro_redis" },
+      "rabbitmq":   { "RABBITMQ_DEFAULT_USER": "oempro", "RABBITMQ_DEFAULT_PASS": "***REDACTED***" },
+      "clickhouse": { "CLICKHOUSE_HOST": "oempro_clickhouse" },
+      "supervisor": { "SUPERVISOR_USERNAME": "admin" }
+    },
+    "RuntimeOptions": {
+      "FailedWebhookHandler": "email",
+      "DisableUserPasswordReset": ""
+    },
+    "DefinedConstants": {
+      "APP_PATH": "/var/www/html",
+      "CHARSET": "utf-8",
+      "OEMPRO_DEBUG": true,
+      "PRODUCT_VERSION": "5.9.1",
+      "ADMIN_API_KEY": "***REDACTED***"
+    }
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorMessage": "Invalid Section. Allowed: ConfigFiles, EnvSettings, RuntimeOptions, DefinedConstants"
+}
+```
+
+```txt [Error Codes]
+1: Invalid Section value (must be one of ConfigFiles, EnvSettings, RuntimeOptions, DefinedConstants)
+99998: Authentication required - missing or invalid admin credentials
+```
+
+:::
+
+**Use cases:**
+
+- Diagnosing configuration drift between environments
+- Support escalations where the operator needs to share a redacted config snapshot
+- Verifying that a setting (env var, runtime option, or constant) is actually present and reaching the application
+- Auditing which secrets are configured without exposing their values
+
+## List Installed Language Packs
+
+<Badge type="info" text="GET" /> `/api/v1/system.languages.get`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `Settings`)
+- v1 REST alias: `GET /api/v1/system.languages.get`. Legacy access via `/api.php` is also supported
+- The only values `settings.update` accepts for `DEFAULT_LANGUAGE` and `USER_SIGNUP_LANGUAGE`.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `system.languages.get` |
+| SessionID | String | No       | Session ID obtained from login        |
+| APIKey    | String | No       | Admin API key for authentication      |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "system.languages.get", "APIKey": "your-admin-api-key"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Languages": [{"Code": "en", "Name": "English"}],
+  "TotalLanguages": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998
+}
+```
+
+```txt [Error Codes]
+0: Success
+```
+
+:::
+
+## Run the System Check
+
+<Badge type="info" text="GET" /> `/api/v1/admin.system.check`
+
+<Badge type="tip" text="New in v5.9.6" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `System`)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Runs the requirements and settings check shown on the admin About page: PHP ini flags (`register_globals`, `magic_quotes_*`, `safe_mode`, `max_execution_time`), the required PHP extensions, the PHP version, write access to the `data/` directories, and whether MySQL runs with a STRICT `sql_mode`. Directory messages name the path relative to the application root; the response never carries an absolute path.
+
+`Errors` is a map of category (`PHP Errors`, `Directory Errors`, `MySQL Errors`) to the list of messages in that category. Categories with no message are omitted, so a clean install returns an empty map (`[]` in JSON) and `Passed: true`.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                          |
+|-------------|--------|----------|--------------------------------------|
+| Command     | String | Yes      | API command: `admin.system.check`    |
+| AdminAPIKey | String | Yes      | Admin API key                        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/admin.system.check?AdminAPIKey=your-admin-api-key"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Passed": false,
+  "Errors": {
+    "PHP Errors": [
+      "PHP IMAP extension is disabled. Please enable it."
+    ],
+    "MySQL Errors": [
+      "MySQL runs in STRICT mode. Please disable STRICT option in sql_mode parameter in the MySQL configuration file."
+    ]
+  },
+  "TotalErrors": 2
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998
+}
+```
+
+```txt [Error Codes]
+0: Success
+99998: Authentication failure
+99999: Not enough privileges (sub-admin without the System privilege, when ADMIN_API_ENFORCE_PRIVILEGES is on)
+```
+
+:::
+
+## Get System Information
+
+<Badge type="info" text="GET" /> `/api/v1/admin.system.info`
+
+<Badge type="tip" text="New in v5.9.6" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `System`)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the version and runtime facts the admin About page shows: the Octeth product version, the PHP version, the PHP ini values the page lists, and the MySQL server version. Nothing else is included: no filesystem paths, no environment values and no `phpinfo()` output (the About page's PHP settings dump and the database export stay UI-only). For the configuration itself use `system.getsettings`.
+
+`PHPSettings` reports an empty ini value as the string `"false"`, exactly as the About page renders it.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                          |
+|-------------|--------|----------|--------------------------------------|
+| Command     | String | Yes      | API command: `admin.system.info`     |
+| AdminAPIKey | String | Yes      | Admin API key                        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/admin.system.info?AdminAPIKey=your-admin-api-key"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "ProductVersion": "6.0.0",
+  "PHPVersion": "5.6.40",
+  "PHPSettings": {
+    "memory_limit": "512M",
+    "max_execution_time": "0",
+    "safe_mode": "false",
+    "magic_quotes_gpc": "false",
+    "register_globals": "false",
+    "magic_quotes_runtime": "false"
+  },
+  "MySQLVersion": "8.0.41"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998
+}
+```
+
+```txt [Error Codes]
+0: Success
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
