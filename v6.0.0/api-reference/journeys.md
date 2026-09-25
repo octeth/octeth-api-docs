@@ -1204,7 +1204,6 @@ curl -X PATCH https://example.com/api/v1/journey.actions \
 8: From email username is invalid (SendEmail)
 9: Enter a complete From email address (SendEmail)
 10: Decision criteria references a custom field that belongs to another list (not the trigger list, not global)
-10: Invalid WebhookURL parameter: the URL must be a publicly reachable http or https address (v6.0.0, see the note below)
 11: Decision criteria references a custom field that does not exist on this account
 12: Email not found, or EmailID is not a digits-only id (v6.0.0)
 13: Sender domain not found, or SenderDomainID is not a digits-only id (v6.0.0)
@@ -1212,14 +1211,9 @@ curl -X PATCH https://example.com/api/v1/journey.actions \
 15: Subscriber tag not found, or TargetTagID is not a digits-only id (v6.0.0)
 16: Target journey not found, or TargetJourneyID is not a digits-only id (v6.0.0)
 17: Custom field not found, or TargetCustomFieldID is not a digits-only id (v6.0.0)
+18: Invalid WebhookURL parameter: the URL must be a publicly reachable http or https address (v6.0.0)
 ```
 
-:::
-
-::: warning Known issue: error code 10 has two meanings
-Code 10 has meant "Decision criteria references a custom field that belongs to another list" since before v5.9.6. v6.0.0 added a second condition, an invalid Webhook action URL, on the same code. The two `Message` values differ, so a client that surfaces the message is unaffected, but a client that switches on the numeric code cannot tell them apart.
-
-This is tracked as [issue #2959](https://github.com/octeth/oempro/issues/2959) and is expected to be resolved before v6.0.0 ships, by renumbering the **new** webhook condition and leaving the Decision meaning unchanged. Check this page again at release.
 :::
 
 ::: danger Behavior change (v6.0.0): object references are validated

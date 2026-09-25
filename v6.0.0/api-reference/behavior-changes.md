@@ -118,13 +118,13 @@ Journey action payloads used to accept an id belonging to another account and st
 
 | Code | Message | Input that now fails |
 |---|---|---|
-| 10 | `Invalid WebhookURL parameter` | a Webhook action URL that is not a publicly reachable http or https address |
 | 12 | `Email not found` | `EmailID` that is not an email the caller owns |
 | 13 | `Sender domain not found` | `SenderDomainID` that is not the caller's |
 | 14 | `Subscriber list not found` | `TargetListID` on `Subscribe` or `Unsubscribe` |
 | 15 | `Subscriber tag not found` | `TargetTagID` on `AddTag` or `RemoveTag` |
 | 16 | `Target journey not found` | `TargetJourneyID` on `StartJourney` or `ExitJourney` |
 | 17 | `Custom field not found` | `TargetCustomFieldID` that is neither the caller's own field nor a system-global field |
+| 18 | `Invalid WebhookURL parameter` | a Webhook action URL that is not a publicly reachable http or https address |
 
 Each also answers `Invalid <name> reference` with the same code when the value is present but not a digits-only id. `1.9`, `-1`, `foo` and similar are refused rather than cast. Two of those used to slip through in opposite directions: `foo` cast to `0` and was read as "not selected", while `1.9` was checked as object 1 and then rounded to 2 by MySQL on the way into the column, so the stored reference pointed at an object the check never looked at.
 
