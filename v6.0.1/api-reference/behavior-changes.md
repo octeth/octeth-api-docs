@@ -73,6 +73,14 @@ Other user actions could also undo an administrator's `Suspended` or `Blocked` d
 - Creating a domain with the name of an existing `Suspended` or `Blocked` domain (`user.senderdomain.create`, `emailgateway.adddomain`) keeps that status instead of resetting it.
 - `user.senderdomain.delete` (error `3`, HTTP `422`) and `emailgateway.deletedomain` (`ErrorCode` `3`) refuse to delete a `Suspended` or `Blocked` domain, because deleting and adding it again revived it.
 
+### Monitoring
+
+#### A MySQL outage returns HTTP 503 instead of 200
+
+When Octeth cannot connect to MySQL (connection refused, unknown host, too many connections, authentication failure or a missing database), every web request ends before its handler runs with a plain-text body starting `MySQL Error:`. Before v6.0.1 that response carried HTTP `200`. It now carries HTTP `503` and a `Retry-After: 30` header. The body is unchanged.
+
+This applies to `system.health.check`, which therefore reports a database outage to load balancers and uptime monitors that key on the status code, and to every other API command and page. A monitor that probes a regular page will start alerting during a MySQL outage where it stayed silent before. `system.health.check` also fails its `MySQL` check with `There is no registered admin user.` when the admins table is empty, a case it reported as `OK` before.
+
 ## Tier 2: shape and value changes
 
 None recorded yet.
@@ -85,6 +93,7 @@ None recorded yet.
 4. **If an integration creates users with `user.create` and relies on them being `Trusted`, pass `ReputationLevel=Trusted` explicitly.** Then review the accounts created through the new interface's registration page since v6.0.0, which are all `Trusted`.
 5. **If an integration verifies sender domains with `user.senderdomain.verify`, handle a `Status` of `Blocked`** as "awaiting administrator approval", not as a failure. Handle the new refusals on a `Suspended` or `Blocked` domain: error `11` from `user.senderdomain.update`, error `3` from `user.senderdomain.delete` and `emailgateway.deletedomain`, and error `12` when disabling an `Approval Pending` domain.
 6. **Optional: set `EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED=true`** if you prefer rejecting email gateway sends during a Redis outage to letting them through without a rate limit check.
+7. **If a monitor or load balancer probes Octeth, make sure it treats HTTP `503` as down.** During a MySQL outage every page and API command, `system.health.check` included, now answers `503` with a plain-text `MySQL Error:` body instead of `200`.
 
 ---
 

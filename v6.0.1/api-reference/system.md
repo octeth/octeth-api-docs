@@ -152,7 +152,7 @@ curl -X GET "https://example.com/api.php?Command=system.health.check&adminapikey
 HTTP Status Codes:
 200: All health checks passed
 403: Authentication failed
-503: One or more health checks failed (see Checks object for details)
+503: One or more health checks failed (see Checks object for details), or MySQL could not be reached (plain-text body, see below)
 ```
 
 :::
@@ -161,7 +161,7 @@ HTTP Status Codes:
 
 The endpoint performs comprehensive health checks on the following components:
 
-- **MySQL**: Database connectivity and admin user existence
+- **MySQL**: Database connectivity and admin user existence. The check fails with `There is no registered admin user.` when the admins table is empty <Badge type="tip" text="Changed in v6.0.1" />
 - **ClickHouse**: Analytics database connectivity
 - **Elasticsearch**: Search engine connectivity and indices
 - **RabbitMQ**: Message queue connectivity
@@ -187,6 +187,7 @@ The endpoint performs comprehensive health checks on the following components:
 - Failed checks return detailed error messages explaining the failure
 - HTTP status code 200 indicates all checks passed
 - HTTP status code 503 indicates one or more checks failed (response still includes all check results)
+- When MySQL cannot be reached at all (connection refused, unknown host, too many connections, authentication failure or a missing database), the request ends before the handler runs. The response is HTTP 503 with a `Retry-After: 30` header and a plain-text body starting `MySQL Error:`, not the JSON `Checks` object <Badge type="tip" text="Changed in v6.0.1" />. Earlier versions answered this case with HTTP 200, so monitors must key on the status code, not on the body. Every other page and API command returns the same 503 during a MySQL outage.
 - The Cron check monitors heartbeat files updated every minute; considers cron failed if > 90 seconds since last update
 - The Supervisor check reports processes not in `RUNNING` state with format: `# process_name: STATE`
 - The SendEngine check discovers containers dynamically using Docker Compose project prefix detection
