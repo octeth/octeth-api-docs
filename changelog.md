@@ -32,7 +32,7 @@ Release in progress. Scheduled for October 9th, 2026. Changelog will be updated 
 
 ### Upgrade Notes
 
-- (To be documented)
+- **Installs that were upgraded from v5.9.x to v6.0.0 pick up four missed changes to the new user interface on this upgrade.** Upgrades never rebuilt the container images that Octeth builds on the server, so the new user interface kept the startup script from the version that first built it. On those installs the v6.0.0 changes to that script never took effect: session encryption (#2895), quoting of the rendered configuration so a value with a space or a `#` no longer breaks it (#2904), `UI_DEBUG_CONSOLE_ENABLED` (#2894) and `UI_MODE` (#3003). The v6.0.1 upgrade rebuilds these images, and from then on the new user interface and HAProxy run their startup scripts straight from the installed release, so later changes need no rebuild. If the upgrade warns that the image rebuild failed, run `docker compose -f docker-compose.yml --env-file .oempro_env up -d --build oempro_ui haproxy` from the installation directory once the cause is fixed (#3102).
 
 ### Deprecations
 

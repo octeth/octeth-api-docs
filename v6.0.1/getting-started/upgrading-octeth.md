@@ -86,7 +86,7 @@ Once confirmed, the upgrade runs through these steps automatically:
 
 6. **Updates Docker configuration** — Updates Docker image tags to match the new version and pulls the latest container images.
 
-7. **Restarts containers** — Brings containers down and back up with the new images and code.
+7. **Rebuilds local images and restarts containers**: Rebuilds the container images that Octeth builds on your server rather than downloading (the new user interface, HAProxy, the link proxy, RabbitMQ, Redis, Mailpit and the inbound SMTP server), so their startup scripts match the release. The build runs while the old containers are still serving. Containers are then brought down and back up with the new images and code. If a rebuild fails, the upgrade continues on the existing images and tells you how to retry (see [Image Rebuild Fails](#image-rebuild-fails)).
 
 8. **Installs dependencies** — Waits for Composer to install PHP dependencies in both the app and system containers.
 
@@ -338,6 +338,20 @@ Setting `OCTETH_UPGRADE_SELF_UPDATED=1` in the environment makes the upgrade com
    ```bash
    /opt/octeth/cli/octeth.sh logs:tail
    ```
+
+### Image Rebuild Fails
+
+**Problem:** The upgrade warns `Could not rebuild images for: ...` and the summary shows `Images: rebuild failed`
+
+This is non-fatal. The upgrade completed on the images your server already had, which is how upgrades behaved before v6.0.1. The usual causes are a registry that could not be reached while pulling a base image, or a host that does not allow image builds (for example some nested container setups). The upgrade log in `data/logs/` holds the last lines of the build output.
+
+Once the cause is fixed, run the command the warning printed from your installation directory, for example:
+
+```bash
+docker compose -f docker-compose.yml --env-file .oempro_env up -d --build oempro_ui haproxy
+```
+
+Until it succeeds, changes to those containers' startup scripts in this release do not take effect.
 
 ### Journey Builder Build Fails
 
