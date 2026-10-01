@@ -955,6 +955,7 @@ export default defineConfig({
                         {text: 'Setting Up Billing', link: '/v6.0.1/new-user-interface/billing-setup'},
                         {text: 'Payment Gateways', link: '/v6.0.1/new-user-interface/payment-gateways'},
                         {text: 'Running Billing', link: '/v6.0.1/new-user-interface/billing-operations'},
+                        {text: 'Webhooks', link: '/v6.0.1/new-user-interface/webhooks'},
                         {text: 'Configuration Reference', link: '/v6.0.1/new-user-interface/configuration-reference'},
                         {text: 'Troubleshooting', link: '/v6.0.1/new-user-interface/troubleshooting'}
                     ]

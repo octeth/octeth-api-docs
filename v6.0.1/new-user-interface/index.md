@@ -133,9 +133,11 @@ proxy configuration.
    interface. Do this before you show it to a customer.
 2. **[Setting up billing](./billing-setup)** turns on plans, subscriptions and invoicing.
    Skip this if you already bill your customers elsewhere.
-3. **[Configuration reference](./configuration-reference)** lists every setting, including
+3. **[Webhooks](./webhooks)** sends sign-ups and subscription changes to another system,
+   such as an n8n workflow or your CRM.
+4. **[Configuration reference](./configuration-reference)** lists every setting, including
    outbound email, the drag-and-drop email builder and the demonstration mode.
-4. **[Troubleshooting](./troubleshooting)** covers the handful of problems that come up
+5. **[Troubleshooting](./troubleshooting)** covers the handful of problems that come up
    most often.
 
 ## Turning it off again
