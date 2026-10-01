@@ -231,11 +231,14 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     EMAILGATEWAY_SPOOL_STORAGE=redis     # Spool storage driver: 'filesystem' or 'redis'
     EG_WORKER_BATCH_SIZE=50              # Number of emails the Email Gateway delivery worker processes per batch
     EMAILGATEWAY_SENDEMAIL_FULL_LIST=false  # Deliver an emailgateway.sendemail LIST send to the ENTIRE list (paginated) instead of the first 250 only
+    EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED=false  # Reject Email Gateway sends while the send-rate counters (Redis) cannot be read
     ```
 
     When `PHONE_VERIFICATION_REQUIRED_TO_SEND_EG_EMAILS` is `true`, the owner user's phone must be verified (`PhoneVerified=1`) before email can be sent through the Email Gateway. The requirement is enforced on **both** ingress paths consistently: the HTTP API send endpoint (`EmailGateway.SendEmail`) and the inbound SMTP relay authentication (`EmailGateway.SMTPRelay`). When `false` (the default), the phone-verification gate is skipped on both paths, so a user with `PhoneVerified=0` can still authenticate over SMTP and send via the API.
 
     `EMAILGATEWAY_SENDEMAIL_FULL_LIST` controls how a **list** send through the `emailgateway.sendemail` API (a call carrying `TargetListID`) resolves its recipients. Historically such a send resolved only the **first 250** recipients of the list, delivered to them, and returned HTTP 200 with those `MessageID`s — so a list larger than 250 was silently truncated with no signal to the caller (issue #2546). With this set to `true` the send **paginates through the entire list** (in pages of 250, ordered by subscriber ID so no recipient is skipped or duplicated) and returns a `MessageID` for every recipient. It defaults to `false`, which keeps the historical first-250 behaviour **byte-identical**, so existing integrations are unaffected until you opt in. Enable it only when you intend Email Gateway list sends to reach every recipient; note that doing so increases the number of emails (and delivery credits) a single `emailgateway.sendemail` call consumes.
+
+    `EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED` decides what the Email Gateway does when it cannot read the send-rate counters it keeps in Redis, for example during a Redis outage. With the default `false`, `emailgateway.sendemail` and `emailgateway.smtprelay` allow the send without a rate limit check, so a Redis outage does not stop every customer's mail. Set it to `true` to reject those sends with the rate-limit error instead, which keeps the send-rate limits in force at the cost of availability. Either way, every occurrence is logged at ERROR. Email that is already queued is never failed for this reason: the delivery worker always allows it (issue #3078).
 
 17. **Caddy Link Proxy (On-Demand TLS)**
 

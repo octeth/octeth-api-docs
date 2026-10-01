@@ -28,6 +28,18 @@ Tracked links in gateway email return HTTP `404` once their sender domain is `Ap
 
 This is a deliberate exception to the rule that a contract change goes behind an opt-in flag. It is the control an operator uses to stop abuse, so there is no configuration under which a disabled account should keep sending.
 
+#### User group send-rate limits apply to accounts on a billing plan
+
+Before v6.0.1, the new interface's billing layer wrote a per-account rate limit override with every interval unlimited whenever a plan moved an account to a user group. A per-account override replaces the group's limits, so the email gateway and SMS send-rate limits configured on the group never applied to those accounts. Billing no longer writes the override, and an upgrade migration clears the copies already stored.
+
+After the upgrade, the group's `DefaultRateLimits` apply to these accounts. An email gateway send over a limit is rejected with HTTP `429` and error code `429`. The migration clears only the exact document billing wrote: every interval of both channels set to `-1`. An administrator who typed that exact document on an account is cleared too, and that account falls back to its group's limits. Any other per-account override is left alone and still replaces the group's limits.
+
+A queued message is no longer failed at delivery with "Email send rate limit has been exceeded." just because the account reached, but did not exceed, its limit when the message was accepted.
+
+#### The daily email limit applies to the email gateway
+
+The user group's daily email limit (`LimitEmailSendPerDay`) was enforced only for campaigns. It now also applies to `emailgateway.sendemail` (HTTP `429`, error code `17`) and to the SMTP relay (error code `13`). It counts the account's email gateway messages for the server's calendar day, including messages that are queued but not yet delivered. A group with no daily limit (`0`) is unaffected.
+
 ## Tier 2: shape and value changes
 
 None recorded yet.
@@ -35,6 +47,8 @@ None recorded yet.
 ## Upgrade checklist
 
 1. **If an integration sends through `emailgateway.sendemail`, handle HTTP `403` with error code `12`** for a disabled account. Expect queued and scheduled gateway email to end as `Failed` with a `Sending blocked:` message when an account is disabled or a sender domain stops being active, and resend it after re-enabling if it is still wanted.
+2. **Check the send-rate limits and the daily email limit on every user group your billing plans link to.** After the upgrade they apply to billing accounts, which were unlimited until now. If an account needs to send more than its group allows, give it a per-account override in the admin area.
+3. **Optional: set `EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED=true`** if you prefer rejecting email gateway sends during a Redis outage to letting them through without a rate limit check.
 
 ---
 

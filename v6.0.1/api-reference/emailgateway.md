@@ -1818,7 +1818,7 @@ curl -X POST https://example.com/api/v1/email \
 14: Email address is in the suppression list
 15: Invalid TemplateID
 16: Invalid TargetListID
-17: Email sending limit reached
+17: Email sending limit reached (monthly, lifetime or daily limit of the user group)
 18: Recipient name or email address is missing
 19: Recipient email address is invalid
 20: There is no recipient set or count exceeds limit
@@ -1835,7 +1835,7 @@ curl -X POST https://example.com/api/v1/email \
 37: Invalid JourneyID
 38: Invalid ActionID
 39: Failed to resolve list recipients (returned with HTTP 502, not HTTP 200)
-429: Email send rate limit exceeded
+429: Email send rate limit exceeded (or the send-rate counters could not be read and EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED is true)
 ```
 
 ::: warning Error code 39 is returned with HTTP 502
@@ -1852,6 +1852,14 @@ Previously this same condition returned HTTP `200` with `{"MessageID": []}` — 
 If the sender domain owner's account is disabled, the request is rejected with HTTP `403` and error code `12`. If the sender domain is not active (for example `Approval Pending`, `Suspended` or `Blocked`), the request is rejected with HTTP `403` and error code `32`. Before v6.0.1, a request for a disabled account was accepted and queued.
 
 The same check also runs when queued email is delivered. If the account is disabled or the domain stops being active while email is waiting in the queue, that email is not sent and no credit is charged. Its status becomes `Failed` with the message `Sending blocked: account disabled` or `Sending blocked: sender domain <status>`. Re-enabling the account or the domain does not resend it. Tracked links in email already delivered from an inactive sender domain return HTTP `404`.
+:::
+
+::: tip Send rate limits and the daily limit
+Send rate limits come from the sender domain owner's user group (`DefaultRateLimits`). An administrator can set a per-account override, which replaces the group's limits for that account. A send over a rate limit is rejected with HTTP `429` and error code `429`.
+
+The user group's daily email limit (`LimitEmailSendPerDay`) applies to this endpoint from v6.0.1. A send that would take the account's gateway email for the current day over the limit is rejected with HTTP `429` and error code `17`. The day is the server's calendar day, and email that is queued but not yet delivered counts toward it.
+
+If the send-rate counters cannot be read (Redis is unavailable), the send is allowed and the event is logged at ERROR. Set `EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED=true` to reject it with error code `429` instead. See the [configuration guide](../getting-started/octeth-configuration.md).
 :::
 
 ::: tip A `TargetListID` send delivers to the first 250 recipients unless full-list mode is enabled
@@ -1953,7 +1961,7 @@ curl -X POST https://example.com/api.php \
 10: Maximum number of CC addresses exceeded
 11: Maximum number of BCC addresses exceeded
 12: Email send rate limit reached
-13: Email delivery credit limit reached
+13: Email delivery limit reached (monthly, lifetime or daily limit of the user group)
 ```
 
 ::: tip Rejection reasons on the send path
