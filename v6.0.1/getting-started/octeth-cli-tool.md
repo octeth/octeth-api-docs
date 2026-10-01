@@ -391,17 +391,22 @@ Unattended development install:
 /opt/octeth/cli/octeth.sh install:start --dev --yes
 ```
 
-Unattended production-style install:
+Unattended production-style install. Write the admin password and the license key to mode-600 files first, so neither appears on the command line:
 
 ```bash
+(umask 077 && read -rsp 'Admin password: ' pw && printf '%s\n' "$pw" > /root/octeth-admin.pw)
+(umask 077 && read -rsp 'License key: ' key && printf '%s\n' "$key" > /root/octeth-license)
+
 /opt/octeth/cli/octeth.sh install:start --yes --accept-eula \
   --app-url https://mailer.example.com/ \
   --admin-name "Jane Doe" \
   --admin-email jane@example.com \
   --admin-username jane \
-  --admin-password 'YOUR_STRONG_PASSWORD_HERE' \
-  --license-key XXXX-XXXX-XXXX-XXXX
+  --admin-password-file /root/octeth-admin.pw \
+  --license-key-file /root/octeth-license
 ```
+
+Delete both files once the installation has finished.
 
 | Flag | Purpose |
 | --- | --- |
@@ -412,14 +417,27 @@ Unattended production-style install:
 | `--admin-name <name>` | Administrator full name. |
 | `--admin-email <email>` | Administrator email address. |
 | `--admin-username <username>` | Administrator username: 3-32 characters, starts with a letter, letters/digits/underscore. |
-| `--admin-password <password>` | Administrator password. |
-| `--license-key <key>` | Octeth license key. May be empty and added later in `.oempro_env`. |
+| `--admin-password-file <path>` | Read the administrator password from the first line of a file. Use `-` to read it from standard input (requires `--yes`). Recommended. |
+| `--admin-password <password>` | Administrator password on the command line. See the warning below. |
+| `--license-key-file <path>` | Read the Octeth license key from the first line of a file, or from standard input with `-` (requires `--yes`). |
+| `--license-key <key>` | Octeth license key. May be empty and added later in `.oempro_env`. With `--yes`, leaving out every license-key source means an empty key, not a prompt. |
+
+The installer also reads two environment variables when the matching flags are not given:
+
+| Variable | Purpose |
+| --- | --- |
+| `OCTETH_ADMIN_PASSWORD` | Administrator password. |
+| `OCTETH_LICENSE_KEY` | Octeth license key. May be empty. |
+
+Precedence is `--admin-password`, then `--admin-password-file`, then `OCTETH_ADMIN_PASSWORD`, and the same order for the license key. Passing both flags for the same value is an error, and only one of the two file flags can read standard input.
 
 Values given with these flags go through exactly the same validation as the interactive prompts. An invalid value always exits non-zero rather than asking again.
 
 ::: warning
-`--admin-password` puts the password on the command line, where it is visible in the process list (`ps`) and in shell history. On a shared machine prefer the interactive prompt, or clear the history entry afterwards.
+`--admin-password` puts the password on the command line, where it is visible in the process list (`ps`) and in shell history. Use `--admin-password-file` instead. An environment variable keeps the password out of `ps`, but other processes running as the same user can still read it, so a file is the safer choice.
 :::
+
+The installer never prints a secret, so its output is safe to keep in a log. A supplied admin password is shown as `(set, not shown)`, the license key shows only its last four characters, and the generated `CADDY_DOMAIN_VERIFY_CODE` is written to `.oempro_env` without being displayed. If you accept the auto-generated admin password in an interactive install, it is shown only when the output goes to a terminal. Otherwise, for example when the output is piped to `tee`, it is saved to `.oempro_admin_password` (mode 600) in the installation directory. Delete that file after you have stored the password. `install:reset` also removes it.
 
 ::: tip
 `--force` does not delete anything. To install onto a genuinely clean slate, run `install:reset --yes` first, then `install:start`.
