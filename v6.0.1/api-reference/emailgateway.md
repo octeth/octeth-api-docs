@@ -1848,6 +1848,12 @@ Previously this same condition returned HTTP `200` with `{"MessageID": []}` — 
 
 :::
 
+::: tip A disabled account or an inactive sender domain stops sending
+If the sender domain owner's account is disabled, the request is rejected with HTTP `403` and error code `12`. If the sender domain is not active (for example `Approval Pending`, `Suspended` or `Blocked`), the request is rejected with HTTP `403` and error code `32`. Before v6.0.1, a request for a disabled account was accepted and queued.
+
+The same check also runs when queued email is delivered. If the account is disabled or the domain stops being active while email is waiting in the queue, that email is not sent and no credit is charged. Its status becomes `Failed` with the message `Sending blocked: account disabled` or `Sending blocked: sender domain <status>`. Re-enabling the account or the domain does not resend it. Tracked links in email already delivered from an inactive sender domain return HTTP `404`.
+:::
+
 ::: tip A `TargetListID` send delivers to the first 250 recipients unless full-list mode is enabled
 By default a list send resolves and delivers to **at most the first 250 recipients** of the list (ordered by email address) and returns HTTP `200` with one `MessageID` per delivered recipient — a list larger than 250 is silently truncated, and the only hint is that the `MessageID` array length is 250. To deliver to the **entire** list, set `EMAILGATEWAY_SENDEMAIL_FULL_LIST=true` in the install's configuration; the send then paginates through the whole list (ordered by subscriber ID so no recipient is skipped or duplicated) and returns a `MessageID` for every recipient. This is an install-wide, opt-in setting — not a per-request parameter — because enabling it increases how many emails (and delivery credits) each call consumes. See the [configuration guide](../getting-started/octeth-configuration.md).
 :::
