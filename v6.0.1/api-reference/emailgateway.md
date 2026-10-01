@@ -215,7 +215,7 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 1: Missing required parameter (DomainID)
-5: Domain not found or access denied
+5: Domain not found or access denied (a changed subdomain or track prefix resets the status to Approval Pending, except on a Suspended or Blocked domain, which keeps its status)
 6: Invalid subdomain or track prefix value
 ```
 
@@ -281,6 +281,10 @@ curl -X POST https://example.com/api.php \
 2: Domain not found or access denied
 ```
 
+:::
+
+::: tip How the domain status changes
+When every DNS record passes, the domain becomes `Enabled`, or `Blocked` (awaiting administrator approval) when the user group has **New domains need manual approval** enabled. A domain that is already `Enabled` stays `Enabled`. When a record fails, the domain becomes `Approval Pending`. A domain that is `Blocked`, `Suspended`, `Disabled` or `Deleted` keeps that status whatever DNS returns, so only an administrator can move it out. Before v6.0.1, a failed check moved a `Blocked` or `Suspended` domain to `Approval Pending`, from which a later passing check could enable it.
 :::
 
 ## Get All Sender Domains
@@ -438,6 +442,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing required parameter (DomainID)
 2: Domain not found or access denied
+3: The domain is Suspended or Blocked by an administrator and cannot be deleted (v6.0.1)
 ```
 
 :::
@@ -1835,6 +1840,7 @@ curl -X POST https://example.com/api/v1/email \
 37: Invalid JourneyID
 38: Invalid ActionID
 39: Failed to resolve list recipients (returned with HTTP 502, not HTTP 200)
+40: Account pending approval (the account is not Trusted, returned with HTTP 403)
 429: Email send rate limit exceeded (or the send-rate counters could not be read and EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED is true)
 ```
 
@@ -1852,6 +1858,14 @@ Previously this same condition returned HTTP `200` with `{"MessageID": []}` — 
 If the sender domain owner's account is disabled, the request is rejected with HTTP `403` and error code `12`. If the sender domain is not active (for example `Approval Pending`, `Suspended` or `Blocked`), the request is rejected with HTTP `403` and error code `32`. Before v6.0.1, a request for a disabled account was accepted and queued.
 
 The same check also runs when queued email is delivered. If the account is disabled or the domain stops being active while email is waiting in the queue, that email is not sent and no credit is charged. Its status becomes `Failed` with the message `Sending blocked: account disabled` or `Sending blocked: sender domain <status>`. Re-enabling the account or the domain does not resend it. Tracked links in email already delivered from an inactive sender domain return HTTP `404`.
+:::
+
+::: tip An Untrusted account cannot send
+From v6.0.1, the sender domain owner's account must be `Trusted`. A request for an `Untrusted` account is rejected with HTTP `403` and error code `40` (`Account pending approval`), and nothing is queued. The administrator is notified by email, at most once a day per account. Journey "Send email" actions send through this endpoint, so they stop for an `Untrusted` account too.
+
+The same check runs when queued email is delivered: email already queued for an account that is moved to `Untrusted` is not sent, and its status becomes `Failed` with the message `Sending blocked: account pending approval`. Marking the account `Trusted` in the administration area allows sending again. A disabled account or an inactive sender domain is reported with its own error code (`12` or `32`) first.
+
+New accounts start at the reputation level set in **Settings > ESP Settings > New user reputation**, which is `Untrusted` on a default install, so an administrator approves each new account by marking it `Trusted`. To let `Untrusted` accounts send through this endpoint as before, set `EMAILGATEWAY_REQUIRE_TRUSTED=false`. See the [configuration guide](../getting-started/octeth-configuration.md). The SMTP relay requires a `Trusted` account either way.
 :::
 
 ::: tip Send rate limits and the daily limit

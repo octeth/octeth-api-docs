@@ -57,7 +57,7 @@ See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for the
 | ForwardToFriendFooter | String | No | Forward to friend footer text |
 | AccountStatus | String | No | Account status ('Enabled' or 'Disabled', default: 'Enabled') |
 | AvailableCredits | Integer | No | Initial credits (default: 0) |
-| ReputationLevel | String | No | Reputation level ('Trusted' or 'Untrusted', default: 'Trusted') |
+| ReputationLevel | String | No | Reputation level ('Trusted' or 'Untrusted'). When omitted, the New user reputation setting in **Settings > ESP Settings** applies (`Untrusted` on a default install). Before v6.0.1 the default was 'Trusted'. An `Untrusted` account's campaigns wait for approval and it cannot send through the email gateway |
 | SignUpIPAddress | String | No | User signup IP address |
 | SSOID | String | No | Single sign-on ID |
 

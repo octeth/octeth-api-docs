@@ -418,10 +418,14 @@ curl -X PATCH https://example.com/api/v1/user.senderdomain \
 7: Sender domain could not be retrieved after update (returned with HTTP 500)
 9: Invalid Status value. Allowed: Enabled, Disabled (issue #1890)
 10: Cannot enable an unverified domain: run user.senderdomain.verify first (issue #1890)
+11: The domain is Suspended or Blocked by an administrator; only an administrator can change its status (v6.0.1)
+12: Cannot disable an unverified (Approval Pending) domain: run user.senderdomain.verify first, or delete the domain (v6.0.1)
 ```
 
 ::: tip Pausing vs deleting (issue #1890)
 A domain in `Status='Disabled'` keeps its DNS records and stats history, but is filtered out by the send-time resolver (`SenderDomains::ResolveForEmail`). Campaigns and journeys that reference a paused domain fall back to the group's default sender domain until the user flips it back to `Enabled`. The flip is single round-trip: no DNS re-verification, no Redis cache invalidation.
+
+From v6.0.1 the flip works only between `Enabled` and `Disabled`. A `Suspended` or `Blocked` domain cannot be changed by its owner (error `11`), and an `Approval Pending` domain cannot be disabled (error `12`). A change to `CustomSubdomain`, `CustomTrackPrefix` or `TrackPrefixDisabled` resets the status to `Approval Pending`, except on a `Suspended` or `Blocked` domain, which keeps its status. Creating a domain with the name of an existing `Suspended` or `Blocked` domain keeps that status too.
 :::
 
 :::
@@ -474,6 +478,7 @@ curl -X DELETE "https://example.com/api/v1/user.senderdomain?APIKey=your-api-key
 ```txt [Error Codes]
 1: Missing DomainID parameter
 2: Sender domain not found (also returned when the domain exists but is owned by another user)
+3: The domain is Suspended or Blocked by an administrator and cannot be deleted (HTTP 422, v6.0.1)
 ```
 
 :::
@@ -493,8 +498,9 @@ Performs a **live DNS lookup** for each expected record (CNAME / A / MX / TXT). 
 
 The endpoint **persists Status** based on the result (mirrors what the UI's edit page does on every load):
 
-- All records resolve correctly → `Status = 'Enabled'`
+- All records resolve correctly → `Status = 'Enabled'`, or `Status = 'Blocked'` (awaiting administrator approval) when the user group has **New domains need manual approval** (`EmailGatewayNewDomainManualApproval`) enabled. A domain that is already `Enabled` stays `Enabled`.
 - Any record fails → `Status = 'Approval Pending'`
+- A domain that is `Blocked`, `Suspended`, `Disabled` or `Deleted` keeps that status whatever DNS returns. Only an administrator can move it out (changed in v6.0.1, issue #3077).
 
 The latest per-record verified flags are merged into the existing `VerificationMeta` (other keys are preserved) so subsequent `Get` / `DNS` calls reflect the same state shown in the UI. The `Status` and `VerificationMeta` columns are only rewritten when the verified state actually changed, but `LastVerifiedAt` is **always** updated on every call (issue #1889). This is what powers the "Checked X ago" subtitle in the sender-domain UI.
 
