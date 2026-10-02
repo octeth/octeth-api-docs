@@ -326,6 +326,10 @@ Previously such a payload silently degraded to *no filter at all*, so the unsubs
 An **omitted** `RulesJSON` is unchanged: it keeps its existing meaning.
 :::
 
+::: warning A failed matching query is an error (changed in v6.0.1)
+If the `RulesJSON` matching query fails in the database (for example a statement timeout, a deadlock or a lost connection), the command returns `Success: false` with `ErrorCode 11` and `ErrorText "Invalid query builder response"`, and writes the database error to the application error log. Before v6.0.1 it returned `Success: true` having unsubscribed nobody. Retry the request.
+:::
+
 ::: tip `RulesJSON` validation is shared across five commands
 `RulesJSON` is validated identically on `subscribers.search`, `subscribers.delete`, `subscriber.unsubscribe`, `subscriber.tag` and `subscriber.untag`. The accepted payload shapes and the message text are the same on all five; only the error **code** differs — `6` on `subscribers.search`, `7` on the other four.
 :::
@@ -398,7 +402,7 @@ curl -X POST https://example.com/api.php \
 8: Invalid CampaignID
 9: Subscriber already unsubscribed
 10: Invalid EmailID
-11: Invalid query builder response
+11: Invalid query builder response (also returned when the RulesJSON matching query fails in the database, v6.0.1)
 ```
 
 :::
@@ -440,6 +444,10 @@ Previously such a payload silently degraded to *no filter at all*, so the deleti
 An **omitted or empty** `RulesJSON` is unchanged: it keeps its existing meaning.
 :::
 
+::: warning A failed matching query is an error (changed in v6.0.1)
+If the `RulesJSON` matching query fails in the database (for example a statement timeout, a deadlock or a lost connection), the command returns `Success: false` with `ErrorCode 6` and `ErrorText "Invalid query builder response"`, and writes the database error to the application error log. Before v6.0.1 it returned `Success: true` having deleted nobody. Retry the request.
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -473,7 +481,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 2: Missing subscriber list id
 5: Invalid list id
-6: Invalid query builder response
+6: Invalid query builder response (also returned when the RulesJSON matching query fails in the database, v6.0.1)
 7: Invalid RulesJSON syntax. It must be a properly formatted JSON payload
 8: Invalid Subscribers value (contains a non-integer subscriber ID)
 ```
@@ -562,7 +570,7 @@ curl -X POST https://example.com/api.php \
 | RulesJSON | String | No       | JSON rules format. Optional — omit it (or send an empty string) to search the whole list. When supplied it must be a JSON **string** describing at least one rule, and each rule object requires a `type` key. An unparseable or rule-less payload returns error code `6` and no results. |
 | RecordsPerRequest | Integer | No | Number of records to return (default: 25) |
 | RecordsFrom | Integer | No   | Offset for pagination (default: 0)    |
-| OrderField | String | No      | Field to order by (default: EmailAddress) |
+| OrderField | String | No      | Field to order by (default: EmailAddress). Possible values: `SubscriberID`, `EmailAddress`, `EmailDomain`, `BounceType`, `SubscriptionStatus`, `SubscriptionDate`, `SubscriptionIP`, `UnsubscriptionDate`, `UnsubscriptionIP`, `OptInDate`, `SubscriptionSource`, `SubscriptionSourceRef`, or `CustomField<ID>` for a custom field on this list or a system-wide global field created by the administrator. Any other value, including an account-level global custom field, falls back to `EmailAddress` (changed in v6.0.1). |
 | OrderType | String | No       | Order direction: ASC, DESC (default: ASC) |
 | OnlyTotal | Boolean | No      | Return only total count (default: false) |
 | AddMustHaveFilters | Boolean | No | Add mandatory filters for segment rules (default: false) |
@@ -588,6 +596,10 @@ Omitting `RulesJSON`, or sending it as an empty string, is unaffected: that rema
 `0` is **not** interpreted as "all records" on this command, unlike the admin campaign endpoints. Always pass a positive page size and paginate with `RecordsFrom`.
 
 A JSON integer `0` falls back to the default of 25. A form-encoded `0` or the JSON string `"0"` reaches the segment engine as `LIMIT 0` and returns **no rows at all**.
+:::
+
+::: warning A failed subscriber query is an error (changed in v6.0.1)
+If the subscriber listing query fails in the database (for example a statement timeout, a deadlock or a lost connection), the command returns `Success: false` with `ErrorCode 7` and `ErrorText "Subscriber query failed"`, and writes the database error to the application error log. Before v6.0.1 it returned `Success: true` with an empty `Subscribers` array, while `TotalSubscribers` still carried the correct non-zero count. Treat `ErrorCode 7` as a server-side failure and retry, not as an empty page.
 :::
 
 ::: code-group
@@ -641,6 +653,7 @@ curl -X POST https://example.com/api.php \
 4: Problem with the segment engine
 5: Segment recursion limit exceeded
 6: Invalid RulesJSON syntax. It must be a properly formatted JSON payload
+7: Subscriber query failed (the listing query failed in the database; see the application error log) (v6.0.1)
 8002: Invalid SMSPhoneNumber (not E.164 or convertible to it, or outside 8 to 15 digits)
 8007: SMSPhoneNumber was combined with RulesJSON or Rules
 ```
@@ -1046,6 +1059,12 @@ curl -X POST https://example.com/api/v1/subscribers.import \
 | APIKey    | String | No       | API key for authentication            |
 | ListID    | Integer| Yes      | ID of the subscriber list             |
 | ImportID  | Integer| Yes      | ID of the import job                  |
+
+`ImportStatus` is one of `Not Ready`, `Pending`, `Importing`, `Completed` or `Failed`. `Completed` and `Failed` are final.
+
+::: warning `Failed` import status (changed in v6.0.1)
+An import that stops before it finishes (the account reached its subscriber limit, the import file could not be read, the email address field was not mapped, or subscriber data could not be fetched from the import source) now ends as `Failed`. Before v6.0.1 it ended as `Completed`, the same as a successful import. Subscribers imported before the failure stay on the list and are counted in `TotalImported`. Imports that failed before the upgrade keep the status `Completed`. The `ImportStatusUpdateWebhookURL` completion call is still sent only when an import completes, not when it fails.
+:::
 
 ::: code-group
 

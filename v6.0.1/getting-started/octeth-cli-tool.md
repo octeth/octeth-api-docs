@@ -491,7 +491,7 @@ These commands perform maintenance tasks and fix common issues.
 /opt/octeth/cli/octeth.sh permissions:fix
 ```
 
-This corrects file and folder permissions that may prevent Octeth from working properly. Run this if you see permission errors.
+This corrects file and folder permissions that may prevent Octeth from working properly. Run this if you see permission errors. It sets the `data/` directories to `0777`, and gives `system/storage` and `system/bootstrap/cache` owner `root`, group `www-data`, mode `2775` on directories and `0664` on files (before v6.0.1 these two were also set to `0777`).
 
 **Installing dependencies:**
 

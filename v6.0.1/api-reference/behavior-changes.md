@@ -56,6 +56,42 @@ Accounts created through the legacy signup and single sign-on have been `Untrust
 
 This closes the path by which every account created through the new user interface's registration page became `Trusted` and could send at once, whatever the operator had chosen. Like the gateway checks above, it is a deliberate exception to the opt-in flag rule: the old default granted trust that the operator's setting denied. Accounts created through the new interface since v6.0.0 are not changed by the upgrade. To review them, list users whose `ReputationLevel` is `Trusted` and whose `UserSince` is after your v6.0.0 upgrade.
 
+#### `user.switch` refuses a disabled account
+
+`user.switch` now answers `{"Success":false,"ErrorCode":4,"ErrorText":"Target account is disabled"}` when the target account's status is not `Enabled`, and creates no session. Before v6.0.1 it answered `Success: true` with a `SessionID`, but every user command made with that session then failed with error `99998` ("Authentication failure or session expired"), so the switch looked successful and the account looked like an expired session. Accounts created through the new interface's registration page stay disabled until the email address is verified, so they are refused too. Codes `1`, `2`, `3` and `5003` are still checked first.
+
+There is no opt-in flag, because the old session could not authenticate any command. The administration area's "Login as user" links on a disabled account now return to the account's edit page with the error, instead of opening the user login page.
+
+#### `user.current` no longer returns the two-factor recovery code
+
+Once two-factor authentication is enabled, `user.current` no longer returns `UserInfo.MFA_RecoveryCode`, and it returns no other two-factor value in that state: no `MFA_SecretKey` and no `MFA_QRCode`. While two-factor authentication is off, it still returns `MFA_SecretKey` and `MFA_QRCode` for enrolment, as before.
+
+The recovery code is now returned once, at enrolment. The `user.update` call that enables two-factor authentication (`Enable2FA=true` with a valid `2FACode`) returns it as a top-level `MFA_RecoveryCode` key next to `Success`. Every other `user.update` response is unchanged. Store the code when you receive it, because no API call returns it again. To get a new recovery code, disable two-factor authentication with `Cancel2FA=true` and enable it again.
+
+The user area's Account page follows the same rule: it shows the recovery code on the page that confirms two-factor authentication was enabled, and afterwards shows a note in its place.
+
+This is a hardening change. The recovery code switches two-factor authentication off when it is used at login, so it should not appear in a response that is read on every page load. It is a deliberate exception to the opt-in flag rule for the same reason. New two-factor secrets for users and administrators are also generated from a cryptographic random source now. Existing enrolments keep working unchanged.
+
+### Credentials in admin and SSO responses
+
+#### User group and delivery server responses no longer carry SMTP credentials
+
+`usergroup.get` and `usergroups.get` no longer return `SendMethodSMTPUsername` or `SendMethodSMTPPassword`. Each group now carries `HasSendMethodSMTPPassword` (`true` when a password is stored). Every other group field is returned as before, with one exception: credential keys nested inside `Options` and `ThemeInformation` (for example `Password`, `APIKey`, `SendMethodSMTPPassword` or `smtp_password`) are removed at any depth. When `Options` holds such a key, the value is returned re-encoded without it, so its bytes can differ from the stored value. A value with no such key is returned byte for byte as stored. A column added to the user groups table in a later release is not returned until it is added to the response deliberately.
+
+`deliveryservers.get` no longer returns `ConnectionParams.smtp_password`. Each server now carries `HasSMTPPassword`, and `DeliveryServerID` is an integer. Each server in the list is now exactly what `deliveryserver.get` returns for it, apart from the user group assignments both already computed. `ConnectionParams` carries `smtp_host`, `smtp_port`, `smtp_secure`, `smtp_timeout`, `smtp_auth` and `smtp_username`, and any other key is withheld.
+
+`usergroup.update` and `deliveryserver.update` replace the whole record. Because an integration can no longer read the password back, both commands now keep the stored SMTP password when `SendMethodSMTPPassword` is omitted, and `usergroup.update` also keeps the stored `SendMethodSMTPUsername` when it is omitted. Before, an omitted value was stored as empty, which broke the group's or server's sending. Sending a value, including an empty string, still replaces the stored one.
+
+This is a hardening change and a deliberate exception to the rule that a contract change goes behind an opt-in flag. These are platform credentials shared by every account in the group, and anything that logs or renders an admin response could expose them.
+
+#### `admin.users.search` returns only published user fields
+
+`admin.users.search` now returns the same user fields as `users.get`. It used to remove credential columns by name, so any column added to the users table later would have been returned by default. Now a column added later is not returned until it is added to the response deliberately. The fields returned today are unchanged.
+
+#### Single sign-on "Return user data" no longer includes credentials
+
+When an SSO source has **Return user data** (`Options.ReturnUserData`) enabled, the JSON it returns is now the same user projection `user.login` returns, plus `_SessionID`, `_Impersonate` and `_ImpersonateLeaveURL` as before. It no longer includes the password hash, `AuthToken`, the two-factor secrets, `APIKey`, or the group's SMTP and delivery-server credentials inside `GroupInformation`.
+
 ### Sender domains
 
 #### `user.senderdomain.verify` honours manual approval and administrator blocks
@@ -83,7 +119,23 @@ This applies to `system.health.check`, which therefore reports a database outage
 
 ## Tier 2: shape and value changes
 
-None recorded yet.
+### Subscribers
+
+#### `subscribers.import.get` reports a failed import as `Failed`
+
+`ImportStatus` in the `subscribers.import.get` response has a new value, `Failed`. An import that the worker stops before it finishes (the account reached its subscriber limit, the import file could not be read, the email address field was not mapped, or subscriber data could not be fetched from the import source) now ends as `Failed`. Before v6.0.1, such an import ended as `Completed`, the same as a successful one. Subscribers imported before the failure stay on the list, and `TotalImported` counts them.
+
+Imports that failed before the upgrade keep the status `Completed`. There is no reliable way to tell them apart from successful imports afterwards, so the upgrade does not reclassify them.
+
+`subscribers.import` with `ImportStep=2` refuses a `Failed` import with error code `6`, as it already did for a `Completed` one. The `import.failed` event that the Lindris plugin publishes now carries `importStatus: "Failed"` instead of `"Completed"`.
+
+#### A failed subscriber query is reported as an error
+
+`subscribers.search` used to answer `Success: true` with an empty `Subscribers` array when its listing query failed in the database, while `TotalSubscribers` still carried the correct non-zero count from a separate query. It now answers `Success: false` with error code `7` and `ErrorText` `Subscriber query failed`, and writes the database error and the query to the application error log.
+
+The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe` had the same gap: a failed matching query answered `Success: true` having deleted or unsubscribed nobody. They now answer `Success: false` with their existing "Invalid query builder response" codes, `6` and `11`.
+
+`subscribers.search` with `OrderField=CustomField<ID>` for an account-level global custom field (created with `IsGlobal=Yes` by a user, not by the administrator) now orders by `EmailAddress` and returns the page. It was the most common way to hit the empty-page answer above. A custom field on the searched list and a system-wide global field still sort as before.
 
 ## Upgrade checklist
 
@@ -94,6 +146,12 @@ None recorded yet.
 5. **If an integration verifies sender domains with `user.senderdomain.verify`, handle a `Status` of `Blocked`** as "awaiting administrator approval", not as a failure. Handle the new refusals on a `Suspended` or `Blocked` domain: error `11` from `user.senderdomain.update`, error `3` from `user.senderdomain.delete` and `emailgateway.deletedomain`, and error `12` when disabling an `Approval Pending` domain.
 6. **Optional: set `EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED=true`** if you prefer rejecting email gateway sends during a Redis outage to letting them through without a rate limit check.
 7. **If a monitor or load balancer probes Octeth, make sure it treats HTTP `503` as down.** During a MySQL outage every page and API command, `system.health.check` included, now answers `503` with a plain-text `MySQL Error:` body instead of `200`.
+8. **If an integration switches into accounts with `user.switch`, handle `ErrorCode 4`** as "account disabled": skip the account or enable it first. It replaces the `99998` that the next user command used to return.
+9. **If an integration reads `MFA_RecoveryCode` from `user.current`, read it from the `user.update` response that enables two-factor authentication instead**, and store it then. `user.current` no longer returns it, and no other call returns it again.
+10. **If an integration reads `SendMethodSMTPPassword` or `SendMethodSMTPUsername` from `usergroup.get` or `usergroups.get`, or `ConnectionParams.smtp_password` from `deliveryservers.get`, stop relying on them.** Use `HasSendMethodSMTPPassword` or `HasSMTPPassword` to tell whether one is stored. When updating a group or a server, omit the password to keep the stored one. If an SSO integration with **Return user data** read credentials from the returned JSON, it no longer receives them.
+11. **If an integration polls `subscribers.import.get`, treat `ImportStatus` `Failed` as a finished import that did not complete.** Code that waits for `Completed` alone will otherwise keep polling a failed import forever.
+12. **If an integration calls `subscribers.search`, treat error code `7` as a server-side failure and retry**, not as "no results". If it uses the `RulesJSON` form of `subscribers.delete` or `subscriber.unsubscribe`, expect codes `6` and `11` when the matching query fails, and retry.
+13. **If you changed the permissions of `system/storage` or `system/bootstrap/cache` by hand, run `./cli/octeth.sh permissions:fix` once after upgrading.** Both trees are no longer world-writable. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#laravel-storage-is-no-longer-world-writable).
 
 ---
 

@@ -256,7 +256,7 @@ The outcome depends on the SSO source configuration:
 
 - **If Return user data is enabled** (and Perform login is disabled) — Octeth returns a JSON response containing the user's account information. This is useful for server-to-server integrations where you need to retrieve account details without redirecting a browser.
 
-  The JSON response includes fields such as `UserID`, `Username`, `EmailAddress`, `FirstName`, `LastName`, `SSOID`, and a `_SessionID` that can be used for subsequent API calls on behalf of the user.
+  The JSON response includes fields such as `UserID`, `Username`, `EmailAddress`, `FirstName`, `LastName`, `SSOID`, and a `_SessionID` that can be used for subsequent API calls on behalf of the user. It holds the same account fields the `user.login` API command returns. Since v6.0.1 it no longer includes credentials such as the password hash, API key, two-factor secrets or the user group's SMTP settings.
 
 ### What Happens on Failure
 

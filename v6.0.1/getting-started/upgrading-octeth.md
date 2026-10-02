@@ -200,6 +200,26 @@ The database backup is saved but not automatically restored during rollback sinc
 The backup directory location is displayed in the rollback output. Your database dump is available at `data/backups/upgrade_[timestamp]/database.sql`.
 :::
 
+## Notes for This Release
+
+### Laravel storage is no longer world-writable
+
+From v6.0.1, the upgrade, `permissions:fix` and a fresh installation no longer set `system/storage` and `system/bootstrap/cache` to mode `0777`. They now set owner `root`, group `www-data`, mode `2775` on directories and `0664` on files. The web server keeps write access through the `www-data` group, and other local accounts on the server can no longer write files that the application executes.
+
+The upgrade applies this automatically. If the upgrade warned that it could not apply file permissions, or you change these permissions by hand later, run this once:
+
+```bash
+/opt/octeth/cli/octeth.sh permissions:fix
+```
+
+Then confirm that nothing in the two directories is world-writable. Run this from `/opt/octeth`. It prints nothing when the fix is in place:
+
+```bash
+find system/storage system/bootstrap/cache -perm -o+w
+```
+
+The `data/` directories are unchanged in this release and stay at `0777`.
+
 ## Post-Upgrade Verification
 
 After the upgrade completes, verify everything is working:

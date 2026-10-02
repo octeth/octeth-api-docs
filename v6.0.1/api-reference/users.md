@@ -11,7 +11,7 @@ User management endpoints for creating, authenticating, and managing user accoun
 
 Nothing else about these responses changed: the same keys, the same names, the same nesting, minus those fields. The group relay values are **platform** credentials shared by every account in the group, which is why they are the most serious item.
 
-Replacements: read a delivery server through `deliveryserver.get`, which returns a `HasSMTPPassword` boolean instead of the password, and read group configuration through the user group endpoints under an admin credential. For two-factor enrolment, `user.current` still returns `MFA_SecretKey` and `MFA_QRCode` while two-factor authentication is off, and `MFA_RecoveryCode` while it is on.
+Replacements: read a delivery server through `deliveryserver.get`, which returns a `HasSMTPPassword` boolean instead of the password, and read group configuration through the user group endpoints under an admin credential. For two-factor enrolment, `user.current` still returns `MFA_SecretKey` and `MFA_QRCode` while two-factor authentication is off. Since v6.0.1 it returns no two-factor value once two-factor authentication is on: the recovery code is returned once, by the `user.update` call that enables it.
 
 See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for the full table and the remediation steps if you believe these responses were captured.
 :::
@@ -263,7 +263,6 @@ curl -X POST https://example.com/api.php \
     "AccountStatus": "Enabled",
     "AvailableCredits": 1000,
     "2FA_Enabled": "No",
-    "2FA_RecoveryKey": "",
     "SSOID": "",
     "GroupInfo": {
       "UserGroupID": 1,
@@ -324,6 +323,10 @@ curl -X POST https://example.com/api.php \
 1: Authentication required
 ```
 
+:::
+
+::: warning Two-factor values (v6.0.1)
+`MFA_QRCode` and `MFA_SecretKey` are returned only while `2FA_Enabled` is `No`, for enrolment. A secret is generated on the first call if the account has none. Once two-factor authentication is enabled, `user.current` returns no two-factor value at all. Before v6.0.1 it returned `MFA_RecoveryCode` while two-factor authentication was enabled. The recovery code is now returned once, in the `user.update` response that enables two-factor authentication. See [Update User](#update-user).
 :::
 
 ### `UserInfo.GroupInfo`
@@ -500,9 +503,9 @@ curl -X POST https://example.com/api.php \
 | RateLimits | String | No | JSON string of rate limits, normalised before storage to `{"EmailGateway":{Minute,Hour,Day,Week,Month,Year},"SMS":{…}}` with integer values (`-1` = unlimited; an omitted interval becomes `-1`). Omit to keep the existing row's value; pass an **empty string** to clear it, which means "no user-level override, inherit the user group's default rate limits" (an empty value is stored as-is, never normalised into an all-unlimited document). |
 | CustomEmailHeaders | String | No | Custom email headers. Omit to keep the existing row's value; pass an empty string to clear it. |
 | WhiteListedEmailAddresses | String | No | Whitelisted email addresses. Omit to keep the existing row's value; pass an empty string to clear it. |
-| Enable2FA | String | No | Set to 'true' to enable 2FA |
-| 2FACode | String | Conditional | 2FA code (required when enabling 2FA) |
-| Cancel2FA | String | No | Set to 'true' to disable 2FA |
+| Enable2FA | String | No | Set to 'true' to enable 2FA. Takes effect only while 2FA is off and with a valid `2FACode`. **Changed in v6.0.1:** on success the response carries `MFA_RecoveryCode`, the only time the API returns it |
+| 2FACode | String | Conditional | Current code from the authenticator app enrolled with the `MFA_SecretKey` that `user.current` returns (required when enabling 2FA) |
+| Cancel2FA | String | No | Set to 'true' to disable 2FA. Clears the stored secret and recovery code, so enabling 2FA again issues a new pair |
 
 ::: code-group
 
@@ -526,6 +529,15 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Success Response (Enable2FA)]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "MFA_RecoveryCode": "1a2b-3c4d-5e6f-7a8b-9c0d-1e2f-3a4b-5c6d"
+}
+```
+
 ```json [Error Response]
 {
   "Success": false,
@@ -546,6 +558,10 @@ curl -X POST https://example.com/api.php \
 11: Password must be a string (v6.0.0)
 ```
 
+:::
+
+::: tip Two-factor recovery code returned once (v6.0.1)
+The call that enables two-factor authentication (`Enable2FA=true` with a valid `2FACode`) returns the account's recovery code as a top-level `MFA_RecoveryCode` key. Every other `user.update` response is unchanged. Store the code when it is returned, because no API call returns it again: `user.current` stopped returning it in v6.0.1. To issue a new recovery code, disable two-factor authentication with `Cancel2FA=true` and enable it again.
 :::
 
 ## Get Monthly User Snapshot
@@ -725,6 +741,8 @@ The response is the merge of two payloads: a stat-strip header (the overall fiel
 | UserID    | Integer | Yes | User ID to switch to |
 | PrivilegeType | String | No | Privilege type: 'Default' or 'Full' (default: 'Default') |
 
+The target account must be enabled. `user.switch` refuses an account whose status is not `Enabled` with `ErrorCode 4` and creates no session, because a session for a disabled account cannot authenticate any user command. Enable the account first, or read it through admin commands such as `user.get`. (Changed in v6.0.1.)
+
 ::: code-group
 
 ```bash [Example Request]
@@ -758,11 +776,21 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Disabled Account Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "Target account is disabled"
+}
+```
+
 ```txt [Error Codes]
 0: Success
 1: Missing UserID parameter
 2: User not found
 3: Invalid privilege type (must be 'Default' or 'Full')
+4: Target account is disabled (account status is not Enabled). No session is created (v6.0.1)
+5003: User is outside the user groups this admin account may access
 ```
 
 :::
@@ -1212,7 +1240,7 @@ curl -X POST https://example.com/api.php \
 - Cross-tenant by design. A restricted sub-admin (`AccessLimited` with `AccessAllowedUserGroupIDs`) only sees users in its allowed user groups.
 :::
 
-The admin global search box as a command. `Keyword` is matched against `FirstName`, `LastName`, `CompanyName`, `EmailAddress` and `Username` (contains, case-insensitive per the column collation; `%` and `_` in the keyword are matched literally) and, when the keyword is a number, against the exact `UserID`. `users.get` searches one nominated field; this searches all of them at once. `Password`, `AuthToken`, the 2FA secrets and API keys are never returned.
+The admin global search box as a command. `Keyword` is matched against `FirstName`, `LastName`, `CompanyName`, `EmailAddress` and `Username` (contains, case-insensitive per the column collation; `%` and `_` in the keyword are matched literally) and, when the keyword is a number, against the exact `UserID`. `users.get` searches one nominated field; this searches all of them at once. Each row carries the same user fields `users.get` returns, so `Password`, `AuthToken`, the 2FA secrets and API keys are never returned. **Changed in v6.0.1:** the fields are an allow-list rather than a list of removed credential columns, so a column added to the users table in a later release is not returned until it is added to the response deliberately. The fields returned today are unchanged.
 
 **Request Body Parameters:**
 
@@ -1518,6 +1546,13 @@ curl -X POST https://example.com/api.php \
 | CustomEmailHeaders | String | No | JSON-encoded SMTP header overrides for users in this group (e.g. `{"Add":{"X-Header":"value"},"Remove":["X-Other"]}`). Omit to keep the existing row's value. |
 | Options | Object | No | JSON object of per-group options (e.g. `TargetDeliveryServerID_Marketing`, `EmailGatewayDNSTemplate`, `DefaultSenderDomain`, `EnableSenderInfo`). Pass as an object. The endpoint JSON-encodes it. Omit to keep the existing row's value. |
 | SubscriptionPlan | String | No | Subscription plan identifier for the group. Omit to keep the existing row's value. |
+| SendMethod | String | No | Group send method. Possible values: `System`, `SMTP`, `LocalMTA`, `PHPMail`, `PowerMTA`, `SaveToDisk`. Any value other than `System` sends a test email with the given settings before saving |
+| SendMethodSMTPUsername | String | No | SMTP username for the `SMTP` send method. **Changed in v6.0.1:** omit it to keep the stored username. A sent value, including an empty string, replaces it |
+| SendMethodSMTPPassword | String | No | SMTP password for the `SMTP` send method. **Changed in v6.0.1:** omit it to keep the stored password. A sent value, including an empty string, replaces it |
+
+::: tip Stored SMTP credentials are kept when omitted (v6.0.1)
+`usergroup.get` and `usergroups.get` no longer return the group's SMTP username or password, so an integration cannot read them back and resend them. `usergroup.update` therefore keeps the stored `SendMethodSMTPUsername` and `SendMethodSMTPPassword` when the request omits them, and the send-method test email uses the stored values. Before v6.0.1 an omitted value was stored as empty, which broke the group's sending.
+:::
 
 ::: code-group
 
@@ -1861,6 +1896,12 @@ curl -X POST https://example.com/api.php \
 | APIKey    | String | No       | API key for authentication            |
 | UserGroupID | Integer | Yes | User group ID to retrieve |
 
+::: warning Credentials are not returned (changed in v6.0.1)
+`usergroup.get` no longer returns `SendMethodSMTPUsername` or `SendMethodSMTPPassword`. The group carries `HasSendMethodSMTPPassword` instead, which is `true` when a password is stored. Credential keys nested inside `Options` and `ThemeInformation` (for example `Password`, `APIKey`, `SendMethodSMTPPassword` or `smtp_password`) are removed at any depth, matched case-insensitively. When `Options` holds such a key, it is returned re-encoded without it, so its bytes can differ from the stored value. An `Options` value with no such key is returned byte for byte as stored.
+
+The group fields are an allow-list: every other existing field is returned as before, and a column added to the user groups table in a later release is not returned until it is added to the response deliberately. To change the stored credentials, use `usergroup.update`, which keeps them when they are omitted.
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -1881,7 +1922,11 @@ curl -X POST https://example.com/api.php \
     "UserGroupID": 5,
     "GroupName": "Premium Users",
     "LimitSubscribers": 10000,
-    "LimitLists": 50
+    "LimitLists": 50,
+    "SendMethod": "SMTP",
+    "SendMethodSMTPHost": "smtp.example.com",
+    "SendMethodSMTPPort": "587",
+    "HasSendMethodSMTPPassword": true
   }
 }
 ```
@@ -2028,6 +2073,12 @@ curl -X POST https://example.com/api.php \
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
 
+::: warning Credentials are not returned (changed in v6.0.1)
+`usergroups.get` no longer returns `SendMethodSMTPUsername` or `SendMethodSMTPPassword`. Each group carries `HasSendMethodSMTPPassword` instead, which is `true` when a password is stored. Credential keys nested inside `Options` and `ThemeInformation` (for example `Password`, `APIKey`, `SendMethodSMTPPassword` or `smtp_password`) are removed at any depth, matched case-insensitively. When `Options` holds such a key, it is returned re-encoded without it, so its bytes can differ from the stored value. An `Options` value with no such key is returned byte for byte as stored.
+
+The group fields are an allow-list: every other existing field is returned as before, and a column added to the user groups table in a later release is not returned until it is added to the response deliberately. To change the stored credentials, use `usergroup.update`, which keeps them when they are omitted.
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -2048,6 +2099,7 @@ curl -X POST https://example.com/api.php \
       "UserGroupID": 1,
       "GroupName": "Standard Users",
       "LimitSubscribers": 1000,
+      "HasSendMethodSMTPPassword": false,
       "DeliveryServerAssignments": {
         "Marketing": {
           "DeliveryServerID": 5,
@@ -2067,6 +2119,7 @@ curl -X POST https://example.com/api.php \
       "UserGroupID": 2,
       "GroupName": "Premium Users",
       "LimitSubscribers": 10000,
+      "HasSendMethodSMTPPassword": true,
       "DeliveryServerAssignments": {
         "Marketing": {
           "DeliveryServerID": 8,
@@ -2106,6 +2159,7 @@ curl -X POST https://example.com/api.php \
 | UserGroups | Array | List of all user groups |
 | UserGroupID | Integer | Unique identifier for the user group |
 | GroupName | String | Display name of the user group |
+| HasSendMethodSMTPPassword | Boolean | `true` when the group stores an SMTP password. The password itself and `SendMethodSMTPUsername` are not returned (v6.0.1) |
 | DeliveryServerAssignments | Object | Delivery server assignments per channel type. Contains three keys: `Marketing`, `Transactional`, and `AutoResponder`. Each contains `DeliveryServerID` (0 if not assigned) and `DeliveryServerName` (empty string if not assigned) |
 
 ## Add Credits

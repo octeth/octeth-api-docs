@@ -207,7 +207,7 @@ Read the stored outcome back with `deliveryserver.get`: `VerificationResults` ho
 | SendMethodSMTPTimeout | Integer | Yes | Connection timeout in seconds (must be numeric) |
 | SendMethodSMTPAuth | Boolean | Yes | Whether SMTP authentication is required: true or false |
 | SendMethodSMTPUsername | String | Conditional | SMTP username (required if SendMethodSMTPAuth is true) |
-| SendMethodSMTPPassword | String | No | SMTP password |
+| SendMethodSMTPPassword | String | No | SMTP password. **Changed in v6.0.1:** omit it to keep the stored password. A sent value, including an empty string, replaces it |
 | DomainSettings_LinkTracking | String | Yes | Domain for link tracking (e.g., "track.example.com") |
 | DomainSettings_OpenTracking | String | Yes | Domain for open tracking (e.g., "open.example.com") |
 | DomainSettings_MFrom | String | Yes | Mail From domain (e.g., "bounce.example.com") |
@@ -216,6 +216,10 @@ Read the stored outcome back with `deliveryserver.get`: `VerificationResults` ho
 | SenderInfoAsMFrom | String | No | Use sender info as MFrom: "Enabled" or "Disabled" |
 | SenderInfoAsFrom | String | No | Use sender info as From: "Enabled" or "Disabled" |
 | SenderRotation | String | No | Enable sender rotation: "Enabled" or "Disabled" |
+
+::: tip The stored SMTP password is kept when omitted (v6.0.1)
+`deliveryserver.update` replaces the server's `ConnectionParams` and `Domains` as a whole. `deliveryserver.get` and `deliveryservers.get` never return `smtp_password`, so an integration cannot read it back and resend it. When the request omits `SendMethodSMTPPassword`, the stored password is kept. Before v6.0.1 an omitted password was stored as empty, which broke the server's sending.
+:::
 
 ::: code-group
 
@@ -344,6 +348,10 @@ curl -X POST https://example.com/api.php \
 - The filter, ordering and paging parameters are all optional. The defaults reproduce the previous response: every server, `Name ASC`, unpaged.
 :::
 
+::: warning The SMTP password is not returned (changed in v6.0.1)
+`ConnectionParams.smtp_password` is no longer returned. Each server carries `HasSMTPPassword` instead, which is `true` when a password is stored, and `DeliveryServerID` is an integer. `ConnectionParams` carries only `smtp_host`, `smtp_port`, `smtp_secure`, `smtp_timeout`, `smtp_auth` and `smtp_username`, and any other stored key is withheld. Each server in the list is the same object `deliveryserver.get` returns for it. To change the password, use `deliveryserver.update`, which keeps the stored password when it is omitted.
+:::
+
 **Request Body Parameters:**
 
 | Parameter | Type | Required | Description |
@@ -379,7 +387,7 @@ curl -X POST https://example.com/api.php \
   "OrderType": "ASC",
   "DeliveryServers": {
     "123": {
-      "DeliveryServerID": "123",
+      "DeliveryServerID": 123,
       "Name": "Primary SMTP Server",
       "ConnectionParams": {
         "smtp_host": "smtp.example.com",
@@ -387,9 +395,9 @@ curl -X POST https://example.com/api.php \
         "smtp_secure": "tls",
         "smtp_timeout": 30,
         "smtp_auth": true,
-        "smtp_username": "smtp_user",
-        "smtp_password": "smtp_password"
+        "smtp_username": "smtp_user"
       },
+      "HasSMTPPassword": true,
       "Domains": {
         "link_tracking": "track.example.com",
         "open_tracking": "open.example.com",
@@ -450,9 +458,10 @@ curl -X POST https://example.com/api.php \
 | OrderField | String | Ordering field in effect |
 | OrderType | String | Ordering direction in effect |
 | DeliveryServers | Object | Map of delivery servers keyed by DeliveryServerID |
-| DeliveryServerID | String | Unique identifier for the delivery server |
+| DeliveryServerID | Integer | Unique identifier for the delivery server (a string before v6.0.1) |
 | Name | String | Display name of the delivery server |
-| ConnectionParams | Object | SMTP connection configuration (host, port, security, auth) |
+| ConnectionParams | Object | SMTP connection configuration: `smtp_host`, `smtp_port`, `smtp_secure`, `smtp_timeout`, `smtp_auth` and `smtp_username`. `smtp_password` is not returned (v6.0.1) |
+| HasSMTPPassword | Boolean | `true` when the server stores an SMTP password (v6.0.1) |
 | Domains | Object | Domain settings for tracking and sender identity |
 | VerificationResults | Object | DNS and delivery verification test results |
 | VerificationLastCheckedAt | String | Timestamp of last verification check |
@@ -467,7 +476,8 @@ curl -X POST https://example.com/api.php \
 - Authentication required: Admin API Key
 - Required admin privilege: `DeliveryServers`
 - v1 REST alias: `GET /api/v1/deliveryserver.get`. Legacy access via `/api.php` is also supported
-- `ConnectionParams.smtp_password` is never returned; `HasSMTPPassword` says whether one is stored. `deliveryserver.update` replaces `ConnectionParams` as a whole, so a client editing a server must resend the password it holds.
+- `ConnectionParams.smtp_password` is never returned; `HasSMTPPassword` says whether one is stored. `ConnectionParams` carries only `smtp_host`, `smtp_port`, `smtp_secure`, `smtp_timeout`, `smtp_auth` and `smtp_username`. Since v6.0.1, `deliveryserver.update` keeps the stored password when `SendMethodSMTPPassword` is omitted, so a client editing a server does not need to hold it.
+- Since v6.0.1, `deliveryservers.get` returns the same object for each server.
 - `UserGroupAssignments` / `IsAllocated` are the same reverse map `deliveryservers.get` computes from every user group's `TargetDeliveryServerID_*` options.
 :::
 

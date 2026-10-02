@@ -31,7 +31,7 @@ Single Sign-On (SSO) source management endpoints for creating, reading, updating
 | Options   | Object | No       | SSO options configuration             |
 | Options.CreateNewUserIfNotExists | String | No | Create new user if not exists (`Enabled` or `Disabled`) |
 | Options.PerformLogin | String | No | Perform automatic login (`Enabled` or `Disabled`) |
-| Options.ReturnUserData | String | No | Return user data in response (`Enabled` or `Disabled`) |
+| Options.ReturnUserData | String | No | Return user data in response (`Enabled` or `Disabled`). The returned JSON is the same user projection `user.login` returns in `UserInfo`, plus `_SessionID` and, for an impersonation token, `_Impersonate` and `_ImpersonateLeaveURL`. **Changed in v6.0.1:** it no longer includes the password hash, `AuthToken`, the two-factor secrets, `APIKey`, or the group's SMTP and delivery-server credentials inside `GroupInformation` |
 
 ::: code-group
 
@@ -115,7 +115,7 @@ curl -X POST https://example.com/api.php \
 | Options   | Object | No       | SSO options configuration             |
 | Options.CreateNewUserIfNotExists | String | No | Create new user if not exists (`Enabled` or `Disabled`) |
 | Options.PerformLogin | String | No | Perform automatic login (`Enabled` or `Disabled`) |
-| Options.ReturnUserData | String | No | Return user data in response (`Enabled` or `Disabled`) |
+| Options.ReturnUserData | String | No | Return user data in response (`Enabled` or `Disabled`). The returned JSON is the same user projection `user.login` returns in `UserInfo`, plus `_SessionID` and, for an impersonation token, `_Impersonate` and `_ImpersonateLeaveURL`. **Changed in v6.0.1:** it no longer includes the password hash, `AuthToken`, the two-factor secrets, `APIKey`, or the group's SMTP and delivery-server credentials inside `GroupInformation` |
 
 ::: code-group
 
