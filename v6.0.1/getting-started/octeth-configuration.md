@@ -84,8 +84,11 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
    OEMPRO_DEBUG=true                        # Enable/disable debug mode
    OEMPRO_DEBUG_FILTER_IP=                  # Limit debug to specific IP (optional)
    OEMPRO_LOG_LEVEL=DEBUG                   # Log level: DEBUG, INFO, NOTICE, WARNING, ERROR
+   SENDENGINE_LOG_LEVEL=INFO                # Send-engine controller log level (default INFO)
    API_SLOW_QUERY_THRESHOLD=0.1             # Log API calls slower than X seconds
    ```
+
+   `SENDENGINE_LOG_LEVEL` sets the log level of the send-engine controller (`cli/email_campaign_controller/run.php`), the PHP 8.1 process in the send-engine container that spawns and supervises campaign delivery workers. It is separate from `CAMPAIGN_DELIVERY_LOG_LEVEL`, which covers the delivery workers themselves, so you can raise one without the other. Accepted values are `DEBUG`, `INFO`, `NOTICE`, `WARNING`, `ERROR`, `CRITICAL`, `ALERT` and `EMERGENCY`, case-insensitive. The default is `INFO`. An empty value uses `INFO`, and an unknown value falls back to `INFO` with a warning in the controller log naming it. The level applies to both `data/logs/email_campaign_controller-<date>.log` and the controller's stdout. Set it to `DEBUG` to see per-worker spawn and exit lines and the failure-count decay. The value is read when the controller starts, so apply a change with `/opt/octeth/cli/octeth.sh sendengine:restart`.
 
 5. **Session Management**
    ```bash
@@ -1493,6 +1496,7 @@ When investigating issues:
    ```bash
    OEMPRO_DEBUG=true
    OEMPRO_LOG_LEVEL=DEBUG
+   SENDENGINE_LOG_LEVEL=DEBUG           # Send-engine controller detail
    API_SLOW_QUERY_THRESHOLD=0.5         # Log slow API calls
    ```
 
