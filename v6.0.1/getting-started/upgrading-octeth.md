@@ -232,6 +232,20 @@ The leftover `UI_STRIPO_*` lines in an upgraded `.oempro_env` are ignored and ca
 
 **New API commands.** [`stripo.editor.get` and `stripo.auth`](/v6.0.1/api-reference/emails#get-stripo-editor-settings) (user authentication) were added. Both are additive and return no credential.
 
+### An unparseable `.oempro_env` now stops Octeth
+
+From v6.0.1, Octeth refuses to start when `.oempro_env` exists but cannot be parsed. Web requests show a "Configuration error" page with HTTP `500`, and CLI workers and cron scripts exit at start. The message names the file, line and key, never the value. Before v6.0.1, one malformed line made Octeth discard the whole file and run on built-in defaults (for example `MYSQL_HOST=localhost` and empty password salts) without stopping.
+
+**Action required** only if `.oempro_env` has been edited by hand: before upgrading, check that every line is a comment, blank, or `KEY=VALUE`, and that values containing spaces are wrapped in quotes. After upgrading, you can check the file with:
+
+```bash
+/opt/octeth/cli/octeth.sh env:validate .oempro_env
+```
+
+The parser check in `env:validate` needs PHP on the host. Without it, the command checks only the `KEY=VALUE` format and says so.
+
+The other five `.oempro_*_env` files do not stop Octeth. An unparseable one is logged and its settings are ignored until the line is fixed, as before. The `OEMPRO_USE_PHPDOTENV` setting has been removed. A leftover line in an upgraded `.oempro_env` is ignored and can be deleted. See [API Behavior Changes in v6.0.1](/v6.0.1/api-reference/behavior-changes#an-unparseable-oempro-env-now-stops-octeth-instead-of-running-on-defaults).
+
 ## Post-Upgrade Verification
 
 After the upgrade completes, verify everything is working:

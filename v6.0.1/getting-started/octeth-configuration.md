@@ -45,6 +45,8 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
 **Location:** `/opt/octeth/.oempro_env`
 
+All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must be `KEY=VALUE`, and a value containing spaces must be wrapped in quotes. If `.oempro_env` cannot be parsed, Octeth does not start: web requests show a "Configuration error" page and CLI workers exit, with a message naming the file, line and key (never the value) on stderr and in the PHP error log. If one of the other `.oempro_*_env` files cannot be parsed, the same message is logged and that file's settings are ignored until the line is fixed. Check a file after editing it with `/opt/octeth/cli/octeth.sh env:validate .oempro_env`. The former `OEMPRO_USE_PHPDOTENV` setting has been removed and is ignored if still present.
+
 **Key Configuration Categories:**
 
 1. **Environment Settings**
@@ -54,7 +56,6 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
    PRODUCT_VERSION=5.9.2            # Octeth version number
    APP_PROJECT_CONFIG_PATH=         # Optional path whose config files are loaded first (project-specific overrides). Empty = none
    COMPOSE_FILE=                    # Optional custom docker-compose file path, relative to the project root. Empty = docker-compose.yml
-   OEMPRO_USE_PHPDOTENV=true        # Parse the env files with phpdotenv instead of parse_ini_file (better special-character handling)
    ```
 
 2. **Database Credentials**

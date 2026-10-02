@@ -117,6 +117,22 @@ When Octeth cannot connect to MySQL (connection refused, unknown host, too many 
 
 This applies to `system.health.check`, which therefore reports a database outage to load balancers and uptime monitors that key on the status code, and to every other API command and page. A monitor that probes a regular page will start alerting during a MySQL outage where it stayed silent before. `system.health.check` also fails its `MySQL` check with `There is no registered admin user.` when the admins table is empty, a case it reported as `OK` before.
 
+### Configuration
+
+#### An unparseable `.oempro_env` now stops Octeth instead of running on defaults
+
+Octeth now refuses to start when `.oempro_env` exists but cannot be parsed. Every web request answers HTTP `500` with a "Configuration error" page, and every CLI worker and cron script exits with status `1`. The message names the file, the line number, the key (when the line has one) and the reason, for example `Unable to parse /var/www/html/.oempro_env at line 1201 (key UI_BRAND_NAME): unexpected whitespace. The value is not shown.` It is written to stderr for CLI processes and to the PHP error log for all processes. The offending value is never shown or logged.
+
+Before this release, a single malformed line anywhere in `.oempro_env` made Octeth discard the whole file without stopping. Every setting then fell back to its built-in default: `MYSQL_HOST` became `localhost`, `APP_URL` became `http://localhost/`, the password salts and `ADMIN_API_KEY` became empty, and `PRODUCT_VERSION` became `5.7.0`. The only record was one line in the PHP error log, and that line contained the offending value.
+
+The other five environment files (`.oempro_clickhouse_env`, `.oempro_mysql_env`, `.oempro_redis_env`, `.oempro_rabbitmq_env`, `.oempro_supervisor_env`) do not stop Octeth. When one of them cannot be parsed, the same message is logged with the prefix `ERROR` instead of `FATAL`, and that file's settings are ignored until the line is fixed, as before. A missing environment file behaves exactly as before.
+
+The `OEMPRO_USE_PHPDOTENV` setting has been removed and is ignored if present. The environment files are always parsed with phpdotenv. Setting it to `false` previously selected a parser that could not read a standard `.oempro_env` (it rejects the `=` padding at the end of `UI_APP_KEY`), so no working installation depended on it. The line can be deleted from `.oempro_env`.
+
+`/opt/octeth/cli/octeth.sh env:validate` now checks a file with the same parser the application uses and reports a parse failure as an error. It names the line and key the same way and never prints the value. The parser check needs PHP on the host. Without it, the command checks only that every line is a comment, blank, or `KEY=VALUE`, and warns that the parser check did not run.
+
+What to check before upgrading: a line that is not `KEY=VALUE`, or a value containing spaces that is not wrapped in quotes, will now stop the installation. If `.oempro_env` has been edited by hand, check it before upgrading, for example by looking for unquoted values with spaces. After upgrading, a "Configuration error" page or a worker exiting at start points to the line to fix. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#an-unparseable-oempro-env-now-stops-octeth).
+
 ## Tier 2: shape and value changes
 
 ### Subscribers
@@ -162,6 +178,7 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 13. **If you changed the permissions of `system/storage` or `system/bootstrap/cache` by hand, run `./cli/octeth.sh permissions:fix` once after upgrading.** Both trees are no longer world-writable. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#laravel-storage-is-no-longer-world-writable).
 14. **If you set `UI_STRIPO_PLUGIN_ID` and `UI_STRIPO_SECRET_KEY` for the new interface in v6.0.0, enter the same Plugin ID and Secret Key in Admin > Settings > Integrations.** The new interface now reads the Stripo credentials from there and ignores the two keys. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#the-drag-and-drop-builder-in-the-new-interface-uses-the-integration-settings).
 15. **If you receive import status webhooks, read `ImportStatus` in the final POST.** `Completed` means the import finished and `Failed` means it stopped early. Make the endpoint answer within 10 seconds, or the POST is abandoned.
+16. **If `.oempro_env` has been edited by hand, check that every line is a comment, blank, or `KEY=VALUE`, and that values containing spaces are quoted.** An unparseable `.oempro_env` now stops Octeth with a message naming the line. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#an-unparseable-oempro-env-now-stops-octeth).
 
 ---
 
