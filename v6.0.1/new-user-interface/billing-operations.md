@@ -19,7 +19,7 @@ billing is turned on, and they stop entirely when it is turned off.
 | Dunning | Every hour | Chases failed payments, suspends customers past their grace period, and cancels those who never pay. |
 | Reap stranded payments | Every hour | Cleans up payments that were interrupted midway, so none is left in limbo. |
 | Drift report | Daily, 03:15 | Looks across every account for anything the hourly reconcile cannot see. Reports only, changes nothing. |
-| Usage metering | Daily, 04:20 | Records yesterday's sending and subscriber usage for each account. |
+| Usage metering | Daily, 04:20 | Records yesterday's sending and subscriber usage for each account. Accounts that are not enabled in Octeth, such as signups that never verified their email address, are skipped. |
 | Revenue snapshot | Daily, 05:10 | Captures the day's revenue figures for the reporting screens. |
 
 ::: info
@@ -77,6 +77,9 @@ revenue per account, your plan mix, revenue over time, revenue at risk, outstand
 liability, why customers cancelled, and how your recurring revenue moved over the last 30
 days.
 
+Revenue over time is net of refunds. A refund is deducted on the day it completed, so a day
+with a large refund can show negative revenue.
+
 [[SCREENSHOT: The staff Revenue dashboard showing the MRR and ARR cards, the revenue over time chart and the plan mix breakdown]]
 
 ::: info
@@ -102,6 +105,34 @@ invoices, their payments and their usage, and lets you download any of their inv
 PDF.
 
 [[SCREENSHOT: The staff customer detail screen showing the subscription summary, invoice list and usage figures]]
+
+The **Lifetime paid** figure is net of refunds.
+
+#### Refunding a payment
+
+In the customer's payments list, press **Refund** next to a succeeded payment. Leave the amount
+blank to refund everything still left on that payment, or enter a smaller amount in cents for a
+partial refund. The reason field is optional and only staff see it. The dialog shows how much
+has already been refunded and how much can still be refunded, and it refuses an amount above
+that.
+
+Every refund is recorded against the payment, which then shows **Partially refunded** or
+**Refunded** with the amount. Once a payment is fully refunded, its **Refund** button no
+longer appears. The payment's own status stays **Succeeded**, because the charge did succeed.
+
+[[SCREENSHOT: The staff customer payments list showing a payment with a Partially refunded pill and the Refund dialog open with the remaining refundable amount]]
+
+::: info
+If the payment processor does not answer in time, the refund is shown as **Refund pending
+confirmation** and the **Refund** button is hidden for that payment, because the money may
+already have been returned. The processor's webhook settles it. For Stripe, check that the
+refund events are enabled on your webhook endpoint (see
+[Step 4 of Connecting a Payment Gateway](./payment-gateways#step-4-add-the-webhook-in-your-processor-s-dashboard)).
+:::
+
+Refunds you issue in the Stripe dashboard are recorded the same way, from Stripe's webhook, so
+they also reduce the refundable amount, lifetime paid and revenue. Refunds issued in the
+accept.blue dashboard are not recorded yet: issue accept.blue refunds from this screen.
 
 ## Discount codes
 

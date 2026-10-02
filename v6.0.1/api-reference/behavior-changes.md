@@ -152,6 +152,7 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 11. **If an integration polls `subscribers.import.get`, treat `ImportStatus` `Failed` as a finished import that did not complete.** Code that waits for `Completed` alone will otherwise keep polling a failed import forever.
 12. **If an integration calls `subscribers.search`, treat error code `7` as a server-side failure and retry**, not as "no results". If it uses the `RulesJSON` form of `subscribers.delete` or `subscriber.unsubscribe`, expect codes `6` and `11` when the matching query fails, and retry.
 13. **If you changed the permissions of `system/storage` or `system/bootstrap/cache` by hand, run `./cli/octeth.sh permissions:fix` once after upgrading.** Both trees are no longer world-writable. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#laravel-storage-is-no-longer-world-writable).
+14. **If you set `UI_STRIPO_PLUGIN_ID` and `UI_STRIPO_SECRET_KEY` for the new interface in v6.0.0, enter the same Plugin ID and Secret Key in Admin > Settings > Integrations.** The new interface now reads the Stripo credentials from there and ignores the two keys. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#the-drag-and-drop-builder-in-the-new-interface-uses-the-integration-settings).
 
 ---
 

@@ -170,6 +170,10 @@ The webhook is not arriving.
 2. **Check the signing secret** saved on the **Payment gateways** screen matches the one your
    processor shows.
 3. **Open the Billing health screen** and look at the webhook section for recent deliveries.
+4. **If refunds issued in the Stripe dashboard do not appear on the customer's page**, or a
+   staff refund stays at **Refund pending confirmation**, check that the Stripe webhook endpoint
+   receives the refund events. See
+   [Step 4 of Connecting a Payment Gateway](./payment-gateways#step-4-add-the-webhook-in-your-processor-s-dashboard).
 
 ## Password reset emails never arrive
 

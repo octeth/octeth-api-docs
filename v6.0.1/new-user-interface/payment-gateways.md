@@ -102,6 +102,20 @@ Add a webhook endpoint in the processor's own dashboard pointing at:
 Copy the signing secret the processor gives you back into the **Webhook signing key** or
 **Webhook signing secret** field on the gateways screen, and save.
 
+For Stripe, the endpoint must also receive refund events, so that a refund issued in the Stripe
+dashboard is recorded in Octeth and a staff refund that timed out is settled. Sending all events
+to the endpoint covers this. If you select events one by one, include:
+
+- `charge.refunded`
+- `refund.created`
+- `refund.updated`
+- `refund.failed`
+- `charge.refund.updated` (the older form of `refund.updated`)
+
+accept.blue refund notifications are not processed yet, so issue accept.blue refunds from the
+customer's page in **Staff** rather than from the accept.blue dashboard. See
+[Refunding a payment](./billing-operations#refunding-a-payment).
+
 ::: warning
 The `/ui/` part of that address is required. It is the path the reverse proxy forwards to the
 new interface. A webhook pointed at `/webhooks/stripe` reaches the classic application

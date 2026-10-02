@@ -586,7 +586,7 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
-Returns cross-domain aggregate statistics (Sent / Delivered / Bounced / Opened / Clicked + rates) for the caller's email gateway domains in a single call. Replaces the N+1 pattern of looping `emailgateway.domainstats` once per sender domain. Per-domain rows are ordered by `Sent` descending; domains with no events in the period are zero-filled. The `ComparisonTotals` window is the same length as the requested period, ending the second before `StartDate`.
+Returns cross-domain aggregate statistics (Sent / Delivered / Bounced / Opened / Clicked / Unsubscribed / SpamComplaint + rates) for the caller's email gateway domains in a single call. Replaces the N+1 pattern of looping `emailgateway.domainstats` once per sender domain. Per-domain rows are ordered by `Sent` descending; domains with no events in the period are zero-filled. The `ComparisonTotals` window is the same length as the requested period, ending the second before `StartDate`.
 
 **Request Body Parameters:**
 
@@ -598,6 +598,31 @@ Returns cross-domain aggregate statistics (Sent / Delivered / Bounced / Opened /
 | StartDate | String | No       | Start date (`Y-m-d` format, default: 30 days ago)                                                                      |
 | EndDate   | String | No       | End date (`Y-m-d` format, default: today). Clamped to `>= StartDate`                                                   |
 | DomainIDs | String | No       | Comma-separated list of sender domain IDs to scope the result to. IDs not owned by the caller are silently ignored. Omit to include all of the caller's gateway domains |
+
+**Response Fields** (each of `Totals`, `ComparisonTotals` and every `PerDomain[]` row):
+
+| Field           | Type    | Description |
+|-----------------|---------|-------------|
+| DomainID        | Integer | `PerDomain[]` rows only. Sender domain ID |
+| SenderDomain    | String  | `PerDomain[]` rows only. Sender domain name |
+| TotalQueued     | Integer | Messages queued in the window |
+| Sent            | Integer | Messages with status Sent. The base for every rate below |
+| Delivered       | Integer | Sent and not flagged bounced |
+| Bounced         | Integer | Messages flagged bounced |
+| Opened          | Integer | Messages opened at least once |
+| Clicked         | Integer | Messages clicked at least once |
+| DeliveryRate    | Float   | `Delivered / Sent * 100`, 2 decimals, 0 when Sent is 0 |
+| OpenRate        | Float   | `Opened / Sent * 100`, 2 decimals |
+| ClickRate       | Float   | `Clicked / Sent * 100`, 2 decimals |
+| BounceRate      | Float   | `Bounced / Sent * 100`, 2 decimals |
+| Unsubscribed    | Integer | Messages whose recipient unsubscribed through the message <Badge type="tip" text="v6.0.1" /> |
+| SpamComplaint   | Integer | Messages reported as spam through a feedback loop <Badge type="tip" text="v6.0.1" /> |
+| UnsubscribeRate | Float   | `Unsubscribed / Sent * 100`, 2 decimals <Badge type="tip" text="v6.0.1" /> |
+| ComplaintRate   | Float   | `SpamComplaint / Sent * 100`, 2 decimals <Badge type="tip" text="v6.0.1" /> |
+
+::: info Message counts, not event counts
+`Unsubscribed` and `SpamComplaint` count messages: each message is counted once even when its recipient unsubscribes or complains more than once. `emailgateway.aggrevents` counts events, so its `unsubscribed` and `complained` totals for the same window can be slightly higher.
+:::
 
 ::: code-group
 
@@ -620,6 +645,7 @@ curl -X POST https://example.com/api.php \
   "StartDate": "2024-01-01 00:00:00",
   "EndDate": "2024-01-31 23:59:59",
   "Totals": {
+    "TotalQueued": 233010,
     "Sent": 232530,
     "Delivered": 226115,
     "Bounced": 1931,
@@ -628,9 +654,14 @@ curl -X POST https://example.com/api.php \
     "DeliveryRate": 97.24,
     "OpenRate": 38.99,
     "ClickRate": 6.14,
-    "BounceRate": 0.83
+    "BounceRate": 0.83,
+    "Unsubscribed": 349,
+    "SpamComplaint": 70,
+    "UnsubscribeRate": 0.15,
+    "ComplaintRate": 0.03
   },
   "ComparisonTotals": {
+    "TotalQueued": 198900,
     "Sent": 198400,
     "Delivered": 192100,
     "Bounced": 1820,
@@ -639,12 +670,17 @@ curl -X POST https://example.com/api.php \
     "DeliveryRate": 96.83,
     "OpenRate": 37.55,
     "ClickRate": 5.55,
-    "BounceRate": 0.92
+    "BounceRate": 0.92,
+    "Unsubscribed": 278,
+    "SpamComplaint": 52,
+    "UnsubscribeRate": 0.14,
+    "ComplaintRate": 0.03
   },
   "PerDomain": [
     {
       "DomainID": 1,
       "SenderDomain": "mail.apex.com",
+      "TotalQueued": 184700,
       "Sent": 184320,
       "Delivered": 178224,
       "Bounced": 1520,
@@ -653,7 +689,11 @@ curl -X POST https://example.com/api.php \
       "DeliveryRate": 96.69,
       "BounceRate": 0.82,
       "OpenRate": 39.0,
-      "ClickRate": 6.19
+      "ClickRate": 6.19,
+      "Unsubscribed": 276,
+      "SpamComplaint": 55,
+      "UnsubscribeRate": 0.15,
+      "ComplaintRate": 0.03
     }
   ]
 }

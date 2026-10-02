@@ -1038,8 +1038,6 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     UI_STRIPE_SECRET_KEY=
     UI_STRIPE_PUBLISHABLE_KEY=
     UI_STRIPE_WEBHOOK_SECRET=
-    UI_STRIPO_PLUGIN_ID=
-    UI_STRIPO_SECRET_KEY=
     ```
 
     Billing is separate from Octeth's existing payments and is off by default. With it off, every
@@ -1049,10 +1047,15 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     should be a decision rather than a surprise. The Stripe keys are read only when billing is on;
     inbound webhooks are received at `<APP_URL>/ui/webhooks/<gateway>`.
 
-    The Stripo drag-and-drop email builder loads its JavaScript from `plugins.stripo.email` and
-    stores assets on Stripo's CDN, so an install with no outbound internet access cannot use it.
-    Leaving `UI_STRIPO_PLUGIN_ID` empty disables the option and leaves Custom HTML and Plain text,
-    which is the correct setting for those installs.
+    The new interface's drag-and-drop email builder uses the Stripo Plugin ID and Secret Key saved
+    in **Admin > Settings > Integrations**, the same settings the legacy interface uses (see
+    [Stripo.email](#stripo-email)). It has no configuration key of its own. A change to those
+    settings reaches the new interface within a minute, with no restart. The builder loads its
+    JavaScript from `plugins.stripo.email` and stores assets on Stripo's CDN, so an install with no
+    outbound internet access cannot use it. Leaving the Stripo settings empty disables the option
+    and leaves Custom HTML and Plain text, which is the correct setting for those installs.
+
+    Changed in v6.0.1 (issue #3095): `UI_STRIPO_PLUGIN_ID` and `UI_STRIPO_SECRET_KEY` were removed.
 
     Introduced in v5.9.6 (issue #2837).
 
@@ -6473,6 +6476,8 @@ Paste the Plugin ID exactly as shown in your Stripo account.
 Your Stripo plugin authentication credential. This is a long string used to securely connect Octeth to your Stripo account.
 
 Keep this credential confidential—anyone with your Secret Key can access your Stripo plugin.
+
+The legacy interface and the new interface both use these credentials. The Secret Key never leaves Octeth: the new interface asks Octeth for an editor token instead of receiving the key.
 
 **API Key**
 

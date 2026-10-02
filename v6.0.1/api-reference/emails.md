@@ -834,6 +834,131 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## Get Stripo Editor Settings
+
+<Badge type="info" text="GET" /> `/api/v1/stripo.editor.get`
+
+::: tip API Usage Notes
+- Authentication required: User API Key or user session
+- Legacy endpoint access via `/api.php` is also supported
+- Returns no Stripo credential. The Plugin ID and Secret Key stay in Octeth's settings (Admin > Settings > Integrations).
+:::
+
+Tells a client whether the Stripo drag-and-drop builder is available on this installation, and which Stripo `emailId` its editor must send for the authenticated user. The `emailId` scopes the user's uploaded images on Stripo's CDN and is the same value the legacy builder sends, so both interfaces show the same image library. When `STRIPO_BASE_USERID` is set to a user ID, every user receives that user's `emailId` and shares one library.
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                                  |
+|-----------|--------|----------|----------------------------------------------|
+| Command   | String | Yes      | API command: `stripo.editor.get`             |
+| SessionID | String | No       | Session ID obtained from login               |
+| APIKey    | String | No       | API key for authentication                   |
+
+**Response Fields:**
+
+| Field      | Type    | Description                                                                 |
+|------------|---------|-----------------------------------------------------------------------------|
+| Configured | Boolean | `true` when both the Stripo Plugin ID and Secret Key are saved in Octeth    |
+| EmailId    | String  | Stripo `emailId` for the authenticated user (32 hexadecimal characters)     |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "stripo.editor.get",
+    "SessionID": "your-session-id"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Configured": true,
+  "EmailId": "65c18e4d9b80ea5e950e8fb3d8675c39"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998,
+  "ErrorText": "Authentication failure or session expired"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99998: Authentication failure or session expired
+```
+
+:::
+
+## Get Stripo Editor Token
+
+<Badge type="info" text="POST" /> `/api/v1/stripo.auth`
+
+::: tip API Usage Notes
+- Authentication required: User API Key or user session
+- Legacy endpoint access via `/api.php` is also supported
+- Rate limit: 120 requests per 60 seconds
+- Octeth performs the Stripo plugin handshake with the credentials saved in Admin > Settings > Integrations and returns only the editor token. The Secret Key is never returned.
+:::
+
+Returns a short-lived token for the Stripo embedded editor, for use in the editor's `getAuthToken` callback. This is the API form of the legacy user area's Stripo auth action.
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                        |
+|-----------|--------|----------|------------------------------------|
+| Command   | String | Yes      | API command: `stripo.auth`         |
+| SessionID | String | No       | Session ID obtained from login     |
+| APIKey    | String | No       | API key for authentication         |
+
+**Response Fields:**
+
+| Field | Type   | Description                         |
+|-------|--------|-------------------------------------|
+| Token | String | Stripo editor token issued by Stripo |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "stripo.auth",
+    "SessionID": "your-session-id"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Token": "eyJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Stripo is not configured. An administrator can add the Stripo credentials in Admin > Settings > Integrations."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Stripo is not configured (Plugin ID or Secret Key not saved)
+4: Stripo did not return an editor token (rejected credentials or Stripo unreachable)
+99998: Authentication failure or session expired
+```
+
+:::
+
 ## Create Email Template
 
 <Badge type="info" text="POST" /> `/api/v1/email.template.create`

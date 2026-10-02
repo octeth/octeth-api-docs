@@ -220,6 +220,18 @@ find system/storage system/bootstrap/cache -perm -o+w
 
 The `data/` directories are unchanged in this release and stay at `0777`.
 
+### The drag-and-drop builder in the new interface uses the integration settings
+
+The new user interface no longer reads `UI_STRIPO_PLUGIN_ID` and `UI_STRIPO_SECRET_KEY` from `.oempro_env`. It uses the Stripo Plugin ID and Secret Key saved in **Admin > Settings > Integrations**, the same credentials the legacy interface uses. See [Stripo.email](/v6.0.1/getting-started/octeth-configuration#stripo-email).
+
+**Action required** only if you set `UI_STRIPO_PLUGIN_ID` and `UI_STRIPO_SECRET_KEY` in v6.0.0 and left the Integrations settings empty: enter the same Plugin ID and Secret Key in Admin > Settings > Integrations. Until you do, the new interface shows the drag-and-drop builder as not configured. Custom HTML and Plain text keep working.
+
+The leftover `UI_STRIPO_*` lines in an upgraded `.oempro_env` are ignored and can be deleted. `STRIPO_EMAIL_ID_SALT` is no longer used either.
+
+**Image library.** The new interface now sends Stripo the same `emailId` as the legacy builder, so a user sees the same uploaded images in both interfaces, and `STRIPO_BASE_USERID` applies to both. Images uploaded in the new interface since v6.0.0 were stored under a different `emailId` and no longer appear in that user's image library. Emails and templates that already use them keep rendering, because Stripo stores absolute image URLs in the saved design.
+
+**New API commands.** [`stripo.editor.get` and `stripo.auth`](/v6.0.1/api-reference/emails#get-stripo-editor-settings) (user authentication) were added. Both are additive and return no credential.
+
 ## Post-Upgrade Verification
 
 After the upgrade completes, verify everything is working:
