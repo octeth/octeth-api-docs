@@ -133,6 +133,21 @@ The `OEMPRO_USE_PHPDOTENV` setting has been removed and is ignored if present. T
 
 What to check before upgrading: a line that is not `KEY=VALUE`, or a value containing spaces that is not wrapped in quotes, will now stop the installation. If `.oempro_env` has been edited by hand, check it before upgrading, for example by looking for unquoted values with spaces. After upgrading, a "Configuration error" page or a worker exiting at start points to the line to fix. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#an-unparseable-oempro-env-now-stops-octeth).
 
+### Bounce webhook
+
+#### The fluentd bounce webhook refuses oversized batches and reports queueing failures
+
+`POST /system/bounce_webhook?type=fluentd` used to answer HTTP `200` with `StatusCode 250` for every request, even when RabbitMQ was unreachable, and a large batch could run past PHP's 30 second limit and fail with HTTP `500` after queueing part of it.
+
+From v6.0.1:
+
+- A request with more than `BOUNCE_WEBHOOK_FLUENTD_MAX_EVENTS` records (default `1000`) answers HTTP `413` with `StatusCode 413` and queues nothing. Senders using Vector's default `http` sink batching must set `batch.max_events` to `1000` or lower.
+- When RabbitMQ is unreachable or does not confirm every record, the webhook answers HTTP `503` with `StatusCode 503`. The sender should retry.
+- A successful request still answers HTTP `200` with the same `StatusCode 250` body.
+- Each request now uses one RabbitMQ connection instead of one per record, so large batches finish in well under a second.
+
+The queue message format consumed by the fluentd processor worker is unchanged. The `type=pmta` path is not affected. See [Bounce Processing](/v6.0.1/using-octeth/email-deliverability/bounce-processing#sending-batches-with-type-fluentd) for a sender sample.
+
 ## Tier 2: shape and value changes
 
 ### Subscribers
@@ -179,6 +194,7 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 14. **If you set `UI_STRIPO_PLUGIN_ID` and `UI_STRIPO_SECRET_KEY` for the new interface in v6.0.0, enter the same Plugin ID and Secret Key in Admin > Settings > Integrations.** The new interface now reads the Stripo credentials from there and ignores the two keys. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#the-drag-and-drop-builder-in-the-new-interface-uses-the-integration-settings).
 15. **If you receive import status webhooks, read `ImportStatus` in the final POST.** `Completed` means the import finished and `Failed` means it stopped early. Make the endpoint answer within 10 seconds, or the POST is abandoned.
 16. **If `.oempro_env` has been edited by hand, check that every line is a comment, blank, or `KEY=VALUE`, and that values containing spaces are quoted.** An unparseable `.oempro_env` now stops Octeth with a message naming the line. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#an-unparseable-oempro-env-now-stops-octeth).
+17. **If a sender posts to `/system/bounce_webhook?type=fluentd`, cap its batch at 1,000 records** (Vector `batch.max_events = 1000`) or raise `BOUNCE_WEBHOOK_FLUENTD_MAX_EVENTS`, and make it retry on HTTP `503`. A larger batch is now refused with HTTP `413`.
 
 ---
 

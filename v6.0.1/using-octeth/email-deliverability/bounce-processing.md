@@ -455,8 +455,37 @@ curl -X POST "https://octeth.example.com/system/bounce_webhook?type=pmta" \
 You can use any log-forwarding tool to send bounce data to Octeth — not just Logstash. Tools like [Fluentd](https://www.fluentd.org/), [Filebeat](https://www.elastic.co/beats/filebeat), or a custom script can monitor your MTA's bounce logs and POST the data to the webhook endpoint.
 :::
 
-::: info
-Octeth also supports Fluentd as a native data source. To use Fluentd, set the `type` parameter to `fluentd` and send the full bounce payload as a JSON array. Fluentd payloads are queued via RabbitMQ for asynchronous processing.
+### Sending Batches with `type=fluentd`
+
+Octeth also accepts batches of PowerMTA accounting records at `https://<your-octeth-domain>/system/bounce_webhook?type=fluentd`. Send the records as a JSON array in the request body. The batch is queued through RabbitMQ and processed asynchronously. Only email gateway records (return path starting with `eg-`) are queued.
+
+Send at most 1,000 records per request, the default value of [`BOUNCE_WEBHOOK_FLUENTD_MAX_EVENTS`](/v6.0.1/getting-started/octeth-configuration). The webhook answers:
+
+| Response | Meaning |
+|---|---|
+| HTTP `200` (`StatusCode 250`) | Every eligible record in the request was queued. |
+| HTTP `413` | The request has more records than `BOUNCE_WEBHOOK_FLUENTD_MAX_EVENTS`. Nothing from it was queued. Reduce the sender's batch size. |
+| HTTP `503` | The records could not be queued. Retry the request. |
+| HTTP `401` | The `X-Octeth-Signature` header is missing or wrong while bounce webhook authentication is enabled. |
+
+The following [Vector](https://vector.dev/) `http` sink sends PowerMTA accounting records parsed by an upstream source named `pmta_accounting`. Include the `X-Octeth-Signature` header only when bounce webhook authentication is enabled. The admin **Bounce Processing** page shows the current secret.
+
+```toml
+[sinks.octeth_bounce_webhook]
+type = "http"
+inputs = ["pmta_accounting"]
+uri = "https://octeth.example.com/system/bounce_webhook?type=fluentd"
+method = "post"
+encoding.codec = "json"
+batch.max_events = 1000          # must not exceed BOUNCE_WEBHOOK_FLUENTD_MAX_EVENTS
+request.headers.X-Octeth-Signature = "your-bounce-webhook-secret"
+request.retry_attempts = 10      # 503 means the records were not queued; retry
+```
+
+For Fluentd, set `chunk_limit_records 1000` in the output's buffer section. For Logstash, keep `pipeline.batch.size` at or below the limit.
+
+::: warning
+Vector's default batch has no event limit and can carry several thousand records, so leaving `batch.max_events` unset makes large batches fail with HTTP `413`. A retry after a `503` can queue some records twice, because records queued before the failure are not yet deduplicated.
 :::
 
 ## Administrator Email Delivery Settings
