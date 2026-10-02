@@ -129,6 +129,14 @@ Imports that failed before the upgrade keep the status `Completed`. There is no 
 
 `subscribers.import` with `ImportStep=2` refuses a `Failed` import with error code `6`, as it already did for a `Completed` one. The `import.failed` event that the Lindris plugin publishes now carries `importStatus: "Failed"` instead of `"Completed"`.
 
+#### A failed import sends a final status webhook
+
+An import started by `subscribers.import.post` with `ImportStatusUpdateWebhookURL` now receives a final POST when the import fails, not only when it completes. The payload has the same fields as the completion webhook, and `ImportStatus` is `Failed`. The failure reason is not included. Before v6.0.1, a failed import sent nothing after its last progress ping, whose `ImportStatus` was `Importing`, so a receiver never learned that the import had ended.
+
+A receiver that treats any final POST as success, without reading `ImportStatus`, will now see a POST for a failed import.
+
+Each import status webhook POST, including the progress pings, now gives up after 5 seconds if it cannot connect and after 10 seconds in total. The request is not retried. Before v6.0.1 there was no time limit, so a slow endpoint delayed the import itself.
+
 #### A failed subscriber query is reported as an error
 
 `subscribers.search` used to answer `Success: true` with an empty `Subscribers` array when its listing query failed in the database, while `TotalSubscribers` still carried the correct non-zero count from a separate query. It now answers `Success: false` with error code `7` and `ErrorText` `Subscriber query failed`, and writes the database error and the query to the application error log.
@@ -153,6 +161,7 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 12. **If an integration calls `subscribers.search`, treat error code `7` as a server-side failure and retry**, not as "no results". If it uses the `RulesJSON` form of `subscribers.delete` or `subscriber.unsubscribe`, expect codes `6` and `11` when the matching query fails, and retry.
 13. **If you changed the permissions of `system/storage` or `system/bootstrap/cache` by hand, run `./cli/octeth.sh permissions:fix` once after upgrading.** Both trees are no longer world-writable. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#laravel-storage-is-no-longer-world-writable).
 14. **If you set `UI_STRIPO_PLUGIN_ID` and `UI_STRIPO_SECRET_KEY` for the new interface in v6.0.0, enter the same Plugin ID and Secret Key in Admin > Settings > Integrations.** The new interface now reads the Stripo credentials from there and ignores the two keys. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#the-drag-and-drop-builder-in-the-new-interface-uses-the-integration-settings).
+15. **If you receive import status webhooks, read `ImportStatus` in the final POST.** `Completed` means the import finished and `Failed` means it stopped early. Make the endpoint answer within 10 seconds, or the POST is abandoned.
 
 ---
 
