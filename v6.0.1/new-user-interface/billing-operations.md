@@ -123,9 +123,12 @@ longer appears. The payment's own status stays **Succeeded**, because the charge
 [[SCREENSHOT: The staff customer payments list showing a payment with a Partially refunded pill and the Refund dialog open with the remaining refundable amount]]
 
 ::: info
-If the payment processor does not answer in time, the refund is shown as **Refund pending
-confirmation** and the **Refund** button is hidden for that payment, because the money may
-already have been returned. The processor's webhook settles it. For Stripe, check that the
+A refund is shown as **Refund pending confirmation** in two cases. If the processor accepts the
+refund but reports it as still pending, the amount counts against what can still be refunded,
+but it is not deducted from lifetime paid or revenue until the processor confirms it. If the
+processor does not answer in time, the **Refund** button is also hidden for that payment,
+because the money may already have been returned. In both cases the processor's webhook
+settles the refund. For Stripe, check that the
 refund events are enabled on your webhook endpoint (see
 [Step 4 of Connecting a Payment Gateway](./payment-gateways#step-4-add-the-webhook-in-your-processor-s-dashboard)).
 :::
