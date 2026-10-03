@@ -84,7 +84,7 @@ Once confirmed, the upgrade runs through these steps automatically:
 
 5. **Merges environment files** — Compares your current environment files against the new version's defaults. Any new configuration keys introduced in the new version are added to your files with their default values. Your existing settings are never overwritten.
 
-6. **Updates Docker configuration** — Updates Docker image tags to match the new version and pulls the latest container images.
+6. **Updates the Octeth image tag**: Moves every `image: octeth/oempro:<tag>` line in your `docker-compose.yml` (and `docker-compose.mta.yml` if you have one) to the tag the release's own `docker-compose.yml` carries, and pulls that image. The tag only changes in a release that rebuilds the image, so most upgrades leave it as it is and pull nothing. Comments, other images and the rest of your file are not changed.
 
 7. **Rebuilds local images and restarts containers**: Rebuilds the container images that Octeth builds on your server rather than downloading (the new user interface, HAProxy, the link proxy, RabbitMQ, Redis, Mailpit and the inbound SMTP server), so their startup scripts match the release. The build runs while the old containers are still serving. Containers are then brought down and back up with the new images and code. If a rebuild fails, the upgrade continues on the existing images and tells you how to retry (see [Image Rebuild Fails](#image-rebuild-fails)).
 
@@ -127,6 +127,8 @@ See what the upgrade would do without making any changes:
 ```
 
 This shows the full upgrade plan including which new environment keys would be added. Use this to review the upgrade before committing.
+
+The plan also shows the image tag step, for example `octeth/oempro: v5.7.4 -> v6.0.1`, or `already on v6.0.1, unchanged`.
 
 ### Skip Backup
 
@@ -304,6 +306,23 @@ rm /opt/octeth/data/.upgrade_in_progress
 
 Held containers start their workers and cron within a few seconds of the file being removed, and `docker:up` brings the containers back on their normal startup configuration. An upgrade killed this way stopped part way, so read its log in `data/logs/` before relying on the installation.
 
+### The Octeth containers move to a new image
+
+From v6.0.1, the five Octeth containers (`oempro_system`, `oempro`, `oempro_cron`, `oempro_supervisor` and the send engine, including the send engine in `docker-compose.mta.yml` for a dedicated MTA server) run the image `octeth/oempro:v6.0.1`. Installations until now ran `octeth/oempro:v5.7.4` (or an older tag), whatever version they upgraded to. The new image is built for both amd64 and arm64 servers, and it runs each container's startup script from the installed release, so later changes to those scripts take effect on upgrade without a new image.
+
+The upgrade makes this change for you in step 6 and logs it as `octeth/oempro: v5.7.4 -> v6.0.1`. It reads the tag from the release package rather than from the version number, so an installation that skips v6.0.1 and upgrades straight to a later release still moves to the new image.
+
+The upgrade downloads the new image, so allow for that on a slow connection or a server with little free disk space.
+
+If you edited `docker-compose.yml`:
+
+- Only lines of the form `image: octeth/oempro:<tag>` change. Your resource limits, send engine replicas, volumes and other services are kept.
+- If you pinned a different `octeth/oempro` tag on purpose, it is moved to `v6.0.1` too, and the log names the tag it replaced.
+- If you set the image in `docker-compose.override.yml`, the upgrade does not edit that file and warns that it decides the tag. Change the tag there to `v6.0.1` yourself.
+- If the release's tag cannot be read, or Docker Hub cannot be reached to confirm it, the upgrade keeps your current tag, warns, and continues. Once the server can reach Docker Hub, change the lines to `octeth/oempro:v6.0.1` and run `/opt/octeth/cli/octeth.sh docker:up`.
+
+A failed upgrade restores your original `docker-compose.yml` from the backup it takes in step 3. With `--skip-backup` there is no such copy, so the old tag in the upgrade log is what to change the lines back to.
+
 ## Post-Upgrade Verification
 
 After the upgrade completes, verify everything is working:
@@ -442,6 +461,12 @@ Setting `OCTETH_UPGRADE_SELF_UPDATED=1` in the environment makes the upgrade com
    ```bash
    /opt/octeth/cli/octeth.sh logs:tail
    ```
+
+### Image Pull Fails
+
+**Problem:** The upgrade stops with `Failed to pull Docker images` after `octeth/oempro: v5.7.4 -> v6.0.1`.
+
+The upgrade rolls back and restores your `docker-compose.yml`. The usual cause is a server that cannot reach Docker Hub during the upgrade. Check with `docker pull octeth/oempro:v6.0.1`, then run the upgrade again.
 
 ### Image Rebuild Fails
 
