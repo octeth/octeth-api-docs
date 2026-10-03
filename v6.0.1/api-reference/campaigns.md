@@ -1803,6 +1803,7 @@ For a **sent** campaign, returns the per-subscriber engagement breakdown for a s
 | CampaignID        | Integer | Yes      | The campaign to report on                                                                                         |
 | Activity          | String  | Yes      | Activity type. Possible values: `open`, `click`, `bounce`, `unsubscription`, `forward`, `conversion`             |
 | SearchKeyword     | String  | No       | Case-insensitive substring filter on the recipient's email address (`LIKE %keyword%`), applied **before** pagination so `TotalRecords` reflects the filtered count. Empty/absent = no filter. `EmailAddress` is accepted as an alias. |
+| VariationEmailID  | Integer | No       | <Badge type="tip" text="New in v6.0.1" /> Limits the rows to recipients of one A/B variation. The value is a variation's `EmailID` from [`campaign.abtest.get`](#get-campaign-a-b-test-auto-resend-uplift) (`ABTest.Variations[].EmailID`). Applied **before** pagination, so `TotalRecords` is the filtered count. Can be combined with `SearchKeyword`. Empty or absent means no filter. |
 | RecordsFrom       | Integer | No       | Pagination offset (default: 0)                                                                                    |
 | RecordsPerRequest | Integer | No       | Page size (default: 25, hard cap: 1000)                                                                           |
 
@@ -1834,7 +1835,8 @@ curl -X POST https://example.com/api.php \
       "ListName": "Buyers List",
       "EmailAddress": "user@example.com",
       "ActivityCount": 2,
-      "LastActivityDate": "2026-05-28 00:33:36"
+      "LastActivityDate": "2026-05-28 00:33:36",
+      "VariationEmailID": 0
     }
   ]
 }
@@ -1853,6 +1855,10 @@ curl -X POST https://example.com/api.php \
 2: CampaignID is not numeric
 3: Campaign not found or access denied
 4: Invalid activity type
+5: VariationEmailID is not a positive integer
+6: VariationEmailID is not an A/B variation of this campaign (or the campaign is not an A/B campaign)
+7: Variation filter unavailable: some rows of this activity do not record their variation and the campaign's send queue has been purged, or the variation data could not be read
+8: Recipient activity could not be retrieved (a database query failed)
 ```
 
 :::
@@ -1860,6 +1866,12 @@ curl -X POST https://example.com/api.php \
 For `bounce`, each recipient row additionally includes a `BounceType` field (`Hard` or `Soft`). For `conversion`, each row additionally includes `TotalRevenue` (decimal string; stored internally as integer cents).
 
 Each row carries `ListName` (the subscriber's list name) alongside `ListID`. When `SearchKeyword` (or its `EmailAddress` alias) is supplied, the email match is performed server-side across every list the campaign targeted, before pagination — so `TotalRecords` is the filtered total and `RecordsFrom`/`RecordsPerRequest` page through the matches. Seed-list recipients (`SubscriberID` `0`) have no email address and are therefore excluded from search results.
+
+<Badge type="tip" text="New in v6.0.1" /> **A/B variation.** Every row carries `VariationEmailID`, the `EmailID` of the A/B variation sent to that recipient. It is `0` for a campaign that is not an A/B campaign, or when the variation cannot be determined. When `VariationEmailID` is passed in the request, every row carries that value.
+
+Open, click and forward activity records the variation the recipient interacted with. Some bounce, unsubscription and conversion records do not, for example bounces processed from DSN messages and unsubscriptions from spam complaints. For those, the variation comes from the campaign's send queue, which records the variation sent to every recipient. The send queue is removed `RETENTION_DAYS_CAMPAIGN_QUEUE` days after the campaign was created (default 300). After that, rows that did not record their variation report `VariationEmailID` `0`, and filtering that activity by variation returns error `7` rather than a partial list. Filtering open, click and forward activity keeps working. Seed-list recipients are included in a variation filter only when their activity row recorded the variation.
+
+<Badge type="warning" text="Changed in v6.0.1" /> A failed database query now returns error `8` (or `7` with a variation filter). Before v6.0.1 it returned `Success` with zero rows.
 
 ## Get Campaign A/B Test & Auto-Resend Uplift
 

@@ -279,6 +279,12 @@ Neither command removes system-wide rows, list rows recorded without an owner, o
 
 On the subscriber page, "Remove from suppression list" is no longer offered when only a system-wide entry or a pattern applies, and a notice after a removal says when a wider scope still suppresses the address. The new interface's suppression pages report the same.
 
+### Campaign reports
+
+#### `campaign.recipients.activity.get` reports a failed query as an error, and gains an A/B variation filter
+
+A database failure while reading recipient activity now returns `Success: false` with error code `8` (or `7` when the new `VariationEmailID` filter is used). Before v6.0.1 it returned `Success: true` with zero rows, which looked like a campaign with no activity. Every row also gains an additive `VariationEmailID` field (`0` when the campaign is not an A/B campaign or the variation is unknown). See [Get Campaign Recipients Activity](./campaigns.md#get-campaign-recipients-activity).
+
 ### Journeys
 
 #### Journey action `OrderNo` is numbered across the whole journey
