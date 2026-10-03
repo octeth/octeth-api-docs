@@ -148,6 +148,29 @@ From v6.0.1:
 
 The queue message format consumed by the fluentd processor worker is unchanged. The `type=pmta` path is not affected. See [Bounce Processing](/v6.0.1/using-octeth/email-deliverability/bounce-processing#sending-batches-with-type-fluentd) for a sender sample.
 
+### Suppression
+
+#### Suppression reads apply the same scopes as a campaign send
+
+Before v6.0.1, every suppression read except `suppression.check` matched a suppression entry only when it was scoped to that exact list. Account-wide entries (what "Add to suppression list" writes) and system-wide entries (hard bounces and complaints) were applied when sending but never reported. From v6.0.1 these reads use the list's [effective suppression view](/v6.0.1/api-reference/suppression#effective-suppression-view-of-a-list): list-scoped entries, plus account-wide and system-wide entries for addresses that are on the list, one entry per address. Counts, listings and segment membership change on upgrade, often by a lot for accounts with account-wide or bounce-generated entries.
+
+- **`Suppressed` flag.** `subscriber.get`, `subscriber.create`, `subscribers.search` and `journey.action.subscribers` now report `Suppressed: true` for an address suppressed by a list-scoped, account-wide or system-wide entry, or by a global suppression pattern. It is always `false` for an account with Disable Suppression Check turned on. Phone-only contacts are not reported as suppressed because of their placeholder address.
+- **`suppression.browse` and `suppression.stats` with a `ListID`** return the effective view, one entry per address. `Total` in `suppression.stats` equals `TotalRecords` in `suppression.browse` for the same filters. Every `suppression.browse` entry, with or without a `ListID`, carries a new `Scope` field (`PerList`, `AccountWide` or `SystemWide`). Without a `ListID` nothing else changes.
+- **`subscribers.get` with `SubscriberSegment=Suppressed`** lists the effective view, with the additive `Scope` column, and `TotalSubscribers` counts the same set. With `SearchField` and `SearchKeyword` it still returns only list-scoped entries.
+- **Segments.** The segment rule "suppression exist / not exist" now matches every address the send path drops. Saved segments that use it change membership and counts, and a "not exist" segment can shrink, which changes who receives a campaign sent to it.
+- **Suppressed export.** An export with `Target=Suppressed` lists the effective view. A database failure now marks the export failed instead of producing an empty file.
+- **Subscriber page.** The badge and the subscriber card in the user area no longer show a contact as suppressed because of another account's entry. A contact suppressed by this account, by a hard bounce or complaint, or by a pattern now shows as suppressed and Inactive on both.
+
+A database failure while reading the effective view in `suppression.browse` or `suppression.stats` with a `ListID`, or in the `Suppressed` segment of `subscribers.get`, now answers the API hard-failure envelope (HTTP `500`, `ErrorCode` `100005`, `ErrorText` `API command failed`) instead of `Success: true` with an empty list or zero counts. If the per-page lookup behind the `Suppressed` flag fails, `subscribers.search` answers error code `7`, and `journey.action.subscribers` returns the rows with `Suppressed: false` and logs the failure.
+
+The `Suppressed` segment total is cached for 300 seconds, so it can show the old count for up to five minutes after the upgrade. To refresh it at once, delete the cached totals:
+
+```bash
+docker exec oempro_redis redis-cli --scan --pattern 'subscriber_counts_*_suppressed_*' | xargs -r docker exec -i oempro_redis redis-cli del
+```
+
+`suppression.delete` is unchanged. It removes only entries in the requested scope, so an address can remain suppressed by an entry in another scope after a delete. There is no opt-in flag: the old answers disagreed with what a send actually drops.
+
 ## Tier 2: shape and value changes
 
 ### Subscribers
@@ -195,7 +218,8 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 15. **If you receive import status webhooks, read `ImportStatus` in the final POST.** `Completed` means the import finished and `Failed` means it stopped early. Make the endpoint answer within 10 seconds, or the POST is abandoned.
 16. **If `.oempro_env` has been edited by hand, check that every line is a comment, blank, or `KEY=VALUE`, and that values containing spaces are quoted.** An unparseable `.oempro_env` now stops Octeth with a message naming the line. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#an-unparseable-oempro-env-now-stops-octeth).
 17. **If a sender posts to `/system/bounce_webhook?type=fluentd`, cap its batch at 1,000 records** (Vector `batch.max_events = 1000`) or raise `BOUNCE_WEBHOOK_FLUENTD_MAX_EVENTS`, and make it retry on HTTP `503`. A larger batch is now refused with HTTP `413`.
-18. **Optional: set `API_RESPONSEFORMAT_CASE_INSENSITIVE=true`** if your integrations send `ResponseFormat` in lowercase (`xml`) and expect XML. It is off by default, so those calls keep receiving JSON as before. Turning it on switches them to XML with `Content-Type: text/xml`, so check every integration that sends a lowercase value first. See [Error Handling](/v6.0.1/api-reference/error-handling#responseformat-xml-on-hard-failures).
+18. **If an integration or a saved segment relies on `Suppressed`, the `Suppressed` segment, `suppression.browse` or `suppression.stats` with a `ListID`, or the "suppression exist / not exist" segment rule, expect larger suppressed sets** that now include account-wide and system-wide entries for addresses on the list. Review campaigns sent to segments that use the "not exist" rule, and treat HTTP `500` with `ErrorCode` `100005` from these reads as a server-side failure to retry.
+19. **Optional: set `API_RESPONSEFORMAT_CASE_INSENSITIVE=true`** if your integrations send `ResponseFormat` in lowercase (`xml`) and expect XML. It is off by default, so those calls keep receiving JSON as before. Turning it on switches them to XML with `Content-Type: text/xml`, so check every integration that sends a lowercase value first. See [Error Handling](/v6.0.1/api-reference/error-handling#responseformat-xml-on-hard-failures).
 
 ---
 

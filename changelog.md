@@ -26,6 +26,7 @@ Release in progress. Scheduled for October 9th, 2026. Changelog will be updated 
 ### Bug Fixes
 
 - **Environment file writer** - The installer and the upgrade no longer write a trailing space after `.oempro_env` and `system/.env` values, and can now write values containing `|` or `\` (#3075)
+- **Suppression scopes on every read** - The `Suppressed` flag, the Suppressed segment and export, `suppression.browse` and `suppression.stats` with a `ListID`, and the "suppression exist / not exist" segment rule now include account-wide and system-wide entries for addresses on the list, matching what a campaign send drops. The subscriber page no longer shows a contact as suppressed because of another account's entry. See [API Behavior Changes](/v6.0.1/api-reference/behavior-changes#suppression-reads-apply-the-same-scopes-as-a-campaign-send) (#2562)
 
 ### Security Patches
 

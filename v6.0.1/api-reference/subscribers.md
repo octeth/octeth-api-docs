@@ -161,6 +161,8 @@ curl -X POST https://example.com/api/v1/subscriber.create \
 
 :::
 
+`Suppressed` is `true` when a send to this list would drop the address. See [Get a Subscriber](#get-a-subscriber) for the full definition (changed in v6.0.1).
+
 ## Subscribe to a List
 
 <Badge type="info" text="POST" /> `/api.php`
@@ -659,6 +661,8 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+Each subscriber's `Suppressed` flag is computed for the addresses on the returned page. It is `true` when a send to this list would drop the address. See [Get a Subscriber](#get-a-subscriber) for the full definition (changed in v6.0.1). If that lookup fails in the database, the call answers error code `7`.
 
 ## Import Subscribers (Legacy Multi-Step)
 
@@ -1308,6 +1312,8 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+**`SubscriberSegment = Suppressed`:** `Subscribers` lists the list's [effective suppression view](./suppression.md#effective-suppression-view-of-a-list), one entry per address with the columns `SuppressionID`, `RelListID`, `RelOwnerUserID`, `SuppressionSource`, `EmailAddress`, `Reason` and the additive `Scope`. `OrderField` accepts one of those columns (other values order by `EmailAddress`). Before v6.0.1 only `PerList` entries were returned. `TotalSubscribers` counts the same set and is cached for up to 300 seconds. A database failure answers with the API hard-failure envelope (HTTP 500, `ErrorCode: 100005`) instead of an empty segment.
+
 ## Update a Subscriber
 
 <Badge type="info" text="POST" /> `/api.php`
@@ -1560,6 +1566,8 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+**`Suppressed` flag:** `true` when a send to this list would drop the address: a `PerList` entry for the list, an `AccountWide` entry of the caller, a `SystemWide` entry (hard bounce or complaint), or a global suppression pattern. Always `false` when the account has Disable Suppression Check turned on. Phone-only contacts are not reported as suppressed because of their placeholder address. Before v6.0.1 only `PerList` entries counted. The same flag is returned by `subscriber.create`, `subscribers.search` and `journey.action.subscribers`.
 
 ::: info SubscriberJourneys fields
 

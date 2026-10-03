@@ -14,6 +14,20 @@ The `SuppressionSource` column is a fixed enumeration. The valid values are:
 - `Hard Bounced`
 - `Unsubscribe`
 
+## Effective Suppression View of a List
+
+For a list owned by the caller, the effective view is every suppression entry the campaign send path applies to that list. `suppression.browse` and `suppression.stats` with a `ListID`, the `Suppressed` segment of `subscribers.get` and the suppressed subscribers export return this view.
+
+| Scope | Stored as | Included in a list's effective view |
+|---|---|---|
+| `PerList` | `RelListID` = the list, owner = the caller or 0 | Always, including addresses no longer on the list |
+| `AccountWide` | `RelListID = 0`, owner = the caller | Only for addresses that are on the list |
+| `SystemWide` | `RelListID = 0`, owner = 0 (hard bounces, complaints) | Only for addresses that are on the list |
+
+An address that matches several scopes appears once, with its narrowest entry (`PerList`, then `AccountWide`, then `SystemWide`). So the length of a listing, its total and the stats for the same filters always agree. Global suppression patterns are regular expressions, not addresses, so they are never listed. They do count for the per-subscriber `Suppressed` flag.
+
+Changed in v6.0.1: before, these reads returned only `PerList` entries.
+
 ## Browse Suppression List
 
 <Badge type="info" text="POST" /> `/api.php`
@@ -32,13 +46,15 @@ The `SuppressionSource` column is a fixed enumeration. The valid values are:
 | APIKey    | String | No       | API key for authentication            |
 | SearchPattern | String | No   | Search pattern for filtering email addresses (supports `*` wildcard). When supplied, `TotalRecords` reflects the filtered count. |
 | SuppressionSource | String | No | Restrict results to one or more sources. Comma-separated list of `SuppressionSource` ENUM values (e.g. `Hard Bounced,SPAM complaint`). |
-| ListID | Integer | No | Scope the browse to a single subscriber list. When omitted or `0`, returns the user-wide global suppression list (today's default behavior). When non-zero, the list must be owned by the authenticated user; otherwise the call fails with `ErrorCode: 4`. |
+| ListID | Integer | No | When omitted or `0`, returns the account-wide suppression list (rows with `RelListID = 0` owned by the caller), unchanged. When non-zero, returns the list's [effective suppression view](#effective-suppression-view-of-a-list). The list must be owned by the authenticated user, otherwise the call fails with `ErrorCode: 4`. |
 | StartFrom | Integer | No      | Starting record index for pagination (default: 0) |
 | RetrieveCount | Integer | No  | Number of records to retrieve (default: 100) |
 
 **Response Shape:**
 
 `SuppressedEmails` is an associative map keyed by email address (not a JSON array). Use `Object.values()` (or the equivalent in your language) if you need a list. `TotalRecords` reflects whatever filters (`SearchPattern`, `SuppressionSource`) the request set, so paging math always lines up with the rendered page.
+
+Every entry in `SuppressedEmails` carries a `Scope` field (`PerList`, `AccountWide` or `SystemWide`), derived the same way as `suppression.check`'s `MatchedScopes`. The field is additive. With a `ListID`, `TotalRecords` counts distinct addresses in the effective view for the same `SearchPattern` and `SuppressionSource` filters.
 
 ::: code-group
 
@@ -67,7 +83,8 @@ curl -X POST https://example.com/api.php \
       "RelOwnerUserID": "42",
       "EmailAddress": "user@example.com",
       "SuppressionSource": "Hard Bounced",
-      "Reason": "Bounce: 550 mailbox unavailable"
+      "Reason": "Bounce: 550 mailbox unavailable",
+      "Scope": "AccountWide"
     }
   }
 }
@@ -87,6 +104,8 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+A database failure while reading the effective view is not reported as an empty list. The call answers with the API hard-failure envelope (HTTP 500, `ErrorCode: 100005`, `ErrorText: "API command failed"`, plus `Errors[0].Message`), the same envelope any unhandled API failure returns. See [Error Handling](./error-handling.md).
 
 ## Check Suppression Status
 
@@ -239,8 +258,8 @@ curl -X POST https://example.com/api.php \
 
 :::
 
-::: warning Known divergence from the other suppression endpoints
-`suppression.check` applies the full scope matrix. `suppression.browse`, `suppression.stats`, `suppression.delete`, the per-subscriber `Suppressed` flag and the "suppression exists" segment rule still match on exact equality for both scope columns, so they do **not** see account-wide or system-wide entries. Until that is corrected, the same address can legitimately be reported as suppressed here and not appear in `suppression.browse`. This command is the one that agrees with the send path.
+::: warning Known divergence from `suppression.delete`
+`suppression.check` applies the full scope matrix. Since v6.0.1, `suppression.browse` and `suppression.stats` with a `ListID`, the per-subscriber `Suppressed` flag and the "suppression exists" segment rule apply it too (see [Effective Suppression View of a List](#effective-suppression-view-of-a-list)). `suppression.delete` still matches on exact equality for both scope columns, so it removes only rows in the requested scope, and an address can remain suppressed by an entry in another scope after the delete. `suppression.browse` and `suppression.stats` without a `ListID` return the account-wide management view only.
 :::
 
 ## Suppression Stats
@@ -263,7 +282,7 @@ Returns the total suppression count and a per-source breakdown for the authentic
 | APIKey    | String | No       | API key for authentication            |
 | SearchPattern | String | No   | Optional pattern for filtering by email (supports `*` wildcard). |
 | SuppressionSource | String | No | Optional comma-separated list of `SuppressionSource` ENUM values. When supplied, `Total` and `BySource` only reflect those sources. |
-| ListID | Integer | No | Scope the counts to a single subscriber list. When omitted or `0`, counts the user-wide global suppression list (today's default behavior). When non-zero, the list must be owned by the authenticated user; otherwise the call fails with `ErrorCode: 4`. |
+| ListID | Integer | No | When omitted or `0`, counts the account-wide suppression list, unchanged. When non-zero, counts the list's [effective suppression view](#effective-suppression-view-of-a-list), one per address, so `Total` equals `suppression.browse`'s `TotalRecords` for the same `ListID`, `SearchPattern` and `SuppressionSource`. `BySource` counts each address under the source of its kept (narrowest) entry. The list must be owned by the authenticated user, otherwise the call fails with `ErrorCode: 4`. |
 
 ::: code-group
 
@@ -305,6 +324,8 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+With a `ListID`, a database failure answers with the API hard-failure envelope (HTTP 500, `ErrorCode: 100005`) instead of all-zero counts.
 
 ## Delete from Suppression List
 

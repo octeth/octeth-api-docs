@@ -1403,6 +1403,8 @@ After validation, the following business logic errors may also be returned:
 
 :::
 
+Each subscriber's `Suppressed` flag is computed for the addresses on the returned page. It is `true` when a send to the journey's list would drop the address. See [Get a Subscriber](./subscribers.md#get-a-subscriber) for the full definition (changed in v6.0.1). If that lookup fails, the rows are still returned with `Suppressed` set to `false` and the failure is written to the application log.
+
 ## Get Per-ISP Engagement Stats for a Journey
 
 <Badge type="info" text="GET" /> `/api/v1/journey.stats.byisp`
