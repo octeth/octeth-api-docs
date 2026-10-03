@@ -259,6 +259,16 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 
 `subscribers.delete` with `Suppressed=true` removes suppression entries by `SuppressionID`. Before v6.0.1, with `SubscriberListID=0` (the account-level suppression list) it removed any account-level entry with that id, including another account's, and the system-wide entries that hard bounces and spam complaints create. From v6.0.1 it removes only entries that belong to the calling account, on its own lists or its account-level list. An id that belongs to another account, or to a system-wide entry, is skipped the same way as an id that does not exist, and the response is unchanged. The same applies to deleting entries from the suppression list pages in the user area. System-wide entries can be removed from the administrator area only.
 
+### Suppression
+
+#### Removing a suppression reports the scopes that still apply
+
+`suppression.delete` now returns `StillSuppressed`, listing each requested address that is still suppressed after the call with the scopes that keep it suppressed (`PerList`, `AccountWide`, `SystemWide` or `Pattern`). `subscriber.update` returns the same field when its unsuppress step runs. Every existing field and the `Success` outcome are unchanged. Before v6.0.1 a delete could answer `Success` with `TotalDeleted: 0` while a wider row kept the address suppressed. See [Delete from Suppression List](./suppression.md#delete-from-suppression-list).
+
+Neither command removes system-wide rows, list rows recorded without an owner, or patterns. `subscriber.update`'s unsuppress step therefore **no longer deletes a list row recorded without an owner**, which it did before v6.0.1. An administrator removes such rows.
+
+On the subscriber page, "Remove from suppression list" is no longer offered when only a system-wide entry or a pattern applies, and a notice after a removal says when a wider scope still suppresses the address. The new interface's suppression pages report the same.
+
 ### Journeys
 
 #### Journey action `OrderNo` is numbered across the whole journey

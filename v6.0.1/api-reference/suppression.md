@@ -352,6 +352,16 @@ Accepts either a single address (legacy) or a bulk payload. The bulk path return
 
 \* At least one of `EmailAddress`, `EmailAddresses`, or `EmailAddressesBulk` is required. When any of the bulk parameters is set, the legacy single-address validation is skipped and the response uses the bulk shape (with `TotalDeleted`, `TotalFailed`, `FailedEmailAddresses`).
 
+<Badge type="tip" text="New in v6.0.1" /> **`StillSuppressed` in the response.** The delete acts only on the requested scope: the caller's own rows for the list when `ListID` is set, the caller's account-wide rows otherwise. System-wide rows (hard bounces and spam complaints recorded by the platform), list rows recorded without an owner and suppression patterns are never removed by this command. Only an administrator can remove them, with [Delete Suppression Rows (Admin)](#delete-suppression-rows-admin). Every successful response, and the single path's `ErrorCode: [2]` "not in suppression list" failure, now carries `StillSuppressed`, listing each requested address that is still suppressed after the delete. `Success`, `ErrorCode`, `TotalDeleted`, `TotalFailed` and `FailedEmailAddresses` are unchanged.
+
+| Field | Type | Description |
+|---|---|---|
+| `StillSuppressed` | Array or null | One entry per requested address still suppressed, in request order. An empty array when none are. `null` when the lookup failed (the delete itself still ran). |
+| `StillSuppressed[].EmailAddress` | String | The address as submitted. |
+| `StillSuppressed[].Scopes` | Array of strings | Scopes that still suppress it, narrowest first: `PerList` (a row for the requested list), `AccountWide` (a row for the whole account), `SystemWide` (a platform-wide row), `Pattern` (matches a system suppression pattern). |
+
+Without `ListID` the lookup covers account-wide and system-wide rows and patterns. With `ListID` it also covers that list's rows. The report includes rows even when an administrator has disabled the account's suppression check, matching [Check Suppression Status](#check-suppression-status). The XML response format carries the same `StillSuppressed` element.
+
 ::: code-group
 
 ```bash [Example Request (single)]
@@ -378,7 +388,8 @@ curl -X POST https://example.com/api.php \
 ```json [Success Response (single)]
 {
   "Success": true,
-  "ErrorCode": 0
+  "ErrorCode": 0,
+  "StillSuppressed": []
 }
 ```
 
@@ -388,7 +399,21 @@ curl -X POST https://example.com/api.php \
   "ErrorCode": 0,
   "TotalDeleted": 4,
   "TotalFailed": 0,
-  "FailedEmailAddresses": []
+  "FailedEmailAddresses": [],
+  "StillSuppressed": []
+}
+```
+
+```json [Still suppressed at a wider scope]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "TotalDeleted": 0,
+  "TotalFailed": 0,
+  "FailedEmailAddresses": [],
+  "StillSuppressed": [
+    { "EmailAddress": "foo@bar.com", "Scopes": ["AccountWide"] }
+  ]
 }
 ```
 

@@ -1390,6 +1390,10 @@ No new error codes are introduced. Two consequences worth calling out:
 `EnforceRequiredFields` accepts the usual boolean spellings — `true`, `1`, `"1"`, `"true"`, `"yes"`, `"on"`. Anything else is treated as false.
 :::
 
+::: tip Removing the subscriber from suppression
+<Badge type="tip" text="New in v6.0.1" /> Setting `SubscriptionStatus` to `Subscribed` or `Opt-In Pending`, or `BounceType` to `Soft` or `Not Bounced`, runs an unsuppress step that removes only the list owner's own suppression row for this list. Account-wide rows, system-wide rows, a list row recorded without an owner and suppression patterns stay in place. When the step runs, the response carries `StillSuppressed`, with the same shape as in [`suppression.delete`](./suppression.md#delete-from-suppression-list), for the subscriber's address on this list: an empty array when nothing suppresses it any more, or `null` when the lookup failed. `Success` is unchanged. Before v6.0.1 the step also deleted a list row recorded without an owner.
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -1413,6 +1417,17 @@ curl -X POST https://example.com/api.php \
   "Success": true,
   "ErrorCode": 0,
   "ErrorText": ""
+}
+```
+
+```json [Success Response (unsuppress step ran)]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "StillSuppressed": [
+    { "EmailAddress": "foo@bar.com", "Scopes": ["AccountWide"] }
+  ]
 }
 ```
 
