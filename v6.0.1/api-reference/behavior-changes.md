@@ -206,6 +206,27 @@ On `subscriber.update`, a malformed request that sends `Fields` as a plain strin
 
 The subscriber profile page reaches `subscriber.update`, so a subscriber who saves the page with a required Date field unselected now gets an error instead of a blank date.
 
+### Outbound URLs
+
+#### URLs supplied by an account holder refuse internal destinations
+
+Octeth now checks the destination before it fetches or posts to a URL that an account holder supplied, and refuses any address that is not publicly routable: loopback, private (RFC 1918), link-local (including the cloud metadata address), carrier-grade NAT, IPv6 unique-local and the other reserved ranges. A host name that does not resolve is refused too. The check runs after personalization, so a `%Subscriber:...%` or `%User:...%` value that turns a URL into an internal address is caught.
+
+| Feature | Result for a refused URL |
+|---|---|
+| Email remote content ("Fetch URL" and "Fetch plain text URL") in campaign, auto responder, transactional and journey sends, previews and the browser view | The content comes back empty, the same as an unreachable URL |
+| `%RemoteContent=...%` and `%RemoteContentBeforeSend=...%` tags in email content | Renders as empty, the same as an unreachable URL |
+| The email editor's "fetch from URL" action | The same failure as an unreachable URL |
+| List web service integrations (`listintegration.addurl` subscription and unsubscription URLs) | Not posted to. Subscription and unsubscription themselves are unaffected |
+| `listintegration.testurl` | Reported the same way as an unreachable URL |
+| The public campaign archive's custom template URL (`campaigns.archive.geturl` `templateurl`) | The existing "template could not be retrieved" error page |
+
+No response shape changes. Refusals are logged at `WARNING` with the reason and host, so the default `OEMPRO_LOG_LEVEL` of `ERROR` does not record them.
+
+Header and footer URLs set by the administrator (`USER_SIGNUP_HEADER/FOOTER`, `REPORT_ABUSE_FRIEND_HEADER/FOOTER`, `FORWARD_TO_FRIEND_HEADER/FOOTER`) are trusted and may still point at an internal host. Subscribe and unsubscribe by email keep posting to the install's own API.
+
+Fixed at the same time: an `https://` value in the sign-up and report-abuse header and footer settings now takes the remote fetch. Before v6.0.1 the scheme test could never match `https://`, so such a value was read as a local file instead.
+
 ## Tier 2: shape and value changes
 
 ### Subscribers
@@ -289,6 +310,7 @@ Renaming such a field through the user or admin interface, or with `customfield.
 21. **Review every account with Disable suppression check turned on.** From v6.0.1 its campaigns are sent to suppressed addresses, including hard bounces and spam complaints, as its journey and gateway email already were. Turn the option off on any account that should not do this.
 22. **If an integration creates or renames custom fields with a TAB in `FieldName` and later looks the field up by that exact name, compare against the name with each TAB replaced by a space.** Fields created before the upgrade keep their TAB until renamed. Run the query under "A TAB in a custom field name is stored as a space" to find them.
 23. **If you call `subscriber.subscribe` or `subscriber.update`, or run signup forms, with required custom fields, send a real value for every required field you submit.** An empty array, an unselected Date field and a whitespace-only value are now rejected (`ErrorCode` `6` from `subscriber.subscribe`, `8` from `subscriber.update`) with or without `EnforceRequiredFields` (on `subscriber.update`, unless `IgnoreAllOtherCustomFieldsExceptGivenOnes=true` is sent without `EnforceRequiredFields`). Fill the field in the integration or form, or set the field to not required. See [Required custom fields reject empty values](#required-custom-fields-reject-empty-values).
+24. **If email content, a list web service integration or an archive template points at an internal host, move it to a public URL.** Remote content and integration URLs that resolve to a private, loopback, link-local or carrier-grade NAT address are now refused. See [URLs supplied by an account holder refuse internal destinations](#urls-supplied-by-an-account-holder-refuse-internal-destinations).
 
 ---
 
