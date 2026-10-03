@@ -179,8 +179,8 @@ The endpoint performs comprehensive health checks on the following components:
 - **Cron**: App and system container cron job execution (heartbeat checks)
 - **Supervisor**: Process manager status for all managed processes
 - **SendEngine**: Send engine container discovery and supervisor process status
-- **AdminFrontend**: Admin login page accessibility and form validation
-- **UserFrontend**: User login page accessibility and form validation
+- **AdminFrontend**: Admin login page renders on the origin server, with the expected login form <Badge type="tip" text="Changed in v6.0.1" />
+- **UserFrontend**: User login page renders on the origin server, with the expected login form <Badge type="tip" text="Changed in v6.0.1" />
 - **FilePermissions**: Directory and log file permissions (expects 0777 for directories, 0777/0666/0644 for log files)
 
 **Response Details:**
@@ -266,6 +266,25 @@ How it probes:
 - It passes only when the response is HTTP `200` **and** carries the `X-Server: oempro_ui` response header. The status matters because the interface container adds that header to its "not found" answers too. The header matters because without the routing rules `/ui/health` falls through to the classic application. When the request is redirected, only the final response's headers count.
 
 On failure the check reports the observed HTTP status, states whether the `X-Server: oempro_ui` header was missing, and names the fix: read `docker logs oempro_ui`, and if the interface last started with `UI_ENABLED` off, run `./cli/octeth.sh docker:up` or `docker restart oempro_ui`. A transport error (for example a timeout after 3 seconds) is reported as the error text. Either way the check counts as a failure of the whole call: the response answers HTTP 503 instead of 200, like any other failed check, and the failure is written to `data/logs/health_check_errors.log`. See [The interface container is unhealthy](/v6.0.1/new-user-interface/troubleshooting#the-interface-container-is-unhealthy).
+
+### The `AdminFrontend` and `UserFrontend` checks
+
+<Badge type="tip" text="Changed in v6.0.1" />
+
+These checks load the admin and user login pages and confirm each page contains its login form. They test the origin server only. They do not test whether the login pages are reachable through your CDN, WAF or load balancer.
+
+Before v6.0.1 the checks requested the login pages through the public `APP_URL`. The request left the server, resolved the app domain through public DNS and came back in through any CDN in front of the install. A firewall rule that restricted `/app/admin*` to your own IP address, or a short CDN outage, therefore failed the check and turned the whole response into HTTP 503 while the application was healthy.
+
+How they probe now:
+
+- Each check requests `http://127.0.0.1/app/admin/` or `http://127.0.0.1/app/user/` from inside the application container, with the host of `APP_URL` as the `Host` header. No DNS lookup is made for the app domain.
+- Redirects are not followed, so the request cannot be sent back out through the public URL. A redirect answer counts as a failure.
+- The request comes from `127.0.0.1`, which the admin **Authorized IP Addresses** allow-list always permits, so an allow-list does not block the check.
+- The check passes when the page contains the login form, whose action is built from `APP_URL`. On failure it reports `Backend admin login form action is not found` (or the `user` equivalent), or the connection error text.
+
+The check names, the failure messages and the 200/503 behaviour are unchanged.
+
+To monitor whether the login pages are reachable from the internet, point an external uptime monitor at your public login URL, for example `https://example.com/app/admin/`. That monitor sees the CDN, DNS and TLS path that these checks deliberately skip.
 
 ## Process PowerMTA Log File
 
