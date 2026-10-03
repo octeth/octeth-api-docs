@@ -1312,7 +1312,7 @@ curl -X POST https://example.com/api.php \
 
 :::
 
-**`SubscriberSegment = Suppressed`:** `Subscribers` lists the list's [effective suppression view](./suppression.md#effective-suppression-view-of-a-list), one entry per address with the columns `SuppressionID`, `RelListID`, `RelOwnerUserID`, `SuppressionSource`, `EmailAddress`, `Reason` and the additive `Scope`. `OrderField` accepts one of those columns (other values order by `EmailAddress`). Before v6.0.1 only `PerList` entries were returned. `TotalSubscribers` counts the same set and is cached for up to 300 seconds. A database failure answers with the API hard-failure envelope (HTTP 500, `ErrorCode: 100005`) instead of an empty segment.
+**`SubscriberSegment = Suppressed`:** `Subscribers` lists the list's [effective suppression view](./suppression.md#effective-suppression-view-of-a-list), one entry per address with the columns `SuppressionID`, `RelListID`, `RelOwnerUserID`, `SuppressionSource`, `EmailAddress`, `Reason` and the additive `Scope`. `OrderField` accepts one of those columns (other values order by `EmailAddress`). Before v6.0.1 only `PerList` entries were returned. `TotalSubscribers` counts the same set and is cached for up to 300 seconds. With `SearchField=EmailAddress` and a `SearchKeyword`, `Subscribers` holds the entries of that view whose address contains the keyword and `TotalSubscribers` counts them (before v6.0.1 this combination ended in a PHP fatal error). Suppression entries have no other searchable field, so any other `SearchField` returns no entries and `TotalSubscribers: 0`. A database failure answers with the API hard-failure envelope (HTTP 500, `ErrorCode: 100005`) instead of an empty segment, with or without a keyword.
 
 ## Update a Subscriber
 
