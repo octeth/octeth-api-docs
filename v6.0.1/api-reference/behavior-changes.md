@@ -227,6 +227,16 @@ Header and footer URLs set by the administrator (`USER_SIGNUP_HEADER/FOOTER`, `R
 
 Fixed at the same time: an `https://` value in the sign-up and report-abuse header and footer settings now takes the remote fetch. Before v6.0.1 the scheme test could never match `https://`, so such a value was read as a local file instead.
 
+#### Webhook delivery refuses internal destinations
+
+The webhook delivery worker now checks every destination immediately before it posts, including each redirect it follows. A webhook whose host is, or resolves to, a loopback, private (RFC 1918), link-local, carrier-grade NAT or other non-public address is no longer delivered. Neither is a destination that is not `http` or `https`, or that does not resolve. This covers journey Webhook actions, email gateway webhooks and the stuck-campaign alert. Before v6.0.1 only new destinations were checked, when they were saved, so a destination saved earlier, or a host name later repointed at an internal address, was still delivered.
+
+A refused delivery is recorded as `Failed` with response code `000` and the message "Webhook URL is not an allowed outbound destination" (or "Webhook redirect target is not an allowed outbound destination"), and counts toward the existing failed-webhook handling like any other failure. The error log records each refusal at `ERROR` level as `[Webhooks] Webhook delivery refused`, with the destination reduced to scheme, host and port, because many webhook services carry a secret in the path. The webhook is not disabled and its owner is not notified.
+
+No destination is exempt, including `STUCK_CAMPAIGN_WEBHOOK_URL`. If that value points at an internal host, such as a private chat relay, point it at a publicly reachable relay instead, or the alert is refused and logged.
+
+A destination with non-ASCII characters in its path or query, such as an accented name, still delivers. A non-ASCII host is refused.
+
 ## Tier 2: shape and value changes
 
 ### Subscribers
@@ -321,6 +331,7 @@ Renaming such a field through the user or admin interface, or with `customfield.
 22. **If an integration creates or renames custom fields with a TAB in `FieldName` and later looks the field up by that exact name, compare against the name with each TAB replaced by a space.** Fields created before the upgrade keep their TAB until renamed. Run the query under "A TAB in a custom field name is stored as a space" to find them.
 23. **If you call `subscriber.subscribe` or `subscriber.update`, or run signup forms, with required custom fields, send a real value for every required field you submit.** An empty array, an unselected Date field and a whitespace-only value are now rejected (`ErrorCode` `6` from `subscriber.subscribe`, `8` from `subscriber.update`) with or without `EnforceRequiredFields` (on `subscriber.update`, unless `IgnoreAllOtherCustomFieldsExceptGivenOnes=true` is sent without `EnforceRequiredFields`). Fill the field in the integration or form, or set the field to not required. See [Required custom fields reject empty values](#required-custom-fields-reject-empty-values).
 24. **If email content, a list web service integration or an archive template points at an internal host, move it to a public URL.** Remote content and integration URLs that resolve to a private, loopback, link-local or carrier-grade NAT address are now refused. See [URLs supplied by an account holder refuse internal destinations](#urls-supplied-by-an-account-holder-refuse-internal-destinations).
+25. **If a journey Webhook action, an email gateway webhook or `STUCK_CAMPAIGN_WEBHOOK_URL` points at an internal host, move it to a publicly reachable endpoint.** The delivery worker now refuses internal destinations at send time. See [Webhook delivery refuses internal destinations](#webhook-delivery-refuses-internal-destinations).
 
 ---
 
