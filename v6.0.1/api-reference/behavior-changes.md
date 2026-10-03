@@ -133,6 +133,18 @@ The `OEMPRO_USE_PHPDOTENV` setting has been removed and is ignored if present. T
 
 What to check before upgrading: a line that is not `KEY=VALUE`, or a value containing spaces that is not wrapped in quotes, will now stop the installation. If `.oempro_env` has been edited by hand, check it before upgrading, for example by looking for unquoted values with spaces. After upgrading, a "Configuration error" page or a worker exiting at start points to the line to fix. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#an-unparseable-oempro-env-now-stops-octeth).
 
+#### Static-certificate installs record the real client address
+
+Applies when `APP_DOMAIN_TLS_CERT` is set. Installs that leave it empty (Caddy on-demand TLS, the default) are unchanged.
+
+HAProxy terminated the app domain's TLS on an internal loopback hop that discarded the connecting address, so Octeth and the new user interface took the visitor's address from the leftmost `X-Forwarded-For` entry, which a client that reaches the server directly can set to anything. That made the admin **Authorized IP Addresses** list, login and audit IPs and the subscription, opt-in and unsubscription IPs forgeable. HAProxy now passes the connecting address across that hop with the PROXY protocol, so the recorded address is the one that actually connected.
+
+**Action required behind Cloudflare.** On an install that uses a static certificate behind Cloudflare, the connecting address is now a Cloudflare edge server. Either list Cloudflare's IPv4 ranges in `TRUSTED_PROXIES`, or set `TRUST_CLOUDFLARE_CONNECTING_IP=true` and firewall the origin to Cloudflare's IP ranges, then restart the containers (`./cli/octeth.sh docker:up`). Otherwise every visitor is recorded with an edge address and an admin allow-list that names your office IP stops matching. The new user interface now reads the same keys. See **Trusted Proxies / Client IP Resolution** in [Octeth Configuration](/v6.0.1/getting-started/octeth-configuration).
+
+**No action required otherwise.** The change is in `entrypoint_haproxy.sh`, which runs from the release source since #3102, and the upgrade rebuilds the HAProxy image for installs whose image predates that, so `./cli/octeth.sh upgrade` applies it. A manual update applies it with `docker compose up -d --build haproxy oempro_ui`.
+
+Login, audit and consent rows written before the upgrade keep whatever address was recorded at the time.
+
 ### Bounce webhook
 
 #### The fluentd bounce webhook refuses oversized batches and reports queueing failures
