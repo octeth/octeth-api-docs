@@ -216,6 +216,24 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 
 `journey.clone`, `journeys.clone` and `journey.copytouser` number their copies the same way. `journey.clone` now also points each copied branch action at the clone's own Decision. Before v6.0.1 the branch actions of a clone pointed at the source journey's Decision and never ran. Actions that cannot be reached from a root action are no longer copied, as the other two clone commands already did. Journeys cloned before the upgrade are not repaired, so clone them again from the source, or rebuild their branches.
 
+### Custom fields
+
+#### A TAB in a custom field name is stored as a space
+
+Every path that creates or renames a custom field now stores each TAB character inside `FieldName` as a single space: the `customfield.create`, `customfield.update`, `global.customfield.create` and `global.customfield.update` commands, the user and admin interfaces, list copy, custom field copy (`customfields.copy`) and the Campaign Monitor migration plugin. The response shape is unchanged, and `customfield.get` and the other reads return the stored name with the space. A name without a TAB is stored exactly as before: the four commands still trim leading and trailing whitespace and remove line breaks, and the other paths store the name as given. Copying a list or a field whose name still holds a TAB from before the upgrade creates the copy with a space in its place.
+
+Before v6.0.1 the TAB was stored. The TAB export writes field names into its header row as they are, so a field named `Shoe<TAB>Size` added an extra header cell and every later column was labelled with the wrong name.
+
+Existing field names are not changed by the upgrade. To find fields that still contain a TAB, run the query below. The table name carries the default `oempro_` prefix; substitute your own `MYSQL_TABLE_PREFIX` from `.oempro_env` if you changed it, or the query reads the wrong table or errors:
+
+```sql
+SELECT CustomFieldID, RelOwnerUserID, RelListID, FieldName
+FROM oempro_custom_fields
+WHERE FieldName LIKE CONCAT('%', CHAR(9), '%');
+```
+
+Renaming such a field through the user or admin interface, or with `customfield.update` or `global.customfield.update`, stores the new name with spaces in place of any TAB.
+
 ## Upgrade checklist
 
 1. **If an integration sends through `emailgateway.sendemail`, handle HTTP `403` with error code `12`** for a disabled account. Expect queued and scheduled gateway email to end as `Failed` with a `Sending blocked:` message when an account is disabled or a sender domain stops being active, and resend it after re-enabling if it is still wanted.
@@ -239,6 +257,7 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 19. **If an integration reads `OrderNo` from `journey.get` or `journey.actions.update`, do not assume it restarts at 1 inside each Decision branch.** Order siblings by `OrderNo` within the same parent and branch. Re-clone journeys that were created with `journey.clone` before the upgrade if they have Decision branches.
 20. **Optional: set `API_RESPONSEFORMAT_CASE_INSENSITIVE=true`** if your integrations send `ResponseFormat` in lowercase (`xml`) and expect XML. It is off by default, so those calls keep receiving JSON as before. Turning it on switches them to XML with `Content-Type: text/xml`, so check every integration that sends a lowercase value first. See [Error Handling](/v6.0.1/api-reference/error-handling#responseformat-xml-on-hard-failures).
 21. **Review every account with Disable suppression check turned on.** From v6.0.1 its campaigns are sent to suppressed addresses, including hard bounces and spam complaints, as its journey and gateway email already were. Turn the option off on any account that should not do this.
+22. **If an integration creates or renames custom fields with a TAB in `FieldName` and later looks the field up by that exact name, compare against the name with each TAB replaced by a space.** Fields created before the upgrade keep their TAB until renamed. Run the query under "A TAB in a custom field name is stored as a space" to find them.
 
 ---
 
