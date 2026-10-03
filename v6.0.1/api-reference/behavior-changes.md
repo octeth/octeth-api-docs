@@ -311,6 +311,16 @@ WHERE FieldName LIKE CONCAT('%', CHAR(9), '%');
 
 Renaming such a field through the user or admin interface, or with `customfield.update` or `global.customfield.update`, stores the new name with spaces in place of any TAB.
 
+### Credits
+
+#### A transactional email that never reached a delivery server returns its credit
+
+When the credit system is enabled, the transactional and auto-responder delivery worker takes one credit for each email just before sending it. Before v6.0.1, that credit stayed spent whatever happened next. From v6.0.1, the credit is returned to the account's `AvailableCredits` when the email fails before it reaches any delivery server: the SMTP connection or SMTP login fails, a dropped connection cannot be re-established before the email is offered, or the configured local MTA binary does not exist or is not executable.
+
+The credit is still kept when a delivery server took the connection and refused the email (sender, recipient or message rejected), when the email is refused before sending (invalid From address, default sender domain monthly limit), and for any failure Octeth cannot place, such as a failed STARTTLS negotiation, a sender rejection followed by a failed reconnect, or a local MTA binary that ran and exited with an error. A credit is returned at most once per queued email, including across the automatic retry of an email stranded by a worker restart.
+
+An integration that reconciles `AvailableCredits` from `user.get` against the number of failed emails will see the balance go back up by one for each email in the first group. The queue row's `Status` (`Failed`) and `StatusMessage` are unchanged. Campaign and email gateway credits are not affected.
+
 ## Upgrade checklist
 
 1. **If an integration sends through `emailgateway.sendemail`, handle HTTP `403` with error code `12`** for a disabled account. Expect queued and scheduled gateway email to end as `Failed` with a `Sending blocked:` message when an account is disabled or a sender domain stops being active, and resend it after re-enabling if it is still wanted.

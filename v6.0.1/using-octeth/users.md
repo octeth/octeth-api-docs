@@ -238,6 +238,33 @@ When the Payment System is enabled, the following additional fields appear:
 | **Charge Per Campaign Recipient** | Whether to deduct credits for each campaign recipient. |
 | **Pricing Range** | Define tiered pricing for email credits. Add rows specifying "Up to X emails = Y per email" for volume-based pricing. |
 
+##### When a credit is returned
+
+When the credit system is enabled, Octeth takes one credit for each auto-responder or transactional email just before it hands the email to a delivery server. Taking the credit first stops several sending processes from spending the same last credit at the same time.
+
+If the email then fails before it ever reaches a delivery server, the credit is returned to the account automatically. This happens when:
+
+- Octeth cannot connect to the delivery server, for example because it is down, unreachable, or its host is not set.
+- The delivery server rejects Octeth's login.
+- The local mail program configured as the sending method does not exist or cannot be run.
+
+The credit is kept when a delivery server received the email and refused it. This includes:
+
+- The recipient's address is rejected, for example because the mailbox does not exist.
+- The sender address or the message content is rejected.
+- The email fails after its content was sent to the delivery server.
+- The secure (TLS) connection to the delivery server cannot be set up.
+- The local mail program ran and reported an error.
+- Octeth cannot tell for certain whether the delivery server saw the email.
+
+The credit is also kept when the email is refused before sending because of its own settings, such as an invalid From address, or because the account reached the monthly limit of the default sender domain.
+
+In every case the email's status is **Failed** and the reason is recorded with it. A credit is returned at most once for each email, however many times the email is retried.
+
+If a sending process stops unexpectedly after taking the credit, the email is retried automatically after about 30 minutes using the credit it already holds. No second credit is taken, and the retry follows the same rules above.
+
+Campaign credits and email gateway sends are not affected by this rule.
+
 #### Permissions Tab
 
 The Permissions tab controls which features and actions are available to users in this group.
