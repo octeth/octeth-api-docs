@@ -203,6 +203,8 @@ All API calls require authentication:
 - **Method**: POST
 - **Required**: `ResponseFormat=JSON` and `Command=Action.Name`
 
+`ResponseFormat` selects the response body: `JSON` (the default) or `XML`. Send the value in uppercase. Other spellings fall back to `JSON` unless the installation enables `API_RESPONSEFORMAT_CASE_INSENSITIVE`, see [Error Handling](./error-handling.md).
+
 ### Response format
 
 ```json

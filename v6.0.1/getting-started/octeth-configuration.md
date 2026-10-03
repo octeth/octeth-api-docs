@@ -1263,6 +1263,18 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
 
     Introduced in v6.0.0 (issue #2887).
 
+53. **API ResponseFormat Case-Insensitive Matching**
+
+    ```bash
+    API_RESPONSEFORMAT_CASE_INSENSITIVE=false   # Match ResponseFormat case-insensitively (off by default)
+    ```
+
+    The API's `ResponseFormat` parameter is matched case-sensitively: only `JSON` and `XML` are recognised, and every other spelling, including lowercase `xml`, is answered with JSON without an error. Set this to `true` to match it case-insensitively, so `xml`, `Xml` and `json` resolve to `XML` and `JSON`. The resolved format is shared by normal responses and hard-failure error responses, so one request never answers in two formats. A value that is not a spelling of `JSON` or `XML` still falls back to JSON.
+
+    Turning it on changes what some existing callers receive: an integration that sends lowercase `xml` and parses the JSON it gets today would start receiving XML with `Content-Type: text/xml`. Check your integrations before enabling it. The default is `false` in both the code and the shipped example file, so neither a fresh install nor an upgrade changes behaviour unless you set it.
+
+    Introduced in v6.0.1 (issue #2684).
+
 
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.

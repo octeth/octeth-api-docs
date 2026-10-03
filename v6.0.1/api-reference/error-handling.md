@@ -135,10 +135,10 @@ There are two deliberate exceptions — **100000** and **100001** always answer 
 JSON, whatever you asked for. Both are raised before the request has been parsed
 far enough to know which format was requested.
 
-::: warning `ResponseFormat` is case-sensitive
-The value must be exactly `JSON` or `XML`. Any other spelling — including
-lowercase `xml` — is silently treated as `JSON`, on both successful responses and
-hard failures. This applies to the whole API, not just error paths.
+::: warning `ResponseFormat` casing
+By default the value must be exactly `JSON` or `XML`. Any other spelling, including lowercase `xml`, is silently treated as `JSON` on both successful responses and hard failures. This applies to the whole API, not just error paths.
+
+An installation can opt into case-insensitive matching by setting `API_RESPONSEFORMAT_CASE_INSENSITIVE=true` in `.oempro_env`. With it on, `xml`, `Xml` and `json` resolve to `XML` and `JSON`, and the resolved format is used for both successful responses and hard failures, so one request never answers in two formats. Any value that is not a spelling of `JSON` or `XML` (an empty value, `yaml`, a value with surrounding spaces) still falls back to `JSON`. The setting is off by default. Send the uppercase value if you do not control the installation's configuration.
 :::
 
 ## Handling Errors in Code

@@ -21,6 +21,7 @@ Release in progress. Scheduled for October 9th, 2026. Changelog will be updated 
 ### Enhancements
 
 - **Octeth containers run a new image, built for amd64 and arm64** - Fresh installations and upgrades move the five Octeth containers and the send engine from `octeth/oempro:v5.7.4` to `octeth/oempro:v6.0.1`. Each container now runs its startup script from the installed release, so startup changes reach your installation on upgrade (#3165, #3166)
+- **Case-insensitive `ResponseFormat`, opt-in** - New `API_RESPONSEFORMAT_CASE_INSENSITIVE` setting (default `false`). When enabled, the API matches `ResponseFormat` case-insensitively, so `ResponseFormat=xml` returns XML instead of being silently answered with JSON. It is off by default because enabling it changes the body and `Content-Type` for callers that currently send lowercase `xml` (#2684)
 
 ### Bug Fixes
 

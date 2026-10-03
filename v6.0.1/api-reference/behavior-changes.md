@@ -195,6 +195,7 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 15. **If you receive import status webhooks, read `ImportStatus` in the final POST.** `Completed` means the import finished and `Failed` means it stopped early. Make the endpoint answer within 10 seconds, or the POST is abandoned.
 16. **If `.oempro_env` has been edited by hand, check that every line is a comment, blank, or `KEY=VALUE`, and that values containing spaces are quoted.** An unparseable `.oempro_env` now stops Octeth with a message naming the line. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#an-unparseable-oempro-env-now-stops-octeth).
 17. **If a sender posts to `/system/bounce_webhook?type=fluentd`, cap its batch at 1,000 records** (Vector `batch.max_events = 1000`) or raise `BOUNCE_WEBHOOK_FLUENTD_MAX_EVENTS`, and make it retry on HTTP `503`. A larger batch is now refused with HTTP `413`.
+18. **Optional: set `API_RESPONSEFORMAT_CASE_INSENSITIVE=true`** if your integrations send `ResponseFormat` in lowercase (`xml`) and expect XML. It is off by default, so those calls keep receiving JSON as before. Turning it on switches them to XML with `Content-Type: text/xml`, so check every integration that sends a lowercase value first. See [Error Handling](/v6.0.1/api-reference/error-handling#responseformat-xml-on-hard-failures).
 
 ---
 
