@@ -27,7 +27,7 @@ enough.
 
 | Setting | Default | What it does |
 |---|---|---|
-| `UI_ENABLED` | `false` on upgrade, `true` on a fresh install | The master switch. When off, the container still runs and reports healthy but serves nothing, and `/user/` and `/ui/` fall through to the classic application. |
+| `UI_ENABLED` | `true` on a fresh install and on an upgrade that adds it (code default `false`) | The master switch. When off, the container still runs and reports healthy but serves nothing, and `/user/` and `/ui/` fall through to the classic application. An upgrade from a version older than v5.9.6 adds this key set to `true`. To keep the interface off, add `UI_ENABLED=false` to `.oempro_env` before upgrading, or set it afterwards and recreate the containers. |
 | `UI_LOG_LEVEL` | `error` | How much the interface writes to its log. One of `debug`, `info`, `notice`, `warning`, `error`, `critical`, `alert`, `emergency`. |
 
 ## Application key

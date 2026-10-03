@@ -430,22 +430,22 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 33. **Admin API Privilege Enforcement**
 
     ```bash
-    ADMIN_API_ENFORCE_PRIVILEGES=true   # Check sub-admin privileges on admin API calls (opt-in on upgrades; on for fresh installs)
+    ADMIN_API_ENFORCE_PRIVILEGES=true   # Check sub-admin privileges on admin API calls (on for fresh installs and upgrades; see below)
     ```
 
     Sub-admin accounts carry a privilege list (the same one that gates the admin screens). Historically the API never consulted it: any admin who could authenticate, with their own username and password, an `Admin.Login` session, or a per-sub-admin API key, could call every admin command. With this set to `true`, each admin command is checked against the privilege it declares and a call the sub-admin is not entitled to answers the standard `99999` (`Not enough privileges`) error. The master `ADMIN_API_KEY` resolves to the unrestricted master administrator and is never affected, so master-key integrations behave identically either way.
 
-    Absent or empty is treated as `false`, so an existing install keeps its pre-existing `.oempro_env` and today's behaviour after upgrading. The shipped `.oempro_env.example` sets it to `true`, so fresh installs enforce from day one. Turn it on after confirming every integration that authenticates as a sub-admin holds the privileges it needs. Per-sub-admin API keys are issued on the sub-admin edit screen and are accepted on `AdminAPIKey` regardless of this setting.
+    The code default is `false`, but the shipped `.oempro_env.example` sets it to `true`, and an upgrade adds every setting your `.oempro_env` is missing with the example's value. So an install upgrading from a version older than v5.9.6 gets `true` too, exactly like a fresh install, and the upgrade names it in a warning block when it adds it. An install that already has the key keeps its value. To keep it off, add `ADMIN_API_ENFORCE_PRIVILEGES=false` to `.oempro_env` before upgrading, or set it to `false` afterwards and recreate the containers. Turn it on after confirming every integration that authenticates as a sub-admin holds the privileges it needs. Per-sub-admin API keys are issued on the sub-admin edit screen and are accepted on `AdminAPIKey` regardless of this setting.
 
 34. **Admin Password Change Confirmation**
 
     ```bash
-    ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD=true   # Require CurrentPassword on admin.update when Password is present (opt-in on upgrades; on for fresh installs)
+    ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD=true   # Require CurrentPassword on admin.update when Password is present (on for fresh installs and upgrades; see below)
     ```
 
     The admin Account screen has always demanded the current password before changing it, but that check lived only in the screen: the `admin.update` API command accepted a new password with no confirmation of the old one, so an API-driven admin UI could not carry the same guarantee. The command now takes an additive `CurrentPassword` parameter. A supplied value is always verified (`ErrorCode 10` when wrong); this setting decides whether omitting it alongside `Password` is refused (`ErrorCode 9`).
 
-    Absent or empty is treated as `false`, so an existing install keeps its pre-existing `.oempro_env` and any integration that changes the admin password without the new parameter keeps working. The shipped `.oempro_env.example` sets it to `true`, so fresh installs enforce from day one.
+    The code default is `false`, but the shipped `.oempro_env.example` sets it to `true`, and an upgrade adds every setting your `.oempro_env` is missing with the example's value. So an install upgrading from a version older than v5.9.6 gets `true` too, exactly like a fresh install, and the upgrade names it in a warning block when it adds it. An install that already has the key keeps its value. To keep it off, add `ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD=false` to `.oempro_env` before upgrading, or set it to `false` afterwards and recreate the containers. An integration that changes the admin password without the new parameter then receives `ErrorCode 9`.
 
 35. **Trusted Proxies / Client IP Resolution**
 
@@ -690,7 +690,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 44. **System Health Check Authentication**
 
     ```bash
-    SYSTEM_HEALTH_CHECK_AUTH_REQUIRED=true    # Strict credential check on system.health.check (default: false on upgrades, true in the shipped example)
+    SYSTEM_HEALTH_CHECK_AUTH_REQUIRED=true    # Strict credential check on system.health.check (code default false; fresh installs and upgrades get true)
     SYSTEM_HEALTH_CHECK_TOKEN=                # Dedicated monitor credential, honoured only while the switch above is true (default: empty)
     ```
 
@@ -706,15 +706,13 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     never needs the master key. Generate one with `openssl rand -hex 32`; leave it empty to keep
     `AdminAPIKey` as the only credential.
 
-    Absent or empty is treated as off, so an upgraded install keeps the historical check (master
-    key only, refused with HTTP 500 and error `100005`). Fresh installs copy `.oempro_env.example`
-    and enforce from day one. The command's registration and its success response are unchanged.
+    While off, the historical check applies: master key only, refused with HTTP 500 and error `100005`. The code default is `false`, but the shipped `.oempro_env.example` sets it to `true`, and an upgrade adds every setting your `.oempro_env` is missing with the example's value. So an install upgrading from a version older than v5.9.6 gets `true` too, exactly like a fresh install, and the upgrade names it in a warning block when it adds it. An install that already has the key keeps its value. To keep it off, add `SYSTEM_HEALTH_CHECK_AUTH_REQUIRED=false` to `.oempro_env` before upgrading, or set it to `false` afterwards and recreate the containers. The command's registration and its success response are unchanged.
     Introduced in v5.9.6 (issue #2767).
 
 45. **Admin API IP Allow-List Enforcement**
 
     ```bash
-    ADMIN_API_ENFORCE_ALLOWED_IP=true    # Apply the admin-area IP allow-list to admin-authenticated API calls (default: false on upgrades, true in the shipped example). If you run the new user interface, see the warning below
+    ADMIN_API_ENFORCE_ALLOWED_IP=true    # Apply the admin-area IP allow-list to admin-authenticated API calls (code default false; fresh installs and upgrades get true). If you run the new user interface, see the warning below
     ```
 
     The admin-area "Authorized IP Addresses" list (Settings, Security; one IPv4 address or CIDR
@@ -746,13 +744,14 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     produce it and no external caller gains anything (issue #2913).
     :::
 
-    Absent or empty is treated as off, so upgraded installs keep their current behaviour; fresh
-    installs enforce from day one. Introduced in v5.9.6 (issue #2770).
+    The code default is `false`, but the shipped `.oempro_env.example` sets it to `true`, and an upgrade adds every setting your `.oempro_env` is missing with the example's value, so an install upgrading from an older version gets `true` too. To keep it off, add `ADMIN_API_ENFORCE_ALLOWED_IP=false` to `.oempro_env` before upgrading, or set it to `false` afterwards and recreate the containers.
+
+    On v5.9.6 the address compared is not your visitor's but a container address on the internal network: a request through the bundled reverse proxy resolves to the proxy's own address, `192.168.99.100`, and a call made by the new user interface resolves to that interface's container, `192.168.99.110`. A list holding a real public address therefore matches nobody, `192.168.99.100` matches only proxied requests, `192.168.99.110` matches only the new user interface's calls, and only the `192.168.99.0/24` subnet matches both. v6.0.0 fixes this (issue #2935). If you add a `192.168.99.x` address or subnet to the list to work around it on v5.9.6, remove it again before upgrading to v6.0.0 and list the real public addresses your admins and integrations call from: left as the only entry, it matches no one on v6.0.0 and every admin API call is refused except those of the bundled new user interface, which v6.0.0 exempts (issue #2913). Introduced in v5.9.6 (issue #2770).
 
 46. **Internal Service Signature**
 
     ```bash
-    SYSTEM_INTERNAL_SIGNATURE_REQUIRED=true   # Require the X-Octeth-Signature header on the private /system/* services (default: false on upgrades, true in the shipped example)
+    SYSTEM_INTERNAL_SIGNATURE_REQUIRED=true   # Require the X-Octeth-Signature header on the private /system/* services (code default false; fresh installs and upgrades get true)
     ```
 
     Octeth's own PHP processes call five private Laravel services in the `oempro_system` container
@@ -776,7 +775,10 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
       The subscriber, segment and queue builders also keep their source-address allow-lists in this
       mode.
 
-    **Upgrade note.** After upgrading, leave the flag off for a few days and grep the Laravel log for
+    **Upgrade note.** The upgrade adds this setting as `true` unless your `.oempro_env` already has
+    it, and the code default is `false`. If a third-party plugin or script posts to one of these
+    services, add `SYSTEM_INTERNAL_SIGNATURE_REQUIRED=false` to `.oempro_env` before upgrading,
+    leave it off for a few days and grep the Laravel log for
     `[internal.signature]`. Every hit is an unsigned caller: a third-party plugin or an integration
     script that posts to one of these services directly. Update it to pass
     `Core::InternalRequestHeaders()` as the ninth argument of `Core::DataPostToRemoteURL()` (or
@@ -806,7 +808,7 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
     `./cli/octeth.sh docker:up`.
 
     ```bash
-    UI_ENABLED=true                      # Master switch (default: false, so an upgrade changes nothing)
+    UI_ENABLED=true                      # Master switch (code default false; fresh installs and upgrades get true)
     UI_APP_KEY=                          # Laravel app key; leave EMPTY on a fresh install and the container generates one
     UI_LOG_LEVEL=error                   # debug, info, notice, warning, error, critical, alert, emergency
     UI_MYSQL_DATABASE=oempro_ui          # Its OWN database. MUST NOT equal MYSQL_DATABASE

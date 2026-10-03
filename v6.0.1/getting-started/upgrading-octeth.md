@@ -246,6 +246,27 @@ The parser check in `env:validate` needs PHP on the host. Without it, the comman
 
 The other five `.oempro_*_env` files do not stop Octeth. An unparseable one is logged and its settings are ignored until the line is fixed, as before. The `OEMPRO_USE_PHPDOTENV` setting has been removed. A leftover line in an upgraded `.oempro_env` is ignored and can be deleted. See [API Behavior Changes in v6.0.1](/v6.0.1/api-reference/behavior-changes#an-unparseable-oempro-env-now-stops-octeth-instead-of-running-on-defaults).
 
+### The upgrade asks before turning on new settings
+
+When the upgrade adds a setting that your `.oempro_env` does not have yet, it writes the value from the shipped example. Seven of those settings switch something on: `ADMIN_API_ENFORCE_PRIVILEGES`, `ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD`, `SYSTEM_HEALTH_CHECK_AUTH_REQUIRED`, `ADMIN_API_ENFORCE_ALLOWED_IP`, `SYSTEM_INTERNAL_SIGNATURE_REQUIRED` and `UI_ENABLED` (new in v5.9.6), and `USER_UPDATE_REQUIRE_CURRENT_PASSWORD` (new in v6.0.0). Each is added as `true`, while its code default is `false`. An installation upgrading straight from a version older than v5.9.6 gets all seven.
+
+From v6.0.1, the upgrade lists any of these it adds in a separate warning block, with the value it writes, what changes and how to keep it off. `--dry-run` shows the same block before anything is written.
+
+Without `--yes`, the upgrade then stops at the environment merge step, before any container restarts, and asks:
+
+```text
+  ▸ Continue with these values? (y/N):
+```
+
+- Type `y` to continue with the values shown.
+- Any other answer pauses the upgrade. Edit `.oempro_env`, set any of the listed keys to the value you want, then press Enter to continue with the edited file, or press Ctrl+C to stop and roll back.
+
+::: warning Unattended upgrades must pass --yes
+If this prompt gets no answer because input is closed (for example a scheduled job, or a run with input piped from a file), the upgrade treats it like Ctrl+C and rolls back. Pass `--yes` (alias `--non-interactive`) to accept the listed values without a prompt. `--yes` also confirms the upgrade summary and the active-campaign check.
+:::
+
+To keep a setting off without answering the prompt, add it to `.oempro_env` as `false` before upgrading, for example `ADMIN_API_ENFORCE_ALLOWED_IP=false`. The upgrade never changes a setting that is already there, and a setting you added is not listed. You can also change a value after the upgrade and run `/opt/octeth/cli/octeth.sh docker:up` to recreate the containers.
+
 ## Post-Upgrade Verification
 
 After the upgrade completes, verify everything is working:

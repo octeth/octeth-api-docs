@@ -9,7 +9,10 @@ This section explains how to turn it on, how to brand it as your own, how to con
 the billing system, and where every setting lives.
 
 ::: info
-The new interface is off by default on an existing install. Turning it on changes nothing
+The new interface is on for a fresh install, and an upgrade from a version older than v5.9.6
+switches it on too, because the upgrade adds `UI_ENABLED=true` to `.oempro_env`. To keep it
+off, add `UI_ENABLED=false` before upgrading, or set it afterwards and recreate the containers.
+Turning it on changes nothing
 about how your emails are sent, stored or tracked. It is a different way to look at the
 same Octeth account.
 :::

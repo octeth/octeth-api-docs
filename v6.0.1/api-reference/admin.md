@@ -2781,9 +2781,7 @@ administrator). This endpoint is disabled in demo mode.
 <Badge type="tip" text="Changed in v5.9.6" /> `CurrentPassword` is an additive parameter. When it is supplied
 alongside `Password` it is always verified against the account's current password (`ErrorCode 10` when
 wrong). Whether omitting it alongside `Password` is refused (`ErrorCode 9`) is controlled by the
-`ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD` setting: it defaults to off on upgraded installs, so existing
-integrations that change the password without it keep working, and the shipped `.oempro_env.example`
-turns it on for fresh installs. The admin Account screen always sends it.
+`ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD` setting. The shipped `.oempro_env.example` turns it on, and an upgrade adds the setting with that value unless `.oempro_env` already has it, so it is on for fresh and upgraded installs alike. To keep an integration that changes the password without `CurrentPassword` working, add `ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD=false` to `.oempro_env` before upgrading. The admin Account screen always sends it.
 
 **Request Body Parameters:**
 
