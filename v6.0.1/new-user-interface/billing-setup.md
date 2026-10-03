@@ -233,13 +233,12 @@ This is the step that lets you actually take money. It has its own guide:
 
 Go to **Staff**, then **Billing settings**, then the **Policy** tab.
 
-[[SCREENSHOT: The Billing settings Policy tab showing the retry schedule, grace period and safety ceiling fields]]
+[[SCREENSHOT: The Billing settings Policy tab showing the retry schedule and grace period fields]]
 
 | Setting | Default | What it does |
 |---|---|---|
 | **Retry schedule** | `1,3,5` | Days after a failed payment on which the card is tried again. Must be whole days, increasing, and total no more than 90 days. |
 | **Grace period** | `7` days | How long a past-due customer keeps working before being suspended. |
-| **Safety ceiling** | `3` | See the note below. |
 
 ::: tip
 The retry schedule is read as an escalating series of gaps. `1,3,5` means: try the next day,
@@ -247,11 +246,8 @@ then two days after that, then two days after that. A schedule such as `1,3,3` o
 rejected, because it almost always means a typo.
 :::
 
-::: warning
-The **safety ceiling** field is stored and audited, but on the current release it is not
-applied to anything. It belonged to an earlier design where the system computed sending
-limits itself. Since limits now come from the Octeth user groups you link to each plan, the
-ceiling has no effect. Set the sending limits you want on the groups themselves.
+::: info Sending limits
+The interface does not set sending limits itself. Each plan is linked to an Octeth user group, and the limits on that group are what apply. To cap how far a plan can send, set the limits on its linked groups.
 :::
 
 ## Step 9: Check your work
@@ -294,14 +290,12 @@ tabs:
 ## Tax
 
 ::: danger
-Out of the box, every invoice is calculated with zero tax. There is no tax vendor connected
-and no tax rate to configure in the interface. If you are required to charge VAT, sales tax
-or GST, do not use this billing system to invoice those customers until a tax calculation is
-wired in. This is a genuine limitation of the current release, not a setting you have missed.
+Every invoice is calculated with zero tax. Octeth includes no tax calculation: the only one it ships is a stub that charges zero tax on every line. If you are required to charge VAT, sales tax or GST, do not use this billing system to invoice those customers.
 :::
 
-The **Billing health** screen reports which tax calculation is in use, so you can confirm
-this for yourself.
+The **Billing health** screen reports which tax calculation is in use, so you can confirm this for yourself.
+
+`UI_BILLING_TAX_CALCULATOR` in `.oempro_env` names the class that calculates tax. It is an extension point for a developer, not a tax setting: the class has to implement the interface's tax calculator contract and be loadable by the interface, Octeth ships no such class, and anything added under `ui/` is replaced at your next upgrade. Leave it empty.
 
 ## Turning billing off again
 

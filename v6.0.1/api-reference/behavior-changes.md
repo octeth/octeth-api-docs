@@ -353,6 +353,26 @@ With **Prevent user login from IP addresses not in the list** ticked and Authori
 
 The new user interface's own emails (welcome, password reset, billing notices) now draw their header in the brand accent (`UI_BRAND_ACCENT`, `#0A0A0A` by default) with `UI_BRAND_ACCENT_ON` (white by default) as its text colour, instead of a fixed `#1B2A4A`. On a default install the header moves from dark blue to near-black. No screen changes unless `UI_BRAND_PRIMARY_ON` or `UI_BRAND_ACCENT_ON` is set.
 
+### New user interface
+
+#### Self-signup is offered only while the interface's mailer delivers
+
+From v6.0.1 the new interface hides its "Create an account" link and answers `/user/register` with a "Signup is not available" message, creating no account, unless `UI_MAIL_MAILER` names a mailer that sends for real: `smtp`, `sendmail`, `ses`, `postmark` or `resend`. Of those, `smtp` is the one the `.oempro_env` settings configure. `log`, the shipped default, and any other value such as `array` or `failover` count as not sending. Before v6.0.1 the form was offered and accepted, but the new account was created disabled and its verification email, the only way to enable it from the interface, was written to the interface's log instead of being sent. The account stayed disabled until an administrator enabled it in the legacy admin area.
+
+Set `UI_MAIL_MAILER=smtp` with a working relay, including `UI_MAIL_USERNAME` and `UI_MAIL_PASSWORD` for any hosted relay, to offer signup again. Octeth's own switch in **Admin > Settings > ESP settings** still has to be on. Nothing changes for an install whose mailer already delivers, or for an install with signup switched off. See [Configuration](/v6.0.1/getting-started/octeth-configuration).
+
+#### A mail server error at signup or password reset is handled
+
+Before v6.0.1, a mail server that rejected the welcome or password-reset email produced an error page. At signup the account had already been created, so a second attempt was refused with "An account with that email already exists". Now the failure is logged at `error` level in the interface's log. At signup the visitor sees "We could not send your verification email" and is told to contact support, and the account can be enabled by an administrator. At password reset the visitor sees the same "sent" screen as for any other address, so the screen does not reveal which addresses have accounts.
+
+#### The billing Policy screen no longer has a safety ceiling field
+
+**Staff > Billing settings > Policy** no longer shows "Overage safety ceiling". The value was stored and audited but nothing applied it: sending limits come from the Octeth user group linked to each plan. A value saved before the upgrade stays in the database, unused. Set limits on the linked user groups.
+
+#### `UI_BILLING_TAX_CALCULATOR` does not add tax calculation
+
+`UI_BILLING_TAX_CALCULATOR` is new in `.oempro_env`, but no tax calculation ships with Octeth. The key names a PHP class implementing the interface's tax calculator contract and is an extension point only. Left empty, as shipped, every invoice is still calculated with zero tax, exactly as before.
+
 ## Upgrade checklist
 
 1. **If an integration sends through `emailgateway.sendemail`, handle HTTP `403` with error code `12`** for a disabled account. Expect queued and scheduled gateway email to end as `Failed` with a `Sending blocked:` message when an account is disabled or a sender domain stops being active, and resend it after re-enabling if it is still wanted.
@@ -382,6 +402,7 @@ The new user interface's own emails (welcome, password reset, billing notices) n
 25. **If a journey Webhook action, an email gateway webhook or `STUCK_CAMPAIGN_WEBHOOK_URL` points at an internal host, move it to a publicly reachable endpoint.** The delivery worker now refuses internal destinations at send time. See [Webhook delivery refuses internal destinations](#webhook-delivery-refuses-internal-destinations).
 26. **If Prevent user login from IP addresses not in the list is ticked, confirm that the address Octeth sees for your users is their real address before upgrading** (check `TRUSTED_PROXIES` behind a proxy), because signed-in users outside the list are now signed out. See [The user-area IP restriction applies to signed-in users](#the-user-area-ip-restriction-applies-to-signed-in-users).
 27. **If an integration changes administrator passwords, handle the new failure codes as "nothing changed, retry"**: `11` from `admin.update`, `3` from `admin.passwordreset` and `24` from `admin.subadmin.update`. If it calls `admin.logout`, treat `ErrorCode` `1` as "signed out, but the remembered browser was not revoked" and revoke it from **Settings > Security**.
+28. **If customers sign up through the new user interface, set `UI_MAIL_MAILER=smtp` with a working relay before upgrading**, including `UI_MAIL_USERNAME` and `UI_MAIL_PASSWORD` for a hosted relay. Under the default `log` mailer the signup link is hidden and `/user/register` refuses. See [Self-signup is offered only while the interface's mailer delivers](#self-signup-is-offered-only-while-the-interface-s-mailer-delivers).
 
 ---
 

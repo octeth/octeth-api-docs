@@ -1080,11 +1080,27 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     UI_MAIL_HOST=
     UI_MAIL_PORT=587
     UI_MAIL_FROM_ADDRESS=
+    UI_MAIL_USERNAME=                    # SMTP AUTH user, empty = no authentication
+    UI_MAIL_PASSWORD=                    # Quote it if it contains a space, a '#' or a quote
+    UI_MAIL_SCHEME=                      # smtp | smtps, empty = chosen by port
+    UI_MAIL_AUTO_TLS=true                # STARTTLS when the relay offers it
     ```
 
-    Used for the interface's own transactional mail (welcome, password reset, billing notices),
-    **not** for campaign delivery, which goes through Octeth's send engine as always. Set
-    `UI_MAIL_MAILER=smtp` and fill in the host to send for real.
+    Used for the interface's own transactional mail (signup verification, password reset, billing notices), **not** for campaign delivery, which goes through Octeth's send engine as always. Set `UI_MAIL_MAILER=smtp` and fill in the host to send for real.
+
+    - `UI_MAIL_USERNAME` and `UI_MAIL_PASSWORD` are the SMTP credentials. Every hosted relay needs them: Amazon SES, Postmark, SendGrid, Mailgun, Microsoft 365 and Gmail all require SMTP authentication. Leave both empty for a relay that authorises this server by IP address, and no authentication is attempted. Quote the password if it contains a space, a `#` or a quote, for example `UI_MAIL_PASSWORD="p#ss word"`, with one pair of quotes. It is written into `ui/.env` (owner `root:www-data`, mode `0640`), the file that already holds the MySQL password.
+    - `UI_MAIL_SCHEME` is `smtp` (a plain connection, upgraded with STARTTLS when the relay offers it) or `smtps` (implicit TLS). Empty chooses by port: implicit TLS on 465, STARTTLS otherwise, so the two standard ports work without setting it. Port 465 uses implicit TLS even with `smtp`, so the only reason to set this is `smtps` for a relay that expects implicit TLS on another port. Any other value is ignored with a warning in the interface container's log.
+    - `UI_MAIL_AUTO_TLS` upgrades a plain connection with STARTTLS. Leave it `true`. Set it to `false` only for a relay whose TLS is broken, because the password then crosses the network unencrypted. Any value other than `true` or `false` (also accepted: `1`/`0`, `yes`/`no`, `on`/`off`) is treated as `true`, with a warning.
+
+    `UI_MAIL_USERNAME`, `UI_MAIL_PASSWORD` and `UI_MAIL_SCHEME` are written to the interface's configuration only when set, so an install that leaves them empty runs exactly as before.
+
+    ::: warning Signup is offered only while the mailer delivers
+    A self-signup account is created disabled and is enabled only by the verification link in its welcome email. Under `UI_MAIL_MAILER=log` that email is written to the interface's log and never delivered, so from v6.0.1 the interface offers signup only while the mailer is one that sends for real: `smtp`, `sendmail`, `ses`, `postmark` or `resend`. Of those, `smtp` is the one the `UI_MAIL_*` settings above configure. Under `log`, the default, or any other value such as `array` or `failover`, the "Create an account" link is hidden and `/user/register` shows a "Signup is not available" message and creates no account. Octeth's own switch in **Admin > Settings > ESP settings** must be on as well. Password reset emails are likewise only written to the log under `log`.
+    :::
+
+    A mail server that rejects a message no longer produces an error page. At signup the account is created and the visitor is told the verification email could not be sent and to contact support. At password reset the visitor sees the usual "sent" screen, so the page does not reveal which addresses have accounts. Both failures are logged at `error` level in the interface's log.
+
+    Changed in v6.0.1 (issue #2852): `UI_MAIL_USERNAME`, `UI_MAIL_PASSWORD`, `UI_MAIL_SCHEME` and `UI_MAIL_AUTO_TLS` were added, and signup is offered only while the mailer delivers.
 
     **Product mode**
 
@@ -1102,6 +1118,25 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     `BRAND_FEATURE_CAMPAIGNS=true`, which also needs `BRAND_FEATURE_LISTS=true`). Restart the
     interface container after changing it.
 
+    **URL slugs**
+
+    ```bash
+    UI_BRAND_SLUG_DASHBOARD=
+    UI_BRAND_SLUG_CAMPAIGNS=
+    UI_BRAND_SLUG_JOURNEYS=
+    UI_BRAND_SLUG_TRANSACTIONAL=
+    UI_BRAND_SLUG_LISTS=
+    UI_BRAND_SLUG_TEMPLATES=
+    UI_BRAND_SLUG_SENDERS=
+    UI_BRAND_SLUG_API=
+    ```
+
+    Rename the first path segment of a customer section. For example `UI_BRAND_SLUG_CAMPAIGNS=broadcasts` serves the campaigns pages at `/user/broadcasts`. Empty keeps the default, which is the section's own name. Only the visible path changes: the `/user/` prefix and the proxy rules are unaffected, so nothing else needs reconfiguring.
+
+    A slug must be one lowercase URL segment made of `a`-`z`, `0`-`9` and `-`. Anything else is ignored with a warning in the interface container's log, and the default applies. A slug equal to a path segment another page already uses is rejected the same way, because the two pages would hide each other. The reserved segments are `2fa`, `2fa-recover`, `account`, `accounts`, `billing`, `coming-soon`, `email-header-footer`, `forgot-password`, `health`, `login`, `logout`, `maintenance`, `register`, `reset-password`, `staff`, `stripo`, `suppressions`, `verify-email` and `webhooks`. Each slug must also be unique. The container runs `php artisan brand:check` on every start and logs a warning for a duplicate slug, a slug taken by another page, or a section switched on while one it depends on is off. Restart the interface container after changing a slug, and update any bookmark or link that used the old path.
+
+    Introduced in v6.0.1 (issue #2852).
+
     **Subscription billing and the drag-and-drop builder**
 
     ```bash
@@ -1117,6 +1152,16 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     per-feature gating at all. That is usually correct for a licensed on-premise install, but it
     should be a decision rather than a surprise. The Stripe keys are read only when billing is on;
     inbound webhooks are received at `<APP_URL>/ui/webhooks/<gateway>`.
+
+    ```bash
+    UI_BILLING_TAX_CALCULATOR=           # Empty = the built-in zero-tax stub
+    ```
+
+    ::: danger No tax calculation ships with Octeth
+    Every invoice is calculated with **zero tax**. Octeth includes no tax calculator other than a stub that charges zero tax on every line, and the **Billing health** screen reports it. `UI_BILLING_TAX_CALCULATOR` is only an extension point: it names a PHP class implementing `App\Billing\Tax\TaxCalculator` that the interface can load. Octeth ships no such class, and a file you add under `ui/` is replaced on every upgrade. If you must charge VAT, sales tax or GST, do not use this billing system to invoice those customers. Setting this key does not make tax work.
+    :::
+
+    `UI_BILLING_TAX_CALCULATOR` is read only when `BRAND_FEATURE_BILLING=true`, and is written to the interface's configuration only when set. Introduced in v6.0.1 (issue #2852).
 
     The new interface's drag-and-drop email builder uses the Stripo Plugin ID and Secret Key saved
     in **Admin > Settings > Integrations**, the same settings the legacy interface uses (see

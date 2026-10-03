@@ -199,15 +199,32 @@ The webhook is not arriving.
 
 ## Password reset emails never arrive
 
-**The interface writes its emails to a log by default rather than sending them.** Set a real
-mail server:
+**The interface writes its emails to a log by default rather than sending them.** Set a real mail server:
 
 ```ini
 UI_MAIL_MAILER=smtp
-UI_MAIL_HOST=smtp.example.com
+UI_MAIL_HOST=email-smtp.eu-west-1.amazonaws.com
 UI_MAIL_PORT=587
+UI_MAIL_USERNAME=AKIAEXAMPLE
+UI_MAIL_PASSWORD="your smtp password"
 UI_MAIL_FROM_ADDRESS=no-reply@acmemail.com
 ```
+
+Every hosted mail service needs `UI_MAIL_USERNAME` and `UI_MAIL_PASSWORD`. Leave them empty only for a mail server that accepts this server by its IP address. Port 587 and port 465 both work without setting `UI_MAIL_SCHEME`.
+
+Then run `docker compose up -d --force-recreate oempro_ui`.
+
+If a mail server is set and the emails still do not arrive, look in the interface's log for `Password reset: the reset email could not be sent`. The line names the error the mail server returned. The person asking for the reset still sees the usual "sent" screen, on purpose, so the page never reveals which addresses have accounts.
+
+## The signup link is missing, or the signup page says signup is not available
+
+**Self-signup needs a working mail server.** A new account is enabled only by the link in its welcome email, so the interface offers signup only while `UI_MAIL_MAILER` sends for real (`smtp`, `sendmail`, `ses`, `postmark` or `resend`). Under `log`, the default, or any other value, it does not offer signup at all. Set up mail as described in [Password reset emails never arrive](#password-reset-emails-never-arrive).
+
+If mail is set up, check that self-signup is switched on in **Admin > Settings > ESP settings**. The interface reads that setting every minute, so no restart is needed.
+
+## A new customer was told their verification email could not be sent
+
+**The mail server rejected the welcome email.** The account was created but is disabled until it is verified. Fix the mail settings using the line `Signup: the account was created but its verification email could not be sent` in the interface's log, which names the error and the account's user ID. Then enable that account in the legacy admin area. The customer cannot sign up again with the same address, because the account already exists.
 
 ## The interface shows numbers that are clearly fictional
 

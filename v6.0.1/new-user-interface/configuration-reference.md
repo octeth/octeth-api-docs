@@ -162,16 +162,24 @@ through Octeth's sending engine.
 
 | Setting | Default | What it does |
 |---|---|---|
-| `UI_MAIL_MAILER` | `log` | `log` writes messages to the interface's log instead of sending them. `smtp` sends them for real. |
+| `UI_MAIL_MAILER` | `log` | `log` writes messages to the interface's log instead of sending them. `smtp` sends them for real, and is the setting that lets customers sign up themselves. |
 | `UI_MAIL_HOST` | Empty | The mail server to send through, when the mailer is `smtp`. |
 | `UI_MAIL_PORT` | `587` | The port on that server. |
 | `UI_MAIL_FROM_ADDRESS` | `no-reply@localhost` | The address these messages come from. |
+| `UI_MAIL_USERNAME` | Empty | The username for signing in to the mail server. Empty means no sign-in is attempted. |
+| `UI_MAIL_PASSWORD` | Empty | The password for that username. Put it in double quotes if it contains a space, a `#` or a quote. |
+| `UI_MAIL_SCHEME` | Empty | Leave empty: port 465 then uses a direct encrypted connection and any other port a plain one upgraded to encryption. Set `smtps` only for a mail server that expects a direct encrypted connection on a port other than 465. |
+| `UI_MAIL_AUTO_TLS` | `true` | Upgrades a plain connection to an encrypted one when the server offers it. Leave it on. |
 
 ::: warning
-The default of `log` means no message is ever delivered. That is the safe default for an
-install with no mail relay configured, but it also means password resets do not arrive. Set
-this to `smtp` and fill in the host before you let real customers sign in.
+The default of `log` means no message is ever delivered. That is the safe default for an install with no mail server configured, but it means password resets do not arrive, and it switches self-signup off: the "Create an account" link is hidden and the signup page says signup is not available, because a new account could never receive the email that activates it. Set this to `smtp`, fill in the host, and for any hosted mail service (Amazon SES, Postmark, SendGrid, Mailgun, Microsoft 365, Gmail) the username and password, before you let real customers sign up or sign in.
 :::
+
+::: danger
+Turn `UI_MAIL_AUTO_TLS` off only for a mail server whose encryption is broken, and only for as long as it takes to fix it. With it off, the password is sent unencrypted.
+:::
+
+If the mail server rejects a message, the interface logs the error. A customer signing up is told the verification email could not be sent and to contact support. A customer asking for a password reset sees the usual "sent" screen.
 
 The sender name is your `UI_BRAND_NAME`, so there is no separate setting for it.
 
@@ -240,21 +248,31 @@ The interface reads a few of Octeth's own settings rather than having its own co
 | `./cli/octeth.sh ui:dev` | Runs the development asset server. For development only. |
 | `./cli/octeth.sh ui:test` | Runs its test suite. For development only. |
 
+## Renaming URL segments
+
+| Setting | Default path segment |
+|---|---|
+| `UI_BRAND_SLUG_DASHBOARD` | `dashboard` |
+| `UI_BRAND_SLUG_CAMPAIGNS` | `campaigns` |
+| `UI_BRAND_SLUG_JOURNEYS` | `journeys` |
+| `UI_BRAND_SLUG_TRANSACTIONAL` | `transactional` |
+| `UI_BRAND_SLUG_LISTS` | `lists` |
+| `UI_BRAND_SLUG_TEMPLATES` | `templates` |
+| `UI_BRAND_SLUG_SENDERS` | `senders` |
+| `UI_BRAND_SLUG_API` | `api` |
+
+Set one to change the visible path of that section. `UI_BRAND_SLUG_CAMPAIGNS=broadcasts` serves the campaigns pages at `/user/broadcasts`. The section's name on screen does not change. Leave it empty to keep the default.
+
+Use lowercase letters, digits and hyphens only, one word with no slashes. A value that breaks this rule is ignored and the default stays, and so is a slug that another page already uses, such as `account`, `billing`, `login` or `staff`. Do not reuse a slug for two sections. The interface checks for duplicates every time it starts and writes a warning to its container log. Restart the interface after a change, and update any bookmark or link that used the old path.
+
 ## What is not configurable
 
 Some settings exist inside the interface's own files but are not exposed in `.oempro_env`, so
 they cannot be changed on an Octeth install. Knowing which is which saves an afternoon.
 
-- **Renaming URL segments.** Paths such as `/user/campaigns` cannot be changed to your own
-  wording.
-- **Hiding individual product areas.** You can turn billing on and off, but not journeys,
-  transactional email, SMS or the other areas one by one. What a customer sees is decided by
-  their Octeth user group.
-- **The sign-in page tagline and testimonial quotes.** These are empty and the block is
-  hidden.
+- **The sign-in page testimonial quotes.** These are empty and the block is hidden. The tagline and the trust figures can be set with `UI_BRAND_TAGLINE` and `UI_BRAND_TRUST_STATS`, see the [configuration page](/v6.0.1/getting-started/octeth-configuration).
 - **Renaming things in the interface**, for example calling campaigns "broadcasts".
-- **Tax calculation.** Every invoice is calculated with zero tax. See the tax note in
-  [Setting up the billing system](./billing-setup#tax).
+- **Tax calculation.** Every invoice is calculated with zero tax, and no tax calculation ships with Octeth. `UI_BILLING_TAX_CALCULATOR` exists only as an extension point for a developer. See the tax note in [Setting up the billing system](./billing-setup#tax).
 - **Extra payment gateway addresses.** Only the card processors' own published addresses are
   accepted.
 
