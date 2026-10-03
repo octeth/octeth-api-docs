@@ -234,6 +234,72 @@ WHERE FieldName LIKE CONCAT('%', CHAR(9), '%');
 
 Renaming such a field through the user or admin interface, or with `customfield.update` or `global.customfield.update`, stores the new name with spaces in place of any TAB.
 
+## Planned changes
+
+### Subscribers
+
+#### Required custom fields will reject empty values in the next major version
+
+No response changes in v6.0.1. This entry announces a change planned for the next major version and explains how to find out now whether it affects you.
+
+`subscriber.subscribe` and `subscriber.update` accept some empty values for a required custom field when `EnforceRequiredFields` is not set:
+
+| Submitted value | Today | Next major version |
+|---|---|---|
+| `[]` (a checkbox group with nothing ticked) | accepted | rejected |
+| `['']` or `[' ']` | accepted | rejected |
+| `' '`, a tab or a newline (whitespace only) | accepted | rejected |
+| `'0'` | accepted | accepted |
+| `''` or an omitted required field | rejected | rejected |
+
+A rejected `subscriber.subscribe` call returns `ErrorCode` `6` and creates no subscriber. A rejected `subscriber.update` call returns `ErrorCode` `8`. The public signup form (`subscribe.php`) calls `subscriber.subscribe`, so a signup form with a required checkbox group will start rejecting visitors who tick nothing.
+
+To get the next major version's behavior today, send `EnforceRequiredFields=true` with the request.
+
+**Find out whether you are affected.** From v6.0.1, every time one of these endpoints accepts an empty value that the next major version will reject, Octeth records it. The response is not affected.
+
+1. A counter in Redis, kept at any log level. Each field of the hash `oempro_required_field_bypass_hits` is `<endpoint>|<UserID>|<ListID>|<CustomFieldID>|<shape>` and its value is the number of accepted requests. The hash expires 90 days after the last one.
+
+   Octeth reaches Redis with the options in `OEMPRO_REDIS_PARAMETERS`, so the hash lives in the Redis database set by `parameters.database` (default `0`) and its name starts with the `prefix` option (default none). Print the two values your install uses (the password is not printed):
+
+   ```bash
+   docker exec oempro_app php5.6 -r '$IsCLI = true; include "/var/www/html/cli/init.php"; include "/var/www/html/data/config.inc.php"; $o = OEMPRO_REDIS_PARAMETERS; echo "database=", isset($o["parameters"]["database"]) ? $o["parameters"]["database"] : 0, " prefix=", isset($o["prefix"]) ? $o["prefix"] : "", "\n";'
+   ```
+
+   Then read the counter from that database, with the prefix in front of the hash name. With the defaults (`database=0`, no prefix):
+
+   ```bash
+   docker exec oempro_redis redis-cli -n 0 HGETALL oempro_required_field_bypass_hits
+   ```
+
+   With, for example, `database=3` and `prefix=octeth:`:
+
+   ```bash
+   docker exec oempro_redis redis-cli -n 3 HGETALL 'octeth:oempro_required_field_bypass_hits'
+   ```
+
+   If `parameters.password` is set, pass it to `redis-cli` through the environment rather than on the command line: `docker exec -e REDISCLI_AUTH='<password>' oempro_redis redis-cli -n <database> ...`.
+
+   To list only the affected accounts:
+
+   ```bash
+   docker exec oempro_redis redis-cli -n <database> HKEYS '<prefix>oempro_required_field_bypass_hits' | cut -d'|' -f2 | sort -u
+   ```
+
+   An empty result from the wrong database or without the prefix does not mean that no account is affected, so check both values first.
+
+2. A WARNING in `data/logs/errors-<date>.log`, written at most once per hour for each endpoint, account and custom field. It appears only when `OEMPRO_LOG_LEVEL` is `WARNING` or lower (the default is `ERROR`).
+
+   ```bash
+   grep -h 'REQUIRED_FIELD_BYPASS' data/logs/errors-*.log
+   ```
+
+   The entry lists the endpoint, `UserID`, `ListID`, `CustomFieldID` and the shape of the value (`empty_array`, `array_of_blank_members`, `whitespace_string` or `absent`). The submitted value itself is never logged.
+
+Nothing is recorded while Redis is unavailable, or for 60 seconds after a Redis error in the same PHP process.
+
+**What to do.** For each account and custom field the counter lists, either fill the field in the integration or form, or set the field to not required. The change is scheduled for the next major version and will be listed in that version's behavior changes page.
+
 ## Upgrade checklist
 
 1. **If an integration sends through `emailgateway.sendemail`, handle HTTP `403` with error code `12`** for a disabled account. Expect queued and scheduled gateway email to end as `Failed` with a `Sending blocked:` message when an account is disabled or a sender domain stops being active, and resend it after re-enabling if it is still wanted.
@@ -258,6 +324,7 @@ Renaming such a field through the user or admin interface, or with `customfield.
 20. **Optional: set `API_RESPONSEFORMAT_CASE_INSENSITIVE=true`** if your integrations send `ResponseFormat` in lowercase (`xml`) and expect XML. It is off by default, so those calls keep receiving JSON as before. Turning it on switches them to XML with `Content-Type: text/xml`, so check every integration that sends a lowercase value first. See [Error Handling](/v6.0.1/api-reference/error-handling#responseformat-xml-on-hard-failures).
 21. **Review every account with Disable suppression check turned on.** From v6.0.1 its campaigns are sent to suppressed addresses, including hard bounces and spam complaints, as its journey and gateway email already were. Turn the option off on any account that should not do this.
 22. **If an integration creates or renames custom fields with a TAB in `FieldName` and later looks the field up by that exact name, compare against the name with each TAB replaced by a space.** Fields created before the upgrade keep their TAB until renamed. Run the query under "A TAB in a custom field name is stored as a space" to find them.
+23. **If you call `subscriber.subscribe` or `subscriber.update`, or run on-site signup forms, with required custom fields,** read [Required custom fields will reject empty values in the next major version](#required-custom-fields-will-reject-empty-values-in-the-next-major-version) and check the counter it describes.
 
 ---
 
