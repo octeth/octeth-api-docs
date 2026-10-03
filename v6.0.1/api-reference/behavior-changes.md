@@ -347,6 +347,12 @@ A password change now revokes the administrator's remembered browsers in the sam
 
 With **Prevent user login from IP addresses not in the list** ticked and Authorized IP Addresses filled in, a signed-in user who opens a user-area page from an address outside the list is signed out. Before v6.0.1 only the login page checked the address. API calls are not affected.
 
+### New user interface emails
+
+#### The email header follows the brand accent
+
+The new user interface's own emails (welcome, password reset, billing notices) now draw their header in the brand accent (`UI_BRAND_ACCENT`, `#0A0A0A` by default) with `UI_BRAND_ACCENT_ON` (white by default) as its text colour, instead of a fixed `#1B2A4A`. On a default install the header moves from dark blue to near-black. No screen changes unless `UI_BRAND_PRIMARY_ON` or `UI_BRAND_ACCENT_ON` is set.
+
 ## Upgrade checklist
 
 1. **If an integration sends through `emailgateway.sendemail`, handle HTTP `403` with error code `12`** for a disabled account. Expect queued and scheduled gateway email to end as `Failed` with a `Sending blocked:` message when an account is disabled or a sender domain stops being active, and resend it after re-enabling if it is still wanted.

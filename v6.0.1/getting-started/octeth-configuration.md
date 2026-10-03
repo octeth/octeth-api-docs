@@ -1016,6 +1016,7 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     UI_BRAND_PRIMARY="#0A0A0A"           # Sidebar background and body text
     UI_BRAND_PRIMARY_900="#000000"
     UI_BRAND_PRIMARY_700="#262626"
+    UI_BRAND_PRIMARY_ON="#FFFFFF"        # Text and icons on a primary fill (sidebar, dark badges, banners)
     UI_BRAND_ACCENT="#0A0A0A"            # Buttons, links, active navigation, focus rings
     UI_BRAND_ACCENT_HOVER="#262626"
     UI_BRAND_ACCENT_LIGHT="#F4F4F5"
@@ -1023,6 +1024,7 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     UI_BRAND_ACCENT_700="#000000"
     UI_BRAND_ACCENT_100="#E4E4E7"
     UI_BRAND_ACCENT_050="#FAFAFA"
+    UI_BRAND_ACCENT_ON="#FFFFFF"         # Text and icons on an accent fill (primary buttons, avatars, toasts)
     ```
 
     Two colours drive the interface: the primary, which is the sidebar background and the body
@@ -1031,10 +1033,18 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     differ from the defaults. They are applied as CSS variables when a page renders, so a change
     takes effect on the next container start with no asset rebuild.
 
-    Octeth ships monochrome: both colours are near-black. Note that the sidebar renders its active
-    navigation in **white** rather than in the accent, because a black accent cannot be seen
-    against a black sidebar. If you set a coloured accent here, that sidebar rule stays white and
-    will no longer match it.
+    Octeth ships monochrome: both colours are near-black. The sidebar renders its active navigation in the **primary foreground** (`UI_BRAND_PRIMARY_ON`, white by default) rather than in the accent, because a black accent cannot be seen against a black sidebar. If you set a coloured accent here, that sidebar rule keeps the primary foreground and will no longer match it.
+
+    **Text on a coloured fill.** `UI_BRAND_PRIMARY_ON` and `UI_BRAND_ACCENT_ON` set the colour of the text and icons drawn on top of a solid primary or accent fill. The primary foreground covers the sidebar, the sign-in brand panel, dark badges and the dashboard banner. The accent foreground covers primary buttons, avatars, toasts, step indicators and the header of the interface's own emails (welcome, password reset, billing notices). Both default to white, so an install that sets neither looks exactly as before.
+
+    If you choose a light or mid primary or accent, set the matching `_ON` key to a dark colour so the text stays readable. WCAG 2.1 AA asks for a contrast ratio of at least 4.5:1 for normal text. For example, white on an amber accent `#F2A73B` is about 2.0:1, while `UI_BRAND_ACCENT_ON="#0A0A0A"` on the same amber is about 9.0:1:
+
+    ```bash
+    UI_BRAND_ACCENT="#F2A73B"
+    UI_BRAND_ACCENT_ON="#0A0A0A"
+    ```
+
+    Like the other palette keys, both must be quoted and must be a 3, 6 or 8 digit hex. An invalid value is ignored and white applies. The email header is the one place that also uses the accent as a background: from v6.0.1 it follows `UI_BRAND_ACCENT` instead of a fixed dark blue, with `UI_BRAND_ACCENT_ON` as its text colour.
 
     ::: warning Quote the hex values
     A bare leading `#` is read as the start of a comment by the `.oempro_env` parser, so
