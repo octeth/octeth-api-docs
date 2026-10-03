@@ -171,6 +171,14 @@ docker exec oempro_redis redis-cli --scan --pattern 'subscriber_counts_*_suppres
 
 `suppression.delete` is unchanged. It removes only entries in the requested scope, so an address can remain suppressed by an entry in another scope after a delete. There is no opt-in flag: the old answers disagreed with what a send actually drops.
 
+#### Disable Suppression Check now applies to campaigns
+
+An administrator can turn on **Disable suppression check in outgoing emails** for an account (the admin user edit page, or `user.update` with `DisableSuppressionCheck=true`). Before v6.0.1 it applied to journey, transactional and email gateway email only: campaigns still removed suppressed addresses from their recipients. From v6.0.1 campaigns honour it too. For such an account, a campaign is sent to addresses on the account's or the list's suppression list, to system-wide entries (hard bounces and spam complaints) and to addresses matching a global suppression pattern. The `Suppressed` flag and the campaign send now agree for every account.
+
+Phone-only contacts are still never emailed, whatever the option says.
+
+Accounts that already have the option on start mailing suppressed addresses from their next campaign after the upgrade. Mailing hard-bounced and complaining addresses can damage the sending reputation of shared IPs and domains. Before upgrading, list the accounts that have it on and turn it off where it is not needed.
+
 ## Tier 2: shape and value changes
 
 ### Subscribers
@@ -229,6 +237,7 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 18. **If an integration or a saved segment relies on `Suppressed`, the `Suppressed` segment, `suppression.browse` or `suppression.stats` with a `ListID`, or the "suppression exist / not exist" segment rule, expect larger suppressed sets** that now include account-wide and system-wide entries for addresses on the list. Review campaigns sent to segments that use the "not exist" rule, and treat HTTP `500` with `ErrorCode` `100005` from these reads as a server-side failure to retry.
 19. **If an integration reads `OrderNo` from `journey.get` or `journey.actions.update`, do not assume it restarts at 1 inside each Decision branch.** Order siblings by `OrderNo` within the same parent and branch. Re-clone journeys that were created with `journey.clone` before the upgrade if they have Decision branches.
 20. **Optional: set `API_RESPONSEFORMAT_CASE_INSENSITIVE=true`** if your integrations send `ResponseFormat` in lowercase (`xml`) and expect XML. It is off by default, so those calls keep receiving JSON as before. Turning it on switches them to XML with `Content-Type: text/xml`, so check every integration that sends a lowercase value first. See [Error Handling](/v6.0.1/api-reference/error-handling#responseformat-xml-on-hard-failures).
+21. **Review every account with Disable suppression check turned on.** From v6.0.1 its campaigns are sent to suppressed addresses, including hard bounces and spam complaints, as its journey and gateway email already were. Turn the option off on any account that should not do this.
 
 ---
 
