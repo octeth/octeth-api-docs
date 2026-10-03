@@ -206,6 +206,21 @@ The integration method depends on which MTA you are using. See the [Integrating 
 
 The **Admin Area** > **Bounce Processing** page provides several tools for monitoring bounce activity.
 
+### MTA Feedback Freshness <Badge type="tip" text="New in v6.0.1" />
+
+Below the summary metrics, the **Email gateway MTA feedback, newest event** box shows how long ago Octeth last received each kind of feedback for email gateway sends:
+
+- **Delivered**: the newest delivery report from your MTA.
+- **Bounced**: the newest bounce reported through MTA accounting.
+- **Spam complaint**: the newest complaint. Complaints are rare, so an old value here is normal.
+- **Bounce webhook**: the newest bounce received on the bounce webhook. The webhook keeps hourly counters, so this value is accurate to the hour.
+
+An age that keeps growing while your email gateway is still sending means the feedback pipeline is broken somewhere between your MTA and Octeth. Check the MTA accounting post, the `process_pmta_log_file` API command, the bounce webhook authentication, the `emailgateway_events` worker and ClickHouse.
+
+**None on record** means Octeth holds no event of that kind. Delivery, bounce and complaint events are kept for 31 days. On an install whose MTA does not report back, every row reads **None on record**, and that is expected. **Event store unavailable** means Octeth could not read the event store when the page loaded.
+
+To be alerted instead of having to look, see the MTA feedback silence settings of the Email Gateway Queue Monitor on the configuration page, and the `octeth_eg_feedback_last_event_age_seconds` gauge below.
+
 ### Statistics Tab
 
 The **Statistics** tab shows a summary of bounce processing activity over the last 30 days. A chart displays daily bounce volume and connection counts, giving you a quick overview of bounce trends.

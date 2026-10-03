@@ -280,12 +280,28 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     EG_QUEUE_FAILED_WINDOW_MINUTES=15                   # Rolling look-back window (minutes, by ProcessedAt) for the failure-rate check
     EG_QUEUE_PENDING_STALL_MINUTES=15                   # A Pending row counts as overdue when SendAt is older than this many minutes (future SendAt never counts)
     EG_QUEUE_PENDING_STALL_MIN_COUNT=1000              # Overdue Pending rows above which a pending-stall alert fires
+    EG_QUEUE_FEEDBACK_MONITOR_ENABLED=true              # Enable the MTA feedback silence check (needs EG_QUEUE_MONITOR_ENABLED=true)
+    EG_QUEUE_FEEDBACK_WINDOW_MINUTES=60                 # Window (minutes) for the delivered-event check; keep it longer than your MTA's accounting delay
+    EG_QUEUE_FEEDBACK_MIN_SENDS=500                     # Send floor: nothing is checked unless gateway sends in the window (or the bounce silence period) reach this count
+    EG_QUEUE_FEEDBACK_MIN_DELIVERED_RATIO=0.10          # Alert when delivered events in the window are zero or below this share (0..1) of sends
+    EG_QUEUE_FEEDBACK_BOUNCE_SILENCE_HOURS=6            # Alert when no bounce has arrived for this many hours while sends in that period reach the floor
     EG_QUEUE_MONITOR_WEBHOOK_URL=                       # Webhook for monitor alerts; empty = log only (alerts are ALWAYS logged)
     EG_QUEUE_MONITOR_WEBHOOK_HMAC_SECRET=               # HMAC-SHA256 secret for the X-Octeth-Signature header on monitor webhooks
     EG_QUEUE_MONITOR_NOTIFICATION_COOLDOWN_MINUTES=30   # Per-alert-type cooldown (minutes) between webhook notifications
     ```
 
-    The Email Gateway Queue Monitor watches `oempro_eg_queue` for two independent conditions: a **failure-rate spike** (failed deliveries exceeding both the rate threshold *and* the absolute floor within the window) and a **stalled Pending backlog** (overdue Pending rows piling up because workers are down or behind). Both conditions are always written to the log; a webhook is sent only when a URL is configured and the per-type cooldown has elapsed. Alerts include a per-domain and per-user breakdown of the worst offenders.
+    The Email Gateway Queue Monitor watches `oempro_eg_queue` for three independent conditions: a **failure-rate spike** (failed deliveries exceeding both the rate threshold *and* the absolute floor within the window), a **stalled Pending backlog** (overdue Pending rows piling up because workers are down or behind), and **MTA feedback silence** (gateway sends continue but the delivered, bounce and complaint events your MTA reports back stop arriving). All conditions are always written to the log. A webhook is sent only when a URL is configured and the per-type cooldown has elapsed. Failure-spike and stall alerts include a per-domain and per-user breakdown of the worst offenders.
+
+    **MTA feedback silence.** Delivered, bounce and complaint events only reach Octeth when the whole path works: the PowerMTA accounting post (or fluentd), the `process_pmta_log_file` API command, the `emailgateway_events` worker and ClickHouse, or the bounce webhook for bounces. A break anywhere on that path looks the same from the outside: gateway sends keep completing and no feedback comes back, which blinds suppression, bounce and complaint counters and reputation reports. The check measures what actually arrives:
+
+    - When gateway sends in `EG_QUEUE_FEEDBACK_WINDOW_MINUTES` reach `EG_QUEUE_FEEDBACK_MIN_SENDS`, it alerts if delivered events in the same window are zero (reason `no_delivered_events`) or below `EG_QUEUE_FEEDBACK_MIN_DELIVERED_RATIO` of the sends (reason `delivered_ratio_low`).
+    - When gateway sends in the last `EG_QUEUE_FEEDBACK_BOUNCE_SILENCE_HOURS` reach the floor, it alerts if no bounce arrived in that period, from either ClickHouse or the bounce webhook (reason `bounce_silence`).
+    - If the ClickHouse query fails, it alerts with reason `eg_events_query_failed`, because an unreachable event store is itself a dark pipeline.
+    - Complaint age is reported in the alert, but complaints alone never trigger one.
+
+    The check arms itself only once feedback has been seen: the delivered checks after the first delivered event, the bounce check after the first bounce (in ClickHouse or on the bounce webhook). An install whose MTA never reports back stays quiet. Once armed, it stays armed even after ClickHouse retention (31 days) has removed the old events. The alert webhook has `event_type` `eg_queue.feedback_silence`, a `reasons` list, the send and event counts, the newest event time and age per type, and a list of places to check. It has its own cooldown, separate from the other two alerts.
+
+    The same freshness is shown on **Admin Area > Bounce Processing** and published on `/metrics` as `octeth_eg_feedback_last_event_age_seconds{event}`.
 
 20. **Campaign Export**
     ```bash

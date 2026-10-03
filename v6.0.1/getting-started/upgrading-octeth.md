@@ -215,6 +215,14 @@ The backup directory location is displayed in the rollback output. Your database
 
 ## Notes for This Release
 
+### The email gateway monitor now watches for missing MTA feedback
+
+The upgrade adds five settings to `.oempro_env`: `EG_QUEUE_FEEDBACK_MONITOR_ENABLED=true`, `EG_QUEUE_FEEDBACK_WINDOW_MINUTES=60`, `EG_QUEUE_FEEDBACK_MIN_SENDS=500`, `EG_QUEUE_FEEDBACK_MIN_DELIVERED_RATIO=0.10` and `EG_QUEUE_FEEDBACK_BOUNCE_SILENCE_HOURS=6`. The values match the built-in defaults, so the upgrade does not ask about them.
+
+With them, the Email Gateway Queue Monitor alerts when gateway sends continue but delivered or bounce events from your MTA stop arriving. The check only arms after Octeth has received such an event, so an install whose MTA never reports back does not start alerting after the upgrade. An install that has received delivered or bounce events in the last 31 days, or any bounce on the bounce webhook, is armed on the first monitor run in which gateway sends reach the send floor. If its feedback is already broken at that point, expect an alert (logged, and sent to `EG_QUEUE_MONITOR_WEBHOOK_URL` when set) on that run. That alert is the intended outcome.
+
+To turn the check off, set `EG_QUEUE_FEEDBACK_MONITOR_ENABLED=false` in `.oempro_env`. It is read on every monitor run, so no restart is needed.
+
 ### Laravel storage is no longer world-writable
 
 From v6.0.1, the upgrade, `permissions:fix` and a fresh installation no longer set `system/storage` and `system/bootstrap/cache` to mode `0777`. They now set owner `root`, group `www-data`, mode `2775` on directories and `0664` on files. The web server keeps write access through the `www-data` group, and other local accounts on the server can no longer write files that the application executes.

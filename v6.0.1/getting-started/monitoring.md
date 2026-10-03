@@ -93,3 +93,16 @@ Each family is only written when its query succeeds. If a query fails the gauge 
 **`oempro_sms_campaign_queue_pmax_rows` must be zero.** `pMAX` is the catch-all partition above the last dated one. A row landing there means partition maintenance has not run far enough ahead, and retention can never drop that row's partition without taking `pMAX` with it. Any non-zero value is actionable immediately. On an install whose queue table is not partitioned the gauge is absent rather than zero, for the reason in the warning above.
 
 `oempro_sms_inbound_problems_last_hour` is split by `kind` rather than summed because the three need different responses. `failed` is the worker erroring, `unattributed` is a reply that matched no contact, and `unsubscribe_failed` is an opt-out the system accepted and did not carry out, which is the one that carries compliance weight.
+
+## Email Gateway Feedback Gauge <Badge type="tip" text="New in v6.0.1" />
+
+`octeth_eg_feedback_last_event_age_seconds{event}` is the age in seconds of the newest MTA feedback event Octeth received for email gateway sends, refreshed at scrape time:
+
+| `event` | Source |
+|---|---|
+| `delivered` | Delivery reports in the event store |
+| `bounced` | Bounces in the event store |
+| `complained` | Spam complaints in the event store |
+| `bounce_webhook` | Bounces received on the bounce webhook (hourly accuracy) |
+
+`-1` means no event of that kind is on record. The event store keeps 31 days. Like the other gauges, each source is written only when its query succeeds, so a failing query leaves the previous value in place and logs a warning. A useful rule is an age above a few hours for `delivered` or `bounced` while gateway traffic continues. The built-in monitor alert (configuration page, Email Gateway Queue Monitor) already combines the age with the send volume.
