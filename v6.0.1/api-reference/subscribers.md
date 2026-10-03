@@ -181,7 +181,7 @@ curl -X POST https://example.com/api/v1/subscriber.create \
 | EmailAddress | String | Yes   | Email address of the subscriber       |
 | IPAddress | String | Yes      | IP address of the subscriber          |
 | CustomFieldN | String | No    | Custom field values (N = CustomFieldID) |
-| EnforceRequiredFields | Boolean | No | <Badge type="tip" text="New in v5.9.3" /> When `true`, every custom field the list marks `IsRequired = Yes` is validated — **including fields whose `CustomFieldN` key is not present in the request at all**. Omitting a required field then returns `ErrorCode 6` with `ErrorCustomFieldID` / `ErrorCustomFieldTitle`. It additionally applies a corrected emptiness test, so a required multi-value field submitted as an empty array is rejected rather than silently accepted. Defaults to `false`, which preserves the historical behaviour where a required field is only checked when its key is submitted with an empty value. |
+| EnforceRequiredFields | Boolean | No | <Badge type="tip" text="New in v5.9.3" /> When `true`, every custom field the list marks `IsRequired = Yes` is validated, **including fields whose `CustomFieldN` key is not present in the request at all**. Omitting a required field then returns `ErrorCode 6` with `ErrorCustomFieldID` / `ErrorCustomFieldTitle`. Defaults to `false`, which keeps the historical behaviour where a required field is only checked when its key is submitted. <Badge type="warning" text="Changed in v6.0.1" /> The flag no longer changes how a submitted value is tested for emptiness: that test is always the corrected one (see below). |
 | Source    | String | No       | Acquisition source bucket persisted on the subscriber row. Possible values: `CSVImport`, `API`, `Webhook`, `Manual`, `Other`, `Unknown`. Defaults to `API` for this endpoint. Anything outside this set is coerced to `Unknown`. |
 | SourceRef | String | No       | Optional free-text source reference (e.g., a custom label or integration id). Truncated server-side to 64 characters. |
 
@@ -197,10 +197,17 @@ When `EnforceRequiredFields=true`:
 - **A list-specific required field that is omitted but has a non-empty `FieldDefaultValue` is accepted**, because that default is written to the subscriber row — the stored value ends up non-empty, so the requirement is genuinely satisfied.
 - **A global required field is not excused by its `FieldDefaultValue`.** Global custom-field values are only written from what the request submits — no default is backfilled — so an omitted global field would be stored empty and is reported.
 - Error precedence is unchanged: a submitted-but-empty required field (`6`), a validation failure (`8`) or a uniqueness conflict (`7`) is still reported before any omitted-field error.
-- **Emptiness is evaluated correctly for multi-value fields.** With the flag off, the historical test is `value == ''`, which in PHP is never true for an array — so a required checkbox or multi-select submitted as an empty array (`CustomField7[]` with nothing selected) passes validation and the subscriber is created with the field blank. With `EnforceRequiredFields=true` a submitted value counts as missing when it is an array with no non-empty member (`[]`, `[""]`, `[" "]`) **or** a scalar that is empty once trimmed (`""`, `" "`). A submitted `"0"` is always a real value and is never treated as empty.
 - Only the **first** list in a comma-separated `ListID` is validated. Subsequent lists never receive custom-field values from this endpoint and are not checked.
 
 `EnforceRequiredFields` accepts the usual boolean spellings — `true`, `1`, `"1"`, `"true"`, `"yes"`, `"on"`. Anything else is treated as false. No new error codes are introduced: omitted required fields reuse `ErrorCode 6` with the same `ErrorCustomFieldID` / `ErrorCustomFieldTitle` keys the present-but-empty case already returns.
+:::
+
+::: warning Empty values for a required field
+<Badge type="warning" text="Changed in v6.0.1" /> A submitted required custom field is missing when its value is an array with no non-empty member (`[]`, `[""]`, `[" "]`, or an unselected Date field's `["", "", ""]`) or a scalar that is empty once trimmed (`""`, `" "`, a tab or a newline). The request then returns `ErrorCode 6` with `ErrorCustomFieldID` / `ErrorCustomFieldTitle` and no subscriber is created. A submitted `"0"` is a real value and is never treated as missing.
+
+This applies with or without `EnforceRequiredFields`. Before v6.0.1 it applied only with `EnforceRequiredFields=true`, and without it an empty array or a whitespace-only value was accepted and stored blank. See [API Behavior Changes in v6.0.1](/v6.0.1/api-reference/behavior-changes#required-custom-fields-reject-empty-values).
+
+The public signup form (`subscribe.php`) calls this endpoint, so a visitor who leaves a required Date field unselected or answers a required text field with spaces only now gets the required-field error.
 :::
 
 ::: code-group
@@ -1339,7 +1346,7 @@ curl -X POST https://example.com/api.php \
 | UnsubscriptionDate | String | No | Date for unsubscription (Y-m-d H:i:s) |
 | BounceType | String | No      | Bounce type: Not Bounced, Soft, Hard  |
 | Fields    | Object | No       | Custom field values (CustomFieldID: value). Keys are matched **case-insensitively** — see the note below. |
-| EnforceRequiredFields | Boolean | No | <Badge type="tip" text="New in v5.9.3" /> Opt in to the corrected custom-field checks. When `true`, a required multi-value field submitted as an **empty array** (`[]`, `[""]`, or an unfilled Date field's `["", "", ""]`) is rejected with `ErrorCode 8` instead of being accepted and stored blank, and the validation and uniqueness checks are evaluated against the submitted value. Defaults to `false`, which preserves historical behaviour. Same flag name and semantics as `subscriber.subscribe` and `subscriber.create`. See the warning below. |
+| EnforceRequiredFields | Boolean | No | <Badge type="tip" text="New in v5.9.3" /> Opt in to the corrected validation and uniqueness checks: when `true`, they are evaluated against the submitted value on their own, and `IgnoreAllOtherCustomFieldsExceptGivenOnes` filters on the keys of `Fields`. Defaults to `false`, which preserves historical behaviour for those checks. <Badge type="warning" text="Changed in v6.0.1" /> A required field submitted empty (`[]`, `[""]`, `["", "", ""]`, whitespace only) is rejected with `ErrorCode 8` whatever this flag says. Same flag name as `subscriber.subscribe` and `subscriber.create`. See the warning below. |
 | IgnoreAllOtherCustomFieldsExceptGivenOnes | Boolean | No | Only update specified fields (default: false) |
 | TriggerEvents | Boolean | No   | Trigger journey events (default: true) |
 | SMSPhoneNumber | String | No | <Badge type="tip" text="New in v6.0.0" /> New mobile number for a phone-only contact. Changing it re-derives the contact's address and rewrites the list's mobile phone custom field together, so the two never disagree. Moving a contact onto a number another contact on the list already holds is refused (`8006`). The number is normalized to E.164 and the contact's address is derived from it as `<digits>@sms.invalid`, a domain RFC 2606 reserves so it can never receive email. Supplying both this and `EmailAddress` is an error (`8007`), and supplying a raw `@sms.invalid` address as `EmailAddress` is refused (`8001`). |
@@ -1359,8 +1366,9 @@ A phone-only contact is never sent email. Its address reads as suppressed everyw
 :::
 
 ::: warning What `EnforceRequiredFields` changes
-The key-casing fix is applied so that **no request that succeeded before can start failing**: with `EnforceRequiredFields` absent or false, a custom field is only rejected when the corrected check **and** the historical check both reject it. In practice that means, by default:
+The key-casing fix is applied so that **no request that succeeded before can start failing** (the v6.0.1 required-field emptiness test in the first bullet is the one exception): with `EnforceRequiredFields` absent or false, a validation or uniqueness rejection requires the corrected check **and** the historical check to agree. In practice that means, by default:
 
+- <Badge type="warning" text="Changed in v6.0.1" /> a **required** field submitted empty is rejected with `ErrorCode 8`, using the same test as `EnforceRequiredFields=true` (see the paragraph on missing values below). Before v6.0.1 an empty array or a whitespace-only value was accepted and stored blank by default. Exception: with `IgnoreAllOtherCustomFieldsExceptGivenOnes=true` and this flag off, the historical filter below skips almost every field, so the empty value is still accepted;
 - a **required** field you submit is now accepted (previously `ErrorCode 8` regardless of what you sent);
 - a value now seen to be **valid** is no longer rejected — e.g. a real URL in a `URL`-validated field previously failed with *"Custom field value is not an URL address"*;
 - a value now seen to be **unique** is no longer rejected — previously a genuinely unique value could fail with `ErrorCode 9` because the empty lookup collided with another subscriber's empty value;
@@ -1368,12 +1376,11 @@ The key-casing fix is applied so that **no request that succeeded before can sta
 
 Set `EnforceRequiredFields=true` to apply the corrected checks on their own, which additionally:
 
-- rejects a required multi-value field submitted as an empty array (`ErrorCode 8`);
 - rejects a value that duplicates another subscriber's value in an `IsUnique` field (`ErrorCode 9`);
 - rejects a value that fails the field's `ValidationMethod` (`ErrorCode 10`);
 - makes `IgnoreAllOtherCustomFieldsExceptGivenOnes` filter on the **keys** present in `Fields` rather than on its values, so the fields you *did* submit are actually checked. With the flag off, that filter continues to skip effectively every field.
 
-With the flag on, a submitted value counts as missing when it is an array with no non-empty member — `[]`, `[""]`, `[" "]`, `["", "", ""]`, evaluated recursively so the positional Date `(d, m, Y)` and Time `(H, i)` arrays are handled — or a scalar that is empty once trimmed. A submitted `"0"` is always a real value and is never treated as missing, with the flag on or off.
+A required field counts as missing, with the flag on or off, when its value is an array with no non-empty member (`[]`, `[""]`, `[" "]`, `["", "", ""]`, evaluated recursively so the positional Date `(d, m, Y)` and Time `(H, i)` arrays are handled), a scalar that is empty once trimmed, or absent from `Fields`. A submitted `"0"` is always a real value and is never treated as missing. A request that sends `Fields` as a plain string instead of an object is treated as submitting no custom fields, so a list with a required field answers `ErrorCode 8`.
 
 No new error codes are introduced. Two consequences worth calling out:
 
