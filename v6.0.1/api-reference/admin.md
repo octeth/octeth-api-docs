@@ -2453,6 +2453,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 adminid: Missing required parameter adminid
 2: Admin ID not found (invalid reset link)
+3: The new password could not be stored (nothing changed, no email sent)
 NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 ```
 
@@ -2852,6 +2853,7 @@ emailaddress: Missing required parameter emailaddress
 8: Admin account is not owned by the authenticated admin
 9: CurrentPassword is required when changing the password (only when ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD is on)
 10: CurrentPassword is incorrect
+11: The password could not be changed (nothing updated, retry)
 NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 ```
 
@@ -2870,6 +2872,8 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 Ends the admin session behind the call, so a client that created a session with `admin.login` can
 invalidate it. Pass the `SessionID` to log out. With an `AdminAPIKey` call there is no persistent session
 to end and the command succeeds as a no-op.
+
+<Badge type="tip" text="Changed in v6.0.1" /> When the call carries the admin "remember me" cookie, that remembered browser is also revoked on the server, so a copy of the cookie stops working too. The success response is unchanged. If the server-side revoke fails, the session and the cookie are still ended, the failure is logged at ERROR, and the call returns `Success` `false` with `ErrorCode` `1`. Revoke the browser from **Settings > Security** in that case.
 
 **Request Body Parameters:**
 
@@ -2908,6 +2912,7 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
+1: The session has ended, but the remember-me token could not be revoked on the server
 99998: Authentication failure or session expired
 ```
 
@@ -3483,6 +3488,7 @@ curl -X POST https://example.com/api.php \
 21: Sub-admin account not found
 22: This admin account cannot be edited (not AccessLimited, e.g. the master admin)
 23: Nothing to update (pass at least one of Name, EmailAddress, Username, Password, Permissions)
+24: The sub-admin account could not be updated (nothing changed, retry)
 NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 ```
 

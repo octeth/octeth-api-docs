@@ -307,7 +307,7 @@ Omitted parameters are now left unchanged. In earlier versions, a partial `setti
 | FailedWebhookHandlerSettings | Object | No | `{FailThreshold (int >= 1, default 3), DisableForXSeconds (int >= 0, default 3600), CallWebhookURL (URL or empty)}`. Also accepted as a JSON string. |
 | LimitUtilizationWebhook | String | No | `Enabled` or `Disabled`. When the effective value is `Enabled`, at least one `NotifyTransitions` flag must be true (the request value, else the stored one) |
 | LimitUtilizationWebhookSettings | Object | No | `{WebhookURL (URL or empty), NotifyTransitions{OKToWarning, WarningToExceeded, OKToExceeded, ExceededToWarning, WarningToOK, ExceededToOK}}`; flags accept true/false, 1/0, "true"/"false"; missing flags are false. Also accepted as a JSON string. |
-| PreventUserLoginFromAlienIPs | Boolean | No | `true` stores the flag, `false` removes it (the stored representation the Security screen uses) |
+| PreventUserLoginFromAlienIPs | Boolean | No | `true` stores the flag, `false` removes it (the stored representation the Security screen uses). While set and `ADMIN_ALLOWED_IP` is not empty, every user-area page refuses an address outside `ADMIN_ALLOWED_IP` and signs the user out; loopback is exempt. API calls are not affected. |
 | Stripo_PluginId | String | No | Stripo plugin id. When the effective plugin id / secret key pair is non-empty (request value, else stored), the pair is verified live against Stripo before saving |
 | Stripo_SecretKey | String | No | Stripo secret key (see above) |
 | Stripo_APIKey | String | No | Stripo per-account API key list as a JSON-encoded STRING (a nested object is refused, because request keys are lowercased). Must be valid JSON and must fit the storage column (issue #1311). Empty clears. |

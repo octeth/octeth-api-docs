@@ -991,6 +991,10 @@ export default defineConfig({
                                 {text: 'Suppression Lists', link: '/v6.0.1/using-octeth/email-deliverability/suppression-lists'},
                                 {text: 'SPF/DKIM/DMARC', link: '/v6.0.1/using-octeth/email-deliverability/spf-dkim-dmarc'}
                             ],
+                        }, {
+                            text: 'Administration', items: [
+                                {text: 'Security Settings', link: '/v6.0.1/using-octeth/administration/security'}
+                            ],
                         }
                     ]
                 },

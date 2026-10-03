@@ -333,6 +333,20 @@ The credit is still kept when a delivery server took the connection and refused 
 
 An integration that reconciles `AvailableCredits` from `user.get` against the number of failed emails will see the balance go back up by one for each email in the first group. The queue row's `Status` (`Failed`) and `StatusMessage` are unchanged. Campaign and email gateway credits are not affected.
 
+### Administrator sign-in
+
+#### Existing "remember me" cookies are signed out once
+
+The administrator "remember me" cookie is now a random token that Octeth stores (as a hash) and can revoke, instead of a value derived from the account. A cookie issued before the upgrade is not recognised: the browser shows the admin login form once, the old cookie is cleared, and ticking **Remember me** again issues a new one. Nothing errors.
+
+Remembered browsers are listed under **Settings > Security**, where each one can be revoked, or all of them at once. See [Security Settings](/v6.0.1/using-octeth/administration/security#remembered-browsers). `admin.logout` now also revokes the remember-me cookie sent with the call. Its success response is unchanged. When that revoke fails, the session still ends and the call returns `Success` `false` with `ErrorCode` `1`.
+
+A password change now revokes the administrator's remembered browsers in the same transaction. When the two cannot be committed together, nothing changes and the call fails with a new error code: `11` from `admin.update`, `3` from `admin.passwordreset` (no email is sent) and `24` from `admin.subadmin.update`. Their success responses are unchanged.
+
+#### The user-area IP restriction applies to signed-in users
+
+With **Prevent user login from IP addresses not in the list** ticked and Authorized IP Addresses filled in, a signed-in user who opens a user-area page from an address outside the list is signed out. Before v6.0.1 only the login page checked the address. API calls are not affected.
+
 ## Upgrade checklist
 
 1. **If an integration sends through `emailgateway.sendemail`, handle HTTP `403` with error code `12`** for a disabled account. Expect queued and scheduled gateway email to end as `Failed` with a `Sending blocked:` message when an account is disabled or a sender domain stops being active, and resend it after re-enabling if it is still wanted.
@@ -360,6 +374,8 @@ An integration that reconciles `AvailableCredits` from `user.get` against the nu
 23. **If you call `subscriber.subscribe` or `subscriber.update`, or run signup forms, with required custom fields, send a real value for every required field you submit.** An empty array, an unselected Date field and a whitespace-only value are now rejected (`ErrorCode` `6` from `subscriber.subscribe`, `8` from `subscriber.update`) with or without `EnforceRequiredFields` (on `subscriber.update`, unless `IgnoreAllOtherCustomFieldsExceptGivenOnes=true` is sent without `EnforceRequiredFields`). Fill the field in the integration or form, or set the field to not required. See [Required custom fields reject empty values](#required-custom-fields-reject-empty-values).
 24. **If email content, a list web service integration or an archive template points at an internal host, move it to a public URL.** Remote content and integration URLs that resolve to a private, loopback, link-local or carrier-grade NAT address are now refused. See [URLs supplied by an account holder refuse internal destinations](#urls-supplied-by-an-account-holder-refuse-internal-destinations).
 25. **If a journey Webhook action, an email gateway webhook or `STUCK_CAMPAIGN_WEBHOOK_URL` points at an internal host, move it to a publicly reachable endpoint.** The delivery worker now refuses internal destinations at send time. See [Webhook delivery refuses internal destinations](#webhook-delivery-refuses-internal-destinations).
+26. **If Prevent user login from IP addresses not in the list is ticked, confirm that the address Octeth sees for your users is their real address before upgrading** (check `TRUSTED_PROXIES` behind a proxy), because signed-in users outside the list are now signed out. See [The user-area IP restriction applies to signed-in users](#the-user-area-ip-restriction-applies-to-signed-in-users).
+27. **If an integration changes administrator passwords, handle the new failure codes as "nothing changed, retry"**: `11` from `admin.update`, `3` from `admin.passwordreset` and `24` from `admin.subadmin.update`. If it calls `admin.logout`, treat `ErrorCode` `1` as "signed out, but the remembered browser was not revoked" and revoke it from **Settings > Security**.
 
 ---
 
