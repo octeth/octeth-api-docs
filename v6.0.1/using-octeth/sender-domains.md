@@ -75,6 +75,8 @@ Each sender domain has a status that determines whether it can be used for sendi
 | **SUSPENDED** | Red exclamation | The domain has been suspended and cannot be used for sending. |
 | **DELETED** | Grey trash icon | The domain has been soft-deleted and cannot be used for sending. |
 
+An enabled domain can also show a yellow **TLS WARNING** next to its status. That is not a status of its own: the domain stays enabled and keeps sending. It means the domain's tracking host did not complete a secure (https) connection when Octeth last checked it. See [Tracking Host TLS Warning](#tracking-host-tls-warning).
+
 ## Creating a Sender Domain
 
 To create a new sender domain:
@@ -161,6 +163,8 @@ If some records show errors, double-check the record type, host, and value at yo
 ### Automatic Background Verification
 
 Octeth periodically re-verifies sender domains in the background. This ensures that domains remain properly configured over time. If a domain fails verification three consecutive times, its status reverts to **Approval Pending** and it can no longer be used for sending until the DNS records are corrected and re-verified.
+
+The same background job also checks that each enabled domain's tracking host serves a valid https certificate. The first check runs a couple of minutes after a domain is verified, then it repeats on the regular re-verification schedule. A failing check is confirmed a second time before it is reported, and it never changes the domain's status. <Badge type="tip" text="New in v6.0.1" />
 
 ## Domain Options
 
@@ -599,6 +603,36 @@ Only sender domains with **Enabled** status appear in the campaign From Email dr
 ### Changed Subdomain Settings and Domain Became Pending
 
 Changing the subdomain, tracking subdomain, or tracking prefix settings regenerates all DNS records and resets the domain to **Approval Pending**. Update the DNS records at your registrar with the new values shown on the edit page, then verify again.
+
+### Tracking Host TLS Warning
+
+<Badge type="tip" text="New in v6.0.1" />
+
+Click tracking, open tracking and unsubscribe links in your emails point at your domain's tracking host (for example `track-sl.example.com`) over https. Octeth obtains a certificate for that host automatically once the domain is verified. If the certificate cannot be issued or stops being valid, those links fail to open, and a recipient who cannot unsubscribe is more likely to mark your email as spam.
+
+When the check fails, the sender domain list shows a yellow **TLS WARNING** next to the domain, and the domain's edit screen explains what was found:
+
+| Message | What it usually means |
+|---|---|
+| The tracking host name did not resolve. | The tracking host DNS record was removed or mistyped. |
+| The tracking host resolves to a private or reserved address. | The DNS record points to an internal address that recipients cannot reach. |
+| Nothing answered on port 443 of the tracking host. | The DNS record points somewhere other than Octeth, or a firewall blocks https. |
+| The TLS handshake failed. | The certificate has not been issued yet, often because the host is behind a CDN or proxy. |
+| The certificate is for a different name. | The host is served by another system with its own certificate, usually a CDN. |
+| The certificate has expired, or is not valid yet. | Automatic renewal is failing for this host, or the server clock is wrong. |
+| The certificate is self-signed or not issued by a trusted authority. | Something other than Octeth is answering for the host. |
+
+To fix it:
+
+1. Check that the tracking host DNS record still matches the value shown on the domain's edit screen.
+2. If you use Cloudflare or another CDN, set the tracking host record to **DNS only** (not proxied). A proxied record stops Octeth from obtaining a certificate.
+3. Wait for the next check. The warning clears on its own once a check succeeds. You do not need to re-verify the domain.
+
+::: warning
+The check runs from the Octeth server. Your recipients' networks can occasionally see a different result, for example when a CDN treats the server differently from the public. Treat the warning as a strong signal to check the host, not as proof that every recipient is affected.
+:::
+
+The warning never disables the domain or changes where your links point. Your administrator sees the same information in the system health check.
 
 ## Related Features
 

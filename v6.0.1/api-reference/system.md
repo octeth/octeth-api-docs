@@ -99,6 +99,7 @@ curl -X GET "https://example.com/api.php?Command=system.health.check&adminapikey
     "Haproxy": "OK",
     "ClientIPResolution": "OK",
     "ListUnsubscribeOneClick": "OK",
+    "TrackingDomainTLS": "OK",
     "Cron": "OK",
     "Supervisor": "OK",
     "SendEngine": "OK",
@@ -125,6 +126,7 @@ curl -X GET "https://example.com/api.php?Command=system.health.check&adminapikey
     "Haproxy": "OK",
     "ClientIPResolution": "WARNING: this request carried X-Forwarded-For (\"203.0.113.7\") but the client address resolved to 192.168.99.100, which is inside INTERNAL_PROXY_NETWORKS. The forwarded chain is being discarded ...",
     "ListUnsubscribeOneClick": "WARNING: this install is not advertising RFC 8058 one-click unsubscribe on every path. APP_URL is \"http://mail.example.com/\", which is not https, so campaign and autoresponder messages emit an http: List-Unsubscribe URI and their List-Unsubscribe-Post header is SUPPRESSED ...",
+    "TrackingDomainTLS": "WARNING: 2 enabled sender domain(s) have a tracking host that did not complete a TLS handshake when probed from this server: example.com (handshake_failed), example.org (expired). Their click, open and List-Unsubscribe links may not work over https. Check the certificate Caddy issued for each tracking host; the probe repeats on the hourly re-verification sweep.",
     "Cron": "App container cron not executing (last run: 120 seconds ago)",
     "Supervisor": "# campaign_delivery_worker: STOPPED # journey_worker: FATAL ",
     "SendEngine": "No send engine containers running",
@@ -176,6 +178,7 @@ The endpoint performs comprehensive health checks on the following components:
 - **Haproxy**: Load balancer connectivity
 - **ClientIPResolution** <Badge type="tip" text="New in v6.0.0" />: Whether the real visitor IP is being resolved, or a forwarded chain is being discarded and a container address recorded instead
 - **ListUnsubscribeOneClick** <Badge type="tip" text="New in v6.0.0" />: Whether this install can advertise RFC 8058 one-click unsubscribe, which requires https from both `APP_URL` and `TRACKING_URL_PROTOCOL`
+- **TrackingDomainTLS** <Badge type="tip" text="New in v6.0.1" />: Whether every enabled sender domain's tracking host completed a TLS handshake at its last out-of-band probe. A warning only, it never makes the endpoint fail
 - **Cron**: App and system container cron job execution (heartbeat checks)
 - **Supervisor**: Process manager status for all managed processes
 - **SendEngine**: Send engine container discovery and supervisor process status
@@ -234,7 +237,33 @@ That suppression is invisible from outside the install: mail still delivers, rec
 
 It reads configuration rather than the current request, so it reports the same result on every scrape.
 
-Note a custom tracking domain takes its certificate from Caddy on-demand TLS. If issuance fails for an individual domain, the advertised URI is an https URI whose TLS handshake fails, which mailbox providers treat worse than an http one. That cannot be detected at send time and is not covered by this check, so confirm a new tracking domain resolves and serves https before sending volume through it. Out-of-band detection is tracked in issue #2972.
+A custom tracking domain takes its certificate from Caddy on-demand TLS, and an https URI whose TLS handshake fails is worse than an http one. That case is reported by the separate [`TrackingDomainTLS`](#the-trackingdomaintls-check) check.
+
+### The `TrackingDomainTLS` check
+
+<Badge type="tip" text="New in v6.0.1" />
+
+Each sender domain's tracking host gets its certificate from Caddy on-demand TLS. If issuance fails for one domain (the customer's DNS record was repointed, the host was put behind a CDN, an ACME rate limit was hit), every click, open and `List-Unsubscribe` URL in that customer's mail points at an https host whose handshake fails. Mail still delivers and nothing else reports it.
+
+The `sender_domain_verifier` worker probes each enabled sender domain's tracking host out of band: it opens a TLS connection to port 443 with certificate and host name verification, and stores the outcome on the sender domain. It runs on the hourly re-verification sweep (`SENDER_DOMAIN_REVERIFY_STALENESS_HOURS` decides how often each domain is probed, and probes share the `SENDER_DOMAIN_REVERIFY_BATCH_SIZE` cap with DNS re-verification) and once about two minutes after a domain is verified. A failure is stored only when a confirmation probe about two minutes later fails too.
+
+This check reads those stored results. It never probes during the request, so it is cheap to scrape. It names up to 20 affected domains with the reason in parentheses, then a count of the rest:
+
+| Reason | Meaning |
+|---|---|
+| `dns_failed` | The tracking host does not resolve |
+| `blocked_address` | It resolves to a private or reserved address, so it was not probed |
+| `unreachable` | No TCP connection on port 443 |
+| `handshake_failed` | Port 443 answered but the handshake failed, typically no certificate issued |
+| `name_mismatch` | The certificate does not cover the tracking host |
+| `expired` / `not_yet_valid` | The certificate is outside its validity period |
+| `self_signed` / `untrusted` | The certificate does not chain to a trusted authority |
+
+The value is a warning and never sets the overall result to failed. The probe runs from the Octeth server, and a recipient's network can see a different answer, for example when a CDN blocks the origin's address. The same per-domain warning, with the full error text, is shown to the domain's owner on the sender domain screen.
+
+Only hosts listed in the domain's DNS record template are probed, because only those are used by the send paths. The default sender domain is never probed. A failing probe never disables a domain or changes where its links point.
+
+If the check reports that the results could not be read, the database migration that adds the probe columns has not run yet.
 
 ### The `WebsiteEventRouting` check
 
