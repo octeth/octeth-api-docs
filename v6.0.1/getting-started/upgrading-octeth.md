@@ -172,6 +172,17 @@ Options can be combined as needed:
 /opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v6.0.1.zip --skip-backup --debug
 ```
 
+### Exit Codes
+
+Scripts and automation can rely on these exit codes:
+
+| Code | Meaning |
+|---|---|
+| `0` | The upgrade finished, the dry run finished, or the upgrade was cancelled by answering `n` at a prompt |
+| `1` | The upgrade failed (validation, pre-flight checks or a later step) |
+| `3` | The upgrade stopped before Phase 2 because it ran without `--yes` and could not ask for confirmation: input ended at a prompt, or it would add settings that change how the installation behaves while input is not a terminal. No service was stopped and no application or env file was written, though the upgrade runner in `cli/` may already have been refreshed (backup in `data/backups/cli.bak.*`). Re-run with `--yes`, or add the listed settings to your env file first. See [The upgrade asks before turning on new settings](#the-upgrade-asks-before-turning-on-new-settings) |
+| `130` | The upgrade was interrupted (Ctrl+C), or the confirmation for new settings (asked later, at a terminal) got no answer, and it rolled back |
+
 ## Pre-Flight Checks
 
 Before starting the upgrade, the command automatically verifies:
@@ -252,7 +263,7 @@ When the upgrade adds a setting that your `.oempro_env` does not have yet, it wr
 
 From v6.0.1, the upgrade lists any of these it adds in a separate warning block, with the value it writes, what changes and how to keep it off. `--dry-run` shows the same block before anything is written.
 
-Without `--yes`, the upgrade then stops at the environment merge step, before any container restarts, and asks:
+In an interactive run without `--yes`, the upgrade then stops at the environment merge step, before any container restarts, and asks:
 
 ```text
   ▸ Continue with these values? (y/N):
@@ -261,8 +272,19 @@ Without `--yes`, the upgrade then stops at the environment merge step, before an
 - Type `y` to continue with the values shown.
 - Any other answer pauses the upgrade. Edit `.oempro_env`, set any of the listed keys to the value you want, then press Enter to continue with the edited file, or press Ctrl+C to stop and roll back.
 
+Without `--yes`, an upgrade whose input is not a terminal (a scheduled job, a CI pipeline, an AI agent, or a run with input piped in) cannot show you this prompt. If the upgrade would add any of these settings, it stops before Phase 2 and exits with code `3`, even when the earlier prompts were answered (including `yes | ./cli/octeth.sh upgrade ...`). The message lists each setting, the value it would be given and the env file it would be added to.
+
 ::: warning Unattended upgrades must pass --yes
-If this prompt gets no answer because input is closed (for example a scheduled job, or a run with input piped from a file), the upgrade treats it like Ctrl+C and rolls back. Pass `--yes` (alias `--non-interactive`) to accept the listed values without a prompt. `--yes` also confirms the upgrade summary and the active-campaign check.
+A run without `--yes` whose input is not a terminal also exits with code `3` when input ends at a prompt asked before any service is stopped: "Proceed with upgrade?" or the active-campaign check. Nobody can answer, so the run is treated as non-interactive rather than cancelled. An explicit `n` (or an empty answer) still cancels with exit code `0`.
+
+In every exit `3` case, no service is stopped, no application file is synced and no env file or database table is written. If the upgrade had already refreshed its own runner (`cli/`) from the new release, the new-settings message says so and names the backup of the previous `cli/` under `data/backups/cli.bak.<version>.<timestamp>/`. The next run uses the refreshed runner, which is the intended state.
+
+Choose one of the remedies and run the same command again:
+
+- Add `--yes` (alias `--non-interactive`) to accept the prompts and the listed values. `--yes` confirms the upgrade summary, the active-campaign check and the new settings.
+- For new settings, add each one you want to keep off to the env file named next to it, as described below.
+
+`--dry-run` in the same situation lists the settings, states that the real run would stop before Phase 2 with exit code `3`, and exits `0`.
 :::
 
 To keep a setting off without answering the prompt, add it to `.oempro_env` as `false` before upgrading, for example `ADMIN_API_ENFORCE_ALLOWED_IP=false`. The upgrade never changes a setting that is already there, and a setting you added is not listed. You can also change a value after the upgrade and run `/opt/octeth/cli/octeth.sh docker:up` to recreate the containers.
