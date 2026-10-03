@@ -977,9 +977,7 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     UI_BRAND_MAIL_FOOTER=
     ```
 
-    Leaving a URL or an address empty is correct rather than incomplete: the interface hides the
-    link instead of pointing it somewhere wrong. `UI_BRAND_LEGAL_NAME` falls back to
-    `UI_BRAND_NAME` when empty.
+    Leaving a URL or an address empty is correct rather than incomplete: the interface hides the link instead of pointing it somewhere wrong. That includes "Contact support" on the password reset page, which is hidden while `UI_BRAND_SUPPORT_EMAIL` is empty. `UI_BRAND_LEGAL_NAME` falls back to `UI_BRAND_NAME` when empty.
 
     Quote any value containing a space or a `#`, for example `UI_BRAND_NAME="Acme Mail"` and
     `UI_BRAND_TERMS_URL="https://acmemail.com/legal#terms"`. An unquoted space stops Octeth reading
@@ -988,6 +986,24 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     reason: every one of them starts with a `#`. Use one pair of quotes, not two. If you nested
     quotes on an earlier version to work around a brand value that stopped the interface starting,
     undo that: from v6.0.0 the inner double quotes are kept as part of the text (issue #2904).
+
+    **Whitelabel: signed-out page copy**
+
+    ```bash
+    UI_BRAND_STATUS_URL=
+    UI_BRAND_TAGLINE=
+    UI_BRAND_TRUST_STATS=
+    ```
+
+    Optional copy for the signed-out pages: sign in, sign up, password reset, two-factor and the error pages. Each item is hidden while its value is empty, which is the default, so a stock install shows no tagline, no figures and no status link. The brand panel that carries the tagline and the figures is shown only on screens at least 900px wide.
+
+    - `UI_BRAND_STATUS_URL`: your status page, linked as "Status" in the footer of every signed-out page, next to Privacy and Terms.
+    - `UI_BRAND_TAGLINE`: one short line at the top of the brand panel, for example `UI_BRAND_TAGLINE="Email and SMS for growing teams"`.
+    - `UI_BRAND_TRUST_STATS`: figures at the bottom of the sign-in brand panel, written as `value|label` pairs separated by semicolons, for example `UI_BRAND_TRUST_STATS="10M+|Emails sent per month;99.9%|Uptime"`. An entry missing its value or its label is skipped. Show only figures you can back.
+
+    Quote each of these when the value contains a space or a `#`, as above.
+
+    From v6.0.1 the signed-out pages no longer ship their own copy: the "Trusted by" figures, the fixed taglines, the sign-up benefit list, "Start a free trial" (now "Create an account"), the "14-day free trial" heading and the no-credit-card line are gone. The Privacy, Terms and Status footer links and the sign-up consent links appear only when their URL is set.
 
     **Whitelabel: logo and icon**
 
