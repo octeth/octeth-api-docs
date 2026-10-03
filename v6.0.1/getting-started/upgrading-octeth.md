@@ -267,6 +267,21 @@ If this prompt gets no answer because input is closed (for example a scheduled j
 
 To keep a setting off without answering the prompt, add it to `.oempro_env` as `false` before upgrading, for example `ADMIN_API_ENFORCE_ALLOWED_IP=false`. The upgrade never changes a setting that is already there, and a setting you added is not listed. You can also change a value after the upgrade and run `/opt/octeth/cli/octeth.sh docker:up` to recreate the containers.
 
+### Workers and cron stay stopped until the migrations finish
+
+From v6.0.1, the upgrade holds cron and the supervisord workers from the moment it recreates the containers (step 7) until the database migrations are done. Before v6.0.1, the recreated containers started their workers and cron jobs straight away, so new code could run against the old database schema while the migrations were still running.
+
+The hold is the file `data/.upgrade_in_progress`. The upgrade writes it before recreating the containers, and while it exists the containers start without cron and supervisord. The upgrade removes it in step 11, which then starts the workers and cron. A failed upgrade that rolls back, and an upgrade you stop with Ctrl+C, also remove it, so neither leaves the workers stopped. If the upgrade cannot write the file, it does not recreate the containers at all.
+
+If an upgrade is killed outright (for example the server reboots or the process receives `SIGKILL`), the file can remain and the workers and cron stay stopped. `./cli/octeth.sh docker:up` warns when the file exists. If no upgrade is running, remove the file and recreate the containers:
+
+```bash
+rm /opt/octeth/data/.upgrade_in_progress
+/opt/octeth/cli/octeth.sh docker:up
+```
+
+Held containers start their workers and cron within a few seconds of the file being removed, and `docker:up` brings the containers back on their normal startup configuration. An upgrade killed this way stopped part way, so read its log in `data/logs/` before relying on the installation.
+
 ## Post-Upgrade Verification
 
 After the upgrade completes, verify everything is working:
