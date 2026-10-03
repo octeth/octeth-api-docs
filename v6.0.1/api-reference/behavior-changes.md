@@ -234,6 +234,10 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 
 `subscribers.search` with `OrderField=CustomField<ID>` for an account-level global custom field (created with `IsGlobal=Yes` by a user, not by the administrator) now orders by `EmailAddress` and returns the page. It was the most common way to hit the empty-page answer above. A custom field on the searched list and a system-wide global field still sort as before.
 
+#### `subscribers.delete` with `Suppressed=true` deletes only your own suppression entries
+
+`subscribers.delete` with `Suppressed=true` removes suppression entries by `SuppressionID`. Before v6.0.1, with `SubscriberListID=0` (the account-level suppression list) it removed any account-level entry with that id, including another account's, and the system-wide entries that hard bounces and spam complaints create. From v6.0.1 it removes only entries that belong to the calling account, on its own lists or its account-level list. An id that belongs to another account, or to a system-wide entry, is skipped the same way as an id that does not exist, and the response is unchanged. The same applies to deleting entries from the suppression list pages in the user area. System-wide entries can be removed from the administrator area only.
+
 ### Journeys
 
 #### Journey action `OrderNo` is numbered across the whole journey
