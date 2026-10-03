@@ -86,19 +86,25 @@ Open `.oempro_env` and set:
 UI_ENABLED=true
 ```
 
-### Step 4: Recreate the containers
+### Step 4: Recreate the containers and restart the interface
 
 ```bash
 ./cli/octeth.sh docker:up
+docker restart oempro_ui
 ```
 
 ::: warning
-Use `docker:up`, not a plain container restart. The `UI_ENABLED` flag is read by two
-different containers: the interface itself, which reads `.oempro_env` from disk on every
-start, and the reverse proxy, which reads it from its own environment and only picks up a
-change when the container is recreated. A plain restart updates one and not the other, and
-the result is a silent one: the proxy sends people to a container that answers "not found"
-for every page.
+Run both commands. The `UI_ENABLED` flag is read by two different containers. The reverse
+proxy picks up a change only when it is recreated, which `docker:up` does. The interface
+decides once, when it starts, whether to serve pages, and in this version `docker:up` does
+not recreate it, so it keeps answering "not found" for every page until it is restarted.
+
+The first start with the interface on installs its dependencies, which takes a few
+minutes. Wait for this line before signing in:
+
+```bash
+docker logs -f oempro_ui 2>&1 | grep -m1 "Running migrations"
+```
 :::
 
 [[SCREENSHOT: A terminal showing ./cli/octeth.sh docker:up completing, with the oempro_ui container listed as healthy]]
@@ -143,7 +149,8 @@ proxy configuration.
 
 ## Turning it off again
 
-Set `UI_ENABLED=false` in `.oempro_env` and run `./cli/octeth.sh docker:up`. The `/user/`
+Set `UI_ENABLED=false` in `.oempro_env`, run `./cli/octeth.sh docker:up`, then run
+`docker restart oempro_ui`. The `/user/`
 and `/ui/` paths go back to the classic application, and nothing is lost. Your customers'
 data was never stored in the new interface in the first place.
 

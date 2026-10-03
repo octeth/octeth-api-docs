@@ -14,25 +14,47 @@ turns out to be the cause.
    grep '^UI_ENABLED' .oempro_env
    ```
 
-2. **Recreate the containers, do not restart them.**
+2. **Recreate the containers.**
 
    ```bash
    ./cli/octeth.sh docker:up
    ```
 
-   ::: warning
-   This is the single most common cause. `UI_ENABLED` is read by two containers: the
-   interface, which reads the file from disk on every start, and the reverse proxy, which
-   reads it from its own environment and only picks up a change when it is recreated. A plain
-   restart updates one and not the other, and the symptom is exactly this: the proxy sends
-   people to a container that answers "not found" for every page.
-   :::
+   `docker:up` recreates the reverse proxy and the interface whenever `UI_ENABLED` changes.
+   If the interface still answers "not found" afterwards, `docker ps --filter name=oempro_ui`
+   shows it as `unhealthy`; see the next section.
 
 3. **Check the container is running.**
 
    ```bash
    docker ps --filter name=oempro_ui
    ```
+
+## The interface container is unhealthy
+
+With `UI_ENABLED=true`, the `oempro_ui` container reports `healthy` only when the
+interface answers its health page. `unhealthy` means it is running but serving "not found"
+for every page. `./cli/octeth.sh health:check` reports the same problem under
+`NewUserInterface`.
+
+1. **Read why it is not serving.**
+
+   ```bash
+   docker logs oempro_ui 2>&1 | grep -E "UI_ENABLED is not true|ERROR" | head -20
+   ```
+
+2. **`UI_ENABLED is not true`** means the container started before the flag was set.
+   Run `./cli/octeth.sh docker:up`, or `docker restart oempro_ui`.
+
+3. **An `ERROR` about `ui/.env`** means a value in `.oempro_env` cannot be read by the
+   interface. The log names the setting without printing its value. Fix it, then:
+
+   ```bash
+   docker restart oempro_ui
+   ```
+
+The first start with the interface on installs its dependencies, so the container can
+take a few minutes to become healthy. That is expected.
 
 ## Every page shows a server error
 

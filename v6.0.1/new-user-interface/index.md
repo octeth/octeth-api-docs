@@ -57,6 +57,11 @@ The new interface keeps its own MySQL database on the same server. Create it onc
 ./cli/octeth.sh ui:db-setup
 ```
 
+If you run `ui:db-setup` after setting `UI_ENABLED=true` while the interface's dependencies
+are not installed yet (for example because it last started with the flag off), the command
+restarts the interface's container first and waits for it to install them. It exits with an
+error, and names the fix, whenever the interface's migrations did not run.
+
 ::: danger
 The interface must never share Octeth's own database. Its automated tests rebuild whatever
 database they are pointed at from scratch, so a shared database can be wiped completely.
@@ -92,14 +97,14 @@ UI_ENABLED=true
 ./cli/octeth.sh docker:up
 ```
 
-::: warning
-Use `docker:up`, not a plain container restart. The `UI_ENABLED` flag is read by two
-different containers: the interface itself, which reads `.oempro_env` from disk on every
-start, and the reverse proxy, which reads it from its own environment and only picks up a
-change when the container is recreated. A plain restart updates one and not the other, and
-the result is a silent one: the proxy sends people to a container that answers "not found"
-for every page.
-:::
+`docker:up` recreates both containers that read `UI_ENABLED`: the reverse proxy, and the
+interface itself, which decides when it starts whether to serve pages. You do not need to
+restart anything by hand.
+
+The first start with the interface on installs its dependencies, which takes a few
+minutes. The `oempro_ui` container reports `healthy` once the interface is serving. If it
+reports `unhealthy` instead, see
+[The interface container is unhealthy](./troubleshooting#the-interface-container-is-unhealthy).
 
 [[SCREENSHOT: A terminal showing ./cli/octeth.sh docker:up completing, with the oempro_ui container listed as healthy]]
 

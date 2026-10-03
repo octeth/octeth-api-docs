@@ -121,6 +121,7 @@ curl -X GET "https://example.com/api.php?Command=system.health.check&adminapikey
     "SystemContainer": "OK",
     "Vector": "Timeout after 3 seconds",
     "WebsiteEventRouting": "HAProxy did not route /hello/message to backend_vector (HTTP 503; \"X-Server: oempro_vector\" response header missing). Check that backend_vector has an available server.",
+    "NewUserInterface": "UI_ENABLED is true but the new user interface did not answer /ui/health through HAProxy (HTTP 404). Check: docker logs oempro_ui. If it last started with UI_ENABLED off, run ./cli/octeth.sh docker:up, or docker restart oempro_ui.",
     "Haproxy": "OK",
     "ClientIPResolution": "WARNING: this request carried X-Forwarded-For (\"203.0.113.7\") but the client address resolved to 192.168.99.100, which is inside INTERNAL_PROXY_NETWORKS. The forwarded chain is being discarded ...",
     "ListUnsubscribeOneClick": "WARNING: this install is not advertising RFC 8058 one-click unsubscribe on every path. APP_URL is \"http://mail.example.com/\", which is not https, so campaign and autoresponder messages emit an http: List-Unsubscribe URI and their List-Unsubscribe-Post header is SUPPRESSED ...",
@@ -170,6 +171,7 @@ The endpoint performs comprehensive health checks on the following components:
 - **SystemContainer**: Laravel backend container health (`/system/ping`)
 - **Vector**: Log aggregation service health (probed directly)
 - **WebsiteEventRouting** <Badge type="tip" text="New in v5.9.3" />: The full load-balancer → Vector path used by the public website-event tracker
+- **NewUserInterface** <Badge type="tip" text="New in v6.0.1" />: Whether the new user interface answers through the load balancer. Present only when `UI_ENABLED` is `true`
 
 - **Haproxy**: Load balancer connectivity
 - **ClientIPResolution** <Badge type="tip" text="New in v6.0.0" />: Whether the real visitor IP is being resolved, or a forwarded chain is being discarded and a container address recorded instead
@@ -249,6 +251,21 @@ How it probes:
 - The assertion is the presence of the `X-Server: oempro_vector` **response header**, which only the Vector backend adds. The load balancer's internally generated "no server available" 503 is produced before those backend response rules run and therefore carries no such header. Matching the header rather than the status code proves the response really came from Vector through the intended route.
 
 On failure the check reports the observed HTTP status and states that the `X-Server: oempro_vector` header was missing, pointing the operator at the Vector backend's server availability.
+
+### The `NewUserInterface` check
+
+<Badge type="tip" text="New in v6.0.1" />
+
+This check reports whether the new user interface is actually serving pages. It runs only when `UI_ENABLED` is `true` in `.oempro_env`. With the flag off, neither `Checks` nor `Timings` has a `NewUserInterface` entry, so the response is unchanged for installs that do not use the new interface.
+
+The interface container decides once, when it starts, whether to serve the interface or answer "not found" for every page. Before v6.0.1, turning `UI_ENABLED` on could leave it serving "not found" while the load balancer, recreated with the new flag, sent `/user/` and `/ui/` to it, and nothing reported the problem.
+
+How it probes:
+
+- It issues a **GET** to `http://oempro_haproxy:80/ui/health`, through the load balancer, so one request covers both the routing and the container's state. The request carries the host of `APP_URL` as its `Host` header.
+- It passes only when the response is HTTP `200` **and** carries the `X-Server: oempro_ui` response header. The status matters because the interface container adds that header to its "not found" answers too. The header matters because without the routing rules `/ui/health` falls through to the classic application. When the request is redirected, only the final response's headers count.
+
+On failure the check reports the observed HTTP status, states whether the `X-Server: oempro_ui` header was missing, and names the fix: read `docker logs oempro_ui`, and if the interface last started with `UI_ENABLED` off, run `./cli/octeth.sh docker:up` or `docker restart oempro_ui`. A transport error (for example a timeout after 3 seconds) is reported as the error text. Either way the check counts as a failure of the whole call: the response answers HTTP 503 instead of 200, like any other failed check, and the failure is written to `data/logs/health_check_errors.log`. See [The interface container is unhealthy](/v6.0.1/new-user-interface/troubleshooting#the-interface-container-is-unhealthy).
 
 ## Process PowerMTA Log File
 

@@ -14,18 +14,20 @@ turns out to be the cause.
    grep '^UI_ENABLED' .oempro_env
    ```
 
-2. **Recreate the containers, do not restart them.**
+2. **Recreate the containers, then restart the interface.**
 
    ```bash
    ./cli/octeth.sh docker:up
+   docker restart oempro_ui
    ```
 
    ::: warning
-   This is the single most common cause. `UI_ENABLED` is read by two containers: the
-   interface, which reads the file from disk on every start, and the reverse proxy, which
-   reads it from its own environment and only picks up a change when it is recreated. A plain
-   restart updates one and not the other, and the symptom is exactly this: the proxy sends
-   people to a container that answers "not found" for every page.
+   This is the single most common cause. `UI_ENABLED` is read by two containers. The
+   reverse proxy picks up a change only when it is recreated, which `docker:up` does. The
+   interface decides once, when it starts, whether to serve pages, and in this version
+   `docker:up` leaves it running, so it keeps answering "not found" for every page. The
+   symptom is exactly this: the proxy sends people to a container that answers "not found".
+   `docker logs oempro_ui | grep "UI_ENABLED is not true"` confirms it.
    :::
 
 3. **Check the container is running.**
