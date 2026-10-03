@@ -1275,6 +1275,18 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
 
     Introduced in v6.0.1 (issue #2684).
 
+54. **Journey Worker Fairness**
+
+    ```bash
+    JOURNEY_WORKER_MAX_PER_JOURNEY=10   # Max journey workers busy with the same journey at once, 0 disables (default: 10)
+    ```
+
+    Journey workers used to take the oldest pending entry of any journey, so one journey with a large backlog could occupy every worker. Other journeys stopped progressing until it drained, and a journey full of Decision nodes could saturate the server. Each journey can now use at most this many workers at the same time. Workers above the cap process other journeys, or stay idle when only the capped journey has work, which slows that journey down in exchange for bounded load.
+
+    The cap only matters when you run more journey workers than its value, so the default leaves the standard three-worker setup unchanged. Lower it if you have raised the number of `oempro_journeys_worker` processes and want a single journey to use only part of them. `0` turns the cap off. Accepted range `0`–`1000`.
+
+    Introduced in v6.0.1 (issue #1902).
+
 
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
