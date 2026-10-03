@@ -1608,6 +1608,102 @@ When `IncludeJourneys` is true and the subscriber is enrolled in at least one jo
 
 :::
 
+## Get Subscriber Website Events
+
+<Badge type="tip" text="New in v6.0.1" /> <Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key or user session. Not available to subscriber sessions or admin credentials
+- Required permissions: `Subscribers.Get`
+- Rate limit: 100 requests per 60 seconds (HTTP `429` when exceeded)
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+Returns one page of a subscriber's website events, the events recorded by the list's website event tracker, with a total for pagination. It reads the same events as the `SubscriberWebsiteEvents` field of [Get a Subscriber](#get-a-subscriber), which is limited to the latest 500 events per tracked browser and has no total.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `subscriber.events` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| ListID | Integer | Yes | ID of a list owned by the caller |
+| SubscriberID | Integer | One of the two | Subscriber ID in that list |
+| EmailAddress | String | One of the two | Subscriber email address in that list. Ignored when `SubscriberID` is given |
+| RecordsPerRequest | Integer | No | Events per page, 1 to 100 (default: 25) |
+| RecordsFrom | Integer | No | Zero-based offset, 0 or more (default: 0) |
+| OrderField | String | No | `event_created_at` (default) or `event`. Case-insensitive |
+| OrderType | String | No | `DESC` (default) or `ASC`. Case-insensitive |
+
+A value outside these ranges or lists is rejected with an error code, never replaced with the default. In a JSON request body, `true`, `false` and `null` are invalid for every parameter above and get the same error code as any other invalid value. Native JSON numbers are accepted. An omitted parameter or an empty string takes the default.
+
+Ordering is total: after the requested field, every other stored column of the event follows as a tiebreaker in the same direction, so events that share a second keep one position and paging never skips or repeats a distinct event. Two events identical in every column are interchangeable.
+
+`TotalEvents` is counted up to 10,000. When the subscriber has more, `TotalEvents` is `10000`, `TotalEventsIsCapped` is `true`, and later pages can still be requested with `RecordsFrom`.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "subscriber.events",
+    "SessionID": "your-session-id",
+    "ListID": 124,
+    "SubscriberID": 1,
+    "RecordsPerRequest": 50,
+    "RecordsFrom": 50
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ListID": 124,
+  "SubscriberID": 1,
+  "RecordsFrom": 0,
+  "RecordsPerRequest": 25,
+  "OrderField": "event_created_at",
+  "OrderType": "DESC",
+  "TotalEvents": 35,
+  "TotalEventsIsCapped": false,
+  "Events": [
+    {
+      "website_tracker_uuid": "0190b6a4-6a2e-7c1d-9f1e-2b7d3c9a1e55",
+      "event": "checkout",
+      "email": "jane@example.com",
+      "parameters.keys": ["order_id"],
+      "parameters.values": ["10021"],
+      "event_created_at": "2026-10-02 14:12:09"
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Neither SubscriberID nor EmailAddress given, or SubscriberID is not a positive integer
+2: ListID missing or not a positive integer
+3: Subscriber not found in the list
+4: List not found, or not owned by the caller
+5: Invalid RecordsPerRequest
+6: Invalid RecordsFrom
+7: Invalid OrderField
+8: Invalid OrderType
+9: The list, the subscriber's tracker identifications or the event store could not be read (HTTP 503)
+```
+
+:::
+
 ## Get Subscriber Activity
 
 <Badge type="info" text="POST" /> `/api.php`
