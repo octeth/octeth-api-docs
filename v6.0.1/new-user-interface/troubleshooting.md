@@ -255,3 +255,9 @@ docker logs oempro_ui 2>&1 | tail -100
 Set it back to `error` afterwards. Debug logging is verbose and can fill a disk on a busy
 install.
 :::
+
+### Masked values in the logs
+
+<Badge type="tip" text="New in v6.0.1" /> Every log channel of the interface (`laravel.log`, `octeth.log`, and stderr, syslog, Slack or Papertrail when configured) masks credentials before a record is written: in log messages, in logged context values and in exception messages. A masked value appears as `<redacted:N>`, where N is its length. Values under a sensitive key such as `SessionID`, `Password`, or any key ending in `token` or `secret` are masked whole, and so is any unbroken run of 32 or more key-like characters, which includes UUIDs. Stack traces are not changed. Records written by the emergency fallback logger, which Laravel uses when a configured channel cannot be built, are masked the same way.
+
+A file path stays readable when it starts at a standard filesystem root (`/var/`, `/tmp/`, `/usr/`, `/home/`, `/opt/`, `/etc/`, `/proc/`, `/srv/`, `/run/`) and none of its segments is 32 characters or longer. Any other long path is masked like any other long value. If you search the logs for a full session ID, API key or UUID, search for the masked form instead.
