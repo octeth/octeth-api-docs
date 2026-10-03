@@ -787,6 +787,7 @@ The endpoint joins to `oempro_emails` via the `EmailID` stored in the action's `
 | Run_Criteria_Operator | String | No | Updated run criteria operator. Possible values: `and`, `or` (default: `and`) |
 | Rate_Limit_Per_Hour | Integer | No | Updated hourly rate limit           |
 | Rate_Limit_Per_Day | Integer | No | Updated daily rate limit             |
+| RemapDecisionFields | Boolean | No | Opt-in. When `true`, each Decision rule that references a custom field which is not on the journey's trigger list is pointed at the field on the trigger list with the same name and the same field type, when exactly one such field exists. Accepted true values: `true`, `1`, `"true"`, `"1"`, `"yes"`. Default: off, and the response is unchanged. See [Remapping Decision fields](#remapping-decision-fields). |
 
 ::: code-group
 
@@ -874,6 +875,61 @@ curl -X PATCH https://example.com/api/v1/journey \
   ]
 }
 ```
+
+### Remapping Decision fields
+
+Pass `RemapDecisionFields=true` to have `journey.update` repair the Decision rules that the warning above reports. It works together with a trigger change, and also on its own (without `Trigger`) to repair a journey whose trigger list was changed earlier.
+
+A field on the trigger list is a match when it belongs to the same account, is not a global field, and has exactly the same name (case-sensitive) and the same field type as the referenced field. A name that exists on more than one list of a multi-list trigger is ambiguous and is not matched. There is no fuzzy matching.
+
+With the parameter:
+
+- Each `Warnings[].Fields[]` entry that has exactly one match gains `SuggestedFieldID` and `SuggestedFieldName`.
+- Every Decision whose referenced fields all have a match is rewritten: its stored `Criteria` now names the matching fields, and it is removed from `Warnings`. Nothing else in the action changes.
+- A Decision with at least one field without a single match (missing, different type or ambiguous) is left unchanged and stays in `Warnings`.
+- The response carries `RemappedDecisionFields`, the list of what was rewritten (an empty array when nothing was). Each remap is also written to the application log at INFO level with the journey ID, action ID, the old and new field IDs and `Source: api`.
+- The rewrite only lands when the Decision has not changed since `journey.update` read it. If a save from the Journey Builder or another API call changed the Decision in between, nothing is written, the Decision stays in `Warnings`, and its entry gains `RemapConflict: true` and a `RemapConflictMessage`. Call `journey.update` with `RemapDecisionFields` again to retry: the remap is evaluated against the Decision as it is stored then.
+
+Without the parameter the response is exactly as before: there are no `SuggestedFieldID`, `SuggestedFieldName`, `RemapConflict`, `RemapConflictMessage` or `RemappedDecisionFields` keys.
+
+Running subscribers are never remapped on the fly: until the stored rule is rewritten, the Decision keeps failing as described above.
+
+```json
+{
+  "Journey": { "JourneyID": "456", "Trigger": "ListSubscription", "TriggerParameters": { "ListID": 528 } },
+  "Warnings": [
+    {
+      "Code": 1,
+      "Type": "DecisionFieldNotOnTriggerList",
+      "ActionID": 3891,
+      "Message": "Decision action 3891 references CustomField882 (Lead Source) on list 546; CustomField885 (Region) on list 546. These rules cannot be evaluated on the new trigger list 528 and the Decision will fail until they are updated.",
+      "Fields": [
+        { "FieldID": 882, "FieldName": "Lead Source", "FieldListID": 546, "Reason": "foreign_list", "SuggestedFieldID": 833, "SuggestedFieldName": "Lead Source" },
+        { "FieldID": 885, "FieldName": "Region", "FieldListID": 546, "Reason": "foreign_list" }
+      ]
+    }
+  ],
+  "RemappedDecisionFields": [
+    {
+      "ActionID": 3890,
+      "Fields": [
+        { "FromFieldID": 882, "ToFieldID": 833, "FieldName": "Lead Source" },
+        { "FromFieldID": 883, "ToFieldID": 843, "FieldName": "Stage" }
+      ]
+    }
+  ]
+}
+```
+
+| Key | Description |
+|---|---|
+| `Warnings[].Fields[].SuggestedFieldID` | Only with `RemapDecisionFields`. The ID of the single matching field on the trigger list. Absent when there is no single match. |
+| `Warnings[].Fields[].SuggestedFieldName` | Only with `RemapDecisionFields`. The name of that field. |
+| `Warnings[].RemapConflict` | Only with `RemapDecisionFields`, and only on a Decision whose remap was not applied because another save changed it during the call. Always `true` when present. |
+| `Warnings[].RemapConflictMessage` | Only with `RemapConflict`. A sentence telling the caller to retry. |
+| `RemappedDecisionFields[]` | Only with `RemapDecisionFields`, and always present then. One entry per rewritten Decision: `ActionID` and `Fields[]` with `FromFieldID`, `ToFieldID` and `FieldName`. |
+
+The Journey Builder offers the same remap on its warning banner, see [Configuring Decision Criteria](/v6.0.1/using-octeth/journeys#configuring-decision-criteria). It uses the same match rule and writes the same `Criteria`, and its remaps are logged with `Source: journey_builder` when the journey is saved.
 
 ## Delete a Journey
 
