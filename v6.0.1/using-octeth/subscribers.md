@@ -383,6 +383,12 @@ To export subscribers from a list:
 | **File Format** | Select the export file format: **CSV**, **XML**, or **Tab-delimited**. |
 | **Fields** | Select which fields to include in the export. Hold Ctrl (or Cmd on Mac) to select multiple fields. Both default fields and custom fields are available. At least one field must be selected. |
 
+::: warning Tab-delimited exports and special characters
+The Tab-delimited format does not protect values that contain tabs, newlines, or a backslash before a tab, or a value that ends with a backslash. Such a value splits into extra columns or rows when the file is opened or re-imported. If your subscriber data may contain these characters, export as **CSV** instead.
+
+Custom field names are written to the first line of the file as column headers. A custom field created before v6.0.1 may have a tab in its name, which shifts every column header after it by one position. From v6.0.1, creating, renaming or copying a custom field (including a list copy and the Campaign Monitor migration) stores a tab in its name as a space. Rename an older field to remove the tab, or export as **CSV**.
+:::
+
 3. Click **Export Subscribers** to submit the export request.
 
 ### Export History
