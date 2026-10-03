@@ -241,6 +241,8 @@ curl -X POST https://example.com/api/v1/journey.clone \
 
 :::
 
+**Action order and branches (changed in v6.0.1):** the clone's actions are renumbered in one depth-first sequence (see [Update Journey Actions](#update-journey-actions)), and each branch action points at the clone's own Decision. Before v6.0.1, cloned branch actions kept pointing at the source journey's Decision, so they never ran in the clone. Actions that cannot be reached from a root action (a missing parent or a parent cycle) are not copied, and a warning is logged. `journeys.clone` and `journey.copytouser` number their copies the same way.
+
 ## Copy Journey to Another User
 
 <Badge type="info" text="POST" /> `/api/v1/journey.copytouser`
@@ -747,7 +749,7 @@ curl -X GET https://example.com/api/v1/journey.sendemailactions \
 | JourneyName | String  | Owning journey's name (HTML-decoded). |
 | EmailName   | String  | The referenced email's name. Empty string when the email row is missing (orphan action). |
 | Subject     | String  | The referenced email's subject line. Empty string when the email row is missing. |
-| OrderNo     | Integer | Action ordering within its parent branch. Useful for ordering choices within a journey, but not globally unique across journeys. |
+| OrderNo     | Integer | Action ordering within the journey. Journeys saved or cloned since v6.0.1 use one depth-first sequence across the whole journey. Older journeys may restart at 1 inside each Decision branch until they are saved again. Not unique across journeys. |
 | Published   | Boolean | Whether the action itself is published on the journey canvas. |
 
 ::: warning EmailName / Subject orphans
@@ -1229,6 +1231,8 @@ The Journey Builder's own save path shares this implementation, so a canvas save
 :::
 
 **Decision field validation (codes 10 and 11):** custom fields are per-list columns, so a Decision rule can only be evaluated against fields of the journey's trigger list or global custom fields (`IsGlobal = Yes`). A rule naming a field of another list, or a field that no longer exists, is refused with one `Errors[]` entry per problem before any stored action is changed, so a rejected call leaves the journey exactly as it was. When the trigger has no list (`Manual`, email triggers) only existence is checked. Before v5.9.6 such a rule was stored and failed at run time, routing every subscriber down the No branch.
+
+**`OrderNo` numbering (changed in v6.0.1):** saving numbers every action of the journey in one depth-first sequence: a Decision, then its Yes branch, then its No branch, then the actions after the Decision. A child's `OrderNo` is always higher than its parent's. Before v6.0.1, numbering restarted at 1 inside every Decision branch. The `OrderNo` values of branch actions returned by this command and by `journey.get` change accordingly. The response shape and the order of siblings are unchanged. Journeys saved before v6.0.1 keep their per-branch numbers until they are saved again.
 
 ## Update Actions Published Status
 

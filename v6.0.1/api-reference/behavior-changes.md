@@ -199,6 +199,14 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 
 `subscribers.search` with `OrderField=CustomField<ID>` for an account-level global custom field (created with `IsGlobal=Yes` by a user, not by the administrator) now orders by `EmailAddress` and returns the page. It was the most common way to hit the empty-page answer above. A custom field on the searched list and a system-wide global field still sort as before.
 
+### Journeys
+
+#### Journey action `OrderNo` is numbered across the whole journey
+
+`journey.actions.update` now numbers `OrderNo` in one depth-first sequence across the whole journey: a Decision, then its Yes branch, then its No branch, then the actions after the Decision. Before v6.0.1 it restarted at 1 inside every Decision branch, so a branch action could have an `OrderNo` at or below its parent's. The `OrderNo` values of branch actions returned by `journey.actions.update` and `journey.get` change from per-branch to journey-wide. The response shape is unchanged and siblings keep their order. Journeys saved before the upgrade keep their per-branch numbers until they are saved again. See [Update Journey Actions](/v6.0.1/api-reference/journeys#update-journey-actions).
+
+`journey.clone`, `journeys.clone` and `journey.copytouser` number their copies the same way. `journey.clone` now also points each copied branch action at the clone's own Decision. Before v6.0.1 the branch actions of a clone pointed at the source journey's Decision and never ran. Actions that cannot be reached from a root action are no longer copied, as the other two clone commands already did. Journeys cloned before the upgrade are not repaired, so clone them again from the source, or rebuild their branches.
+
 ## Upgrade checklist
 
 1. **If an integration sends through `emailgateway.sendemail`, handle HTTP `403` with error code `12`** for a disabled account. Expect queued and scheduled gateway email to end as `Failed` with a `Sending blocked:` message when an account is disabled or a sender domain stops being active, and resend it after re-enabling if it is still wanted.
@@ -219,7 +227,8 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 16. **If `.oempro_env` has been edited by hand, check that every line is a comment, blank, or `KEY=VALUE`, and that values containing spaces are quoted.** An unparseable `.oempro_env` now stops Octeth with a message naming the line. See [Upgrading Octeth](/v6.0.1/getting-started/upgrading-octeth#an-unparseable-oempro-env-now-stops-octeth).
 17. **If a sender posts to `/system/bounce_webhook?type=fluentd`, cap its batch at 1,000 records** (Vector `batch.max_events = 1000`) or raise `BOUNCE_WEBHOOK_FLUENTD_MAX_EVENTS`, and make it retry on HTTP `503`. A larger batch is now refused with HTTP `413`.
 18. **If an integration or a saved segment relies on `Suppressed`, the `Suppressed` segment, `suppression.browse` or `suppression.stats` with a `ListID`, or the "suppression exist / not exist" segment rule, expect larger suppressed sets** that now include account-wide and system-wide entries for addresses on the list. Review campaigns sent to segments that use the "not exist" rule, and treat HTTP `500` with `ErrorCode` `100005` from these reads as a server-side failure to retry.
-19. **Optional: set `API_RESPONSEFORMAT_CASE_INSENSITIVE=true`** if your integrations send `ResponseFormat` in lowercase (`xml`) and expect XML. It is off by default, so those calls keep receiving JSON as before. Turning it on switches them to XML with `Content-Type: text/xml`, so check every integration that sends a lowercase value first. See [Error Handling](/v6.0.1/api-reference/error-handling#responseformat-xml-on-hard-failures).
+19. **If an integration reads `OrderNo` from `journey.get` or `journey.actions.update`, do not assume it restarts at 1 inside each Decision branch.** Order siblings by `OrderNo` within the same parent and branch. Re-clone journeys that were created with `journey.clone` before the upgrade if they have Decision branches.
+20. **Optional: set `API_RESPONSEFORMAT_CASE_INSENSITIVE=true`** if your integrations send `ResponseFormat` in lowercase (`xml`) and expect XML. It is off by default, so those calls keep receiving JSON as before. Turning it on switches them to XML with `Content-Type: text/xml`, so check every integration that sends a lowercase value first. See [Error Handling](/v6.0.1/api-reference/error-handling#responseformat-xml-on-hard-failures).
 
 ---
 
