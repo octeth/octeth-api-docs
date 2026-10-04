@@ -271,11 +271,25 @@ curl -X GET https://example.com/api/v1/smscampaign.stats.breakdown \
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
 | SMSCampaignID | Integer | Yes | The campaign to read |
-| Status | String | No | Filter by delivery status. Possible values: `Queued`, `Released`, `Sending`, `Sent`, `Delivered`, `Failed`, `Expired`, `Rejected`, `Suppressed`, `Cancelled` |
+| Status | String | No | Filter by delivery status. Possible values: `Queued`, `Released`, `Sending`, `Sent`, `Delivered`, `Failed`, `Expired`, `Rejected`, `Suppressed`, `Cancelled`, and `Skipped` when `IncludeSkipped` is sent |
 | Limit | Integer | No | Rows per page, 1 to 500. Default 50 |
 | Cursor | Integer | No | `NextCursor` from the previous page. Ignored when `RecordsFrom` is sent |
 | RecordsFrom | Integer | No | Offset into the result set. Sending it switches this call from cursor paging to offset paging and implies `IncludeTotal` |
 | IncludeTotal | Boolean | No | Return `TotalRecipients`. Costs one extra `COUNT` over the same filters, so it is off unless asked for |
+| IncludeSkipped | Boolean | No | Also list the recipients that were skipped before anything was queued for them. Implies offset paging and `IncludeTotal`. Off by default |
+
+::: tip Skipped recipients
+A recipient who is skipped when the campaign is queued (already suppressed, an invalid or duplicate number, a frequency cap, a message that could not be personalized, too long, or a blocked word) never gets a queue row, so by default this endpoint does not list them. A campaign of 7 with 1 suppressed returns 6 rows.
+
+Send `IncludeSkipped` to list them after the queue rows, read from the campaign's skip events. Each one has the queue row's keys, with `QueueID` `null`, `Status` `Skipped`, a `SkipReason` (`suppressed`, `invalid_number`, `duplicate`, `frequency_capped`, `personalization_failed`, `too_long` or `forbidden_word`), and `CreatedAt` set to when it was skipped. The fields that only exist for a sent message are `null`.
+
+- No `Status` lists every recipient, queued and skipped.
+- `Status: Suppressed` lists the ones suppressed after queueing and the ones skipped as `suppressed`.
+- `Status: Skipped` lists only skipped recipients, for every reason.
+- Any other status lists queue rows only.
+
+`RecipientNumber` can be empty for a skipped recipient whose contact has since been deleted. Without `IncludeSkipped` the response is unchanged.
+:::
 
 ::: tip Two ways to page, and when each one is right
 By default this endpoint pages by cursor, which steps forward cheaply however many rows a campaign has but cannot say "page 3 of 40" or jump to one.
@@ -340,6 +354,7 @@ curl -X GET https://example.com/api/v1/smscampaign.recipients \
 2: Campaign not found, or it belongs to another account
 3: Invalid Status
 5: The recipients could not be read
+6: The skipped recipients could not be read (only with IncludeSkipped)
 ```
 
 :::

@@ -154,7 +154,7 @@ Conditions that could not be applied in full are refused rather than read as "ev
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-**Only a `Draft` campaign can be updated.** Every update bumps the campaign's modification time and changes its content fingerprint, which invalidates any estimate taken before it: after updating, run the estimate again before sending.
+**Only a `Draft` campaign can be updated.** To rename a campaign in any other status, use `smscampaign.rename`. Every update bumps the campaign's modification time and changes its content fingerprint, which invalidates any estimate taken before it: after updating, run the estimate again before sending.
 
 **The audience can be changed too, while the campaign is a `Draft`.** Only what you send changes, with two rules:
 
@@ -232,6 +232,74 @@ curl -X POST https://example.com/api/v1/smscampaign.update \
 18: The list's fields could not be read to check the merge tags, so nothing was changed
 19: The message has a merge tag that cannot be read, which would be sent as typed; the message lists them
 20: Timezone is not a known timezone
+```
+
+:::
+
+### Rename a Campaign
+
+<Badge type="info" text="POST" /> `/api/v1/smscampaign.rename`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `SMSCampaigns.Manage`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Changes a campaign's name in any status, including one that is scheduled, sending or already sent. `smscampaign.update` refuses anything but a `Draft`, because a confirmed message must not change; the name is never sent or priced, so it is not held to that rule.
+
+**A rename does not invalidate an estimate.** Unlike `smscampaign.update`, it leaves the campaign's modification time alone, so a `Draft` with a confirmed estimate can still be sent with it.
+
+The name is trimmed before it is saved.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `smscampaign.rename` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| SMSCampaignID | Integer | Yes | The campaign to rename, in any status |
+| CampaignName | String | Yes | The new name, up to 255 characters |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/smscampaign.rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "smscampaign.rename",
+    "SessionID": "your-session-id",
+    "SMSCampaignID": 4821,
+    "CampaignName": "Spring promotion, final"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "SMSCampaignID": 4821,
+  "CampaignName": "Spring promotion, final"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "Errors": [{ "Code": 3, "Message": "Missing CampaignName parameter" }],
+  "ErrorCode": 3
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing or invalid SMSCampaignID parameter
+2: Campaign not found
+3: Missing CampaignName parameter
+4: CampaignName is longer than 255 characters
+5: The campaign could not be renamed
 ```
 
 :::
