@@ -575,7 +575,7 @@ Takes the same `ListID` and `CreatedAt` filters as `smscampaign.browse`, so a su
 |-------|------|-------------|
 | TotalCampaigns | Integer | Campaigns matching the filters |
 | StatusCounts | Object | One key per status, including the statuses at zero, so a caller rendering a fixed set of buckets never has to guess |
-| Totals | Object | `TotalAudience`, `TotalSent`, `TotalDelivered`, `TotalUndelivered`, `TotalOptOuts`, `TotalClicks`, `TotalUniqueClicks`, `TotalDeliveredWithLinks` and `TotalParts`, summed across the selection. `TotalUniqueClicks` counts the people who clicked in each campaign, excluding bots. `TotalDeliveredWithLinks` counts delivered messages of campaigns whose message contains a link (a URL or a `{{link:...}}` tag) and is the denominator for a click rate |
+| Totals | Object | `TotalAudience`, `TotalSent`, `TotalDelivered`, `TotalUndelivered`, `TotalOptOuts`, `TotalClicks`, `TotalUniqueClicks`, `TotalDeliveredWithLinks` and `TotalParts`, summed across the selection. `TotalUniqueClicks` counts the people who clicked in each campaign, excluding bots. `TotalDeliveredWithLinks` counts delivered messages of campaigns whose message contains a link (a URL or a <code v-pre>{{link:...}}</code> tag) and is the denominator for a click rate |
 | Costs | Array | One entry per currency, each with `Currency`, `Campaigns`, `ActualCost` and `ConfirmedCost` |
 | CreatedAfter | String | The window's start as it was parsed, or `null` when none was sent |
 | CreatedBefore | String | The window's end as it was parsed, or `null` when none was sent |
@@ -857,7 +857,8 @@ The same as sending, but at a future moment. The campaign sits in `Scheduled` un
 | Command | String | Yes | API command: `smscampaign.schedule` |
 | SessionID | String | No | Session ID obtained from login |
 | SMSCampaignID | Integer | Yes | The campaign to schedule. Must be in `Draft` |
-| ScheduledAt | String | Yes | `YYYY-MM-DD HH:MM:SS`, in the campaign's timezone. Must be in the future |
+| ScheduledAt | String | Yes | `YYYY-MM-DD HH:MM:SS`, in `Timezone`, or in the campaign's timezone when `Timezone` is omitted. Must be in the future |
+| Timezone | String | No | <Badge type="tip" text="New in v6.0.1" /> The timezone `ScheduledAt` and `SendDeadlineAt` are read in, as an IANA name such as `Europe/Istanbul`. It is stored as the campaign's `Timezone`, which quiet hours also use. Defaults to the campaign's current timezone. An unknown name is refused |
 | EstimateID | Integer | Yes | From `smscampaign.estimate` |
 | ConfirmationToken | String | Yes | From `smscampaign.estimate.get` |
 | SendDeadlineAt | String | No | Stop sending after this moment. Must be after `ScheduledAt` |
@@ -896,6 +897,7 @@ curl -X POST https://example.com/api/v1/smscampaign.schedule \
 9: The campaign could not be scheduled, so nothing was scheduled
 10: The campaign could not be scheduled as a single transaction
 11: Missing ScheduledAt parameter
+13: Timezone is not a known timezone
 31-36: The estimate and token errors listed under smscampaign.send
 ```
 
