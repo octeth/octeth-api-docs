@@ -60,6 +60,7 @@ The audience is the whole list, a saved segment of it (`SegmentID`), or conditio
 | AppendOptOutFooter | Boolean | No | Append the opt-out footer. Defaults to the account setting |
 | OptOutFooterText | String | No | Override the footer text for this campaign |
 | Timezone | String | No | The timezone quiet hours and the schedule are evaluated in, as an IANA name such as `Europe/Istanbul`. Defaults to the account's own timezone. An unknown name is refused |
+| LinkExpiryHours | Integer | No | <Badge type="tip" text="New in v6.0.1" /> How long the message's links work after each message is sent, in whole hours, from `0` to the install maximum (`SMS_LINK_EXPIRY_HOURS_MAX`, 8760 by default). `0` uses the install default (`SMS_LINK_EXPIRY_HOURS_DEFAULT`, 72 by default), read when a link is clicked. After it, the link answers HTTP 410. A value outside the range is refused rather than capped. Defaults to `0` |
 
 ::: code-group
 
@@ -116,6 +117,7 @@ curl -X POST https://example.com/api/v1/smscampaign.create \
 15: The list's fields could not be read to check the merge tags, so nothing was created
 16: MessageContent has a merge tag that cannot be read (a misspelt or email-only scope, or a space after the colon), which would be sent as typed; the message lists them
 17: Timezone is not a known timezone
+21: LinkExpiryHours is not a whole number from 0 to the install maximum
 ```
 
 :::
@@ -181,6 +183,7 @@ The audience is part of the content fingerprint, so an audience change invalidat
 | AppendOptOutFooter | Boolean | No | Whether to append the opt-out footer |
 | OptOutFooterText | String | No | Override the footer text |
 | Timezone | String | No | The quiet-hours timezone, as an IANA name. An unknown name is refused |
+| LinkExpiryHours | Integer | No | <Badge type="tip" text="New in v6.0.1" /> How long the message's links work after each message is sent, in whole hours, from `0` to the install maximum (`SMS_LINK_EXPIRY_HOURS_MAX`, 8760 by default). `0` uses the install default (`SMS_LINK_EXPIRY_HOURS_DEFAULT`, 72 by default), read when a link is clicked. After it, the link answers HTTP 410. A value outside the range is refused rather than capped |
 
 ::: code-group
 
@@ -232,6 +235,7 @@ curl -X POST https://example.com/api/v1/smscampaign.update \
 18: The list's fields could not be read to check the merge tags, so nothing was changed
 19: The message has a merge tag that cannot be read, which would be sent as typed; the message lists them
 20: Timezone is not a known timezone
+21: LinkExpiryHours is not a whole number from 0 to the install maximum
 ```
 
 :::
@@ -393,6 +397,8 @@ curl -X POST https://example.com/api/v1/smscampaign.audience.count \
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
+<Badge type="tip" text="New in v6.0.1" /> `LinkExpiry` says how long the campaign's links work after each message is sent. `EffectiveHours` is the lifetime in force: the campaign's `LinkExpiryHours`, or `DefaultHours` when that is `0`, capped at `MaxHours`. `DefaultHours` and `MaxHours` are the install's settings.
+
 `QuietHours` says whether the campaign's quiet hours are holding it right now. While `Active` is true a Sending campaign sends nothing, and `ResumesAt` (UTC) is when it starts again. `Start` and `End` are in the campaign's `Timezone`, and both are null when the campaign has no quiet hours.
 
 The campaign's audience is `RelListID`, narrowed by at most one of `RelSegmentID` (a saved segment) and `RulesJsonBundle` (conditions, as the JSON string it was saved as). Both are `null` when the campaign goes to the whole list.
@@ -432,6 +438,7 @@ curl -X GET https://example.com/api/v1/smscampaign.get \
     "RelGatewayID": 3,
     "MessageContent": "Hi {{ Subscriber:FirstName | \"there\" }}, 20% off this week only.",
     "Timezone": "America/New_York",
+    "LinkExpiryHours": 0,
     "TotalAudience": 400318,
     "ConfirmedCost": "4315.66000",
     "CostCurrency": "USD"
@@ -444,6 +451,11 @@ curl -X GET https://example.com/api/v1/smscampaign.get \
     "End": "09:00",
     "Timezone": "America/New_York",
     "ResumesAt": "2026-09-23 13:00:00"
+  },
+  "LinkExpiry": {
+    "EffectiveHours": 72,
+    "DefaultHours": 72,
+    "MaxHours": 8760
   }
 }
 ```

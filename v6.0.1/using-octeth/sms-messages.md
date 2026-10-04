@@ -385,6 +385,8 @@ Each click on a shortened SMS link is tracked with the following data:
 
 Shortened links expire after a configurable period (default: 72 hours). After expiry, clicking the link returns an HTTP 410 (Gone) response. The maximum allowed expiry is 1 year (8,760 hours).
 
+In an SMS campaign, set the lifetime in the campaign composer. As soon as the message contains a link, a **Links stop working after** field appears below it. Enter a number and choose **hours** or **days**, then click **Save message**. Leave the field blank to use the default. The period is counted from the moment each recipient's message is sent, so a campaign that is paused or spread over several days gives every recipient the same window. The lifetime can be changed only while the campaign is a draft.
+
 Expired link data is retained for analytics purposes and automatically cleaned up after 180 days.
 
 ## SMS Suppression (User Level)
