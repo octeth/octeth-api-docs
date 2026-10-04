@@ -575,12 +575,14 @@ Takes the same `ListID` and `CreatedAt` filters as `smscampaign.browse`, so a su
 |-------|------|-------------|
 | TotalCampaigns | Integer | Campaigns matching the filters |
 | StatusCounts | Object | One key per status, including the statuses at zero, so a caller rendering a fixed set of buckets never has to guess |
-| Totals | Object | `TotalAudience`, `TotalSent`, `TotalDelivered`, `TotalUndelivered`, `TotalOptOuts`, `TotalClicks` and `TotalParts`, summed across the selection |
+| Totals | Object | `TotalAudience`, `TotalSent`, `TotalDelivered`, `TotalUndelivered`, `TotalOptOuts`, `TotalClicks`, `TotalUniqueClicks`, `TotalDeliveredWithLinks` and `TotalParts`, summed across the selection. `TotalUniqueClicks` counts the people who clicked in each campaign, excluding bots. `TotalDeliveredWithLinks` counts delivered messages of campaigns whose message contains a link (a URL or a `{{link:...}}` tag) and is the denominator for a click rate |
 | Costs | Array | One entry per currency, each with `Currency`, `Campaigns`, `ActualCost` and `ConfirmedCost` |
 | CreatedAfter | String | The window's start as it was parsed, or `null` when none was sent |
 | CreatedBefore | String | The window's end as it was parsed, or `null` when none was sent |
 
 Money is returned per currency and is never pre-summed. `CostCurrency` is a per-campaign column, so an account holding both USD and EUR campaigns has two totals and no single one; adding them would produce a figure in no currency at all. A caller showing a single spend figure should check that `Costs` holds exactly one entry.
+
+To compute a click rate, divide `TotalUniqueClicks` by `TotalDeliveredWithLinks`, not by `TotalDelivered`. Campaigns without a link deliver messages that can never be clicked, and including them understates the rate. Divide unique clicks, not `TotalClicks`, which counts every tap.
 
 ::: code-group
 
@@ -617,6 +619,8 @@ curl -X GET https://example.com/api/v1/smscampaign.summary.get \
     "TotalUndelivered": 4309,
     "TotalOptOuts": 512,
     "TotalClicks": 18420,
+    "TotalUniqueClicks": 14210,
+    "TotalDeliveredWithLinks": 98150,
     "TotalParts": 148903
   },
   "Costs": [
