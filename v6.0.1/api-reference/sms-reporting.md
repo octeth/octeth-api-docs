@@ -129,7 +129,7 @@ curl -X GET https://example.com/api/v1/smscampaign.stats \
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
 | SMSCampaignID | Integer | Yes | The campaign to report on |
-| Granularity | String | No | Possible values: `hour` (default), `day` |
+| Granularity | String | No | Possible values: `minute`, `hour` (default), `day`. <Badge type="tip" text="New in v6.0.1" /> `minute` buckets each event by the minute it happened in, for a campaign that finished sending inside a single hour |
 | Events | String | No | Comma-separated event types to include. Possible values: `queued`, `skipped`, `send_attempt`, `sent`, `send_failed`, `delivered`, `undelivered`, `expired`, `clicked`, `replied`, `opted_out`. Defaults to all of them. An unrecognised value is an error, not an empty series |
 | IncludeBots | Boolean | No | Include bot clicks. Defaults to excluding them |
 
@@ -138,7 +138,7 @@ Each point returns both `Events` and `Messages`.
 
 `Events` counts distinct events and is meaningful for every event type. `Messages` counts distinct messages and is only meaningful for event types that carry a message identifier. `queued` events do not carry one, so read `Events` for those; reading `Messages` would report a single message for an entire campaign's queueing.
 
-`Granularity=day` is served from a pre-aggregated table that carries no bot flag, so a daily click series always includes bot clicks whatever `IncludeBots` says. The `ExcludesBots` field in the response tells you which you got.
+`Granularity=minute` and `Granularity=hour` read the raw events and honour `IncludeBots`. `Granularity=day` is served from a pre-aggregated table that carries no bot flag, so a daily click series always includes bot clicks whatever `IncludeBots` says. The `ExcludesBots` field in the response tells you which you got.
 :::
 
 ::: code-group
