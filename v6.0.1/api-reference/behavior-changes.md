@@ -357,6 +357,18 @@ An integration that reconciles `AvailableCredits` from `user.get` against the nu
 
 An integration that sent JSON `true` and saw tracking off will now see it on. Check campaigns saved this way before v6.0.1 with `email.get`, because their stored flags are not changed by the upgrade.
 
+### Email headers and footers
+
+#### HTML content without a `<body>` tag now carries headers and footers
+
+Octeth wraps the HTML part of every email in up to two HTML headers and footers: the user group's, outermost, and inside it the list's, or the user account's when the list has none. A list header or footer replaces the account's rather than adding to it, and an empty HTML part gets neither. Before v6.0.1 a header was inserted only after a `<body>` tag and a footer only before `</body>`. HTML with no body tag, such as a fragment like `<p>Hello</p>` saved through `email.update` or pasted into the editor, went out with none of them and with no warning. The plain-text part did get its headers and footers.
+
+From v6.0.1, when the HTML has no `<body>` tag, headers are inserted after `</head>`, or after `<html>` when there is no head, or at the start of the content. Footers are inserted before `</html>`, or at the end of the content. Content that has a single `<body>` and `</body>` produces exactly the same output as before. This applies to campaigns, autoresponders, transactional email, journey email actions, opt-in confirmation email, `email.render` and template previews.
+
+Two smaller corrections come with it. When the content holds more than one `<body>` or `</body>` tag, a header is inserted once after the first `<body>` and a footer once before the last `</body>`, where before every copy received it. A `<body>` tag whose attributes span several lines is now recognised. An empty HTML part stays empty.
+
+If you send HTML fragments and relied on them going out without your user group's footer, expect the footer, and its unsubscribe link, to appear from this release. This is what the `ForceUnsubscriptionLink` check already assumed when it accepted content whose only unsubscribe link was in the user group header or footer.
+
 ### Administrator sign-in
 
 #### Existing "remember me" cookies are signed out once
@@ -428,6 +440,7 @@ Before v6.0.1, a mail server that rejected the welcome or password-reset email p
 27. **If an integration changes administrator passwords, handle the new failure codes as "nothing changed, retry"**: `11` from `admin.update`, `3` from `admin.passwordreset` and `24` from `admin.subadmin.update`. If it calls `admin.logout`, treat `ErrorCode` `1` as "signed out, but the remembered browser was not revoked" and revoke it from **Settings > Security**.
 28. **If customers sign up through the new user interface, set `UI_MAIL_MAILER=smtp` with a working relay before upgrading**, including `UI_MAIL_USERNAME` and `UI_MAIL_PASSWORD` for a hosted relay. Under the default `log` mailer the signup link is hidden and `/user/register` refuses. See [Self-signup is offered only while the interface's mailer delivers](#self-signup-is-offered-only-while-the-interface-s-mailer-delivers).
 29. **If email or SMS content uses a <code v-pre>{{ User:\* }}</code> or <code v-pre>{{ List:\* }}</code> tag outside the documented fields, replace it before upgrading**, since it now renders empty. For example, replace <code v-pre>{{ User:Username }}</code> with a fixed value. Then, if accounts you do not fully trust can author email, rotate the SMTP passwords on your user groups and the credentials on your delivery servers. See [User and List merge tags render only their documented fields](#user-and-list-merge-tags-render-only-their-documented-fields).
+30. **If you send HTML fragments with no `<body>` tag, preview one before upgrading.** List, account and user group headers and footers are now added to it, including any unsubscribe link in the user group footer. See [HTML content without a `<body>` tag now carries headers and footers](#html-content-without-a-body-tag-now-carries-headers-and-footers).
 
 ---
 
