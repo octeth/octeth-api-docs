@@ -416,6 +416,7 @@ No specific error codes (returns empty EmailID on success).
 |------|-------------|
 | 1 | Missing EmailID |
 | 2 | Email not found |
+| 21 | FromEmail has no domain and no sender domain is set (Campaign scope) |
 
 ## Debugging Tips
 

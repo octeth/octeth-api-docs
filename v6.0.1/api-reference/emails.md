@@ -237,7 +237,7 @@ curl -X POST https://example.com/api.php \
 | Subject                | String  | No       | Email subject                                                 |
 | PreHeaderText          | String  | No       | Email preheader text                                          |
 | FromName               | String  | No       | Sender name                                                   |
-| FromEmail              | String  | No       | Sender email address                                          |
+| FromEmail              | String  | No       | Sender email address. With `ValidateScope=Campaign` it must be a full address, a value carrying a merge tag such as `%MFROMDomain%`, or, when the user group has `SenderDomainManagement=Enabled`, a local part with a sender domain (the `SenderDomain` parameter or the one already stored on the email). Any other value without `@` is refused with error `21`. |
 | ReplyToName            | String  | No       | Reply-to name                                                 |
 | ReplyToEmail           | String  | No       | Reply-to email address                                        |
 | HTMLContent            | String  | No       | HTML email content                                            |
@@ -292,7 +292,7 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [1, 3, 4, 8, 9, 10, 11, 12, 17, 18, 19, 20]
+  "ErrorCode": [1, 3, 4, 8, 9, 10, 11, 12, 17, 18, 19, 20, 21]
 }
 ```
 
@@ -310,8 +310,13 @@ curl -X POST https://example.com/api.php \
 18: Missing UTMSource parameter (required when UTMTracking is enabled)
 19: Missing UTMMedium parameter (required when UTMTracking is enabled)
 20: Missing UTMCampaign parameter (required when UTMTracking is enabled)
+21: FromEmail cannot be sent: it has no domain and no sender domain is set (only raised when ValidateScope=Campaign; OptIn and AutoResponder scopes bypass this check). The email is not changed.
 ```
 
+:::
+
+::: warning FromEmail without a domain
+With `ValidateScope=Campaign`, `email.update` refuses a FromEmail that has no `@` and no merge tag unless a sender domain applies: the `SenderDomain` parameter, or the sender domain already stored on the email, and only when the user group has `SenderDomainManagement=Enabled`. The response is `{"Success": false, "ErrorCode": 21, "ErrorText": "..."}` and the email is left unchanged. The check is skipped when the user group's marketing delivery server enforces a From address. Before v6.0.1 the value was stored and every recipient of the campaign failed at send time.
 :::
 
 ## Delete an Email

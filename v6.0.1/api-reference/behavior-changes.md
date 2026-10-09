@@ -48,6 +48,16 @@ Journey "Send email" actions send through `emailgateway.sendemail`, so they stop
 
 Accounts created through the legacy signup and single sign-on have been `Untrusted` by default for many releases, so some installs have customers who send through the gateway API as `Untrusted`. **Their gateway and journey email stops after the upgrade** until an administrator marks them `Trusted`. To keep the previous behaviour instead, set `EMAILGATEWAY_REQUIRE_TRUSTED=false`. The upgrade adds the key as `true`.
 
+### Emails
+
+#### `email.update` refuses a campaign From address that has no domain
+
+With `ValidateScope=Campaign`, `email.update` now answers `{"Success": false, "ErrorCode": 21, "ErrorText": "..."}` and leaves the email unchanged when `FromEmail` has no `@`, carries no merge tag such as `%MFROMDomain%`, and no sender domain applies. A sender domain applies only when the user group has `SenderDomainManagement=Enabled` and either the `SenderDomain` parameter is sent or the email already has a sender domain stored. The check runs whether sender domain management is enabled or not. It does not apply when the user group's marketing delivery server enforces a From address, because that address replaces the stored one for every recipient.
+
+Before v6.0.1 such a value was stored with `{"Success": true}`, and every recipient of a campaign using it failed at send time with `Invalid From email address`. The check therefore changes no call that produced a sendable email. `OptIn` and `AutoResponder` scopes are not affected, and a call that does not send `FromEmail` is not affected either.
+
+Emails already stored with a domainless From address are not repaired by the upgrade. To find them, list campaign emails whose `FromEmail` has no `@` and no `%` and whose `Options` has no `SenderDomain`, then send a full address, or a local part with `SenderDomain`, through `email.update`.
+
 ### Users
 
 #### `user.create` without `ReputationLevel` creates an Untrusted account
@@ -441,6 +451,7 @@ Before v6.0.1, a mail server that rejected the welcome or password-reset email p
 28. **If customers sign up through the new user interface, set `UI_MAIL_MAILER=smtp` with a working relay before upgrading**, including `UI_MAIL_USERNAME` and `UI_MAIL_PASSWORD` for a hosted relay. Under the default `log` mailer the signup link is hidden and `/user/register` refuses. See [Self-signup is offered only while the interface's mailer delivers](#self-signup-is-offered-only-while-the-interface-s-mailer-delivers).
 29. **If email or SMS content uses a <code v-pre>{{ User:\* }}</code> or <code v-pre>{{ List:\* }}</code> tag outside the documented fields, replace it before upgrading**, since it now renders empty. For example, replace <code v-pre>{{ User:Username }}</code> with a fixed value. Then, if accounts you do not fully trust can author email, rotate the SMTP passwords on your user groups and the credentials on your delivery servers. See [User and List merge tags render only their documented fields](#user-and-list-merge-tags-render-only-their-documented-fields).
 30. **If you send HTML fragments with no `<body>` tag, preview one before upgrading.** List, account and user group headers and footers are now added to it, including any unsubscribe link in the user group footer. See [HTML content without a `<body>` tag now carries headers and footers](#html-content-without-a-body-tag-now-carries-headers-and-footers).
+31. **If an integration saves campaign emails with `email.update`, handle `ErrorCode` `21`** by sending a full From address, or a local part together with `SenderDomain`. See [`email.update` refuses a campaign From address that has no domain](#email-update-refuses-a-campaign-from-address-that-has-no-domain).
 
 ---
 
