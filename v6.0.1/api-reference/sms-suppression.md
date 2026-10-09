@@ -55,6 +55,7 @@ Phone numbers must be in E.164 format with a leading `+` (e.g. `+15551234567`). 
 | UserID | Integer | No* | Target account. Required under admin auth when `Level` is `user` or `list`; ignored under user auth. |
 | Reason | String | No | Filter by `Reason` ENUM value. |
 | SearchPattern | String | No | Substring match against `PhoneNumber` and `Notes` (always a contains search with no wildcard syntax: pass the literal value to look for). |
+| PhoneNumber | String | No | Exact number lookup. The value is normalized the same way `smssuppression.add` normalizes a number before storing it, so `+33 6 12 34 56 78` and `+33612345678` return the same row, however either was typed when it was added. Use it to ask whether one number is suppressed: `SearchPattern` is a substring match on the raw `PhoneNumber` column and can miss a number stored with spaces or dashes. Wildcard patterns are not accepted. Omit it and the response is unchanged. *(Added in v6.0.1.)* |
 | IsPattern | Integer | No | When `1`, only return wildcard pattern entries. When `0`, only return exact-match entries. |
 | StartFrom | Integer | No | Starting record index for pagination (default: `0`). |
 | RetrieveCount | Integer | No | Number of records to retrieve (default: `100`, max: `1000`). |
@@ -153,6 +154,7 @@ curl -X POST https://example.com/api.php \
 2: Missing ListID when Level=list
 3: ListID does not belong to the authenticated user
 4: Invalid Reason value
+6: PhoneNumber is not a valid phone number, or is a wildcard pattern
 5: Suppression entries could not be retrieved (internal error; the cause is
    written to the application log). Retry; if it persists, contact the operator.
 5001: UserID missing or invalid (admin auth, Level=user or Level=list)
