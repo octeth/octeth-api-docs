@@ -1051,3 +1051,176 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+## Get Sender Domain Health (Admin) <Badge type="tip" text="New in v6.0.1" />
+
+<Badge type="info" text="GET" /> `/api/v1/admin.senderdomains.health.get`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Install-wide sender domain health report: every sender domain that is not deleted, joined to its owner, with its DNS health, the strike counter, when it was last checked and the per-record result of its latest DNS check. Oldest check first, paginated. A restricted sub-admin only sees domains owned by users in the groups they may access. Only the latest check of each domain is stored.
+
+Health classes:
+
+| Health | Meaning |
+|--------|---------|
+| `healthy` | Enabled, checked, no strikes, and every record of the latest check passed |
+| `failing` | Enabled with 1 or 2 of 3 strikes (a third failed daily check demotes it), or Enabled with no strike whose latest check has a failed record. The second case follows a failed forced re-check, which records the result without adding a strike; its `HealthLabel` is `Last check failed` |
+| `demoted` | Approval Pending because the daily check failed 3 times (`PendingReason` `DNSDrift`). `HealthLabel` is `Passing, awaiting approval` when its latest check passed |
+| `awaiting_approval` | Any other Approval Pending domain (`PendingReason` `Approval`) |
+| `never_checked` | No stored DNS check yet |
+| `other` | Disabled, Suspended or Blocked with a stored check |
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.senderdomains.health.get` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| Status | String | No | `Enabled`, `Disabled`, `Suspended`, `Approval Pending` or `Blocked` |
+| Health | String | No | One of the health classes above |
+| UserID | Integer | No | Owner's user ID |
+| Domain | String | No | Part of the domain name |
+| RecordsFrom | Integer | No | Offset (default 0) |
+| RecordsPerRequest | Integer | No | Page size (default 25, maximum 500) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.senderdomains.health.get",
+    "AdminAPIKey": "your-admin-api-key",
+    "Health": "demoted",
+    "RecordsPerRequest": 50
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Filters": {"Status": null, "Health": "demoted", "UserID": null, "Domain": null},
+  "RecordsFrom": 0,
+  "RecordsPerRequest": 50,
+  "Domains": [
+    {
+      "DomainID": 7,
+      "SenderDomain": "mail.example.com",
+      "UserID": 42,
+      "Username": "acme",
+      "EmailAddress": "owner@example.com",
+      "Status": "Approval Pending",
+      "PendingReason": "DNSDrift",
+      "Health": "demoted",
+      "HealthLabel": "Demoted by DNS drift",
+      "StatusCheckFailCounter": 3,
+      "LastFailedCheckDate": "2026-10-09",
+      "LastVerifiedAt": "2026-10-09 04:35:12",
+      "CreatedAt": "2026-08-01 10:00:00",
+      "LastCheckPassed": false,
+      "FailingRecords": 1,
+      "LastDNSCheck": {
+        "checked_at": "2026-10-09 04:35:12",
+        "source": "scheduled",
+        "records": [
+          {"type": "CNAME", "host": "track-sl.mail.example.com", "expected": "link.example.net", "resolved": "link.example.net", "pass": true},
+          {"type": "TXT", "host": "sl._domainkey.mail.example.com", "expected": "v=DKIM1; k=rsa; p=MIIB...", "resolved": null, "pass": false}
+        ]
+      }
+    }
+  ],
+  "TotalDomains": 1,
+  "Summary": {"healthy": 120, "failing": 3, "demoted": 1, "awaiting_approval": 4, "never_checked": 2, "other": 6, "Total": 136}
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Health must be one of: healthy, failing, demoted, awaiting_approval, never_checked, other"
+}
+```
+
+```txt [Error Codes]
+1: Status is not a report status
+2: Health is not a health class
+3: UserID is not a positive integer
+```
+
+:::
+
+`LastDNSCheck` is null until a domain is checked. `source` is `scheduled` (daily check), `manual` (the owner verified the domain) or `admin` (`admin.senderdomain.recheck`). `resolved` is null when the DNS server gave no answer. `PendingReason` is null unless the status is `Approval Pending`.
+
+## Re-check a Sender Domain (Admin) <Badge type="tip" text="New in v6.0.1" />
+
+<Badge type="info" text="POST" /> `/api/v1/admin.senderdomain.recheck`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- Rate limit: 60 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Queues a DNS check of one sender domain now, instead of waiting for the daily check. The verifier worker runs it within one worker cycle and stores the result, which `admin.senderdomains.health.get` returns as `LastDNSCheck` with `source` `admin`.
+
+A forced check only records the result:
+
+- It never adds a strike and never changes the domain's status. A demoted domain whose check passes stays `Approval Pending` until an administrator approves it on the user's Sender Domains tab (or with `admin.senderdomain.status.update`).
+- A passing check of an `Enabled` domain clears its strike counter, as a passing daily check does.
+- It runs even when the domain was already checked today.
+
+A restricted sub-admin may only re-check domains owned by users in the groups they may access. Any other domain is reported as not found.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.senderdomain.recheck` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| DomainID | Integer | Yes | Sender domain ID |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.senderdomain.recheck",
+    "AdminAPIKey": "your-admin-api-key",
+    "DomainID": 7
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "DomainID": 7,
+  "Queued": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Sender domain not found"
+}
+```
+
+```txt [Error Codes]
+1: DomainID is missing or not a positive integer
+2: Sender domain not found
+3: The domain's status is not checked (Disabled)
+4: The DNS check could not be queued
+```
+
+:::
