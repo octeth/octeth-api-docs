@@ -349,6 +349,14 @@ The credit is still kept when a delivery server took the connection and refused 
 
 An integration that reconciles `AvailableCredits` from `user.get` against the number of failed emails will see the balance go back up by one for each email in the first group. The queue row's `Status` (`Failed`) and `StatusMessage` are unchanged. Campaign and email gateway credits are not affected.
 
+### Emails
+
+#### `email.update` reads JSON `true` tracking flags as on
+
+`email.update` stored `OpenTracking` and `LinkTracking` as off when a JSON request sent the boolean `true`, while the call reported success. It now stores them as on for JSON `true`, the integer `1`, and the strings `"true"` and `"1"` in any case. Any other value, including `false`, `0`, `"false"` and `"0"`, still turns tracking off, and an omitted or `null` parameter still keeps the default (on). Form-encoded `"true"` and `"false"` behave as before.
+
+An integration that sent JSON `true` and saw tracking off will now see it on. Check campaigns saved this way before v6.0.1 with `email.get`, because their stored flags are not changed by the upgrade.
+
 ### Administrator sign-in
 
 #### Existing "remember me" cookies are signed out once

@@ -247,8 +247,8 @@ curl -X POST https://example.com/api.php \
 | FetchPlainURL          | String  | No       | URL to fetch plain content from (for Import mode)             |
 | ImageEmbedding         | String  | No       | Image embedding setting                                       |
 | SenderDomain           | String  | No       | Sender domain. Only enforced when `ValidateScope=Campaign` and the user's group has `SenderDomainManagement=Enabled`; ignored for `OptIn` and `AutoResponder` scopes (transactional traffic). |
-| OpenTracking           | Boolean | No       | Enable open tracking (default: true)                          |
-| LinkTracking           | Boolean | No       | Enable link tracking (default: true)                          |
+| OpenTracking           | Boolean | No       | Enable open tracking. `true`, `1`, `"true"` and `"1"` (case-insensitive) turn it on. Any other value, including `false`, `0`, `"false"` and `"0"`, turns it off. Omit the parameter or send `null` to keep the default (true). |
+| LinkTracking           | Boolean | No       | Enable link tracking. Accepts the same values as OpenTracking. Omit the parameter or send `null` to keep the default (true). |
 | UTMTracking            | Boolean | No       | Enable UTM tracking                                           |
 | UTMSource              | String  | Conditional | UTM source (required if UTMTracking is true)               |
 | UTMMedium              | String  | Conditional | UTM medium (required if UTMTracking is true)               |
