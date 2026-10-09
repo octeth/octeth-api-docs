@@ -2603,6 +2603,108 @@ curl -X POST https://example.com/api/v1/subscriber.journey.remove \
 
 :::
 
+## Enroll or Unenroll Matching Subscribers in Bulk <Badge type="tip" text="New in v6.0.1" />
+
+<Badge type="info" text="POST" /> `/api/v1/subscribers.journey.bulk`
+
+Enrolls every subscriber of a list that matches a selection into one journey, or removes them from it. The request validates the input, counts the matching subscribers and queues a background job, then returns. It does not wait for the enrollment.
+
+The background job works out the matching subscribers again when it runs, in batches. Subscribers who start or stop matching between the request and the job are included or left out accordingly, so the processed number can differ from `MatchingSubscribers`.
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Campaign.Create`
+- Rate limit: 20 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `subscribers.journey.bulk` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| ListID | Integer | Yes | ID of the subscriber list. Must belong to the authenticated user |
+| JourneyID | Integer | Yes | ID of the journey. Must belong to the authenticated user |
+| Mode | String | Yes | `enroll` to start the journey for each matching subscriber, `unenroll` to remove each matching subscriber from the journey |
+| RulesJSON | String | No | Segment rules that select the subscribers, in the same format `subscribers.search` accepts. Cannot be combined with `SegmentID` or `SearchQuery` |
+| Operator | String | No | `and` or `or`, how the top-level rules in `RulesJSON` combine. Default: `and` |
+| SegmentID | Integer | No | Select the members of this segment. The segment must belong to the authenticated user |
+| SearchQuery | String | No | Select subscribers whose email address contains this text (255 characters at most). Combined with `SegmentID` using AND when both are given |
+
+With none of `RulesJSON`, `SegmentID` or `SearchQuery`, every subscriber of the list is selected.
+
+**Behaviour:**
+
+- `enroll` requires the journey to be enabled. Each subscriber goes through the same checks as `subscriber.journey.trigger`: the journey's run criteria and re-entry rules apply, and a subscriber already active in the journey is skipped.
+- `unenroll` works on enabled and disabled journeys. It removes the subscriber's journey entry the same way `subscriber.journey.remove` does. Subscribers who are not in the journey are left unchanged.
+- When nothing matches, no job is queued and `Queued` is `false`.
+- A `RulesJSON` value that contains no usable rule (for example `[]` or `[[{}]]`) is rejected rather than treated as "whole list". Send no `RulesJSON` to select the whole list.
+- `MatchingSubscribers` is counted with the same rules, operator and list as `subscribers.search`, so for the same selection it equals that endpoint's `TotalSubscribers`.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/subscribers.journey.bulk \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "subscribers.journey.bulk",
+    "SessionID": "your-session-id",
+    "ListID": 123,
+    "JourneyID": 789,
+    "Mode": "enroll",
+    "RulesJSON": "[{\"type\":\"fields\",\"field_id\":\"EmailAddress\",\"operator\":\"contains\",\"value\":\"@example.com\"}]",
+    "Operator": "and"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Mode": "enroll",
+  "ListID": 123,
+  "JourneyID": 789,
+  "MatchingSubscribers": 4812,
+  "Queued": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 14,
+  "ErrorText": "Journey is disabled"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing ListID parameter
+2: Missing JourneyID parameter
+3: Missing Mode parameter
+4: Invalid ListID parameter
+5: Invalid JourneyID parameter
+6: Invalid Mode parameter
+7: Invalid Operator parameter
+8: Invalid RulesJSON syntax
+9: RulesJSON cannot be combined with SegmentID or SearchQuery
+10: Invalid SegmentID parameter
+11: Invalid SearchQuery parameter (not a string, or longer than 255 characters)
+12: List not found
+13: Journey not found
+14: Journey is disabled (enroll only)
+15: Segment not found
+16: Problem with the segment engine
+17: Could not queue the bulk journey job
+```
+
+:::
+
+Validation errors (1 to 11) return HTTP 422 and also list every failed check in an `Errors` array of `{Code, Message}` objects. Codes 12, 13 and 15 return HTTP 404, code 14 returns HTTP 422, and codes 16 and 17 return HTTP 500.
+
 ## Exit Subscriber from Journey
 
 <Badge type="info" text="POST" /> `/api/v1/subscriber.journey.exit`
