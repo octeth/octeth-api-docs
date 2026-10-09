@@ -92,6 +92,22 @@ This is a hardening change and a deliberate exception to the rule that a contrac
 
 When an SSO source has **Return user data** (`Options.ReturnUserData`) enabled, the JSON it returns is now the same user projection `user.login` returns, plus `_SessionID`, `_Impersonate` and `_ImpersonateLeaveURL` as before. It no longer includes the password hash, `AuthToken`, the two-factor secrets, `APIKey`, or the group's SMTP and delivery-server credentials inside `GroupInformation`.
 
+### Merge tags in email and SMS content
+
+#### User and List merge tags render only their documented fields
+
+Handlebars-style merge tags in email content (subject, HTML and plain text, From and Reply-To) and in SMS content now read a fixed set of fields. This applies to every path that renders content: campaign sends, autoresponders, transactional email, journey "Send email" actions, the email gateway, test emails, previews, the web browser view, RSS and `email.render`.
+
+- <code v-pre>{{ User:* }}</code> renders only `FirstName`, `LastName`, `EmailAddress`, `CompanyName`, `Website`, `Street`, `City`, `State`, `Zip`, `Country`, `Phone`, `Fax` and `TimeZone`, the same 13 fields as the legacy `%User:*%` tags. Every other account column renders empty, including `Username` and `UserID`, and so does every nested path such as <code v-pre>{{ User:GroupInformation:... }}</code>. SMS content reads the same list.
+- <code v-pre>{{ List:* }}</code> renders only `ListID`, `Name`, `SenderName`, `SenderEmailAddress`, `SenderAddress` and `SenderCompany`, the documented list tags. Every other list column renders empty, and so does every nested path such as <code v-pre>{{ List:Options:... }}</code>. This applies to SMS content too.
+- <code v-pre>{{ Campaign:* }}</code>, <code v-pre>{{ AutoResponder:* }}</code> and <code v-pre>{{ Queue:* }}</code> still render every column of their row, but no longer reach nested values (for example <code v-pre>{{ Campaign:SplitTest:... }}</code>), which never rendered as readable text.
+
+Before v6.0.1, <code v-pre>{{ User:* }}</code> and <code v-pre>{{ List:* }}</code> could name any column of the account or list row, and the account row carried the user group and its delivery servers. Anyone able to author email content could render the account's API key, password hash and two-factor secrets, the user group's SMTP password, the delivery servers' connection parameters, and a list's synchronization database password and ClickBank secret key. The legacy `%User:*%` and `%List:*%` tags were never affected.
+
+This is a hardening change and a deliberate exception to the rule that a behavior change goes behind an opt-in flag: there is no configuration under which email content should be able to read platform credentials.
+
+**Rotate credentials if untrusted accounts author email.** On an install where accounts you do not fully trust can create email content, treat the SMTP passwords stored on user groups and the credentials stored on delivery servers as possibly exposed, and rotate them. Account holders should consider regenerating their API keys, and resetting two-factor authentication where an untrusted sub-user or API client could author email on their account.
+
 ### Sender domains
 
 #### `user.senderdomain.verify` honours manual approval and administrator blocks
@@ -403,6 +419,7 @@ Before v6.0.1, a mail server that rejected the welcome or password-reset email p
 26. **If Prevent user login from IP addresses not in the list is ticked, confirm that the address Octeth sees for your users is their real address before upgrading** (check `TRUSTED_PROXIES` behind a proxy), because signed-in users outside the list are now signed out. See [The user-area IP restriction applies to signed-in users](#the-user-area-ip-restriction-applies-to-signed-in-users).
 27. **If an integration changes administrator passwords, handle the new failure codes as "nothing changed, retry"**: `11` from `admin.update`, `3` from `admin.passwordreset` and `24` from `admin.subadmin.update`. If it calls `admin.logout`, treat `ErrorCode` `1` as "signed out, but the remembered browser was not revoked" and revoke it from **Settings > Security**.
 28. **If customers sign up through the new user interface, set `UI_MAIL_MAILER=smtp` with a working relay before upgrading**, including `UI_MAIL_USERNAME` and `UI_MAIL_PASSWORD` for a hosted relay. Under the default `log` mailer the signup link is hidden and `/user/register` refuses. See [Self-signup is offered only while the interface's mailer delivers](#self-signup-is-offered-only-while-the-interface-s-mailer-delivers).
+29. **If email or SMS content uses a <code v-pre>{{ User:* }}</code> or <code v-pre>{{ List:* }}</code> tag outside the documented fields, replace it before upgrading**, since it now renders empty. For example, replace <code v-pre>{{ User:Username }}</code> with a fixed value. Then, if accounts you do not fully trust can author email, rotate the SMTP passwords on your user groups and the credentials on your delivery servers. See [User and List merge tags render only their documented fields](#user-and-list-merge-tags-render-only-their-documented-fields).
 
 ---
 
