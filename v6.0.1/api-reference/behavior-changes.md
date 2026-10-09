@@ -277,6 +277,16 @@ A destination with non-ASCII characters in its path or query, such as an accente
 
 ## Tier 2: shape and value changes
 
+### Email gateway
+
+#### New user group option: header and footer on gateway email
+
+User groups have a new option, `EmailGatewayApplyHeaderFooter`, in the admin user group screen and in the `Options` object of `usergroup.create`, `usergroup.update`, `usergroup.patch` and `usergroup.options.patch`. When it is `"Enabled"`, the group's plain and HTML header and footer are added to email that the group's users send through `emailgateway.sendemail` and the SMTP relay, in the parts the email already has, before link and open tracking. Merge tags in the added header and footer are removed, because gateway email is not personalized against a subscriber, and the gateway unsubscribe link still comes from the sender domain's `UnsubscribeLink` option. Journey email is unchanged: the journey action already adds the header and footer and marks its request with a signed internal token, so the gateway does not add them twice. Passing `JourneyID` and `ActionID` to `emailgateway.sendemail` from your own integration does not skip the header and footer.
+
+The option is off for every existing and new group, so gateway email is delivered exactly as before until an administrator turns it on. User group headers and footers have never applied to gateway email, and they still do not unless this option is on.
+
+The recorded `MessageSizeBytes` of a gateway email is measured when it is accepted, before the header and footer are added, so it is slightly lower than the delivered size when the option is on.
+
 ### Subscribers
 
 #### `subscribers.import.get` reports a failed import as `Failed`

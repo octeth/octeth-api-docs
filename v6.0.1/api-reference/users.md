@@ -1449,7 +1449,7 @@ curl -X GET https://example.com/api/v1/users.status \
 | ForceRejectOptLink | String | Yes | 'Enabled' or 'Disabled' |
 | DefaultRateLimits | String | No | JSON-encoded rate limits with `SMS` and `EmailGateway` buckets, each containing `Minute`/`Hour`/`Day`/`Week`/`Month`/`Year` integer counts (`-1` = unlimited). Posted values are deep-merged over the canonical defaults, so a partial payload (only one bucket, or only some intervals) preserves the missing keys at `-1`. Omit to store the full all-`-1` defaults. |
 | CustomEmailHeaders | String | No | JSON-encoded SMTP header overrides for users in this group (e.g. `{"Add":{"X-Header":"value"},"Remove":["X-Other"]}`). |
-| Options | Object \| String | No | Object of user group option keys and values, or a JSON string of one when the request is form-encoded. The two shapes `usergroup.update` and `usergroup.patch` accept. Anything else is `ErrorCode 28`. Omitting the parameter is unchanged. Changed in v5.9.6 |
+| Options | Object \| String | No | Object of user group option keys and values, or a JSON string of one when the request is form-encoded. The two shapes `usergroup.update` and `usergroup.patch` accept. Anything else is `ErrorCode 28`. Omitting the parameter is unchanged. `/api.php` lowercases nested keys, and `EmailGatewayApplyHeaderFooter` is stored under that canonical spelling; every other key is stored as sent. Changed in v5.9.6 |
 | SubscriptionPlan | String | No | Subscription plan identifier for the group. |
 
 ::: warning Options (v5.9.6)
@@ -1544,7 +1544,7 @@ curl -X POST https://example.com/api.php \
 | ForceRejectOptLink | String | Yes | 'Enabled' or 'Disabled' |
 | DefaultRateLimits | String | No | JSON-encoded rate limits with `SMS` and `EmailGateway` buckets, each containing `Minute`/`Hour`/`Day`/`Week`/`Month`/`Year` integer counts (`-1` = unlimited). Posted values are deep-merged over the canonical defaults, so a partial payload (only one bucket, or only some intervals) preserves the missing keys at `-1`. Omit the field entirely to keep the existing row's value. |
 | CustomEmailHeaders | String | No | JSON-encoded SMTP header overrides for users in this group (e.g. `{"Add":{"X-Header":"value"},"Remove":["X-Other"]}`). Omit to keep the existing row's value. |
-| Options | Object | No | JSON object of per-group options (e.g. `TargetDeliveryServerID_Marketing`, `EmailGatewayDNSTemplate`, `DefaultSenderDomain`, `EnableSenderInfo`). Pass as an object. The endpoint JSON-encodes it. Omit to keep the existing row's value. |
+| Options | Object | No | JSON object of per-group options (e.g. `TargetDeliveryServerID_Marketing`, `EmailGatewayDNSTemplate`, `DefaultSenderDomain`, `EnableSenderInfo`, `EmailGatewayApplyHeaderFooter`). Pass as an object. The endpoint JSON-encodes it. Omit to keep the existing row's value. |
 | SubscriptionPlan | String | No | Subscription plan identifier for the group. Omit to keep the existing row's value. |
 | SendMethod | String | No | Group send method. Possible values: `System`, `SMTP`, `LocalMTA`, `PHPMail`, `PowerMTA`, `SaveToDisk`. Any value other than `System` sends a test email with the given settings before saving |
 | SendMethodSMTPUsername | String | No | SMTP username for the `SMTP` send method. **Changed in v6.0.1:** omit it to keep the stored username. A sent value, including an empty string, replaces it |
@@ -1685,7 +1685,7 @@ The only safe way to change a single value through `usergroup.update` is to read
 | SendMethodSMTPAuth | String | No | `true` or `false` |
 | SendMethodSMTPUsername | String | No | SMTP username |
 | SendMethodSMTPPassword | String | No | SMTP password. **Omit it and the stored password is left completely untouched** |
-| Options | Object \| String | No | Group options as an object, or a JSON string that decodes to an object |
+| Options | Object \| String | No | Group options as an object, or a JSON string that decodes to an object. `/api.php` lowercases nested keys, and `EmailGatewayApplyHeaderFooter` is stored under that canonical spelling; every other key is stored as sent. |
 | DefaultRateLimits | Object \| String | No | Rate-limit buckets. Merged over the canonical defaults, so a partial payload cannot drop a bucket |
 | CustomEmailHeaders | String | No | Custom email headers |
 | SubscriptionPlan | String | No | Subscription plan identifier for the group |
@@ -1813,7 +1813,7 @@ curl -X POST https://example.com/api.php \
 | Key | Accepted input | Stored as |
 |---|---|---|
 | TargetDeliveryServerID_Marketing, TargetDeliveryServerID_Transactional, TargetDeliveryServerID_AutoResponder | Delivery server ID, or `0` for the system default. The server must exist | Digit string, as the screen's `<select>` posts it |
-| ShowEmailThroughput, PreventEmailCampaignCreateIfSpamAssassinScoreIsNotZero, SimplifiedCampaignCreateUI, SenderDomainManagement, EnableSenderInfo, ForcedSenderInfo, DefaultSenderDomainActivate | `Enabled` / `Disabled` (also `true` / `false`) | `"Enabled"` when on, boolean `false` when off. This is what the screen stores for a ticked or unticked checkbox, and `DefaultSenderDomainActivate` is read by truthiness, so `Disabled` is never stored |
+| ShowEmailThroughput, PreventEmailCampaignCreateIfSpamAssassinScoreIsNotZero, SimplifiedCampaignCreateUI, SenderDomainManagement, EnableSenderInfo, ForcedSenderInfo, DefaultSenderDomainActivate, EmailGatewayApplyHeaderFooter | `Enabled` / `Disabled` (also `true` / `false`) | `"Enabled"` when on, boolean `false` when off. This is what the screen stores for a ticked or unticked checkbox, and `DefaultSenderDomainActivate` is read by truthiness, so `Disabled` is never stored |
 | DisableSESPlugins, EmailGatewayNewDomainManualApproval | `Enabled` / `Disabled` | `"Enabled"` / `"Disabled"` |
 | DisableListUnsubscribeHeader | `true` / `false` | Boolean |
 | DefaultSenderDomain, UserAreaLogoutURL | String | String (trimmed) |

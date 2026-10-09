@@ -130,6 +130,7 @@ Configure default text that is prepended or appended to every email sent by user
 | **Plain Email Footer** | Text appended to all plain-text emails. |
 | **HTML Email Header** | HTML prepended to all HTML emails. |
 | **HTML Email Footer** | HTML appended to all HTML emails. |
+| **Apply the header and footer to Email Gateway API and SMTP relay emails** | Off by default. When on, the four header and footer fields above are also added to email that users in this group send through the Email Gateway API or the SMTP relay. See [Headers and footers on Email Gateway email](#headers-and-footers-on-email-gateway-email). |
 
 ##### Adding the footer unsubscribe link only when the email has none
 
@@ -159,6 +160,22 @@ Things to know:
 - A link that does not use the tag, such as a hard-coded URL or an image map, is not detected, so the fallback link is added as well.
 - A block that is not closed is treated as ordinary text: its markers are removed and its content is always added.
 - Email gateway sends do not use fallback blocks.
+
+##### Headers and footers on Email Gateway email
+
+By default, the user group header and footer are added to campaigns, autoresponders, transactional email, journey email and confirmation email, but not to email sent through the Email Gateway API or the SMTP relay. Gateway email is usually transactional (password resets, receipts), and many integrations expect it to arrive exactly as they sent it.
+
+To add the header and footer to gateway email too, open **Settings > User Groups**, edit the group, and turn on **Apply the header and footer to Email Gateway API and SMTP relay emails** in the email headers and footers section. The change applies to email delivered after you save, within about a minute.
+
+When the option is on:
+
+- The plain-text header and footer are added to the plain-text part, and the HTML header and footer to the HTML part. A part the email does not have is not created.
+- HTML without `<body>` tags still gets the header and footer, at the start and end of the content.
+- Links in the footer are click-tracked when the sender domain has link tracking on.
+- Journey email is not affected, because journeys already add the header and footer.
+- Only the user group header and footer are added. List and user headers and footers are not.
+
+Gateway email is not personalized the way a campaign is, so merge tags such as `%Subscriber:EmailAddress%`, `%Link:Unsubscribe%` or <code v-pre>{{ FirstName }}</code> in the header and footer are removed, and an <code v-pre>{{#unless_unsubscribe}}...{{/unless_unsubscribe}}</code> block is removed with its content. Write gateway headers and footers as plain text and fixed links. The unsubscribe link in gateway email comes from the sender domain's **Unsubscribe link** setting, not from the user group footer.
 
 **X-Mailer Header**
 
