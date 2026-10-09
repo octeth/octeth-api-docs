@@ -34,7 +34,7 @@ Error codes can be single values or arrays:
 
 | Code | Description | Fix |
 |------|-------------|-----|
-| 99998 | Invalid API key or session | Check your authentication credentials |
+| 99998 | Invalid API key or session, or a user session used from an address outside the user-area IP allow-list (`ErrorText` "Access from this IP address is not allowed") | Check your authentication credentials, or call from an allowed address |
 | 99999 | Session expired | Re-authenticate to get a new session |
 | 3 | Invalid login credentials | Verify username and password |
 | 6 | Invalid 2FA code | Check your authenticator app |

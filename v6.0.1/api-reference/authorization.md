@@ -82,6 +82,8 @@ curl https://your-domain.com/api.php \
   -F "tfacode=123456"
 ```
 
+**User-area IP restriction.** With **Prevent user login from IP addresses not in the list** on and a non-empty Authorized IP Addresses list, `user.login` with a username and password, and every call made with a user `SessionID`, are refused from an address outside the list (`ErrorCode` `[3]` and `99998` respectively, both with `ErrorText` "Access from this IP address is not allowed"). Calls authenticated with a user `APIKey`, including a `SessionID` obtained from `user.login` with `APIKey`, are not restricted. Loopback is always allowed.
+
 ### Admin Scope
 
 Access to system administration.

@@ -158,6 +158,14 @@ If your integration only ever held the hash, use a per-user API key from the use
 **`Disable2FA` and `Disable2FAToken` are stripped from any request arriving over HTTP.** They now work only for Octeth's own in-process callers, which is what they were always for. An external caller that sends them gets the ordinary two-factor challenge.
 :::
 
+::: warning Behavior change (v6.0.1, #3229)
+With **Prevent user login from IP addresses not in the list** ticked in Settings > Security and Authorized IP Addresses filled in, a `Username` and `Password` login from an address outside the list is refused before the password is checked, and no session is created:
+
+`{"Success":false,"ErrorCode":[3],"ErrorText":["Access from this IP address is not allowed"]}`
+
+The error code is the ordinary invalid-login code, so an integration that reads only the code treats it as a failed login. A login with `APIKey` is not affected. With the setting off or the list empty, nothing changes.
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -200,6 +208,7 @@ curl -X POST https://example.com/api.php \
 1: Missing Username parameter
 2: Missing Password parameter
 3: Invalid login information
+3: Access from this IP address is not allowed (user-area IP restriction, see above)
 6: Invalid 2FA code or recovery code
 ```
 
