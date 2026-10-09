@@ -65,7 +65,7 @@ These checkboxes control what users in this group can and must do:
 |---|---|
 | **Enable Sender Info** | Requires users to enter sender information when creating subscriber lists. |
 | **Force Sender Info** | Appends sender information to the bottom of all outgoing emails. |
-| **Force Unsubscription Link** | Prevents users from sending campaigns without an unsubscription link in the email content. |
+| **Force Unsubscription Link** | Checks, when an email is saved, that it will carry an unsubscribe link. The check passes when `%Link:Unsubscribe%` or <code v-pre>{{ Link:Unsubscribe }}</code> appears in the email content or in a header or footer the save screen checks, including inside an unsubscribe fallback block. Which headers and footers count depends on where the email is saved (see below). It does not add a link to an email at send time. To guarantee a link, put one in the user group footer. |
 | **Force Reject Opt Link** | Requires users to include an opt-in rejection link in confirmation emails. |
 | **Force Opt-In List** | Restricts users to creating double opt-in subscriber lists only. |
 | **Show Email Throughput** | Displays email delivery throughput metrics on the campaign dashboard. |
@@ -109,6 +109,17 @@ Thresholds trigger warnings when usage approaches a configured percentage limit.
 | **Import Threshold** | Percentage threshold that triggers a warning during subscriber imports. Set to `0` to disable. |
 | **Email Send Threshold** | Percentage threshold that triggers a warning during email sending. Set to `0` to disable. |
 
+Where an email is saved decides which headers and footers the Force Unsubscription Link check reads:
+
+| Saved from | Headers and footers checked besides the content |
+|---|---|
+| The `email.update` API (`ValidateScope` `Campaign` or `AutoResponder`) | User group only |
+| The email content step of the campaign and autoresponder wizards | User group and user. List headers and footers count only for autoresponders, because a campaign's target lists are not known when its email is saved. |
+| The campaign email editor | User group and user |
+| The email template editor | User group only |
+
+When the content is fetched from a URL in the wizards, only the fetched content is checked.
+
 **Email Headers and Footers**
 
 Configure default text that is prepended or appended to every email sent by users in this group:
@@ -119,6 +130,35 @@ Configure default text that is prepended or appended to every email sent by user
 | **Plain Email Footer** | Text appended to all plain-text emails. |
 | **HTML Email Header** | HTML prepended to all HTML emails. |
 | **HTML Email Footer** | HTML appended to all HTML emails. |
+
+##### Adding the footer unsubscribe link only when the email has none
+
+If you put `%Link:Unsubscribe%` in the user group footer, an email whose template already has its own unsubscribe link shows two. To avoid this, wrap the footer link in an unsubscribe fallback block:
+
+```html
+{{#unless_unsubscribe}}<p><a href="%Link:Unsubscribe%">Unsubscribe</a></p>{{/unless_unsubscribe}}
+```
+
+For the plain footer:
+
+```text
+{{#unless_unsubscribe}}Unsubscribe: %Link:Unsubscribe%{{/unless_unsubscribe}}
+```
+
+When an email is sent or previewed, Octeth checks the email content and every header and footer outside fallback blocks for `%Link:Unsubscribe%` or <code v-pre>{{ Link:Unsubscribe }}</code>:
+
+- If one is found, every fallback block is removed with its content.
+- If none is found, the first fallback block keeps its content and the others are removed, so the email gets exactly one link. List and user footers come before the user group footer, so a list or user fallback block wins over the group's.
+
+The HTML part and the plain-text part are checked separately. A header or footer without a fallback block behaves as before. Text outside the block, such as your company address, is always added.
+
+Things to know:
+
+- The block works only in headers and footers. Typed into the email content, it stays as literal text.
+- A template link inside an `[IF:...]` condition counts as present even when the condition hides it for a subscriber. That subscriber then gets no link.
+- A link that does not use the tag, such as a hard-coded URL or an image map, is not detected, so the fallback link is added as well.
+- A block that is not closed is treated as ordinary text: its markers are removed and its content is always added.
+- Email gateway sends do not use fallback blocks.
 
 **X-Mailer Header**
 

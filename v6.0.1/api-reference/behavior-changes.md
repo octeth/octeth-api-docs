@@ -367,6 +367,14 @@ An integration that reconciles `AvailableCredits` from `user.get` against the nu
 
 An integration that sent JSON `true` and saw tracking off will now see it on. Check campaigns saved this way before v6.0.1 with `email.get`, because their stored flags are not changed by the upgrade.
 
+#### `email.update` accepts <code v-pre>{{ Link:Unsubscribe }}</code> when Force Unsubscription Link is on
+
+With the user group option **Force Unsubscription Link** enabled, `email.update` with `ValidateScope=Campaign` or `AutoResponder` rejected content that used the Handlebars form <code v-pre>{{ Link:Unsubscribe }}</code> with error code `11` (HTML) or `12` (plain), because only `%Link:Unsubscribe%` was recognised. Both forms are now accepted, in the content and in the user group header and footer. The legacy campaign wizard and the email template editor follow the same rule. A call that was accepted before is still accepted.
+
+#### Unsubscribe fallback block in headers and footers
+
+A header or footer (user group, user or list) can wrap its unsubscribe link in <code v-pre>{{#unless_unsubscribe}}...{{/unless_unsubscribe}}</code>. The block renders only when the email part has no other `%Link:Unsubscribe%` (in that exact case) or <code v-pre>{{ Link:Unsubscribe }}</code>, and only one block renders per part. This applies to campaigns, autoresponders, journey emails, transactional emails, `email.render` and previews. Email gateway sends are not covered. A header or footer without the block produces the same output as before, so nothing changes until an administrator adds one.
+
 ### Email headers and footers
 
 #### HTML content without a `<body>` tag now carries headers and footers
@@ -452,6 +460,7 @@ Before v6.0.1, a mail server that rejected the welcome or password-reset email p
 29. **If email or SMS content uses a <code v-pre>{{ User:\* }}</code> or <code v-pre>{{ List:\* }}</code> tag outside the documented fields, replace it before upgrading**, since it now renders empty. For example, replace <code v-pre>{{ User:Username }}</code> with a fixed value. Then, if accounts you do not fully trust can author email, rotate the SMTP passwords on your user groups and the credentials on your delivery servers. See [User and List merge tags render only their documented fields](#user-and-list-merge-tags-render-only-their-documented-fields).
 30. **If you send HTML fragments with no `<body>` tag, preview one before upgrading.** List, account and user group headers and footers are now added to it, including any unsubscribe link in the user group footer. See [HTML content without a `<body>` tag now carries headers and footers](#html-content-without-a-body-tag-now-carries-headers-and-footers).
 31. **If an integration saves campaign emails with `email.update`, handle `ErrorCode` `21`** by sending a full From address, or a local part together with `SenderDomain`. See [`email.update` refuses a campaign From address that has no domain](#email-update-refuses-a-campaign-from-address-that-has-no-domain).
+32. **Optional: if your user group footer adds `%Link:Unsubscribe%` and templates carry their own link, wrap the footer link in <code v-pre>{{#unless_unsubscribe}}...{{/unless_unsubscribe}}</code>** so each email shows one unsubscribe link. See [Users](/v6.0.1/using-octeth/users#adding-the-footer-unsubscribe-link-only-when-the-email-has-none).
 
 ---
 

@@ -304,8 +304,8 @@ curl -X POST https://example.com/api.php \
 8: Email content cannot be empty
 9: Missing required parameter ValidateScope
 10: Invalid ValidateScope parameter (must be OptIn, Campaign, or AutoResponder)
-11: Missing unsubscribe link in HTML content
-12: Missing unsubscribe link in plain content
+11: Missing unsubscribe link in HTML content (only when the user group has Force Unsubscription Link enabled and ValidateScope is Campaign or AutoResponder; %Link:Unsubscribe% or {{ Link:Unsubscribe }} in the content or in the user group HTML header or footer, including inside an unsubscribe fallback block, satisfies it)
+12: Missing unsubscribe link in plain content (same rule, for the plain content and the user group plain header or footer)
 17: Invalid sender domain (only raised when ValidateScope=Campaign; OptIn and AutoResponder scopes bypass this check)
 18: Missing UTMSource parameter (required when UTMTracking is enabled)
 19: Missing UTMMedium parameter (required when UTMTracking is enabled)
