@@ -82,6 +82,10 @@ The user area's Account page follows the same rule: it shows the recovery code o
 
 This is a hardening change. The recovery code switches two-factor authentication off when it is used at login, so it should not appear in a response that is read on every page load. It is a deliberate exception to the opt-in flag rule for the same reason. New two-factor secrets for users and administrators are also generated from a cryptographic random source now. Existing enrolments keep working unchanged.
 
+#### A Community Edition license key limits users and subscribers
+
+When `LICENSE_KEY` starts with `CE`, the installation runs as the Community Edition. `user.create` answers ErrorCode `16` once one user account exists. Adding a new subscriber through `subscriber.create`, `subscriber.subscribe`, `subscriber.optin` or an import answers with that call's existing subscriber-limit error once 10,000 active subscribers exist across the installation. An import stops once the remaining allowance is used, and the rows before that point stay imported. Updates to existing subscribers and all sending are not affected. With any other license key, behavior is unchanged.
+
 ### Credentials in admin and SSO responses
 
 #### User group and delivery server responses no longer carry SMTP credentials

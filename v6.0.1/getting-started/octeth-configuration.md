@@ -71,7 +71,7 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
 
 3. **Security & Authentication**
    ```bash
-   LICENSE_KEY=6491-2039-4581-F4C6-F1CC-8334-38B9-CBA9-1092  # Your Octeth license
+   LICENSE_KEY=6491-2039-4581-F4C6-F1CC-8334-38B9-CBA9-1092  # Your Octeth license. A key starting with CE runs the Community Edition
    ADMIN_API_KEY=SZaQtZfJ4zufb8blykpvHPM6IBhFGFf0           # Admin API access key
    HASH_IDS_SALT=elis9RqKmDLLt3B+Ls5kfC_+fl7IZoO3          # Hash ID salt
    OEMPRO_PASSWORD_SALT=elis9RqKmDLLt3B+Ls5kfC_+fl7IZoO3   # Password encryption salt
@@ -79,6 +79,8 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
    OEMPRO_SUPERADMIN_AUTH_CODE=                            # Optional super-admin auth code (enables an extra admin authentication gate). Empty = disabled
    OEMPRO_SUPERADMIN_AUTH_TIMEOUT=                         # Timeout (seconds) for the super-admin auth session when the code above is set
    ```
+
+   A `LICENSE_KEY` that starts with `CE` (uppercase) runs the installation as the Octeth Community Edition. It has every feature, with two limits: one user account, and 10,000 active subscribers counted across every list on the installation. The same address on two lists counts twice, while unsubscribed, unconfirmed and hard-bounced subscribers do not count. Administrator accounts are not limited. At either limit, new user accounts or new subscribers are refused on every path (subscribe forms, the API, imports, journeys and website tracking), and the administrator area shows a notice. Existing users and subscribers stay, and campaigns and journeys keep sending to them. Replacing the key with a paid license key removes both limits right away: edit `LICENSE_KEY`, or pass the new key to the upgrade command with `--license-key` (see [Upgrading Octeth](./upgrading-octeth.md#change-the-license-key)).
 
 4. **Debugging & Logging**
    ```bash

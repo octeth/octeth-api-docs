@@ -166,6 +166,22 @@ By default, the command prevents downgrading or reinstalling the same version. U
 Downgrading is not recommended and may cause database incompatibilities. Only use `--force` for downgrades if instructed by Octeth support.
 :::
 
+### Change the License Key
+
+Pass a new license key to write it to `LICENSE_KEY` in `.oempro_env` as part of the upgrade:
+
+```bash
+/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v6.0.1.zip --license-key YOUR-LICENSE-KEY
+```
+
+`--license-key-file <path>` reads the key from a file instead, and the `OCTETH_LICENSE_KEY` environment variable works too. If you give more than one, `--license-key` wins over the file, and the file wins over the environment variable. The key is written after the environment files are merged, it is never printed or logged, and a rollback restores the previous key. Without any of these options the key is left unchanged. Reading the key from standard input (`--license-key-file -`) is not supported during an upgrade.
+
+When you upgrade from a version older than v6.0.1, use `OCTETH_LICENSE_KEY`. The older upgrade command rejects the new options before it refreshes itself from the new release.
+
+```bash
+OCTETH_LICENSE_KEY=YOUR-LICENSE-KEY /opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v6.0.1.zip
+```
+
 ### Combining Options
 
 Options can be combined as needed:
@@ -214,6 +230,10 @@ The backup directory location is displayed in the rollback output. Your database
 :::
 
 ## Notes for This Release
+
+### Community Edition limits
+
+A license key that starts with `CE` now runs Octeth as the Community Edition: one user account and 10,000 active subscribers across the installation. See [Octeth Configuration](./octeth-configuration.md) for what the limits cover. If the key the upgrade leaves in place starts with `CE`, the upgrade says so before it starts. To move to a paid license, pass the paid key with `--license-key` (see [Change the License Key](#change-the-license-key)).
 
 ### The email gateway monitor now watches for missing MTA feedback
 
