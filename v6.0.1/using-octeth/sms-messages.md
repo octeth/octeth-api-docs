@@ -9,17 +9,16 @@ SMS messaging in Octeth allows you to reach your subscribers directly on their m
 Currently, SMS messages are sent through the **Journey Builder**, where you add a Send SMS action to automate text message delivery as part of your customer journeys. This article covers how to set up SMS gateways, configure your subscriber lists for SMS, send messages through journeys, and manage SMS suppression lists.
 
 ::: info
-SMS Marketing is a licensed feature. If it is not enabled in your Octeth license, contact [Octeth Sales](mailto:sales@octeth.com) for more information.
+SMS messaging is included in every Octeth license, the Community Edition too. No license key change is needed to use it.
 :::
 
 ## Prerequisites
 
 Before you can send SMS messages, the following must be in place:
 
-1. **SMS Marketing license** — Your Octeth license must include the SMS Marketing feature.
-2. **SMS gateway** — An administrator must configure at least one SMS gateway (such as Infobip) to connect Octeth to an SMS delivery provider.
-3. **Phone number field** — Each subscriber list that will receive SMS messages must have a custom field mapped to store mobile phone numbers.
-4. **Subscriber phone data** — Subscribers must have valid phone numbers stored in the mapped custom field.
+1. **SMS gateway:** an administrator must configure at least one SMS gateway (such as Infobip) to connect Octeth to an SMS delivery provider. An administrator account with limited access needs the SMS privilege to manage gateways.
+2. **Phone number field:** each subscriber list that will receive SMS messages must have a custom field mapped to store mobile phone numbers.
+3. **Subscriber phone data:** subscribers must have valid phone numbers stored in the mapped custom field.
 
 ## Administrator Setup
 
