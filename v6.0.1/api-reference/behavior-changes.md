@@ -8,12 +8,6 @@ description: Deliberate API behavior changes in Octeth v6.0.1 that an existing i
 
 This page lists every deliberate change in v6.0.1 that an existing integration can observe, so you can check your code against it before upgrading.
 
-::: info Release in progress
-This page is written as changes merge during the release cycle, not at release time. A deliberate contract change reads as an ordinary bug fix in the commit log, so a page assembled from commit subjects at the end of a cycle will miss it.
-
-If this notice is still here when the release ships, there were no observable API behavior changes in v6.0.1.
-:::
-
 ## Tier 1: changes that can break an integration
 
 ### Email gateway
@@ -93,6 +87,8 @@ This is a hardening change. The recovery code switches two-factor authentication
 `usergroup.get` and `usergroups.get` no longer return `SendMethodSMTPUsername` or `SendMethodSMTPPassword`. Each group now carries `HasSendMethodSMTPPassword` (`true` when a password is stored). Every other group field is returned as before, with one exception: credential keys nested inside `Options` and `ThemeInformation` (for example `Password`, `APIKey`, `SendMethodSMTPPassword` or `smtp_password`) are removed at any depth. When `Options` holds such a key, the value is returned re-encoded without it, so its bytes can differ from the stored value. A value with no such key is returned byte for byte as stored. A column added to the user groups table in a later release is not returned until it is added to the response deliberately.
 
 `deliveryservers.get` no longer returns `ConnectionParams.smtp_password`. Each server now carries `HasSMTPPassword`, and `DeliveryServerID` is an integer. Each server in the list is now exactly what `deliveryserver.get` returns for it, apart from the user group assignments both already computed. `ConnectionParams` carries `smtp_host`, `smtp_port`, `smtp_secure`, `smtp_timeout`, `smtp_auth` and `smtp_username`, and any other key is withheld.
+
+`deliveryserver.get` returns the same projection. Before v6.0.1 it removed only `smtp_password` from `ConnectionParams` and returned every other stored key. It now returns only the six keys listed above, so any other key stored in `ConnectionParams` is no longer returned. Credential keys nested inside a returned value, and inside `Domains` and `VerificationResults` (for example `Password`, `APIKey` or `smtp_password`), are removed at any depth. `DeliveryServerID` is an integer and `HasSMTPPassword` is unchanged.
 
 `usergroup.update` and `deliveryserver.update` replace the whole record. Because an integration can no longer read the password back, both commands now keep the stored SMTP password when `SendMethodSMTPPassword` is omitted, and `usergroup.update` also keeps the stored `SendMethodSMTPUsername` when it is omitted. Before, an omitted value was stored as empty, which broke the group's or server's sending. Sending a value, including an empty string, still replaces the stored one.
 
@@ -248,6 +244,44 @@ On `subscriber.update`, a malformed request that sends `Fields` as a plain strin
 
 The subscriber profile page reaches `subscriber.update`, so a subscriber who saves the page with a required Date field unselected now gets an error instead of a blank date.
 
+### Segments
+
+#### `segment.create` and `segment.update` refuse malformed `RulesJSON`
+
+The segment engine implements three levels of rules: the top-level list, a group, and a sub-group that holds rules only. Before v6.0.1, a group nested deeper than that, a rule object carrying a key `0`, or a plain value where a rule or group belongs compiled to no condition, so the segment matched its whole list. Any segment that referenced it did the same.
+
+`segment.create` and `segment.update` now refuse such a `RulesJSON` with HTTP `422`, `ErrorCode` `12` and the `ErrorText` "Segment rules must be a list of rules or groups, a group may hold rules or sub-groups, and a sub-group may hold rules only. A rule must not carry a key 0." Nothing is saved. The same refusal applies when `RulesJSON` is sent as a JSON object or array instead of a string, and when it decodes to a single value such as `"x"`, `5` or `null` instead of a list. A `RulesJSON` that is not valid JSON at all is still accepted as before. Error code `12` is not new: it is the code these commands already use for an invalid SMS activity rule.
+
+**Segments already stored in one of these shapes now match no subscribers.** The malformed group or rule is applied as a condition that is always false, and the reason is written to the log, so the segment, and any segment or campaign that uses it, no longer reaches the whole list. Segments built in the Octeth interface never have this shape. Review segments created or updated through the API, and save them again with a well-formed `RulesJSON`. See [Create a Segment](./segments.md#create-a-segment).
+
+### SMS campaigns
+
+#### SMS merge tags use the email syntax
+
+SMS content now uses the same merge tag syntax as email: <code v-pre>{{ Subscriber:FirstName }}</code>, or <code v-pre>{{ Subscriber:FirstName | "there" }}</code> with a fallback value. A tag names a standard subscriber column, a custom field by its merge tag alias or as `CustomField<ID>`, or a global custom field. Values are rendered as plain text, so a name such as `O'Brien` is never sent as an HTML entity. The single-brace syntax that v6.0.0 used, `{CustomField7}` and `{CustomField7|"there"}`, is no longer replaced: content that still uses it reaches the handset as typed. Rewrite SMS campaign content, SMS templates and journey SMS messages that use it before sending them again.
+
+`sms.mergetags.get` returns the new syntax. Each entry in `MergeTags` carries `Tag` in the new form (for example <code v-pre>{{ Subscriber:FirstName }}</code>), plus new `Field` and `Group` (`Custom`, `Global` or `Standard`) keys, and the list now also includes the standard subscriber columns. `DefaultValueExample` shows the fallback form. See [Get Merge Tags for a List](./sms-campaigns.md#get-merge-tags-for-a-list).
+
+The commands that store or send SMS content now refuse a tag that cannot be rendered, instead of sending it:
+
+| Command | Error code | HTTP | Cause |
+|---|---|---|---|
+| `smscampaign.create` | `14` | `422` | A tag names a field the list does not have |
+| `smscampaign.create` | `15` | `500` | The list's fields could not be read to check the tags |
+| `smscampaign.create` | `16` | `422` | A tag cannot be read: a misspelt scope, a scope SMS does not render such as <code v-pre>{{ Campaign:... }}</code>, or a space after the colon |
+| `smscampaign.update` | `17` | `422` | A tag names a field the list does not have |
+| `smscampaign.update` | `18` | `500` | The list's fields could not be read to check the tags |
+| `smscampaign.update` | `19` | `422` | A tag cannot be read |
+| `smscampaign.test` | `13` | `422` | A tag cannot be read |
+
+A campaign whose tags cannot be resolved when it is sent skips its recipients rather than sending a fallback or a raw tag.
+
+#### `smscampaign.create` uses the account's timezone, and refuses an unknown one
+
+When `Timezone` is omitted, `smscampaign.create` now stores the account's own timezone. Before v6.0.1 it stored `UTC`. The campaign's `Timezone` decides when quiet hours apply and how a schedule time is read, so a campaign created without `Timezone` on an account outside UTC now holds and schedules in the account's local time. Send `Timezone=UTC` to keep the old behavior.
+
+A `Timezone` that is not a known IANA name, such as `Europe/Istanbul`, is now refused with HTTP `422`: error `17` from `smscampaign.create`, `20` from `smscampaign.update` and `13` from `smscampaign.schedule`, which now accepts `Timezone` too. Before v6.0.1 an unknown name was stored and then read as UTC. See [Create a Campaign](./sms-campaigns.md#create-a-campaign).
+
 ### Outbound URLs
 
 #### URLs supplied by an account holder refuse internal destinations
@@ -321,6 +355,12 @@ The bulk (`RulesJSON`) form of `subscribers.delete` and `subscriber.unsubscribe`
 
 `subscribers.delete` with `Suppressed=true` removes suppression entries by `SuppressionID`. Before v6.0.1, with `SubscriberListID=0` (the account-level suppression list) it removed any account-level entry with that id, including another account's, and the system-wide entries that hard bounces and spam complaints create. From v6.0.1 it removes only entries that belong to the calling account, on its own lists or its account-level list. An id that belongs to another account, or to a system-wide entry, is skipped the same way as an id that does not exist, and the response is unchanged. The same applies to deleting entries from the suppression list pages in the user area. System-wide entries can be removed from the administrator area only.
 
+#### `subscribers.import.post` counts every row of a headerless phone-only CSV
+
+When the CSV has no header row and its first row carries a phone number but no email address, `subscribers.import.post` used to take that first row for a header. `TotalSubscribers` in the response was one lower than the number of rows imported. It now counts that row, the same way the import worker does, and reads the file with the import's own field terminator and encloser. Files whose first row is a header, or carries an email address, are counted as before.
+
+The same count decides whether the import runs at once, inside the request, or in the background (`RUN_IMPORT_IN_SYNC_FOR_SUBSCRIBERS_LESS_THAN`). A headerless phone-only file with one row more than that limit now runs in the background instead of at once, so poll `subscribers.import.get` for it as for any background import.
+
 ### Suppression
 
 #### Removing a suppression reports the scopes that still apply
@@ -345,6 +385,10 @@ A database failure while reading recipient activity now returns `Success: false`
 
 `journey.clone`, `journeys.clone` and `journey.copytouser` number their copies the same way. `journey.clone` now also points each copied branch action at the clone's own Decision. Before v6.0.1 the branch actions of a clone pointed at the source journey's Decision and never ran. Actions that cannot be reached from a root action are no longer copied, as the other two clone commands already did. Journeys cloned before the upgrade are not repaired, so clone them again from the source, or rebuild their branches.
 
+#### `journey.actions.update` returns the error body for a refused From address
+
+When `journey.actions.update` refused a Send Email action's From address (error `7` for an empty From email, `8` for an invalid From email username, `9` for an incomplete From email address), it answered HTTP `422` with an empty `null` body, so the caller could not tell why. It now answers HTTP `422` with `{"Errors":[{"Code":7,"Message":"From email is required"}]}` and the matching code and message for `8` and `9`. The status code and the refusal itself are unchanged.
+
 ### Custom fields
 
 #### A TAB in a custom field name is stored as a space
@@ -362,6 +406,37 @@ WHERE FieldName LIKE CONCAT('%', CHAR(9), '%');
 ```
 
 Renaming such a field through the user or admin interface, or with `customfield.update` or `global.customfield.update`, stores the new name with spaces in place of any TAB.
+
+### SMS campaigns
+
+#### New fields and parameters on the SMS campaign commands
+
+These additions are opt-in or additive. A call that does not send the new parameters gets the same answer as before, apart from the new keys.
+
+- `smscampaign.create` and `smscampaign.update` accept `LinkExpiryHours`, how long the message's links work after each message is sent (`0`, the default, uses the install default). A value outside the allowed range is refused with error `21`. `smscampaign.get` and `smscampaign.browse` return the stored `LinkExpiryHours` on each campaign.
+- `smscampaign.get` returns two new objects: `QuietHours`, which says whether quiet hours are holding the campaign right now and when it resumes, and `LinkExpiry`, with `EffectiveHours`, `DefaultHours` and `MaxHours`.
+- `smscampaign.browse` accepts `CreatedAfter` and `CreatedBefore` (`YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS`), and refuses a value it cannot parse with error `3`.
+- `smscampaign.recipients.browse` accepts `Engagement` (`clicked`, `replied` or `optedout`, refused with error `7` otherwise), `RecordsFrom` for offset paging, `IncludeTotal` for a `TotalRecipients` count, and `IncludeSkipped`, which also lists the recipients skipped before anything was queued for them, with `Status` `Skipped` and a `SkipReason`. The response echoes `Engagement` and `RecordsFrom`.
+- `smscampaign.schedule` accepts `Timezone`, the timezone `ScheduledAt` and `SendDeadlineAt` are read in. It is stored as the campaign's timezone. See [SMS campaigns are created in the account's timezone](#smscampaign-create-uses-the-account-s-timezone-and-refuses-an-unknown-one).
+- `smscampaign.stats.timeseries` accepts `Granularity=minute`, for a campaign that finished sending within an hour. `hour` stays the default.
+- `smscampaign.events.export.get` returns a working `DownloadURL`. Before v6.0.1 the link pointed under the application path (`/app/`), where the download script does not run, so it did not download the export. It now points to `sms_export_download.php` at the root of `APP_URL`, and keeps its signature and expiry.
+- The opt-out footer is now added on its own line. Before v6.0.1 it followed the message on the same line, separated by a space. The line break counts toward the message length, the same way in the measurement, the test send and the real send.
+
+See [SMS Campaigns](./sms-campaigns.md) and [SMS Reporting](./sms-reporting.md).
+
+### Monitoring
+
+#### `system.health.check` adds a `TrackingDomainTLS` check and probes the login pages locally
+
+`Checks` has a new key, `TrackingDomainTLS`. It reads the result of a background probe that connects to the tracking host of every enabled sender domain over TLS, hourly and shortly after a domain is verified. It is `OK` when every probed host completed a TLS handshake. Otherwise its value starts with `WARNING:` and names up to 20 domains and the probe result for each. A warning never changes `Success` or the HTTP status: the probe runs from the Octeth server, so a domain behind a CDN that blocks that server can probe as failing while recipients reach it. `Timings` gains a matching `TrackingDomainTLS` entry. A monitor that alerts on any value other than `OK` in `Checks` will now alert on this warning.
+
+The `AdminFrontend` and `UserFrontend` checks now request the admin and user login pages from inside the application container, at `http://127.0.0.1/app/admin/` and `http://127.0.0.1/app/user/`, with the host from `APP_URL` as the `Host` header and without following redirects. Before v6.0.1 they went through the public `APP_URL`, so a CDN or firewall rule on `/app/admin`, or a short outage at the edge, turned the whole check into HTTP `503` while Octeth itself was healthy. The check names, failure messages and the `200` and `503` statuses are unchanged. Monitor the public address separately if you relied on these checks to watch it. See [Check System Health](./system.md#check-system-health).
+
+### API responses
+
+#### Case-insensitive `ResponseFormat` is available as an opt-in
+
+`api.php` matches `ResponseFormat` against `JSON` and `XML` exactly, and answers any other spelling, including lowercase `xml`, with JSON. That is unchanged by default. A new setting, `API_RESPONSEFORMAT_CASE_INSENSITIVE`, makes the match case-insensitive when set to `true`, so `ResponseFormat=xml` returns XML with `Content-Type: text/xml`. The same format is used for the normal response and for a hard-failure error, so one request never answers in two formats. It is `false` in the code and in the shipped example file, so neither a fresh installation nor an upgrade changes behavior. Before turning it on, check every integration that sends a lowercase value, because those calls will start receiving XML. See [Error Handling](./error-handling.md#responseformat-xml-on-hard-failures).
 
 ### Credits
 
@@ -485,6 +560,11 @@ Before v6.0.1, a mail server that rejected the welcome or password-reset email p
 30. **If you send HTML fragments with no `<body>` tag, preview one before upgrading.** List, account and user group headers and footers are now added to it, including any unsubscribe link in the user group footer. See [HTML content without a `<body>` tag now carries headers and footers](#html-content-without-a-body-tag-now-carries-headers-and-footers).
 31. **If an integration saves campaign emails with `email.update`, handle `ErrorCode` `21`** by sending a full From address, or a local part together with `SenderDomain`. See [`email.update` refuses a campaign From address that has no domain](#email-update-refuses-a-campaign-from-address-that-has-no-domain).
 32. **Optional: if your user group footer adds `%Link:Unsubscribe%` and templates carry their own link, wrap the footer link in <code v-pre>{{#unless_unsubscribe}}...{{/unless_unsubscribe}}</code>** so each email shows one unsubscribe link. See [Users](/v6.0.1/using-octeth/users#adding-the-footer-unsubscribe-link-only-when-the-email-has-none).
+33. **If an integration creates or updates segments with `RulesJSON`, handle HTTP `422` with `ErrorCode` `12`**, and send `RulesJSON` as a JSON string holding a list of rules or groups, at most three levels deep, with no rule carrying a key `0`. Review segments saved through the API before the upgrade: one stored with a deeper group or a key `0` rule now matches no subscribers, where it used to match its whole list. See [`segment.create` and `segment.update` refuse malformed `RulesJSON`](#segment-create-and-segment-update-refuse-malformed-rulesjson).
+34. **If SMS content, SMS templates or journey SMS messages use the single-brace `{CustomField7}` merge tags, rewrite them as <code v-pre>{{ Subscriber:CustomField7 }}</code>** (or the field's merge tag alias) before sending again, and handle the new merge tag refusals from `smscampaign.create` (`14` to `16`), `smscampaign.update` (`17` to `19`) and `smscampaign.test` (`13`). See [SMS merge tags use the email syntax](#sms-merge-tags-use-the-email-syntax).
+35. **If an integration creates SMS campaigns without `Timezone` and expects UTC, send `Timezone=UTC`.** The account's own timezone is now the default, and an unknown timezone name is refused. See [`smscampaign.create` uses the account's timezone, and refuses an unknown one](#smscampaign-create-uses-the-account-s-timezone-and-refuses-an-unknown-one).
+36. **If an integration reads keys from `deliveryserver.get` `ConnectionParams` other than `smtp_host`, `smtp_port`, `smtp_secure`, `smtp_timeout`, `smtp_auth` and `smtp_username`, stop relying on them.** They are no longer returned.
+37. **If a monitor alerts on any `Checks` value other than `OK` from `system.health.check`, decide how to treat the new `TrackingDomainTLS` warning**, and watch the public address separately if you relied on `AdminFrontend` and `UserFrontend` to probe it. See [`system.health.check` adds a `TrackingDomainTLS` check](#system-health-check-adds-a-trackingdomaintls-check-and-probes-the-login-pages-locally).
 
 ---
 

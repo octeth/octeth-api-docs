@@ -9,7 +9,7 @@ description: Track Octeth version releases, development status, and upcoming fea
 This roadmap shows all past and upcoming Octeth releases. Use this page to track version history, plan upgrades, and see what's coming next.
 
 ::: tip Current Version
-The latest stable release is **v6.0.0** (released September 25th, 2026). [View changelog](/changelog#v6-0-0) to see what's new.
+The latest stable release is **v6.0.1** (released October 10th, 2026). [View changelog](/changelog#v6-0-1) to see what's new.
 :::
 
 ## Understanding Version Numbers
@@ -66,15 +66,15 @@ Each version has a status badge indicating its current state:
 | v5.9.5  |           <Badge type="tip" text="Released" />           | Aug 28th, 2026 | Segment rule security closure, Email Gateway recipient domain reporting repaired, upgrade and logging reliability |
 | v5.9.6  |           <Badge type="tip" text="Released" />           | Sep 11th, 2026 | New user interface, complete admin API with sub-admin authorization, journey and segment correctness |
 | v6.0.0  |           <Badge type="tip" text="Released" />           | Sep 25th, 2026 | API security audit remediation, bulk SMS campaigns via API, enforced API rate limits, real visitor IP addresses |
+| v6.0.1  |           <Badge type="tip" text="Released" />           | Oct 10th, 2026 | Bulk SMS campaigns in the new interface, Xeebi SMS gateway, sender domain health report, email gateway sending controls |
 
 ::: info What's Next?
-Octeth ships on a **two-week release cadence**, so expect a new version roughly every fortnight. The next release is due **October 9th, 2026**.
+Octeth ships on a **two-week release cadence**, so expect a new version roughly every fortnight. The next release is due **October 24th, 2026**.
 :::
 
 ## Release Schedule
 
-Octeth follows this general release cadence:
+Octeth ships a new version every two weeks. Whatever is finished on release day goes into that release, and anything still in progress moves to the next one, so you get fixes and new features on a predictable schedule instead of waiting for a large release.
 
-- **Patch releases** (v5.7.x) - As needed for bug fixes and minor improvements
-- **Minor releases** (v5.x.0) - Every 3-6 months with new features
-- **Major releases** (v6.0.0) - Annually with significant platform updates
+- **Patch releases** (v6.0.x) - The regular two-week releases, carrying new features, improvements and fixes
+- **Minor and major releases** (v6.1.0, v7.0.0) - Used when a release changes the platform significantly, still on the same two-week schedule

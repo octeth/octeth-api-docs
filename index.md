@@ -9,10 +9,10 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /v6.0.1/getting-started
+      link: /v6.0.1/getting-started/server-requirements
     - theme: alt
       text: API Reference
-      link: /v6.0.1/api-reference/administrators
+      link: /v6.0.1/api-reference/admin
 ---
 
 <script setup>
