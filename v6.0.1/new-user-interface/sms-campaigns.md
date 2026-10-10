@@ -38,7 +38,7 @@ You need:
    - Keep **Everyone on this list**, or
    - Click **Add conditions** and build rules, then click **Done with conditions**. Use **Match** to choose **All rule groups** or **Any rule group**. To send to a saved segment, add a rule of the **Segment** type.
 5. In **Send through**, choose the gateway. Gateways shared by your administrator show `(shared)` after their name.
-6. Write the **Message**. Type two opening braces, `{{`, to insert a field from the list.
+6. Write the **Message**. Type two opening braces, <code v-pre>{{</code>, to insert a field from the list.
 7. Click **Continue**.
 
 The audience box shows a recipient count "before invalid, suppressed and duplicate numbers are removed". If the audience is larger than one campaign may send to, the box says so and the campaign cannot go out. The limit is set by your administrator (1,000,000 by default).
@@ -74,7 +74,7 @@ Each part is billed, so a shorter message costs less. See [SMS Message Encoding]
 
 ### Personalizing the message
 
-Type `{{` in the message to open the list of fields, grouped as Standard, Global and Custom. Choosing one inserts a merge tag such as <code v-pre>{{ Subscriber:FirstName }}</code>.
+Type <code v-pre>{{</code> in the message to open the list of fields, grouped as Standard, Global and Custom. Choosing one inserts a merge tag such as <code v-pre>{{ Subscriber:FirstName }}</code>.
 
 Add a fallback for contacts with no value:
 

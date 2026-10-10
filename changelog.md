@@ -87,7 +87,7 @@ Several changes alter behavior on upgrade: email gateway and journey sending now
 - **Outbound requests refuse internal destinations.** Remote content and integration URLs supplied by an account holder, and journey, gateway and alert webhooks, are refused when they resolve to a private, loopback or link-local address (#2940, #2953)
 - **Stored SMTP passwords are no longer printed into admin edit pages** (#3265)
 - **Credentials are removed from API responses.** User group, delivery server and admin user search responses, and single sign-on returned user data, no longer carry SMTP or delivery server credentials, and `user.current` no longer returns the two-factor recovery code (#2930, #2949)
-- **<code v-pre>{{ User:* }}</code> and <code v-pre>{{ List:* }}</code> merge tags render only their documented profile fields**, so email and SMS content can no longer read account or list settings. See the Upgrade Notes (#3249)
+- **<code v-pre>{{ User:&#42; }}</code> and <code v-pre>{{ List:&#42; }}</code> merge tags render only their documented profile fields**, so email and SMS content can no longer read account or list settings. See the Upgrade Notes (#3249)
 - **Credentials are redacted from logs** in the application, the API logger and the new user interface, and the API log file is no longer readable by other users (#3052, #2955, #3051)
 - **Account-supplied text is escaped in the new user interface's customer templates** (#2985)
 - **The installer no longer prints secrets**, and can read the admin password from a file (#3074)
