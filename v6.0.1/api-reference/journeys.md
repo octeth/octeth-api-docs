@@ -1288,6 +1288,8 @@ The Journey Builder's own save path shares this implementation, so a canvas save
 
 **Decision field validation (codes 10 and 11):** custom fields are per-list columns, so a Decision rule can only be evaluated against fields of the journey's trigger list or global custom fields (`IsGlobal = Yes`). A rule naming a field of another list, or a field that no longer exists, is refused with one `Errors[]` entry per problem before any stored action is changed, so a rejected call leaves the journey exactly as it was. When the trigger has no list (`Manual`, email triggers) only existence is checked. Before v5.9.6 such a rule was stored and failed at run time, routing every subscriber down the No branch.
 
+**Action refusals return an `Errors` body (changed in v6.0.1):** codes `7`, `8` and `9` (a SendEmail action's From address) and code `6` for an invalid action type are returned with HTTP `422` and an `Errors` array holding the code and its message, the same envelope as the other errors. Before v6.0.1 these refusals were answered with HTTP `422` and an empty (`null`) body.
+
 **`OrderNo` numbering (changed in v6.0.1):** saving numbers every action of the journey in one depth-first sequence: a Decision, then its Yes branch, then its No branch, then the actions after the Decision. A child's `OrderNo` is always higher than its parent's. Before v6.0.1, numbering restarted at 1 inside every Decision branch. The `OrderNo` values of branch actions returned by this command and by `journey.get` change accordingly. The response shape and the order of siblings are unchanged. Journeys saved before v6.0.1 keep their per-branch numbers until they are saved again.
 
 ## Update Actions Published Status

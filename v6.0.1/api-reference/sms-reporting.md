@@ -274,10 +274,10 @@ curl -X GET https://example.com/api/v1/smscampaign.stats.breakdown \
 | Status | String | No | Filter by delivery status. Possible values: `Queued`, `Released`, `Sending`, `Sent`, `Delivered`, `Failed`, `Expired`, `Rejected`, `Suppressed`, `Cancelled`, and `Skipped` when `IncludeSkipped` is sent |
 | Limit | Integer | No | Rows per page, 1 to 500. Default 50 |
 | Cursor | Integer | No | `NextCursor` from the previous page. Ignored when `RecordsFrom` is sent |
-| RecordsFrom | Integer | No | Offset into the result set. Sending it switches this call from cursor paging to offset paging and implies `IncludeTotal` |
-| IncludeTotal | Boolean | No | Return `TotalRecipients`. Costs one extra `COUNT` over the same filters, so it is off unless asked for |
-| IncludeSkipped | Boolean | No | Also list the recipients that were skipped before anything was queued for them. Implies offset paging and `IncludeTotal`. Off by default |
-| Engagement | String | No | List only recipients who clicked a link, replied or opted out in this campaign. Combines with `Status`. Possible values: `clicked`, `replied`, `optedout` |
+| RecordsFrom | Integer | No | <Badge type="tip" text="New in v6.0.1" /> Offset into the result set. Sending it switches this call from cursor paging to offset paging and implies `IncludeTotal` |
+| IncludeTotal | Boolean | No | <Badge type="tip" text="New in v6.0.1" /> Return `TotalRecipients`. Costs one extra `COUNT` over the same filters, so it is off unless asked for |
+| IncludeSkipped | Boolean | No | <Badge type="tip" text="New in v6.0.1" /> Also list the recipients that were skipped before anything was queued for them. Implies offset paging and `IncludeTotal`. Off by default |
+| Engagement | String | No | <Badge type="tip" text="New in v6.0.1" /> List only recipients who clicked a link, replied or opted out in this campaign. Combines with `Status`. Possible values: `clicked`, `replied`, `optedout` |
 
 ::: tip Skipped recipients
 A recipient who is skipped when the campaign is queued (already suppressed, an invalid or duplicate number, a frequency cap, a message that could not be personalized, too long, or a blocked word) never gets a queue row, so by default this endpoint does not list them. A campaign of 7 with 1 suppressed returns 6 rows.
@@ -332,17 +332,31 @@ curl -X GET https://example.com/api/v1/smscampaign.recipients \
   "SMSCampaignID": 1234,
   "DetailExpired": false,
   "Status": "Delivered",
+  "Engagement": null,
   "Limit": 100,
+  "RecordsFrom": 0,
+  "TotalRecipients": null,
   "Recipients": [
     {
-      "QueueID": 994463,
-      "RelSubscriberID": 1005,
+      "QueueID": "994463",
+      "RelSubscriberID": "1005",
       "RecipientNumber": "+905550000005",
       "Status": "Delivered",
+      "SenderID": "OCTETH",
+      "MessageParts": "1",
+      "MessageEncoding": "GSM7",
+      "GatewayStatus": "DELIVRD",
+      "GatewayErrorCode": "",
+      "ErrorMessage": "",
+      "Cost": "0.04500",
+      "RetryCount": "0",
       "SentTime": "2026-09-19 14:15:08",
       "DeliveredTime": "2026-09-19 14:15:31",
       "FirstClickedAt": null,
-      "ClickCount": 0
+      "ClickCount": "0",
+      "RepliedAt": null,
+      "OptedOutAt": null,
+      "CreatedAt": "2026-09-19 14:15:02"
     }
   ],
   "NextCursor": 994463
@@ -361,8 +375,8 @@ curl -X GET https://example.com/api/v1/smscampaign.recipients \
 2: Campaign not found, or it belongs to another account
 3: Invalid Status
 5: The recipients could not be read
-6: The skipped recipients could not be read (only with IncludeSkipped)
-7: Invalid Engagement
+6: The skipped recipients could not be read (only with IncludeSkipped, new in v6.0.1)
+7: Invalid Engagement (new in v6.0.1)
 ```
 
 :::
@@ -828,15 +842,15 @@ curl -X GET https://example.com/api/v1/sms.stats.account \
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
 | OptOutsOnly | Boolean | No | Return only replies that were treated as an opt-out. Superseded by `Filter`, and ignored when `Filter` is sent |
-| Filter | String | No | One bucket of the feed. Possible values: `optouts`, `failedoptouts`, `unattributed`. Omit for everything |
+| Filter | String | No | <Badge type="tip" text="New in v6.0.1" /> One bucket of the feed. Possible values: `optouts`, `failedoptouts`, `unattributed`. Omit for everything |
 | IncludeUnattributed | Boolean | No | Include replies that could not be matched to a contact. Defaults to `true`, so send it explicitly as `false` to exclude them |
-| Order | String | No | Possible values: `oldest` (default), `newest`. See the note below before changing it |
-| SearchNumber | String | No | Return only replies from numbers containing these digits. Non-digits are stripped; at least 3 digits are required |
-| CreatedAfter | String | No | Only replies received at or after this point. `YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS`; a bare date means 00:00:00 |
-| CreatedBefore | String | No | Only replies received at or before this point. A bare date means 23:59:59, so the whole day is included |
+| Order | String | No | <Badge type="tip" text="New in v6.0.1" /> Possible values: `oldest` (default), `newest`. See the note below before changing it |
+| SearchNumber | String | No | <Badge type="tip" text="New in v6.0.1" /> Return only replies from numbers containing these digits. Non-digits are stripped; at least 3 digits are required |
+| CreatedAfter | String | No | <Badge type="tip" text="New in v6.0.1" /> Only replies received at or after this point. `YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS`; a bare date means 00:00:00 |
+| CreatedBefore | String | No | <Badge type="tip" text="New in v6.0.1" /> Only replies received at or before this point. A bare date means 23:59:59, so the whole day is included |
 | Limit | Integer | No | Rows per page, 1 to 500. Default 50 |
 | Cursor | Integer | No | `NextCursor` from the previous page. Ignored when `RecordsFrom` is sent |
-| RecordsFrom | Integer | No | Offset into the result set. Sending it switches this call from cursor paging to offset paging, which is what a numbered pagination control needs |
+| RecordsFrom | Integer | No | <Badge type="tip" text="New in v6.0.1" /> Offset into the result set. Sending it switches this call from cursor paging to offset paging, which is what a numbered pagination control needs |
 
 ::: tip Paging a feed that carries no total
 This endpoint returns no row count, deliberately: the table grows with every reply the account ever receives, and a `COUNT` on every page turn is the cost cursor paging exists to avoid.
@@ -874,14 +888,29 @@ curl -X GET https://example.com/api/v1/sms.replies \
   "Limit": 50,
   "OptOutsOnly": true,
   "IncludesUnattributed": true,
+  "Filter": "",
+  "Order": "oldest",
+  "RecordsFrom": 0,
+  "SearchNumber": "",
+  "CreatedAfter": null,
+  "CreatedBefore": null,
   "Replies": [
     {
-      "InboundID": 8811,
-      "FromNumber": "+905550000005",
+      "InboundID": "8811",
+      "RelGatewayID": "3",
+      "FromNumber": "905550000005",
+      "ToNumber": "905550000100",
       "MessageText": "STOP",
       "ReceivedAt": "2026-09-19 14:22:10",
       "ProcessingStatus": "processed",
-      "IsOptOut": 1
+      "RelUserID": "12",
+      "RelSMSCampaignID": "41",
+      "RelListID": "7",
+      "RelSubscriberID": "1503",
+      "IsOptOut": "1",
+      "OptOutScope": "user",
+      "UnsubscribeStatus": "done",
+      "ProcessedAt": "2026-09-19 14:22:11"
     }
   ],
   "NextCursor": null
@@ -904,6 +933,8 @@ curl -X GET https://example.com/api/v1/sms.replies \
 ```
 
 :::
+
+<Badge type="tip" text="New in v6.0.1" /> The response echoes the request: `Filter` (lowercase, empty when not sent), `Order`, `RecordsFrom` (`0` in cursor mode), `SearchNumber` (the digits used, empty when not sent), and `CreatedAfter` and `CreatedBefore` as the applied `YYYY-MM-DD HH:MM:SS` boundary, or `null` when not sent. `NextCursor` is always `null` in offset mode. `FromNumber` is stored as bare digits, without `+`.
 
 `Filter` and `IncludeUnattributed` can appear to contradict each other. `Filter=unattributed` wins: asking for the unattributed bucket while also excluding unattributed replies would otherwise answer an empty list rather than an error.
 

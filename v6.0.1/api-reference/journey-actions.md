@@ -422,7 +422,7 @@ This action sends an SMS message to the subscriber.
 {
   "ActionID": 1,
   "Action": "SendSMS",
-  "message": "Hello {{EmailAddress}}, check out our latest offers!",
+  "message": "Hello {{ Subscriber:FirstName | \"there\" }}, check out our latest offers!",
   "gateway_id": 5,
   "sender_id": "+15551234567",
   "skip_if_no_phone": true,
@@ -450,7 +450,7 @@ This action sends an SMS message to the subscriber.
 | ActionID               | If provided, this will update the specified action. If not, set this parameter to `null` to create a new action. |
 | Action                 | Set this parameter to `SendSMS`.                                                                                 |
 | Published              | If this is set to `true`, the action will be enabled. Values: `true`, `false`. Default: `false`                  |
-| message                | The SMS message body. Supports personalization tags (e.g., `{{EmailAddress}}`).                                  |
+| message                | The SMS message body. <Badge type="warning" text="Changed in v6.0.1" /> Merge tags use the email syntax, <code v-pre>{{ Subscriber:FirstName }}</code> or <code v-pre>{{ Subscriber:FirstName &#124; "there" }}</code> with a fallback, and are rendered as plain text. <code v-pre>{{ Subscriber:EmailAddress }}</code> is empty for an SMS-only contact. The message is not checked when the journey is saved: when it holds a tag that cannot be read, no message is sent to that subscriber. The single-brace tags of v6.0.0, such as `{CustomField7}`, are no longer replaced. |
 | gateway_id             | The ID of the SMS gateway to use for sending.                                                                    |
 | sender_id              | The sender ID or phone number to use. If not set, the gateway default is used.                                   |
 | skip_if_no_phone       | If `true`, skips the SMS if the subscriber has no phone number. Default: `true`.                                 |

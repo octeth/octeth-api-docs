@@ -976,6 +976,12 @@ A row whose number cannot be normalized is skipped rather than imported with a b
 Header detection differs for these files and you do not need to do anything about it. An ordinary CSV is treated as having a header when its first row contains no email address; a phone-only file contains none in any row, so the first row is instead judged by whether its phone column holds something that normalizes. A label does not, a number does, so a headerless file keeps its first contact.
 :::
 
+::: tip Row count and immediate or background import
+For `ImportFrom.CSV.Data`, the endpoint counts the rows before it creates the import, and stores the count as the import's `TotalSubscribers`. Lines are split on `\n` and trailing empty lines are ignored. A file with one line counts as one row. Otherwise the first row is a header, and is not counted, unless one of its fields is a valid email address. <Badge type="warning" text="Changed in v6.0.1" /> When a column is mapped to `SMSPhoneNumber`, a first row whose phone column normalizes to a phone number is also counted as data, so a headerless phone-only file is no longer counted one row short. The first row is split with the request's `FieldTerminator` and `FieldEncloser` (`"` when the encloser is empty).
+
+When that count is at most `RUN_IMPORT_IN_SYNC_FOR_SUBSCRIBERS_LESS_THAN` (default `50`), the import runs during the request and the response's `ImportType` is `sync`. A larger file, and every import from `ImportFrom.CSV.URL` or another source, is queued for the import worker and `ImportType` is `async`. For those other sources, `TotalSubscribers` is stored as `0` when the import is created. Because the phone-only count is now one higher, a headerless phone-only file with exactly one row more than the setting now runs in the background, where before v6.0.1 it ran during the request.
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -1642,6 +1648,8 @@ Ordering is total: after the requested field, every other stored column of the e
 
 `TotalEvents` is counted up to 10,000. When the subscriber has more, `TotalEvents` is `10000`, `TotalEventsIsCapped` is `true`, and later pages can still be requested with `RecordsFrom`.
 
+On an error, `ErrorCode` is an array. The parameter checks (codes `1`, `2` and `5` to `8`) run together, so one response can list several codes, for example `[2, 5]`. Every other error returns a single code in the array. `ErrorCode` is the number `0` on success.
+
 ::: code-group
 
 ```bash [Example Request]
@@ -1652,8 +1660,8 @@ curl -X POST https://example.com/api.php \
     "SessionID": "your-session-id",
     "ListID": 124,
     "SubscriberID": 1,
-    "RecordsPerRequest": 50,
-    "RecordsFrom": 50
+    "RecordsPerRequest": 25,
+    "RecordsFrom": 0
   }'
 ```
 
@@ -1685,7 +1693,7 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": 4
+  "ErrorCode": [4]
 }
 ```
 
@@ -2612,7 +2620,7 @@ Enrolls every subscriber of a list that matches a selection into one journey, or
 The background job works out the matching subscribers again when it runs, in batches. Subscribers who start or stop matching between the request and the job are included or left out accordingly, so the processed number can differ from `MatchingSubscribers`.
 
 ::: tip API Usage Notes
-- Authentication required: User API Key
+- Authentication required: User API Key or user session
 - Required permissions: `Campaign.Create`
 - Rate limit: 20 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
@@ -2627,7 +2635,7 @@ The background job works out the matching subscribers again when it runs, in bat
 | APIKey | String | No | API key for authentication |
 | ListID | Integer | Yes | ID of the subscriber list. Must belong to the authenticated user |
 | JourneyID | Integer | Yes | ID of the journey. Must belong to the authenticated user |
-| Mode | String | Yes | `enroll` to start the journey for each matching subscriber, `unenroll` to remove each matching subscriber from the journey |
+| Mode | String | Yes | `enroll` to start the journey for each matching subscriber, `unenroll` to remove each matching subscriber from the journey. Case-insensitive, and surrounding whitespace is ignored. The response's `Mode` is the lowercase value |
 | RulesJSON | String | No | Segment rules that select the subscribers, in the same format `subscribers.search` accepts. Cannot be combined with `SegmentID` or `SearchQuery` |
 | Operator | String | No | `and` or `or`, how the top-level rules in `RulesJSON` combine. Default: `and` |
 | SegmentID | Integer | No | Select the members of this segment. The segment must belong to the authenticated user |

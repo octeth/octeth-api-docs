@@ -35,7 +35,7 @@ See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for the
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
 | SubscriberListID | Integer | Yes | ID of the subscriber list |
-| FieldName | String | Conditional | Name of the custom field (required if PresetName not provided) |
+| FieldName | String | Conditional | Name of the custom field (required if PresetName not provided). Leading and trailing whitespace and line breaks are removed. <Badge type="warning" text="Changed in v6.0.1" /> Each TAB inside the name is stored as a single space |
 | FieldType | String | Conditional | Type of field: "Single line", "Paragraph text", "Multiple choice", "Drop down", "Checkboxes", "Hidden field", "Date field", "Time field" (required if PresetName not provided) |
 | PresetName | String | No | Preset name (e.g., "Country"). If set, only SubscriberListID is required |
 | DataType | String | No | Simplified data type: "text", "longtext", "number", "datetime", "date", "time", "timestamp", "single-select", "multi-select". Overrides FieldType and other fields |
@@ -140,7 +140,7 @@ The parameter is still accepted so existing integrations that echo the field's c
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
 | CustomFieldID | Integer | Yes | ID of the custom field to update |
-| FieldName | String | Yes | Name of the custom field |
+| FieldName | String | Yes | Name of the custom field. Leading and trailing whitespace and line breaks are removed. <Badge type="warning" text="Changed in v6.0.1" /> Each TAB inside the name is stored as a single space |
 | FieldType | String | Yes | Type of field: "Single line", "Paragraph text", "Multiple choice", "Drop down", "Checkboxes", "Hidden field", "Date field", "Time field" |
 | SubscriberListID | Integer | No | ID of the subscriber list. **Immutable**: must match the field's current list if sent; a different list returns error `14`, a list you do not own returns error `13`. Omit to leave the field's list unchanged. A value that is not a positive integer (for example `"abc"`, `0`, `-1`, or an array) fails the format check and is silently ignored with `Success: true`, and neither `13` nor `14` is returned. See the behavior-change note above. |
 | DefaultValue | String | No | Default value for the custom field |
@@ -433,7 +433,7 @@ This applies at creation time only. Existing date fields are unaffected, and `gl
 | Command | String | Yes | API command: `global.customfield.create` |
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
-| FieldName | String | Yes | Name of the global custom field |
+| FieldName | String | Yes | Name of the global custom field. Leading and trailing whitespace and line breaks are removed. <Badge type="warning" text="Changed in v6.0.1" /> Each TAB inside the name is stored as a single space |
 | FieldType | String | Yes | Type of field: "Single line", "Paragraph text", "Multiple choice", "Drop down", "Checkboxes", "Hidden field", "Date field", "Time field" |
 | DefaultValue | String | No | Default value for the custom field |
 | ValidationMethod | String | No | Validation method: "Disabled", "Numbers", "Letters", "Numbers and letters", "Email address", "URL", "Date", "Time", "Custom" |
@@ -515,7 +515,7 @@ curl -X POST https://example.com/api.php \
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
 | CustomFieldID | Integer | Yes | ID of the global custom field to update |
-| FieldName | String | Yes | Name of the global custom field |
+| FieldName | String | Yes | Name of the global custom field. Leading and trailing whitespace and line breaks are removed. <Badge type="warning" text="Changed in v6.0.1" /> Each TAB inside the name is stored as a single space |
 | FieldType | String | Yes | Type of field: "Single line", "Paragraph text", "Multiple choice", "Drop down", "Checkboxes", "Hidden field", "Date field", "Time field" |
 | DefaultValue | String | No | Default value for the custom field |
 | ValidationMethod | String | No | Validation method: "Disabled", "Numbers", "Letters", "Numbers and letters", "Email address", "URL", "Date", "Time", "Custom" |

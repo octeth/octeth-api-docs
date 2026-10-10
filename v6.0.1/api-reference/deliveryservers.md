@@ -101,6 +101,69 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## Clone a Delivery Server <Badge type="tip" text="New in v6.0.1" />
+
+<Badge type="info" text="POST" /> `/api/v1/deliveryserver.clone`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required admin privilege: `DeliveryServers`
+- v1 REST alias: `POST /api/v1/deliveryserver.clone`. Legacy access via `/api.php` is also supported
+- Creates a new delivery server from an existing one. The new server gets the source's `ConnectionParams`, including the stored SMTP password, and its `Domains` settings, copied on the server. The password is never returned.
+- The verification results are reset to `false` and the last-checked time is cleared, as for a newly created server. Run [`deliveryserver.verify`](#verify-a-delivery-server) on the clone.
+- Not copied: email headers scoped to the source server, user group channel assignments and delivery routes.
+- Fires the `DeliveryServers.Create.Post` plugin hook with the new server's ID, the same hook `deliveryserver.create` fires.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `deliveryserver.clone` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| DeliveryServerID | Integer | Yes | ID of the delivery server to copy. Must be an integer or a string of digits greater than `0`. Any other value, such as `true` or `1.0`, returns error `2` |
+| DeliveryServerName | String | No | Name of the new server. Leading and trailing whitespace is trimmed and the name is cut to 250 characters. When it is omitted or empty after trimming, the name is the source server's name followed by ` (Copy)` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "deliveryserver.clone",
+    "SessionID": "admin-session-id",
+    "DeliveryServerID": 123,
+    "DeliveryServerName": "Secondary SMTP Server"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "DeliveryServerID": 124
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Delivery server not found"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing deliveryserverid
+2: Delivery server not found
+3: Delivery server could not be created
+```
+
+:::
+
 ## Save Delivery Server Test Results
 
 <Badge type="info" text="GET" /> `/api/v1/deliveryserver.testresults`
@@ -476,7 +539,7 @@ curl -X POST https://example.com/api.php \
 - Authentication required: Admin API Key
 - Required admin privilege: `DeliveryServers`
 - v1 REST alias: `GET /api/v1/deliveryserver.get`. Legacy access via `/api.php` is also supported
-- `ConnectionParams.smtp_password` is never returned; `HasSMTPPassword` says whether one is stored. `ConnectionParams` carries only `smtp_host`, `smtp_port`, `smtp_secure`, `smtp_timeout`, `smtp_auth` and `smtp_username`. Since v6.0.1, `deliveryserver.update` keeps the stored password when `SendMethodSMTPPassword` is omitted, so a client editing a server does not need to hold it.
+- `ConnectionParams.smtp_password` is never returned; `HasSMTPPassword` says whether one is stored. <Badge type="warning" text="Changed in v6.0.1" /> `ConnectionParams` carries only `smtp_host`, `smtp_port`, `smtp_secure`, `smtp_timeout`, `smtp_auth` and `smtp_username`, and only those the server has stored. Any other stored key is left out. Credential keys nested inside a returned value (such as `smtp_password`, `ConnectionParams`, `Password` or `APIKey`) are also removed, and the same removal applies to `Domains` and `VerificationResults`. Since v6.0.1, `deliveryserver.update` keeps the stored password when `SendMethodSMTPPassword` is omitted, so a client editing a server does not need to hold it.
 - Since v6.0.1, `deliveryservers.get` returns the same object for each server.
 - `UserGroupAssignments` / `IsAllocated` are the same reverse map `deliveryservers.get` computes from every user group's `TargetDeliveryServerID_*` options.
 :::

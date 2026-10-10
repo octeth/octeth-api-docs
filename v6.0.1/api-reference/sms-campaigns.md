@@ -72,7 +72,7 @@ curl -X POST https://example.com/api/v1/smscampaign.create \
     "SessionID": "your-session-id",
     "CampaignName": "October promotion",
     "ListID": 42,
-    "MessageContent": "Hi {FirstName}, 20% off this week only.",
+    "MessageContent": "Hi {{ Subscriber:FirstName }}, 20% off this week only.",
     "GatewayID": 3
   }'
 ```
@@ -194,7 +194,7 @@ curl -X POST https://example.com/api/v1/smscampaign.update \
     "Command": "smscampaign.update",
     "SessionID": "your-session-id",
     "SMSCampaignID": 4821,
-    "MessageContent": "Hi {FirstName}, 25% off this week only."
+    "MessageContent": "Hi {{ Subscriber:FirstName }}, 25% off this week only."
   }'
 ```
 
@@ -240,7 +240,7 @@ curl -X POST https://example.com/api/v1/smscampaign.update \
 
 :::
 
-### Rename a Campaign
+### Rename a Campaign <Badge type="tip" text="New in v6.0.1" />
 
 <Badge type="info" text="POST" /> `/api/v1/smscampaign.rename`
 
@@ -283,7 +283,6 @@ curl -X POST https://example.com/api/v1/smscampaign.rename \
 ```json [Success Response]
 {
   "Success": true,
-  "ErrorCode": 0,
   "SMSCampaignID": 4821,
   "CampaignName": "Spring promotion, final"
 }
@@ -470,8 +469,8 @@ curl -X GET https://example.com/api/v1/smscampaign.get \
 
 ```txt [Error Codes]
 0: Success
-1: Missing SMSCampaignID parameter
-2: Campaign not found
+1: Missing SMSCampaignID parameter, or SMSCampaignID is not a positive whole number (for example "12abc" or "1.5"), HTTP 422
+2: Campaign not found, HTTP 404
 4: The campaign's links could not be read
 ```
 
@@ -863,6 +862,8 @@ The same as sending, but at a future moment. The campaign sits in `Scheduled` un
 | ConfirmationToken | String | Yes | From `smscampaign.estimate.get` |
 | SendDeadlineAt | String | No | Stop sending after this moment. Must be after `ScheduledAt` |
 
+`ScheduledAt` and `SendDeadlineAt` in the response are stored in UTC, and `Timezone` is the timezone the request was read in.
+
 ::: code-group
 
 ```bash [Example Request]
@@ -873,31 +874,50 @@ curl -X POST https://example.com/api/v1/smscampaign.schedule \
     "SessionID": "your-session-id",
     "SMSCampaignID": 4821,
     "ScheduledAt": "2026-10-01 09:00:00",
+    "Timezone": "Europe/Istanbul",
     "EstimateID": 173,
     "ConfirmationToken": "1758377028.8f2c..."
   }'
 ```
 
 ```json [Success Response]
-{ "Success": true, "ErrorCode": 0, "Status": "Scheduled" }
+{
+  "Success": true,
+  "SMSCampaignID": 4821,
+  "Status": "Scheduled",
+  "ScheduledAt": "2026-10-01 06:00:00",
+  "Timezone": "Europe/Istanbul",
+  "SendDeadlineAt": null,
+  "ConfirmedCost": "45.00000",
+  "ConfirmedRecipients": 1000,
+  "ProjectedCompletionAt": "2026-10-01 06:20:00"
+}
 ```
 
 ```json [Error Response]
 {
   "Success": false,
   "Errors": [{ "Code": 11, "Message": "Missing ScheduledAt parameter." }],
-  "ErrorCode": 11
+  "ErrorCode": 11,
+  "ErrorMessage": { "Code": 11, "Message": "Missing ScheduledAt parameter." }
 }
 ```
 
 ```txt [Error Codes]
 0: Success
-1: Missing or invalid SMSCampaignID parameter
-4: Missing or invalid EstimateID parameter; run smscampaign.estimate first
-9: The campaign could not be scheduled, so nothing was scheduled
-10: The campaign could not be scheduled as a single transaction
-11: Missing ScheduledAt parameter
-13: Timezone is not a known timezone
+1: Missing or invalid SMSCampaignID parameter (HTTP 422)
+2: Campaign not found, or it belongs to another account (HTTP 404)
+3: Only a Draft campaign can be scheduled (HTTP 422)
+4: Missing or invalid EstimateID parameter; run smscampaign.estimate first. Also returned for a missing ConfirmationToken (HTTP 422)
+5: The campaign has no SMS gateway; set GatewayID with smscampaign.update first (HTTP 422)
+6: The campaign's gateway is no longer active or assigned to this account (HTTP 422)
+7: The campaign changed status while it was being scheduled, so nothing was scheduled; read it again (HTTP 409)
+8: SendDeadlineAt cannot be read as a date and time, or is not after ScheduledAt (HTTP 422)
+9: The campaign could not be scheduled, so nothing was scheduled (HTTP 500)
+10: The campaign could not be scheduled as a single transaction, or could not be read (HTTP 500)
+11: Missing ScheduledAt parameter, or ScheduledAt cannot be read as a date and time in the timezone (HTTP 422)
+12: ScheduledAt is not in the future (HTTP 422)
+13: Timezone is not a known timezone (HTTP 422)
 31-36: The estimate and token errors listed under smscampaign.send
 ```
 
@@ -1438,7 +1458,7 @@ curl -X POST https://example.com/api/v1/smstemplate.create \
     "Command": "smstemplate.create",
     "SessionID": "your-session-id",
     "TemplateName": "Weekly promo",
-    "MessageContent": "Hi {FirstName}, this week only."
+    "MessageContent": "Hi {{ Subscriber:FirstName }}, this week only."
   }'
 ```
 
@@ -1511,7 +1531,7 @@ curl -X GET https://example.com/api/v1/smstemplate.browse \
     {
       "TemplateID": 17,
       "TemplateName": "Weekly promo",
-      "MessageContent": "Hi {FirstName}, this week only.",
+      "MessageContent": "Hi {{ Subscriber:FirstName }}, this week only.",
       "CreatedAt": "2026-09-20 14:02:11",
       "UpdatedAt": "2026-09-20 14:02:11"
     }

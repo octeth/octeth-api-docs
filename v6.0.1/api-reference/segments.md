@@ -91,7 +91,7 @@ curl -X POST https://example.com/api.php \
 3: Missing segment operator
 4: List not found or doesn't belong to user
 5: Invalid segment rule field or operator (issue #2720)
-12: RulesJSON is not valid: an sms-events rule is invalid (issue #2742), or the rules are not a list, nest deeper than three levels, or a rule carries a key 0 (issue #3056)
+12: RulesJSON is not valid: an sms-events rule is invalid (issue #2742), or RulesJSON is not a string, or the rules are not a list, nest deeper than three levels, or a rule carries a key 0 (issue #3056)
 ```
 
 :::
@@ -99,6 +99,8 @@ curl -X POST https://example.com/api.php \
 
 ::: warning RulesJSON nesting <Badge type="warning" text="Changed in v6.0.1" />
 `RulesJSON` holds at most three levels: a list of rules or groups, a group of rules or sub-groups, and a sub-group of rules only. This is the shape both rule builders produce. A document that nests deeper, a rule object that carries a key `0`, a plain value where a rule or group belongs, or a document that is a single plain value rather than a list is refused with error code `12` and HTTP 422, and nothing is saved.
+
+`RulesJSON` must be sent as a string that holds the JSON document. In a JSON request body, a `RulesJSON` sent as a JSON object or array rather than as a string is refused with error code `12` and HTTP 422. A string that is not valid JSON is not checked and is still saved as before, and so is an empty list (`[]`) or an empty group.
 
 Earlier versions saved such a document, and it compiled to no condition, so the segment matched its whole list. A segment already stored with that shape now matches nobody, and the reason is written to the system log.
 :::
@@ -198,7 +200,7 @@ curl -X POST https://example.com/api.php \
 5: Invalid segment operator
 6: Invalid subscriber list id
 7: Invalid segment rule field or operator (issue #2720)
-12: RulesJSON is not valid: an sms-events rule is invalid (issue #2742), or the rules are not a list, nest deeper than three levels, or a rule carries a key 0 (issue #3056)
+12: RulesJSON is not valid: an sms-events rule is invalid (issue #2742), or RulesJSON is not a string, or the rules are not a list, nest deeper than three levels, or a rule carries a key 0 (issue #3056)
 ```
 
 :::

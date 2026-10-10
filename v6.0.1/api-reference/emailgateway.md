@@ -170,6 +170,8 @@ curl -X POST https://example.com/api.php \
 | TrackMerge | String | No       | Custom tracking merge character (e.g., `-`). |
 | TrackPrefixDisabled | Integer | No | Set to `1` to disable the separate tracking subdomain. When disabled, tracking URLs use the sender (MFROM) domain instead. Set to `0` to re-enable. |
 
+When a call changes `Subdomain`, `TrackPrefix`, `TrackMerge` or `TrackPrefixDisabled`, the domain's DNS records are regenerated, `SubdomainChanged` is `true` and the domain's status is reset to `Approval Pending`, so the domain must be verified again. <Badge type="warning" text="Changed in v6.0.1" /> A domain an administrator has `Suspended` or `Blocked` keeps its status. Its DNS records are still regenerated, but a later verification does not release it.
+
 ::: code-group
 
 ```bash [Example Request]
@@ -215,7 +217,7 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 1: Missing required parameter (DomainID)
-5: Domain not found or access denied (a changed subdomain or track prefix resets the status to Approval Pending, except on a Suspended or Blocked domain, which keeps its status)
+5: Domain not found or access denied
 6: Invalid subdomain or track prefix value
 ```
 
@@ -1479,7 +1481,7 @@ curl -X DELETE https://example.com/api/v1/webhooks \
 :::
 
 ::: info Cross-domain queries
-`DomainID` is optional. When a `DomainID` is supplied, events are scoped to that single domain and ownership is verified against the authenticated user. When `DomainID` is omitted, the query spans every sender domain owned by the authenticated user. Tenant isolation is inherent: events are indexed per-user in Elasticsearch (`eg-events-u<UserID>-<date>`) and the query always filters by `user-id` regardless of whether a `DomainID` is provided.
+`DomainID` is optional. When a `DomainID` is supplied, events are scoped to that single domain and ownership is verified against the authenticated user. When `DomainID` is omitted, the query spans every sender domain owned by the authenticated user. Tenant isolation is inherent: events are stored in the ClickHouse `eg_events` table and every query filters by the authenticated user's ID, whether or not a `DomainID` is provided.
 
 Note that the public variant (`emailgateway.getevents.public`) still requires `DomainID` because it is authenticated by a domain-scoped API key.
 :::
@@ -1879,13 +1881,27 @@ curl -X POST https://example.com/api/v1/email \
 36: Invalid SubscriberID
 37: Invalid JourneyID
 38: Invalid ActionID
-39: Failed to resolve list recipients (returned with HTTP 502, not HTTP 200)
+39: Failed to resolve list recipients (returned with HTTP 502)
 40: Account pending approval (the account is not Trusted, returned with HTTP 403)
 429: Email send rate limit exceeded (or the send-rate counters could not be read and EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED is true)
 ```
 
+::: tip HTTP status codes
+Every error is returned inside an `Errors` array, and the HTTP status depends on the error code. Check the status before reading the body.
+
+| HTTP status | Error codes |
+|-------------|-------------|
+| `401` | `13`. A request with no API key at all is also rejected with `13`, before the required-field check, so code `1` is not returned in practice |
+| `403` | `12` (the sender domain owner's account is disabled), `32`, `34`, `40` |
+| `404` | `2`, and `12` when the sender domain owner's account cannot be found |
+| `409` | `14` |
+| `422` | `3`, `8` to `11`, `15`, `16`, `18` to `31`, `35` to `38` |
+| `429` | `17`, `429` |
+| `502` | `39` |
+:::
+
 ::: warning Error code 39 is returned with HTTP 502
-Unlike every other error code on this endpoint — which is returned inside an `Errors` array with an HTTP `200` status — code `39` is returned with HTTP status **`502`**. It means the recipient set behind `TargetListID` could not be resolved (the internal recipient-resolution request failed, timed out, returned a non-2xx status, returned no usable query, or the recipient query itself failed to execute).
+Code `39` is returned with HTTP status **`502`**. It means the recipient set behind `TargetListID` could not be resolved (the internal recipient-resolution request failed, timed out, returned a non-2xx status, returned no usable query, or the recipient query itself failed to execute).
 
 This condition is **not transient**: retrying the same request with the same unresolvable recipient set fails identically. Treat it as a permanent failure for that payload and investigate the list/segment rather than retrying in a loop.
 
@@ -2256,7 +2272,7 @@ curl -X POST https://example.com/api.php \
 
 Streams the email-gateway event log as CSV. Accepts the same filters as [`emailgateway.getevents`](#get-email-gateway-events) but bypasses the 100-row browse cap (hard cap at 10,000 rows). Designed to be embedded directly in a browser download link — when the user clicks "Export CSV", the browser streams the file to disk.
 
-Data is fetched from Elasticsearch in chunks of 1,000 rows; each chunk is flushed to the client immediately, so the loop is cancelable mid-download (closing the browser tab terminates the export before the next ES round-trip).
+Data is read from the ClickHouse event store in chunks of 1,000 rows. Each chunk is flushed to the client immediately, so closing the browser tab stops the export before the next chunk is read.
 
 **Response headers:**
 
