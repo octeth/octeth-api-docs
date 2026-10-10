@@ -166,31 +166,25 @@ By default, the command prevents downgrading or reinstalling the same version. U
 Downgrading is not recommended and may cause database incompatibilities. Only use `--force` for downgrades if instructed by Octeth support.
 :::
 
-### Change the License Key
+### Set the License Key
 
-Pass a new license key to write it to `LICENSE_KEY` in `.oempro_env` as part of the upgrade:
-
-```bash
-/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v6.0.1.zip --license-key YOUR-LICENSE-KEY
-```
-
-`--license-key-file <path>` reads the key from a file instead, and the `OCTETH_LICENSE_KEY` environment variable works too. If you give more than one, `--license-key` wins over the file, and the file wins over the environment variable. The key is written after the environment files are merged, it is never printed or logged, and a rollback restores the previous key. Without any of these options the key is left unchanged. Reading the key from standard input (`--license-key-file -`) is not supported during an upgrade.
-
-When you upgrade from a version older than v6.0.1, use `OCTETH_LICENSE_KEY`. The older upgrade command rejects the new options before it refreshes itself from the new release.
+Pass the license key from my.octeth.com to write it to `LICENSE_KEY` in `.oempro_env` as part of the upgrade:
 
 ```bash
-OCTETH_LICENSE_KEY=YOUR-LICENSE-KEY /opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v6.0.1.zip
+/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v6.0.1.zip --license-key-file /root/octeth-license
 ```
 
-### Install a License File
+`--license-key-file <path>` reads the whole file, so it can hold the one-line key or the BEGIN/END block. `--license-key <key>` and the `OCTETH_LICENSE_KEY` environment variable work too, but `--license-key` puts the key on the command line. If you give more than one, `--license-key` wins over the file, and the file wins over the environment variable. Reading the key from standard input (`--license-key-file -`) is not supported during an upgrade.
 
-Pass the signed license file from my.octeth.com to install it as part of the upgrade:
+The key is verified with the new release's verifier before anything is stopped. A key that does not verify (damaged, signed by an unknown key, or for another domain) stops the upgrade with the reason and changes nothing. The key is written after the environment files are merged, it is never printed or logged, and a rollback restores the previous key. Without any of these options the key is left unchanged.
+
+When no valid license key is in place and the upgrade runs in a terminal without `--yes`, it asks once, before it stops anything: paste the key, or press Enter to skip. A pasted key is verified the same way, and a key that does not verify is not used. With `--yes`, or when standard input is not a terminal, the upgrade never asks: it prints the license state and continues, and it never stops because of the license.
+
+When you upgrade from a version older than v6.0.1, use `OCTETH_LICENSE_KEY` or the prompt. The older upgrade command rejects the new options before it refreshes itself from the new release.
 
 ```bash
-/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v6.0.1.zip --license-file /root/octeth.license
+OCTETH_LICENSE_KEY="$(cat /root/octeth-license)" /opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v6.0.1.zip
 ```
-
-`OCTETH_LICENSE_FILE=<path>` works too. The file is verified with the new release's verifier before anything is stopped, so an invalid file stops the upgrade with the reason and changes nothing. It is installed at `data/octeth.license` (or `LICENSE_FILE`) after the environment files are merged. When upgrading from a version older than v6.0.1, use `OCTETH_LICENSE_FILE`, because the older upgrade command rejects the new option before it refreshes itself. If `LICENSE_FILE` points outside the installation, copy the file there yourself.
 
 ### Combining Options
 
@@ -241,9 +235,9 @@ The backup directory location is displayed in the rollback output. Your database
 
 ## Notes for This Release
 
-### License files
+### Signed license keys
 
-Octeth now reads the signed license file (`octeth.license`) from my.octeth.com and takes its edition, user account limit and subscriber limit from it. Every upgrade prints the license state before it starts: valid with its limits, no valid file with the reason and the grace days left, or that the Community limits apply. **Install the license file within 30 days of upgrading to keep your plan's limits.** After 30 days without a valid file, the installation runs with the Community limits (one user account and 10,000 subscribers). Sending never stops, but new users and subscribers above those limits are refused. Download the file for your domain from my.octeth.com and install it with `--license-file` (see [Install a License File](#install-a-license-file)) or on the administrator area's Settings > License page. See [Octeth Configuration](./octeth-configuration.md) for the details.
+Octeth now reads the signed license key from my.octeth.com and takes its edition, user account limit and subscriber limit from it. The key replaces the short `OCT-...` key in `LICENSE_KEY`, and the short key alone is no longer a license. Every upgrade prints the license state before it starts: valid with its limits, no valid key with the reason and the grace days left, or that the Community limits apply. **Set the license key within 30 days of upgrading to keep your plan's limits.** After 30 days without a valid key, the installation runs with the Community limits (one user account and 10,000 subscribers). Sending never stops, but new users and subscribers above those limits are refused. Copy the key for your domain from my.octeth.com and paste it when the upgrade asks, pass it with `--license-key-file` (see [Set the License Key](#set-the-license-key)), or paste it on the administrator area's Settings > License page. Email gateway webhook signatures do not change. See [Octeth Configuration](./octeth-configuration.md) for the details.
 
 ### The email gateway monitor now watches for missing MTA feedback
 

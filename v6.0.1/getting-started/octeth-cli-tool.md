@@ -406,7 +406,7 @@ Unattended production-style install. Write the admin password and the license ke
   --license-key-file /root/octeth-license
 ```
 
-Delete both files once the installation has finished.
+The license key is the signed key from your license page at my.octeth.com, for the `--app-url` domain. Delete both files once the installation has finished.
 
 | Flag | Purpose |
 | --- | --- |
@@ -419,17 +419,17 @@ Delete both files once the installation has finished.
 | `--admin-username <username>` | Administrator username: 3-32 characters, starts with a letter, letters/digits/underscore. |
 | `--admin-password-file <path>` | Read the administrator password from the first line of a file. Use `-` to read it from standard input (requires `--yes`). Recommended. |
 | `--admin-password <password>` | Administrator password on the command line. See the warning below. |
-| `--license-key-file <path>` | Read the Octeth license key from the first line of a file, or from standard input with `-` (requires `--yes`). |
-| `--license-key <key>` | Octeth license key. May be empty and added later in `.oempro_env`. With `--yes`, leaving out every license-key source means an empty key, not a prompt. |
-| `--license-file <path>` | Signed license file (`octeth.license`) from my.octeth.com. It is verified once the containers start, and an invalid file stops and rolls back the installation. Without one, a fresh installation runs with the Community limits until a license file is installed on Settings > License. |
+| `--license-key-file <path>` | Read the Octeth license key from a file (the one-line key or the BEGIN/END block), or from standard input with `-` (requires `--yes`). |
+| `--license-key <key>` | Octeth license key: the signed key for the `--app-url` domain from my.octeth.com. It is verified once the containers start, before it is written to `.oempro_env`, and an invalid key stops and rolls back the installation with the reason. A short `OCT-...` key is refused before anything is installed. May be empty: the installation then runs with the Community limits until a key is set on Settings > License. With `--yes`, leaving out every license-key source means an empty key, not a prompt. |
+
+Without a license-key option, the interactive installer asks for the key. Paste the one-line key or the whole BEGIN/END block, or press Enter to leave it empty. A short key is refused and the question is asked again.
 
 The installer also reads these environment variables when the matching flags are not given:
 
 | Variable | Purpose |
 | --- | --- |
 | `OCTETH_ADMIN_PASSWORD` | Administrator password. |
-| `OCTETH_LICENSE_KEY` | Octeth license key. May be empty. |
-| `OCTETH_LICENSE_FILE` | Path of the signed license file, as `--license-file`. |
+| `OCTETH_LICENSE_KEY` | Octeth license key, as `--license-key`. May be empty. |
 
 Precedence is `--admin-password`, then `--admin-password-file`, then `OCTETH_ADMIN_PASSWORD`, and the same order for the license key. Passing both flags for the same value is an error, and only one of the two file flags can read standard input.
 

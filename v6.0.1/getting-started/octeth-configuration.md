@@ -71,8 +71,7 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
 
 3. **Security & Authentication**
    ```bash
-   LICENSE_KEY=6491-2039-4581-F4C6-F1CC-8334-38B9-CBA9-1092  # Your Octeth license key. Without a valid license file, a key starting with CE runs the Community Edition
-   LICENSE_FILE=                                           # Path of the signed license file (octeth.license). Empty means data/octeth.license; a relative path resolves against the install root
+   LICENSE_KEY=eyJ2IjoyLCJraWQiOi...                       # Your signed Octeth license key from my.octeth.com (one line, about 800 characters). A short OCT-... key is not a license
    ADMIN_API_KEY=SZaQtZfJ4zufb8blykpvHPM6IBhFGFf0           # Admin API access key
    HASH_IDS_SALT=elis9RqKmDLLt3B+Ls5kfC_+fl7IZoO3          # Hash ID salt
    OEMPRO_PASSWORD_SALT=elis9RqKmDLLt3B+Ls5kfC_+fl7IZoO3   # Password encryption salt
@@ -81,13 +80,21 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
    OEMPRO_SUPERADMIN_AUTH_TIMEOUT=                         # Timeout (seconds) for the super-admin auth session when the code above is set
    ```
 
-   **License file and limits.** Download `octeth.license` for the installation's domain from the license page at my.octeth.com. Octeth verifies it offline (Ed25519, with the public keys shipped in the release and never fetched) and takes the edition, the user account limit and the active subscriber limit from it. A file issued before subscriber limits were added means 10,000 subscribers for a Community license and unlimited for a paid one. Only the `APP_URL` host counts as the installation's domain, compared without case and without a leading `www.`.
+   **License key and limits.** Copy the license key for the installation's domain from the license page at my.octeth.com. It is one line of about 800 characters, `base64url(payload).base64url(signature)`. The same key shown as a `-----BEGIN OCTETH LICENSE-----` / `-----END OCTETH LICENSE-----` block, or wrapped over several lines, works too: the BEGIN and END lines and all spaces and line breaks are removed before it is checked. Octeth verifies the key offline (Ed25519, with the public keys shipped in the release and never fetched) and takes the edition, the user account limit and the active subscriber limit from it. A key issued before subscriber limits were added means 10,000 subscribers for a Community license and unlimited for a paid one. Only the `APP_URL` host counts as the installation's domain, compared without case and without a leading `www.`.
 
-   Install the file with `octeth.sh install:start --license-file <path>`, `octeth.sh upgrade <zip> --license-file <path>`, or the administrator area's Settings > License page. Each one verifies the file before writing it, refuses an invalid file with the reason, and never prints its contents.
+   Set the key in one of three places. Each one verifies the key before it is saved, refuses an invalid key with the reason, and never prints it:
 
-   Without a valid file (missing, unreadable, damaged, signed by an unknown key, issued for another product or another domain), the installation runs with the Community limits: one user account and 10,000 active subscribers counted across every list. The same address on two lists counts twice, while unsubscribed, unconfirmed and hard-bounced subscribers do not count, and administrator accounts are not limited. The administrator area names the reason. At a limit, new user accounts or new subscribers are refused on every path (subscribe forms, the API, imports, journeys and website tracking). Existing users and subscribers stay, and campaigns and journeys keep sending to them. A `LICENSE_KEY` that starts with `CE` without a valid file is the Community Edition.
+   - `octeth.sh install:start`: the license key prompt, `--license-key`, `--license-key-file` or `OCTETH_LICENSE_KEY` (see [Octeth CLI Tool](./octeth-cli-tool.md)).
+   - `octeth.sh upgrade <zip>`: `--license-key`, `--license-key-file` or `OCTETH_LICENSE_KEY`, or the prompt an interactive upgrade shows when no valid key is set (see [Upgrading Octeth](./upgrading-octeth.md)).
+   - The administrator area's Settings > License page: paste the key into the box and save. A key saved there is stored in the database and takes precedence over `LICENSE_KEY` while it is valid. The page shows which one is in use ("Pasted on this page" or "LICENSE_KEY in .oempro_env") and has a button to remove the pasted key, after which `LICENSE_KEY` decides again. If you later edit `LICENSE_KEY` by hand, remove the pasted key, or the pasted one keeps winning.
 
-   **Grace period.** An installation that existed before license files gets 30 days from its first run without a valid file, during which its limits do not change. The administrator area, `install.sh` and `upgrade.sh` show the days left. A fresh installation, or a `CE` key, has no grace period. When the license's `updates_until` date is older than the running release, the administrator area shows a warning and nothing is blocked.
+   The license page and the About page show the licensee and the license key masked to its last four characters, never the key itself.
+
+   Without a valid key (no key, a short `OCT-...` key, a damaged key, a key signed by an unknown key, or one issued for another product or another domain), the installation runs with the Community limits: one user account and 10,000 active subscribers counted across every list. The same address on two lists counts twice, while unsubscribed, unconfirmed and hard-bounced subscribers do not count, and administrator accounts are not limited. The administrator area names the reason. At a limit, new user accounts or new subscribers are refused on every path (subscribe forms, the API, imports, journeys and website tracking). Existing users and subscribers stay, and campaigns and journeys keep sending to them. A `LICENSE_KEY` that starts with `CE` is the Community Edition.
+
+   **Grace period.** An installation that existed before signed license keys gets 30 days from its first run without a valid key, during which its limits do not change. The administrator area, `install.sh` and `upgrade.sh` show the days left. A fresh installation, or a `CE` key, has no grace period. When the license's `updates_until` date is older than the running release, the administrator area shows a warning and nothing is blocked.
+
+   **Email gateway webhook signatures.** The signing key of email gateway webhooks for a sender domain without its own key (the `SigningKey` that `emailgateway.getwebhooks` returns) used to be derived from `LICENSE_KEY`. It is now fixed the first time it is used, and the installer, the upgrade and the license page fix it before they change the key, so replacing a short key with the signed license key does not change it and webhook receivers keep verifying. Setting the key through one of the three places above is the supported way. If you edit `LICENSE_KEY` by hand on an installation that has never sent a gateway webhook, the signing key is fixed from the new value.
 
 4. **Debugging & Logging**
    ```bash
