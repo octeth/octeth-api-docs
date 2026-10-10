@@ -18,7 +18,7 @@ Response time: Within 24 hours on business days
 ### Help Portal
 
 Browse our knowledge base for guides, tutorials, and FAQs:  
-[https://help.octeth.com](https://help.octeth.com)
+[https://dev.octeth.com](https://dev.octeth.com)
 
 ## Before You Contact Support
 
@@ -70,9 +70,9 @@ To help us resolve your issue quickly, please provide:
 
 #### 1. Environment Details
 ```
-Octeth Version: 5.7.x
+Octeth Version: 6.0.1
 API Endpoint: https://your-domain.com/api.php
-License Key: XXXX-XXXX-XXXX (last 4 digits)
+License Key: ****7K2M (as shown masked on Settings > License)
 ```
 
 #### 2. API Request
@@ -105,8 +105,8 @@ curl https://your-domain.com/api.php \
 Subject: API Error - Subscriber.Create returning error 18
 
 Environment:
-- Octeth Version: 5.7.2
-- License ends with: XXXX-1234
+- Octeth Version: 6.0.1
+- License key (masked): ****7K2M
 - API URL: https://email.example.com/api.php
 
 Issue:
@@ -162,8 +162,8 @@ Official and community SDKs:
 ### API Changelog
 
 Stay updated with API changes:
-- [What's New](https://help.octeth.com/whats-new)
-- [Release Notes](https://help.octeth.com/release-notes)
+- [Changelog](https://dev.octeth.com/changelog)
+- [Roadmap](https://dev.octeth.com/roadmap)
 
 ## Service Status
 

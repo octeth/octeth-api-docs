@@ -24,12 +24,14 @@ Upgrade notes for this release are published in the [changelog](/changelog) as t
 ### Download the New Version
 
 1. Log in to [Octeth Client Area](https://my.octeth.com/)
-2. Download the latest release zip file (e.g., `oempro-rel-v6.0.1.zip`)
+2. Open the **Downloads** page, pick your license, and click **Download** next to the release (e.g., `oempro-rel-v6.0.1.zip`). Download links expire 3 minutes after you click.
 3. Upload it to your server:
 
 ```bash
 scp oempro-rel-v6.0.1.zip root@your-server:/opt/
 ```
+
+You can download every release published before your license's **Updates and support** date, shown on the license page in the client area. If that date has passed, renew the license to download newer releases. A Community license gets no updates: it includes only the Community build that was available when it was issued.
 
 ### Check Your Current Version
 
@@ -180,10 +182,10 @@ The key is verified with the new release's verifier before anything is stopped. 
 
 When no valid license key is in place and the upgrade runs in a terminal without `--yes`, it asks once, before it stops anything: paste the key, or press Enter to skip. A pasted key is verified the same way, and a key that does not verify is not used. With `--yes`, or when standard input is not a terminal, the upgrade never asks: it prints the license state and continues, and it never stops because of the license.
 
-When you upgrade from a version older than v6.0.1, use `OCTETH_LICENSE_KEY` or the prompt. The older upgrade command rejects the new options before it refreshes itself from the new release.
+When you upgrade from v6.0.0 or older, set the key with `OCTETH_LICENSE_KEY`, or paste it when the upgrade asks for it. The older upgrade command rejects the new options before it refreshes itself from the new release. The example below reads the key from `octeth.license`, the file that **Download as file** on the client area's license page saves.
 
 ```bash
-OCTETH_LICENSE_KEY="$(cat /root/octeth-license)" /opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v6.0.1.zip
+OCTETH_LICENSE_KEY="$(cat /root/octeth.license)" /opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v6.0.1.zip
 ```
 
 ### Combining Options

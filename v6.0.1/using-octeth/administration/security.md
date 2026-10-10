@@ -88,9 +88,15 @@ When a signed-in user opens a page from an address that is not on the list, Octe
 
 Requests from the server itself (`127.0.0.1` and `::1`) are always allowed, so health checks and scheduled tasks keep working.
 
-### What it does not cover
+### API calls and the new user interface
 
-The check applies to the user-area pages. API calls made with a session or an API key are not checked against this list.
+Since v6.0.1 the list also applies to user API calls. Before v6.0.1 no user API call was checked against it.
+
+- **`user.login` with a username and password** from an address that is not on the list fails with error code `3` and the error text `Access from this IP address is not allowed`.
+- **Calls that carry a user `SessionID`** from an address that is not on the list are refused with error code `99998` and the same error text. This applies even when the session was opened from an allowed address. The session itself is not ended, so it works again from an allowed address.
+- **The new user interface** works through these API calls, so a customer who uses it from an address that is not on the list is signed out, and the login page names the reason.
+
+Calls authenticated with a user **API key** (`APIKey`) are not checked against this list, and neither are sessions opened with one. Server integrations call with an API key from addresses unrelated to the customer's browser, so keep using API keys for them.
 
 ### Before you enable it
 

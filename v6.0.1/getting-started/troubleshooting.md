@@ -380,7 +380,6 @@ This comprehensive check validates:
 - Redis connectivity
 - RabbitMQ status
 - ClickHouse database
-- ElasticSearch service
 - All backend processes
 - File permissions
 - Container health

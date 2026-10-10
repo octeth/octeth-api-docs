@@ -89,7 +89,6 @@ curl -X GET "https://example.com/api.php?Command=system.health.check&adminapikey
   "Checks": {
     "MySQL": "OK",
     "ClickHouse": "OK",
-    "Elasticsearch": "OK",
     "RabbitMQ": "OK",
     "Redis": "OK",
     "Session": "OK",
@@ -115,7 +114,6 @@ curl -X GET "https://example.com/api.php?Command=system.health.check&adminapikey
   "Checks": {
     "MySQL": "OK",
     "ClickHouse": "OK",
-    "Elasticsearch": "Connection refused",
     "RabbitMQ": "OK",
     "Redis": "[111] Connection refused",
     "Session": "OK",
@@ -166,7 +164,6 @@ The endpoint performs comprehensive health checks on the following components:
 
 - **MySQL**: Database connectivity and admin user existence. The check fails with `There is no registered admin user.` when the admins table is empty <Badge type="tip" text="Changed in v6.0.1" />
 - **ClickHouse**: Analytics database connectivity
-- **Elasticsearch**: Search engine connectivity and indices
 - **RabbitMQ**: Message queue connectivity
 - **Redis**: Cache server connectivity
 - **Session**: PHP session functionality

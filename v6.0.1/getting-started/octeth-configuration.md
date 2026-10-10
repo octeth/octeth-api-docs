@@ -1401,6 +1401,18 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
 
     Introduced in v6.0.1 (issue #1902).
 
+55. **Email Gateway DNS Host Names**
+
+    ```bash
+    EMAILGATEWAY_DNS_SUBDOMAIN=sl        # Subdomain Octeth uses under an email gateway sender domain, e.g. sl.example.com (default: sl)
+    EMAILGATEWAY_DNS_TRACK_PREFIX=track  # Prefix of the gateway tracking host, e.g. track-sl.example.com (default: track)
+    EMAILGATEWAY_DNS_TRACK_MERGE=-       # Character between the tracking prefix and the subdomain (default: -)
+    ```
+
+    These three keys name the hosts Octeth uses under a sender domain added through the email gateway: the subdomain (`sl.example.com` with the defaults) and the tracking host, built from the prefix, the merge character and the subdomain (`track-sl.example.com`). They are the email gateway counterparts of `EMAILCAMPAIGN_DNS_SUBDOMAIN`, `EMAILCAMPAIGN_DNS_TRACK_PREFIX` and `EMAILCAMPAIGN_DNS_TRACK_MERGE`. A sender domain's own **Custom Subdomain Settings** (see [Sender Domains](/v6.0.1/using-octeth/sender-domains)) override them for that domain.
+
+    The default `EMAILGATEWAY_DNS_TEMPLATES` is built from these three values. When Octeth regenerates a gateway sender domain's DNS records with a custom subdomain or tracking prefix, it looks for these literal values in the template and replaces them with the domain's own values. If you set `EMAILGATEWAY_DNS_TEMPLATES` to your own JSON, write the host names in it with the same literals as these three keys. Otherwise the replacement finds nothing, and a domain's custom subdomain or tracking prefix never reaches its regenerated DNS records.
+
 
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.

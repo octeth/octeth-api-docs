@@ -9,9 +9,11 @@ After setting up your server, you need to transfer the Octeth installation packa
 ## Download Octeth Package
 
 1. Log in to the [Octeth Client Area](https://my.octeth.com/)
-2. Navigate to your active Octeth license
-3. Download the latest version (e.g., `oempro-rel-v6.0.1.zip`)
+2. Open the **Downloads** page and pick your license in the **License** selector
+3. Click **Download** next to the latest version (e.g., `oempro-rel-v6.0.1.zip`)
 4. Save it to your `~/Downloads/` directory
+
+Download links expire 3 minutes after you click, so start the download right away. A license can download every release published before its **Updates and support** date. After that date, newer releases show as locked until you renew. A Community license includes the Community build that was available when the license was issued and gets no updates.
 
 ## Upload to Server
 

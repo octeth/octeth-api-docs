@@ -66,9 +66,9 @@ To help us resolve your issue quickly, please provide:
 
 #### 1. Environment Details
 ```
-Octeth Version: 5.8.x
+Octeth Version: 6.0.1
 API Endpoint: https://your-domain.com/api.php
-License Key: XXXX-XXXX-XXXX (last 4 digits)
+License Key: ****7K2M (as shown masked on Settings > License)
 ```
 
 #### 2. API Request
@@ -101,8 +101,8 @@ curl https://your-domain.com/api.php \
 Subject: API Error - Subscriber.Create returning error 18
 
 Environment:
-- Octeth Version: 5.7.2
-- License ends with: XXXX-1234
+- Octeth Version: 6.0.1
+- License key (masked): ****7K2M
 - API URL: https://email.example.com/api.php
 
 Issue:
