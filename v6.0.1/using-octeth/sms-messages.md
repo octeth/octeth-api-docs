@@ -151,9 +151,9 @@ Navigate to **Settings** > **SMS Suppression** in the admin panel.
 
 The left panel displays suppression statistics:
 
-- **Total Suppressed Numbers** — The total count across all levels.
-- **By Level** — Breakdown by System, User, List, and Pattern counts.
-- **By Reason** — Breakdown by suppression reason (manual, complaint, bounce, opt-out, invalid).
+- **Total Suppressed Numbers**: The total count across all levels.
+- **By Level**: Breakdown by System, User, List, and Pattern counts.
+- **By Reason**: Breakdown by suppression reason (manual, complaint, bounce, opt-out, invalid).
 
 A **Clear cache** link at the bottom resets the suppression cache. Use this after making bulk changes to ensure the latest data is used.
 
@@ -174,9 +174,9 @@ Use the **Add Numbers** tab to suppress specific phone numbers.
 
 1. Enter one or more phone numbers in the **Phone Numbers** field, one per line. Include the country code (e.g., `+1234567890`).
 2. Select the **Suppression Level**:
-   - **System (All Users)** — Blocks the number for every user in the system.
-   - **User** — Blocks the number for a specific user. Select the user from the dropdown.
-   - **List** — Blocks the number for a specific subscriber list. Select the user and then the list.
+   - **System (All Users)**: Blocks the number for every user in the system.
+   - **User**: Blocks the number for a specific user. Select the user from the dropdown.
+   - **List**: Blocks the number for a specific subscriber list. Select the user and then the list.
 3. Select a **Reason** (Manual, Complaint, Hard Bounce, Opt-out, or Invalid Number).
 4. Optionally add **Notes** for reference.
 5. Click **Add to Suppression List**.
@@ -254,10 +254,10 @@ The message section is where you compose the text of your SMS.
 
 You can personalize your message using merge tags. These are replaced with actual subscriber data when the message is sent:
 
-- <code v-pre>{{Subscriber:FirstName}}</code> — Subscriber's first name
-- <code v-pre>{{Subscriber:LastName}}</code> — Subscriber's last name
-- <code v-pre>{{Subscriber:EmailAddress}}</code> — Subscriber's email address
-- <code v-pre>{{Subscriber:CustomFieldName}}</code> — Any custom field value
+- <code v-pre>{{Subscriber:FirstName}}</code>: Subscriber's first name
+- <code v-pre>{{Subscriber:LastName}}</code>: Subscriber's last name
+- <code v-pre>{{Subscriber:EmailAddress}}</code>: Subscriber's email address
+- <code v-pre>{{Subscriber:CustomFieldName}}</code>: Any custom field value
 
 If you are including a tracking link, use the <code v-pre>{{link}}</code> placeholder in your message. This will be replaced with a shortened URL when the message is sent.
 
@@ -333,7 +333,7 @@ GSM7 supports these characters:
 
 ### Unicode Encoding
 
-If your message contains characters outside the GSM7 character set — such as accented characters, non-Latin scripts (e.g., Chinese, Arabic, Cyrillic), or emojis — the message automatically switches to Unicode encoding. A single SMS part can contain up to **70 characters** using Unicode encoding.
+If your message contains characters outside the GSM7 character set (accented characters, non-Latin scripts such as Chinese, Arabic or Cyrillic, or emojis), the message automatically switches to Unicode encoding. A single SMS part can contain up to **70 characters** using Unicode encoding.
 
 ### Multi-Part Messages
 
@@ -374,11 +374,11 @@ If no custom domain is configured, the application's main domain is used.
 
 Each click on a shortened SMS link is tracked with the following data:
 
-- **Timestamp** — When the click occurred.
-- **Device type** — Mobile, desktop, or tablet.
-- **Browser and operating system** — Parsed from the user agent.
-- **Geographic location** — Country and city based on IP address (when available).
-- **Bot detection** — Automated clicks from bots and crawlers are identified and filtered from analytics.
+- **Timestamp**: When the click occurred.
+- **Device type**: Mobile, desktop, or tablet.
+- **Browser and operating system**: Parsed from the user agent.
+- **Geographic location**: Country and city based on IP address (when available).
+- **Bot detection**: Automated clicks from bots and crawlers are identified and filtered from analytics.
 
 ### Link Expiry
 
@@ -400,8 +400,8 @@ Navigate to **SMS** > **Suppression List** from the main menu.
 
 1. Enter one or more phone numbers in the **Phone Numbers** field, one per line.
 2. Select the **Suppression Type**:
-   - **User** — Blocks the number for all your SMS messages.
-   - **List** — Blocks the number for a specific subscriber list only.
+   - **User**: Blocks the number for all your SMS messages.
+   - **List**: Blocks the number for a specific subscriber list only.
 3. Select a **Reason** and optionally add **Notes**.
 4. Click **Add to Suppression List**.
 
@@ -425,9 +425,9 @@ Enter a phone number in the search field to check if it appears in the suppressi
 
 When an SMS message is about to be sent, Octeth checks the recipient's phone number against the suppression list in the following order:
 
-1. **System-level** — Checked first. If suppressed here, the message is blocked for all users.
-2. **User-level** — Checked second. If suppressed here, the message is blocked for the specific user.
-3. **List-level** — Checked last. If suppressed here, the message is blocked for the specific list.
+1. **System-level**: Checked first. If suppressed here, the message is blocked for all users.
+2. **User-level**: Checked second. If suppressed here, the message is blocked for the specific user.
+3. **List-level**: Checked last. If suppressed here, the message is blocked for the specific list.
 
 Both exact phone number matches and wildcard pattern matches are evaluated. If a phone number is suppressed at any level, the SMS message is not sent and the suppression is logged.
 
@@ -459,9 +459,9 @@ Use the international E.164 format for phone numbers (e.g., `+14155551234`). Thi
 
 ## Related Features
 
-- **[Lists](./lists)** — Manage subscriber lists and configure SMS settings for each list.
-- **[Custom Fields](./custom-fields)** — Create custom fields to store subscriber phone numbers and carrier information.
-- **[Journeys](./journeys)** — Build automated workflows that include SMS actions alongside email and other actions.
-- **[Subscribers](./subscribers)** — Manage subscriber data including phone numbers.
-- **[Segments](./segments)** — Create targeted segments for your SMS campaigns.
-- **[Email Personalization](./email-personalization)** — Learn about merge tags and personalization syntax used in both email and SMS.
+- **[Lists](./lists)**: Manage subscriber lists and configure SMS settings for each list.
+- **[Custom Fields](./custom-fields)**: Create custom fields to store subscriber phone numbers and carrier information.
+- **[Journeys](./journeys)**: Build automated workflows that include SMS actions alongside email and other actions.
+- **[Subscribers](./subscribers)**: Manage subscriber data including phone numbers.
+- **[Segments](./segments)**: Create targeted segments for your SMS campaigns.
+- **[Email Personalization](./email-personalization)**: Learn about merge tags and personalization syntax used in both email and SMS.
