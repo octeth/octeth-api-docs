@@ -6,7 +6,12 @@ layout: doc
 
 SMS messaging in Octeth allows you to reach your subscribers directly on their mobile phones with text messages. Combined with email campaigns, SMS provides a powerful multi-channel marketing approach that improves engagement and drives higher conversion rates.
 
-Currently, SMS messages are sent through the **Journey Builder**, where you add a Send SMS action to automate text message delivery as part of your customer journeys. This article covers how to set up SMS gateways, configure your subscriber lists for SMS, send messages through journeys, and manage SMS suppression lists.
+You can send SMS messages in two ways:
+
+- **SMS campaigns:** send one message to a whole list or segment at once, from the new user interface. See [SMS Campaigns](../new-user-interface/sms-campaigns).
+- **Journeys:** add a Send SMS action in the **Journey Builder** to send text messages automatically as part of your customer journeys.
+
+This article covers how to set up SMS gateways, configure your subscriber lists for SMS, send messages through journeys, and manage SMS suppression lists.
 
 ::: info
 SMS messaging is included in every Octeth license, the Community Edition too. No license key change is needed to use it.
@@ -61,7 +66,7 @@ To create a new SMS gateway:
 
 **Gateway Configuration Tab**
 
-This tab displays provider-specific fields based on the selected gateway type. For example, an Infobip gateway requires an API key and base URL. Fill in the credentials provided by your SMS provider.
+This tab displays provider-specific fields based on the selected gateway type. For example, an Infobip gateway requires an API key and base URL. Fill in the credentials provided by your SMS provider. For a Xeebi gateway, see [Xeebi SMS Gateway](./sms-gateways/xeebi), which also explains the callback URLs Xeebi needs.
 
 [[SCREENSHOT: Gateway Configuration tab showing provider-specific fields like API Key and Base URL]]
 
@@ -459,6 +464,8 @@ Use the international E.164 format for phone numbers (e.g., `+14155551234`). Thi
 
 ## Related Features
 
+- **[SMS Campaigns](../new-user-interface/sms-campaigns)**: Send a bulk SMS campaign to a list or segment from the new interface.
+- **[Xeebi SMS Gateway](./sms-gateways/xeebi)**: Connect a Xeebi account and its delivery report and reply callbacks.
 - **[Lists](./lists)**: Manage subscriber lists and configure SMS settings for each list.
 - **[Custom Fields](./custom-fields)**: Create custom fields to store subscriber phone numbers and carrier information.
 - **[Journeys](./journeys)**: Build automated workflows that include SMS actions alongside email and other actions.

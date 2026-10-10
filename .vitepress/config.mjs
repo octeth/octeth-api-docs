@@ -956,6 +956,7 @@ export default defineConfig({
                         {text: 'Payment Gateways', link: '/v6.0.1/new-user-interface/payment-gateways'},
                         {text: 'Running Billing', link: '/v6.0.1/new-user-interface/billing-operations'},
                         {text: 'Webhooks', link: '/v6.0.1/new-user-interface/webhooks'},
+                        {text: 'SMS Campaigns', link: '/v6.0.1/new-user-interface/sms-campaigns'},
                         {text: 'Configuration Reference', link: '/v6.0.1/new-user-interface/configuration-reference'},
                         {text: 'Troubleshooting', link: '/v6.0.1/new-user-interface/troubleshooting'}
                     ]
@@ -979,7 +980,8 @@ export default defineConfig({
                                 {text: 'Email Builder', link: '/v6.0.1/using-octeth/email-builder'},
                                 {text: 'Email Personalization', link: '/v6.0.1/using-octeth/email-personalization'},
                                 {text: 'Event Tracking', link: '/v6.0.1/using-octeth/event-tracking'},
-                                {text: 'SMS Messages', link: '/v6.0.1/using-octeth/sms-messages'}
+                                {text: 'SMS Messages', link: '/v6.0.1/using-octeth/sms-messages'},
+                                {text: 'Xeebi SMS Gateway', link: '/v6.0.1/using-octeth/sms-gateways/xeebi'}
                             ],
                         }, {
                             text: 'Email Deliverability', items: [
@@ -993,7 +995,8 @@ export default defineConfig({
                             ],
                         }, {
                             text: 'Administration', items: [
-                                {text: 'Security Settings', link: '/v6.0.1/using-octeth/administration/security'}
+                                {text: 'Security Settings', link: '/v6.0.1/using-octeth/administration/security'},
+                                {text: 'License', link: '/v6.0.1/using-octeth/administration/license'}
                             ],
                         }
                     ]
