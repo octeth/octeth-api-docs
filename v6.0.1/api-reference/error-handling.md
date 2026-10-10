@@ -62,7 +62,7 @@ Error codes can be single values or arrays:
 
 | Code | Description | Resolution |
 |------|-------------|------------|
-| 16 | User limit reached | Upgrade license or delete unused users |
+| 16 | User limit reached (the license's user account limit) | Use a license key with more user accounts, or delete unused users |
 | 18 | Subscriber limit reached | Upgrade plan or remove inactive subscribers |
 | 3 | List limit exceeded | Delete unused lists or upgrade plan |
 

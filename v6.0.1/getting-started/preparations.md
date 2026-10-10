@@ -43,11 +43,11 @@ Download the latest Octeth package from the [Octeth Client Area](https://my.octe
 
 ### License Key
 
-Obtain a valid license key from the [Octeth Client Area](https://my.octeth.com/):
+Copy the signed license key for your installation's domain from the license page at the [Octeth Client Area](https://my.octeth.com/):
 
-- Format: A string like `XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX`
-- Must be active and not expired
-- You will be prompted to enter it during installation (can also be added later in `.oempro_env`)
+- Format: one line of about 800 characters, the signed license key, not the short `OCT-...` key
+- It is bound to one domain: the host of the Application URL you will install with
+- You will be prompted to enter it during installation. You can also leave it empty and paste it later on Settings > License in the administrator area. Until a valid key is set, the installation runs with the Community limits (one user account, 10,000 subscribers)
 
 ## Additional Requirements
 
@@ -86,7 +86,7 @@ Once you have all prerequisites ready:
 Before proceeding, ensure you have:
 - [ ] Ubuntu 24.04 server(s) with root access
 - [ ] Octeth software package downloaded
-- [ ] Valid license key obtained
+- [ ] Signed license key copied for your domain
 - [ ] Domain name ready (optional)
 - [ ] SMTP server access configured
 :::

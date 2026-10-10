@@ -35,7 +35,7 @@ The installer will check server requirements and then ask you a few questions:
 - Username: admin
 - Password: YourSecurePassword123
 - EULA Agree: Y
-- License Key: XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX (can be left blank and added later in `.oempro_env`)
+- License Key: the signed license key for this domain from my.octeth.com (one line). It can be left blank and pasted later on Settings > License, and until then the installation runs with the Community limits
 
 Once you confirm, installation utility will start installing Octeth on your server.
 

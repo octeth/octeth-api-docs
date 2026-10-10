@@ -8,28 +8,18 @@ This guide covers common issues you may encounter when setting up or running Oct
 
 ## Installation Issues
 
-### Installation Fails with "License Invalid" Error
+### The License Key Is Refused, or the Community Limits Apply
 
-**Problem:** The system rejects your license key
+**Problem:** the installer or the upgrade refuses your license key, the administrator area says no valid license key is set, or Octeth stops accepting new users or new subscribers at the Community limits (one user account, 10,000 subscribers).
 
-**Check License Key:**
-```bash
-grep LICENSE_KEY /opt/octeth/.oempro_env
-```
+**Check the license state:** open Settings > License in the administrator area. It shows whether a valid key is in use, the reason when it is not, which key is in use (pasted on that page or `LICENSE_KEY` in `.oempro_env`), and the grace days left. Every upgrade also prints the license state before it starts.
 
 **Solutions:**
-1. Verify the license key is correctly set in `/opt/octeth/.oempro_env` (no extra spaces or quotes)
-2. Log in to the [Octeth Client Area](https://my.octeth.com/) and copy a fresh license key
-3. Update the `LICENSE_KEY` value in `.oempro_env`:
-   ```bash
-   vi /opt/octeth/.oempro_env
-   # Set LICENSE_KEY=your-license-key
-   ```
-4. Check that your license is active and not expired
-5. Restart containers after updating:
-   ```bash
-   /opt/octeth/cli/octeth.sh docker:restart
-   ```
+1. Make sure you copied the **signed license key** from the license page at [my.octeth.com](https://my.octeth.com/), not the short `OCT-...` key. The signed key is one line of about 800 characters. A short key is not a license.
+2. Copy the key for the right domain. A key is bound to one domain, and Octeth compares it with the host of `APP_URL` (case-insensitive, a leading `www.` is ignored). After changing or adding a domain, copy a new key for it from my.octeth.com.
+3. Paste the key on Settings > License and save. Alternatively, pass it to the upgrade with `--license-key-file <file>`, or set `LICENSE_KEY` in `/opt/octeth/.oempro_env` on one line, without quotes. The armoured `-----BEGIN OCTETH LICENSE-----` block and a key wrapped over several lines are accepted too.
+4. If you edited `LICENSE_KEY` by hand but Settings > License still shows the old key, remove the key pasted on that page. A pasted key takes precedence over `LICENSE_KEY` while it is valid.
+5. Check that the license is active on my.octeth.com. An installation without a valid key keeps sending, and existing users and subscribers stay. Only new users and subscribers above the Community limits are refused.
 6. Contact support if the issue persists
 
 ### Docker Services Won't Start
