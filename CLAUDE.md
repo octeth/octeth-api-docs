@@ -3,6 +3,16 @@
 ## Project Description
 This is the official help portal and documentation website for Octeth.com, an on-premise enterprise-grade email marketing software. The portal is built using VitePress and provides comprehensive documentation including installation guides, user guides, API reference, and developer resources for integrating with Octeth.
 
+## STRICT: Check Pages Before Every Commit
+
+One Vue template error in any page fails the whole dev.octeth.com deploy. The v6.0.1 deploy broke because a `*` inside a `<code v-pre>` merge tag in changelog.md was parsed as Markdown emphasis, and because two opening braces in plain backticks in sms-campaigns.md were parsed as a Vue expression.
+
+- Before every commit that touches a `.md` page, run `node scripts/check-pages.mjs <changed pages>` and commit only on exit 0.
+- Write merge tags and any <code v-pre>{{ }}</code> as `<code v-pre>...</code>`. Never put them in plain backticks.
+- Never put a raw `*`, `_`, <code v-pre>{{ }}</code> or `<...>` inside inline HTML on a Markdown line. Use HTML entities such as `&#42;` instead.
+- Every `.md` file in the repo is built as a page, including root files such as this CLAUDE.md, README.md and TASKS.md, so the rule applies to them too.
+- The oempro `docs-publish.sh` runs the same check and refuses to publish on a non-zero exit.
+
 ## Technology Stack
 - **Framework**: VitePress v1.6.4
 - **Language**: Markdown + Vue.js components
