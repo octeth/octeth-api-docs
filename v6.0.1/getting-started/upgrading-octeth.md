@@ -182,6 +182,16 @@ When you upgrade from a version older than v6.0.1, use `OCTETH_LICENSE_KEY`. The
 OCTETH_LICENSE_KEY=YOUR-LICENSE-KEY /opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v6.0.1.zip
 ```
 
+### Install a License File
+
+Pass the signed license file from my.octeth.com to install it as part of the upgrade:
+
+```bash
+/opt/octeth/cli/octeth.sh upgrade /opt/oempro-rel-v6.0.1.zip --license-file /root/octeth.license
+```
+
+`OCTETH_LICENSE_FILE=<path>` works too. The file is verified with the new release's verifier before anything is stopped, so an invalid file stops the upgrade with the reason and changes nothing. It is installed at `data/octeth.license` (or `LICENSE_FILE`) after the environment files are merged. When upgrading from a version older than v6.0.1, use `OCTETH_LICENSE_FILE`, because the older upgrade command rejects the new option before it refreshes itself. If `LICENSE_FILE` points outside the installation, copy the file there yourself.
+
 ### Combining Options
 
 Options can be combined as needed:
@@ -231,9 +241,9 @@ The backup directory location is displayed in the rollback output. Your database
 
 ## Notes for This Release
 
-### Community Edition limits
+### License files
 
-A license key that starts with `CE` now runs Octeth as the Community Edition: one user account and 10,000 active subscribers across the installation. See [Octeth Configuration](./octeth-configuration.md) for what the limits cover. If the key the upgrade leaves in place starts with `CE`, the upgrade says so before it starts. To move to a paid license, pass the paid key with `--license-key` (see [Change the License Key](#change-the-license-key)).
+Octeth now reads the signed license file (`octeth.license`) from my.octeth.com and takes its edition, user account limit and subscriber limit from it. Every upgrade prints the license state before it starts: valid with its limits, no valid file with the reason and the grace days left, or that the Community limits apply. **Install the license file within 30 days of upgrading to keep your plan's limits.** After 30 days without a valid file, the installation runs with the Community limits (one user account and 10,000 subscribers). Sending never stops, but new users and subscribers above those limits are refused. Download the file for your domain from my.octeth.com and install it with `--license-file` (see [Install a License File](#install-a-license-file)) or on the administrator area's Settings > License page. See [Octeth Configuration](./octeth-configuration.md) for the details.
 
 ### The email gateway monitor now watches for missing MTA feedback
 

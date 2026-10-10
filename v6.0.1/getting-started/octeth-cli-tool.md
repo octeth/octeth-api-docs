@@ -421,13 +421,15 @@ Delete both files once the installation has finished.
 | `--admin-password <password>` | Administrator password on the command line. See the warning below. |
 | `--license-key-file <path>` | Read the Octeth license key from the first line of a file, or from standard input with `-` (requires `--yes`). |
 | `--license-key <key>` | Octeth license key. May be empty and added later in `.oempro_env`. With `--yes`, leaving out every license-key source means an empty key, not a prompt. |
+| `--license-file <path>` | Signed license file (`octeth.license`) from my.octeth.com. It is verified once the containers start, and an invalid file stops and rolls back the installation. Without one, a fresh installation runs with the Community limits until a license file is installed on Settings > License. |
 
-The installer also reads two environment variables when the matching flags are not given:
+The installer also reads these environment variables when the matching flags are not given:
 
 | Variable | Purpose |
 | --- | --- |
 | `OCTETH_ADMIN_PASSWORD` | Administrator password. |
 | `OCTETH_LICENSE_KEY` | Octeth license key. May be empty. |
+| `OCTETH_LICENSE_FILE` | Path of the signed license file, as `--license-file`. |
 
 Precedence is `--admin-password`, then `--admin-password-file`, then `OCTETH_ADMIN_PASSWORD`, and the same order for the license key. Passing both flags for the same value is an error, and only one of the two file flags can read standard input.
 

@@ -110,7 +110,7 @@ curl -X POST https://example.com/api.php \
 13: Email address already exists
 14: Invalid language code
 15: Invalid reputation level (must be 'Trusted' or 'Untrusted')
-16: Maximum number of user accounts exceeded (a Community Edition license key allows one)
+16: Maximum number of user accounts exceeded (the license's user account limit)
 ```
 
 :::

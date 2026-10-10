@@ -71,7 +71,8 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
 
 3. **Security & Authentication**
    ```bash
-   LICENSE_KEY=6491-2039-4581-F4C6-F1CC-8334-38B9-CBA9-1092  # Your Octeth license. A key starting with CE runs the Community Edition
+   LICENSE_KEY=6491-2039-4581-F4C6-F1CC-8334-38B9-CBA9-1092  # Your Octeth license key. Without a valid license file, a key starting with CE runs the Community Edition
+   LICENSE_FILE=                                           # Path of the signed license file (octeth.license). Empty means data/octeth.license; a relative path resolves against the install root
    ADMIN_API_KEY=SZaQtZfJ4zufb8blykpvHPM6IBhFGFf0           # Admin API access key
    HASH_IDS_SALT=elis9RqKmDLLt3B+Ls5kfC_+fl7IZoO3          # Hash ID salt
    OEMPRO_PASSWORD_SALT=elis9RqKmDLLt3B+Ls5kfC_+fl7IZoO3   # Password encryption salt
@@ -80,7 +81,13 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
    OEMPRO_SUPERADMIN_AUTH_TIMEOUT=                         # Timeout (seconds) for the super-admin auth session when the code above is set
    ```
 
-   A `LICENSE_KEY` that starts with `CE` (uppercase) runs the installation as the Octeth Community Edition. It has every feature, with two limits: one user account, and 10,000 active subscribers counted across every list on the installation. The same address on two lists counts twice, while unsubscribed, unconfirmed and hard-bounced subscribers do not count. Administrator accounts are not limited. At either limit, new user accounts or new subscribers are refused on every path (subscribe forms, the API, imports, journeys and website tracking), and the administrator area shows a notice. Existing users and subscribers stay, and campaigns and journeys keep sending to them. Replacing the key with a paid license key removes both limits right away: edit `LICENSE_KEY`, or pass the new key to the upgrade command with `--license-key` (see [Upgrading Octeth](./upgrading-octeth.md#change-the-license-key)).
+   **License file and limits.** Download `octeth.license` for the installation's domain from the license page at my.octeth.com. Octeth verifies it offline (Ed25519, with the public keys shipped in the release and never fetched) and takes the edition, the user account limit and the active subscriber limit from it. A file issued before subscriber limits were added means 10,000 subscribers for a Community license and unlimited for a paid one. Only the `APP_URL` host counts as the installation's domain, compared without case and without a leading `www.`.
+
+   Install the file with `octeth.sh install:start --license-file <path>`, `octeth.sh upgrade <zip> --license-file <path>`, or the administrator area's Settings > License page. Each one verifies the file before writing it, refuses an invalid file with the reason, and never prints its contents.
+
+   Without a valid file (missing, unreadable, damaged, signed by an unknown key, issued for another product or another domain), the installation runs with the Community limits: one user account and 10,000 active subscribers counted across every list. The same address on two lists counts twice, while unsubscribed, unconfirmed and hard-bounced subscribers do not count, and administrator accounts are not limited. The administrator area names the reason. At a limit, new user accounts or new subscribers are refused on every path (subscribe forms, the API, imports, journeys and website tracking). Existing users and subscribers stay, and campaigns and journeys keep sending to them. A `LICENSE_KEY` that starts with `CE` without a valid file is the Community Edition.
+
+   **Grace period.** An installation that existed before license files gets 30 days from its first run without a valid file, during which its limits do not change. The administrator area, `install.sh` and `upgrade.sh` show the days left. A fresh installation, or a `CE` key, has no grace period. When the license's `updates_until` date is older than the running release, the administrator area shows a warning and nothing is blocked.
 
 4. **Debugging & Logging**
    ```bash

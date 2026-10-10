@@ -82,9 +82,9 @@ The user area's Account page follows the same rule: it shows the recovery code o
 
 This is a hardening change. The recovery code switches two-factor authentication off when it is used at login, so it should not appear in a response that is read on every page load. It is a deliberate exception to the opt-in flag rule for the same reason. New two-factor secrets for users and administrators are also generated from a cryptographic random source now. Existing enrolments keep working unchanged.
 
-#### A Community Edition license key limits users and subscribers
+#### User and subscriber limits come from the signed license file
 
-When `LICENSE_KEY` starts with `CE`, the installation runs as the Community Edition. `user.create` answers ErrorCode `16` once one user account exists. Adding a new subscriber through `subscriber.create`, `subscriber.subscribe`, `subscriber.optin` or an import answers with that call's existing subscriber-limit error once 10,000 active subscribers exist across the installation. An import stops once the remaining allowance is used, and the rows before that point stay imported. Updates to existing subscribers and all sending are not affected. With any other license key, behavior is unchanged.
+`user.create` answers ErrorCode `16` once the license's user account limit is reached. Adding a new subscriber through `subscriber.create`, `subscriber.subscribe`, `subscriber.optin` or an import answers with that call's existing subscriber-limit error once the license's active subscriber limit is reached across the installation. An import stops once the remaining allowance is used, and the rows before that point stay imported. Without a valid license file, the Community limits apply (one user account, 10,000 active subscribers): on an upgraded installation after a 30-day grace period, and at once on a fresh installation or with a `LICENSE_KEY` starting with `CE`. Updates to existing subscribers and all sending are not affected, and no response field changes.
 
 ### Credentials in admin and SSO responses
 
