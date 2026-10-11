@@ -59,7 +59,7 @@ The editor has a **Recipients** card and a **Message** card. Click **Edit recipi
 | **Message** | The text that arrives on the phone. |
 | **Links stop working after** | Appears only when the message contains a link. Enter a number and choose **hours** or **days**. Leave it blank for the default of 72 hours. The maximum is 8,760 hours (one year). |
 | **Append an opt-out line** | On by default. Adds the **Opt-out line** to the end of the message. |
-| **Opt-out line** | The text added when the toggle is on. The default is `Reply STOP to opt out.` |
+| **Opt-out line** | The text added when the toggle is on. Required while the toggle is on. The default is `Reply STOP to opt out.` |
 
 Click **Save message** when you are done.
 
@@ -86,9 +86,7 @@ Hi {{ Subscriber:FirstName | "there" }}, our spring sale starts Friday.
 
 Recipients must be able to stop your messages, so keep **Append an opt-out line** on. The line counts towards the message length and the cost.
 
-::: warning Do not leave the opt-out line empty
-If the toggle is on but the **Opt-out line** field is empty, no opt-out line is added to the message. Keep the default wording or write your own.
-:::
+While **Append an opt-out line** is on, the **Opt-out line** field cannot be empty. Keep the default wording or write your own. If you clear it, **Save message**, **Estimate cost**, **Send now** and **Schedule** all stop with **Enter the opt-out line, or turn the opt-out line off.**
 
 ## Checking the cost
 
@@ -257,10 +255,6 @@ Each value is either stored on this page or taken from `.oempro_env`. Clear a fi
 | **Event retention** | 365 days | 30 to 3,650 days. How long SMS events are kept for reports. |
 | **Campaign queue retention** | 365 days | 30 to 3,650 days. How long per-recipient campaign detail is kept. |
 | **Inbound message retention** | 365 days | 30 to 3,650 days. How long received messages and reply history are kept. |
-
-::: warning
-The help text on this page says quiet hours are in the recipient's timezone. They are applied in the campaign's timezone.
-:::
 
 ### Cross-account views
 

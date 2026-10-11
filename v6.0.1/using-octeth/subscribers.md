@@ -64,6 +64,14 @@ To delete subscribers in bulk:
 Deleting subscribers is permanent and cannot be undone. The subscriber and all associated data (activity history, custom field values) are removed from the list.
 :::
 
+### Finding a Subscriber from the Search Box
+
+To find a subscriber by email address across all of your lists, click the search icon in the top menu and type in the **Search** box. Results appear as you type, grouped under **Lists**, **Campaigns** and **Subscribers**.
+
+Type at least 3 characters to search subscribers. With fewer characters, the results still show matching lists and campaigns, but no subscribers. Leading and trailing spaces do not count.
+
+The **Subscribers** group shows up to 15 matches in total and at most 3 from each list, with the list name under each email address. Click a result to open that subscriber's profile. If the subscriber you want is not shown, type more of the email address, or open the list and use [Advanced Filtering](#advanced-filtering).
+
 ## Advanced Filtering
 
 The advanced subscriber browse provides a powerful rule-based filtering system that allows you to search for subscribers using multiple criteria combined with AND/OR logic.
@@ -206,7 +214,7 @@ The suppression list options are useful when importing a list of addresses that 
 
 | Setting | Description |
 |---|---|
-| **Update duplicates if subscriber already exists** | Updates existing subscriber data when a matching email address is found. Checked by default. |
+| **Update subscriber information of duplicates with import data** | Updates existing subscriber data when a matching email address is found. Checked by default. |
 | **Do not send opt-in confirmation email** | Only appears for double opt-in lists. Skips sending confirmation emails to imported subscribers. Checked by default. |
 | **Trigger behaviors/automations for new subscribers** | Triggers configured journeys and automations for each imported subscriber. Unchecked by default. |
 
@@ -227,12 +235,27 @@ A progress bar shows the current completion percentage. Below it, the following 
 | Metric | Description |
 |---|---|
 | **Total subscribers** | The total number of records in the import. |
-| **Total imported** | The number of subscribers successfully added or updated. |
-| **Total duplicates** | The number of duplicate email addresses encountered. Click **Download** to get a file of duplicates. |
-| **Total failed** | The number of records that failed validation. Click **Download** to get a file of failures. |
+| **Imported subscribers** | The number of subscribers successfully added or updated. |
+| **Duplicate subscribers** | The number of duplicate email addresses encountered. Click **Download** to get a file of duplicates. |
+| **Failed subscribers** | The number of records that failed validation. Click **Download** to get a file of failures. |
 
 ::: tip
 Download the duplicates and failures files to review which records were not imported and why. Common failure reasons include invalid email address format and exceeding subscriber limits.
+:::
+
+#### When an Import Fails
+
+An import can stop before it reaches the end of your file. When that happens, the results page changes its heading to **Import process failed** and shows a message that the import stopped early. Common causes:
+
+- Your account reached its subscriber limit during the import.
+- The import file could not be read, or an import from another email service could not retrieve its subscribers.
+- The file has a phone number column, but the list has no mobile phone number field set in its SMS settings.
+- The file has phone-only contacts and the list uses double opt-in.
+
+Subscribers imported before the failure stay on the list. Fix the cause, then import the remaining records again. Leave **Update subscriber information of duplicates with import data** checked so the records that were already imported are updated with the file's data.
+
+::: info
+If you start imports through the API with an import status webhook URL, the webhook also receives a final request when an import fails, with the import status set to `Failed`. The failure reason is not included.
 :::
 
 ## Editing a Subscriber

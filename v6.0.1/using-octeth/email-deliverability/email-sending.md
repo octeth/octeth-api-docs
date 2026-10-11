@@ -112,6 +112,28 @@ A delivery server showing **Not Allocated** is not currently assigned to any use
 
 [[SCREENSHOT: Delivery Servers list page showing allocation badges next to each server — one server showing "M" and "T" badges for UserGroup1, another showing "Not Allocated"]]
 
+### Cloning a Delivery Server
+
+If you run several delivery servers that share most of their settings, clone an existing one instead of filling in the creation form again:
+
+1. Navigate to **Settings** > **Delivery Servers**.
+2. Click the delivery server name to open the edit page.
+3. Click **Clone** next to the **Update** button.
+4. Confirm the prompt.
+
+Octeth creates the copy and opens its edit page. The copy is named after the original with ` (Copy)` added to the end. Rename it and click **Update**.
+
+| Copied from the original | Not copied |
+|---|---|
+| Every **Email Delivery** setting, including the stored SMTP password | User group assignments, so the copy shows **Not Allocated** until you assign it |
+| Every **Domains** setting, including the sender rotation options | Custom email headers set for the original server |
+| | Settings on the **Delivery Routes** page |
+| | Test results, so the copy starts untested |
+
+::: warning
+The copy is made from the saved settings. Changes you have not saved with **Update** on the original's edit page are not included. The copy also uses the same SMTP credentials and domains as the original, so review its settings and run the test on its **Test** tab before you assign it to a user group.
+:::
+
 ## User Group Sender Settings
 
 User group settings control how each group of users sends emails. These settings determine which delivery server is used, what sending limits apply, whether users can manage their own sender domains, and how email headers are configured.

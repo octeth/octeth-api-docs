@@ -136,20 +136,35 @@ change rather than as a broken page.
 [[SCREENSHOT: The dashboard rendered with a custom accent colour, showing the sidebar, a primary button and an active navigation item]]
 
 ::: warning
-Two surfaces stay white whatever accent you choose. The sidebar and the signed-out brand
-panel both have dark backgrounds, so they render their active states and highlights in white
-rather than in your accent colour. If you set a bright accent, those two places will not
-match it. This is deliberate: an accent colour that happens to be dark would be invisible
-against a dark background.
+The sidebar and the signed-out brand panel do not use your accent for their highlights. Both sit on the primary colour, so they draw their active states and highlights in the primary foreground colour, which is white by default. If you set a bright accent, those two places will not match it. This is deliberate: an accent colour that happens to be dark would be invisible against a dark background.
 :::
+
+### Text on a coloured background
+
+Two more settings choose the colour of text and icons drawn on top of a solid primary or accent background:
+
+| Setting | Used for | Default |
+|---|---|---|
+| `UI_BRAND_PRIMARY_ON` | Text and icons on the primary colour: the sidebar, the signed-out brand panel, dark badges and the dashboard banner | `#FFFFFF` |
+| `UI_BRAND_ACCENT_ON` | Text and icons on the accent colour: primary buttons, avatars, notifications, step indicators and the header of the interface's own emails | `#FFFFFF` |
+
+Leave both unset if your primary and accent are dark. If you choose a light or mid-tone colour, set the matching setting to a dark colour so the text stays readable. For example, white text on an amber accent is hard to read, while near-black text on it is clear:
+
+```ini
+UI_BRAND_ACCENT="#F2A73B"
+UI_BRAND_ACCENT_ON="#0A0A0A"
+```
+
+Aim for a contrast ratio of at least 4.5:1 between the background and the text, the level WCAG 2.1 AA asks for normal text. These two follow the same rules as the other colours: quote them, and use a 3, 6 or 8 digit hex value. An invalid value is ignored and white is used.
 
 ::: info
 Three things deliberately keep their own colours and do not follow your palette:
 
 - **Charts and graphs** use several colours to tell one line or bar from another. Forcing
   them all to your brand colour would make the series impossible to tell apart.
-- **The interface's own emails and the invoice PDF** carry fixed colours, because email
-  clients cannot read the mechanism that applies your palette to a web page.
+- **The invoice PDF and the body of the interface's own emails** carry fixed colours. The one
+  exception is the email header bar, which uses your `UI_BRAND_ACCENT` as its background and
+  your `UI_BRAND_ACCENT_ON` as its text colour.
 - **The sample email bodies** shown in preview panes are stand-in content representing a
   customer's message, not your product's own styling.
 :::
@@ -158,14 +173,39 @@ Three things deliberately keep their own colours and do not follow your palette:
 
 ```ini
 UI_BRAND_SUPPORT_EMAIL=support@acmemail.com
+UI_BRAND_SUPPORT_URL=https://help.acmemail.com
 UI_BRAND_TERMS_URL=https://acmemail.com/terms
 UI_BRAND_PRIVACY_URL=https://acmemail.com/privacy
+UI_BRAND_AUP_URL=https://acmemail.com/acceptable-use
+UI_BRAND_STATUS_URL=https://status.acmemail.com
 ```
+
+| Setting | Where it appears |
+|---|---|
+| `UI_BRAND_SUPPORT_URL` | The **Contact support** link on the password reset page, opened in a new tab. |
+| `UI_BRAND_SUPPORT_EMAIL` | The **Contact support** link on the password reset page when `UI_BRAND_SUPPORT_URL` is empty, as an email link. Also shown as a contact address after sign-up and when sign-up is unavailable, and used as the seller email on invoices unless you set one in the invoice details. |
+| `UI_BRAND_TERMS_URL` | The **Terms** link in the footer of every signed-out page, and **Terms of Service** in the sign-up consent sentence. |
+| `UI_BRAND_PRIVACY_URL` | The **Privacy** link in the same footer, and **Privacy Policy** in the consent sentence. |
+| `UI_BRAND_AUP_URL` | The **Acceptable Use** link in the same footer. It also adds **Acceptable Use Policy** to the consent sentence and to the error shown when the box is left unticked. |
+| `UI_BRAND_STATUS_URL` | The **Status** link in the same footer. |
+
+The signed-out pages are sign in, sign up, password reset, two-factor and the error pages. Links from the consent sentence open in a new tab.
 
 ::: tip
 Leaving one of these empty is a valid choice, not an oversight. The interface hides a link
-whose address is empty rather than pointing it somewhere wrong. If you have no published
-privacy policy yet, leave `UI_BRAND_PRIVACY_URL` empty and no privacy link is shown.
+whose address is empty rather than pointing it somewhere wrong:
+
+- With `UI_BRAND_AUP_URL` empty, the consent sentence names only the Terms of Service and the
+  Privacy Policy, and the footer has no **Acceptable Use** link.
+- With both `UI_BRAND_SUPPORT_URL` and `UI_BRAND_SUPPORT_EMAIL` empty, there is no **Contact
+  support** link.
+- With `UI_BRAND_TERMS_URL` or `UI_BRAND_PRIVACY_URL` empty, the consent sentence still names
+  that policy, as plain text, and the footer leaves its link out.
+:::
+
+::: info
+The sign-up form requires the consent box to be ticked, but the interface does not record the
+acceptance. Keep your own record if your policies require one.
 :::
 
 ## Step 5: Brand the interface's own emails
@@ -191,7 +231,7 @@ configuration reference for how to point them at a real mail server.
 ## What your customers can brand themselves
 
 Separate from the branding above, each of your customers can set a header and a footer that
-wraps every email they send. They do this in the interface under **Email header & footer**.
+wraps every email they send. They do this in the interface under **Header & footer**.
 
 [[SCREENSHOT: The Email header and footer screen showing the HTML tab, the header editor, and the live preview panel]]
 
@@ -207,8 +247,8 @@ Walk through this list on a fresh browser, ideally in a private window so nothin
 2. The sign-in page shows your wordmark, not a broken image.
 3. After signing in, the sidebar shows your mark, not a broken image.
 4. A primary button is your accent colour.
-5. The footer links go to your terms and privacy pages, or are absent if you left them
-   empty.
+5. The footer links go to your terms, privacy, acceptable use and status pages, or are absent
+   if you left them empty.
 6. Nothing on any screen names Octeth.
 
 ::: tip
@@ -216,14 +256,27 @@ Point 6 is the one worth being thorough about. Check the sign-in page, the sign-
 the dashboard, one campaign report, and one of the interface's own emails.
 :::
 
+## More you can set
+
+These are covered in the [Configuration reference](./configuration-reference):
+
+- **The sign-in brand panel.** `UI_BRAND_TAGLINE` adds one short line at the top of the panel,
+  and `UI_BRAND_TRUST_STATS` adds figures at its foot. Both are empty by default, which hides
+  them. The panel appears only on screens at least 900 pixels wide.
+- **Section paths.** The `UI_BRAND_SLUG_*` settings rename the path of eight customer sections,
+  for example serving campaigns at `/user/broadcasts`.
+- **Which sections exist.** `UI_MODE` and the `BRAND_FEATURE_*` settings hide whole sections,
+  such as journeys or SMS.
+
 ## What cannot be branded yet
 
 Be aware of the current limits before you promise something to a customer.
 
-- **The URL segments are fixed.** Paths such as `/user/campaigns` and `/user/journeys`
-  cannot be renamed to your own vocabulary on an Octeth install.
-- **The wording is fixed.** You cannot rename "Campaigns" to "Broadcasts" across the
-  interface.
+- **The wording is fixed.** You cannot rename "Campaigns" to "Broadcasts" on screen. A
+  `UI_BRAND_SLUG_*` setting changes only the path in the address bar.
+- **Some paths are fixed.** Only the eight sections with a `UI_BRAND_SLUG_*` setting can be
+  renamed. Paths such as `/user/account`, `/user/billing` and `/user/suppressions` stay as
+  they are.
 - **Individual product areas cannot be hidden.** You can turn the billing system on and off,
   but not journeys, transactional email or SMS individually. Octeth's own permission system
   has no matching setting for those, so what a customer sees is decided by their Octeth user

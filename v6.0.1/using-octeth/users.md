@@ -251,7 +251,7 @@ A JSON editor allows you to configure per-user rate limits for email sending. Ra
 
 | Field | Description |
 |---|---|
-| **Emails Per Day** | Maximum emails a user can send per day. `0` = unlimited. |
+| **Emails** | Maximum emails a user can send per day, for campaigns and for the Email Gateway. `0` = unlimited. |
 
 **Monthly Limits**
 
@@ -269,6 +269,26 @@ A JSON editor allows you to configure per-user rate limits for email sending. Ra
 
 ::: info
 Limits set at the User Group level apply to all users in the group. Individual user limits can be viewed and monitored on the user's **Limit Utilization** page.
+:::
+
+##### Email gateway send limits
+
+Two settings on this tab limit what users in the group can send through the Email Gateway API and the SMTP relay. Journey **Send Email** actions send through the Email Gateway API, so the same limits apply to them. Each recipient (To, CC and BCC) counts as one email.
+
+**Default Rate Limits** (under **Send Rate Limit Settings**) holds two sets of limits: `EmailGateway` for email and `SMS` for text messages. Each set has a `Minute`, `Hour`, `Day`, `Week`, `Month` and `Year` value:
+
+- `-1` means no limit for that interval.
+- `0` blocks all sending for that interval. This is the opposite of the other fields on this tab, where `0` means unlimited.
+- Any other number is the most emails the user can send in that interval.
+
+When a user reaches a rate limit, the Email Gateway API answers HTTP `429` with error code `429`, and the SMTP relay answers `500 5.0.0 EMAIL SEND RATE LIMIT REACHED.`. Email that was accepted within the limit is delivered.
+
+**Emails** under **Daily Limits** also caps Email Gateway email. Octeth counts the user's gateway email for the server's calendar day, including email that is still queued and email that failed. Over the cap, the Email Gateway API answers HTTP `429` with error code `17` (`Email sending limit reached`), and the SMTP relay answers `500 5.0.0 EMAIL SENDING LIMIT REACHED.`. Leave the field empty or set it to `0` for no daily limit.
+
+To give one user different rate limits, see [Overriding rate limits for one user](#overriding-rate-limits-for-one-user). The daily limit has no per-user override.
+
+::: info Rate limits during a Redis outage
+Octeth keeps the rate limit counters in Redis. If Redis cannot be read, Octeth accepts the email without a rate limit check and logs an error, so a Redis outage does not stop your customers' email. To reject these sends instead, set `EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED=true`, see [Octeth Configuration](/v6.0.1/getting-started/octeth-configuration#main-configuration-file-oempro-env). Email that is already queued is delivered either way. The daily limit does not depend on Redis.
 :::
 
 #### Payment & Credit Settings Tab
@@ -493,7 +513,7 @@ The Account Information tab includes the following fields:
 | Field | Type | Notes |
 |---|---|---|
 | **Available Credits** | Text | Current email credit balance. Only shown if the user's group has the Credit System enabled. |
-| **Reputation Level** | Dropdown | **Trusted** or **Untrusted**. |
+| **Reputation** | Dropdown | **Trusted** or **Untrusted**. See [Reputation Levels](#reputation-levels). |
 | **Category** | Dropdown | Select **Uncategorized**, an existing category, or **New Category** to create one. |
 | **New Category Name** | Text | Appears when **New Category** is selected. Enter the name for the new category. |
 | **Company Name** | Text | |
@@ -538,6 +558,18 @@ The Settings tab provides advanced configuration options that override User Grou
 ::: info
 Settings configured on this tab take precedence over the User Group settings. To revert to group defaults, clear the field or select the default option.
 :::
+
+##### Overriding rate limits for one user
+
+The **Rate Limits** editor replaces the user group's **Default Rate Limits** for this user. To start from the group's values, click the **Click here** link in the note below the editor. The override can be looser or stricter than the group's limits.
+
+Octeth applies the override one set at a time:
+
+- An `EmailGateway` set in the override replaces the group's whole `EmailGateway` set. An interval you leave out of it is unlimited. It does not fall back to the group's value.
+- If the override has no `EmailGateway` set, for example because it holds only `SMS`, the group's `EmailGateway` limits apply.
+- If the editor is empty, the group's limits apply.
+
+Plan purchases and plan changes in the new user interface do not write an override, so accounts on a billing plan follow their user group's limits.
 
 Click **Update Account** to save changes.
 
@@ -731,6 +763,54 @@ To change a user's account status:
 ::: info
 Disabling an account prevents the user from logging in and stops all scheduled campaigns and auto-responders. The user's data (lists, subscribers, campaigns) is preserved.
 :::
+
+#### Email Gateway sending from a disabled account
+
+Disabling an account also stops its Email Gateway sending at once:
+
+- The Email Gateway API rejects new email with HTTP `403` and error code `12` (`Invalid or deactivated user account`). Nothing is queued.
+- The SMTP relay refuses the account's login.
+- Journey **Send Email** actions fail, because they send through the Email Gateway API.
+- Email that is already queued is not sent and no credit is charged. Its status becomes **Failed** with the message `Sending blocked: account disabled`. Enabling the account again does not resend it, including email that was scheduled for later.
+- Click-tracked links in Email Gateway email the account already sent, journey email included, return HTTP `404` (Not Found) instead of redirecting. Open tracking and unsubscribe links keep working.
+
+Suspending or blocking a single sender domain has the same effect on that domain's email, except that the Email Gateway API answers error code `32` (`Domain is not activated`). The same applies to a domain in **Approval Pending**.
+
+### Reputation Levels
+
+Every account is **Trusted** or **Untrusted**. Change it with the **Reputation** dropdown on the user's **Account information** tab, and use **By Reputation Level** on the Users page to list the accounts at each level.
+
+An **Untrusted** account can log in and prepare its work, but it cannot send until you mark it **Trusted**:
+
+- A campaign it schedules waits in **Pending Approval** until an administrator approves it.
+- The Email Gateway API rejects its email with HTTP `403` and error code `40` (`Account pending approval`). Nothing is queued.
+- The SMTP relay refuses its login.
+- Journey **Send Email** actions fail, because they send through the Email Gateway API.
+- Email already queued when the account is moved to **Untrusted** is not sent. Its status becomes **Failed** with the message `Sending blocked: account pending approval`. Marking the account **Trusted** again does not resend it.
+- Links in email it already sent keep working.
+
+When an **Untrusted** account tries to send through the Email Gateway API, Octeth emails the address in **Send Alerts To** (**Settings > Admin Account**, **Email addresses** tab), at most once per account every 24 hours. In the new user interface, an **Untrusted** user sees an **Account is waiting review** banner.
+
+To let the account send, set **Reputation** to **Trusted** and click **Update user account**. Nothing else needs to change, and queued email is checked again for each message.
+
+#### Allowing Untrusted accounts to use the Email Gateway API
+
+`EMAILGATEWAY_REQUIRE_TRUSTED` is `true` by default, which applies the Email Gateway API, journey and queued email rules above. Set it to `false` to let **Untrusted** accounts send through the Email Gateway API and journeys, as they could before v6.0.1. It does not change the SMTP relay, which always requires a **Trusted** account, or campaign approval. See [Octeth Configuration](/v6.0.1/getting-started/octeth-configuration#main-configuration-file-oempro-env).
+
+::: warning After upgrading to v6.0.1
+Accounts created through the sign-up page or single sign-on have been **Untrusted** by default for many releases. If any of them send through the Email Gateway API or journeys, their email stops after the upgrade until you mark them **Trusted** or set `EMAILGATEWAY_REQUIRE_TRUSTED=false`. See [API Behavior Changes](/v6.0.1/api-reference/behavior-changes#an-untrusted-account-cannot-send-through-the-gateway-api).
+:::
+
+#### Reputation of new accounts
+
+| How the account is created | Reputation |
+|---|---|
+| **Create User** in the administration area | **Trusted** |
+| The sign-up page or the new user interface's registration page | The **Reputation** setting under **Settings > ESP Settings**, **User Sign-Up** tab. It is **Untrusted** on a new installation. |
+| Single sign-on | The reputation sent in the sign-on token, otherwise the **Reputation** setting above. |
+| The `user.create` API | The `ReputationLevel` you send, otherwise the **Reputation** setting above. |
+
+Changing a plan in the new user interface never changes an account's reputation.
 
 ### Deleting a User Account
 

@@ -55,14 +55,14 @@ The customer can break this cycle themselves at any point. Their **Billing** ove
 wait for the next scheduled attempt.
 :::
 
-You can change the retry schedule and the grace period under **Staff**, **Billing settings**,
-**Policy**. See [Step 8 of the setup guide](./billing-setup#step-8-set-your-collections-policy).
+You can change the retry schedule and the grace period in the staff sidebar under **Billing**,
+**Settings**, **Billing policy**. See [Step 8 of the setup guide](./billing-setup#step-8-set-your-collections-policy).
 
 ## The screens you will use
 
 ### Worklists
 
-**Staff**, then **Billing**, then **Worklists**. This is the screen to open each morning. It
+In the staff sidebar, **Billing**, then **Worklists**. This is the screen to open each morning. It
 shows four lists:
 
 - **Past due and dunning**, with the next retry date for each.
@@ -70,9 +70,50 @@ shows four lists:
 - **Stuck payments**, anything that needs a human to look at it.
 - **Upcoming renewals**, so a large charge is never a surprise.
 
+### Transactions
+
+In the staff sidebar, **Billing**, then **Transactions**. Every payment attempt across all customers, newest first, 50 to a page. The screen is read-only: open a customer to retry a payment or refund it.
+
+Each row shows:
+
+| Column | Meaning |
+|---|---|
+| **Attempted at** | When the charge was attempted. |
+| **Customer** | The company name, the customer ID, the contact name and the email address. Click the name or the ID to open that customer. A customer that no longer exists shows **Unknown customer**. |
+| **Purpose** | **Invoice**, **Plan change**, **Add-on change** or **Credit pack**. An invoice payment shows the invoice number below, which downloads the invoice PDF. A purchase shows the product name. |
+| **Amount** | The amount and currency. |
+| **Status** | **Succeeded**, **Failed**, **Pending** or **Unknown**. |
+| **Gateway reference** | The payment processor's own ID for the charge. |
+| **Resolved at** | When the attempt reached its final status. |
+
+[[SCREENSHOT: The staff Transactions screen showing the filter bar, the per-currency summary line and a payment list with one Failed row]]
+
+#### Filtering the list
+
+Use the bar above the list:
+
+- **All statuses** and **All purposes** narrow the list to one status or purpose.
+- The date range starts at **Last 30 days**. Choose **Last 7 days**, **Last 90 days**, **Last 12 months**, **All time** or **Custom range**. A custom range shows a from date and a to date, and each one includes the whole day.
+- **Customer ID** shows one customer's payments. Enter the numeric ID.
+- **Gateway reference** finds payments whose reference contains the text you type.
+
+Click **Clear filters** to go back to the default view. The filters are kept in the page address, so you can bookmark or share a filtered view.
+
+#### Totals by currency
+
+The line above the list counts the payments that match your filters. For succeeded payments, it adds a count and a total for each currency, for example **Succeeded USD: 42 totalling $4,180.00**. Amounts in different currencies are never added together.
+
+#### Why a payment failed
+
+A **Failed** status with a small information icon carries the payment processor's error message. Hover over the status to read it.
+
+::: info
+The processor's error text is shown to staff only. Customers never see it.
+:::
+
 ### Revenue
 
-**Staff**, then **Billing**, then **Revenue**. Monthly and annual recurring revenue, average
+In the staff sidebar, **Billing**, then **Revenue**. Monthly and annual recurring revenue, average
 revenue per account, your plan mix, revenue over time, revenue at risk, outstanding credit
 liability, why customers cancelled, and how your recurring revenue moved over the last 30
 days.
@@ -89,7 +130,7 @@ chart until the snapshot job has run a few times. That is expected, not a fault.
 
 ### Health
 
-**Staff**, then **Billing**, then **Health**. A read-only check of your gateway wiring, tax
+In the staff sidebar, **Billing**, then **Health**. A read-only check of your gateway wiring, tax
 setup, incoming payment notifications, scheduled job timing and outstanding readiness
 problems.
 
@@ -100,7 +141,7 @@ way to find a configuration gap, and it never changes anything itself.
 
 ### One customer
 
-**Staff**, then **Customers**, then pick a customer. This shows their subscription, their
+In the staff sidebar, **Users**, then pick a customer. This shows their subscription, their
 invoices, their payments and their usage, and lets you download any of their invoices as a
 PDF.
 
@@ -133,13 +174,34 @@ refund events are enabled on your webhook endpoint (see
 [Step 4 of Connecting a Payment Gateway](./payment-gateways#step-4-add-the-webhook-in-your-processor-s-dashboard)).
 :::
 
+#### Clearing a refund that never reached Stripe
+
+If your request timed out before Stripe answered, the refund stays at **Refund pending confirmation** and the **Refund** button stays hidden. When Stripe never received the request, no webhook arrives to settle it. **Mark as failed** clears it.
+
+The button appears next to that payment 15 minutes after you requested the refund. Before then, the row shows **Can be marked as failed after** with the time.
+
+1. Click **Mark as failed**.
+2. Confirm the message **Check this refund with the payment processor? If the processor holds no such refund, it is marked as failed and the payment can be refunded again.**
+
+Octeth asks Stripe for every refund on that payment, then:
+
+- **If Stripe holds no such refund**, the refund is marked as failed. The **Refund** button returns, so you can refund the payment again.
+- **If Stripe did receive it**, Octeth records Stripe's result instead and does not mark it failed. The message tells you whether the refund succeeded, is still processing or failed.
+- **If Stripe cannot be reached**, nothing changes. Try again shortly.
+
+Both outcomes that change the refund are recorded in the staff audit log with your name against it.
+
+::: info
+**Mark as failed** is available for Stripe only, and only for refunds issued from this screen. For an accept.blue payment, check the accept.blue dashboard instead. A payment with no processor reference shows **No processor reference to check this refund against**.
+:::
+
 Refunds you issue in the Stripe dashboard are recorded the same way, from Stripe's webhook, so
 they also reduce the refundable amount, lifetime paid and revenue. Refunds issued in the
 accept.blue dashboard are not recorded yet: issue accept.blue refunds from this screen.
 
 ## Discount codes
 
-**Staff**, then **Billing**, then **Discounts**.
+In the staff sidebar, **Billing**, then **Discounts**.
 
 Create a code and set:
 
@@ -252,7 +314,7 @@ screen and run reconcile again.
 
 ### Nobody is ever suspended for not paying
 
-Check **Staff**, **Billing settings**, **User groups**, and confirm the **Suspended** group is
+In the staff sidebar, check **Billing**, **Settings**, **User groups**, and confirm the **Suspended** group is
 set. If it is empty and the customer's plan has no suspended link of its own, there is
 nowhere to move them to. The **Billing health** screen reports this.
 

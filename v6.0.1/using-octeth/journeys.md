@@ -315,6 +315,10 @@ Each action type has its own configuration fields. Click the **Configure** butto
 You must have at least one email template created before configuring the Send Email action. If no emails exist, a message prompts you to create one first.
 :::
 
+::: warning Disabled and Untrusted accounts
+The Send Email action sends through the Email Gateway API, so it fails while the account is disabled or **Untrusted**. The subscriber is held at the action and retried, by default after 15 minutes, 30 minutes, 1 hour, 2 hours and 4 hours, and then leaves the journey with the failure recorded in the journey log. If an administrator enables the account or marks it **Trusted** before the retries run out, the email is sent. See [Reputation Levels](/v6.0.1/using-octeth/users#reputation-levels).
+:::
+
 #### Send SMS
 
 | Field | Description |

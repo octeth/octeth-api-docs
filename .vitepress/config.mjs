@@ -78,7 +78,7 @@ export default defineConfig({
                     {text: 'v5.7.2', link: '/v5.7.2/'},
                     {text: 'v5.6.x', link: '/v5.6.x/'},
                     {text: 'v5.5.x', link: '/v5.5.x/'},
-                    {text: 'Changelog', link: 'https://help.octeth.com/whats-new', target: '_blank', rel: 'dofollow'}
+                    {text: 'Changelog', link: '/changelog'}
                 ]
             },
             {
@@ -93,7 +93,7 @@ export default defineConfig({
             },
             {text: 'Homepage', link: 'https://octeth.com/', target: '_blank', rel: 'dofollow'},
             {text: 'Client Area', link: 'https://my.octeth.com/', target: '_blank', rel: 'dofollow'},
-            {text: 'Help Portal', link: 'https://help.octeth.com/', target: '_blank', rel: 'dofollow'},
+            {text: 'Help Portal', link: 'https://dev.octeth.com/', target: '_blank', rel: 'dofollow'},
             {text: 'Contact Us', link: 'https://octeth.com/contact/', target: '_blank', rel: 'dofollow'}
         ],
 
@@ -997,7 +997,8 @@ export default defineConfig({
                         }, {
                             text: 'Administration', items: [
                                 {text: 'Security Settings', link: '/v6.0.1/using-octeth/administration/security'},
-                                {text: 'License', link: '/v6.0.1/using-octeth/administration/license'}
+                                {text: 'License', link: '/v6.0.1/using-octeth/administration/license'},
+                                {text: 'Sender Domain Health', link: '/v6.0.1/using-octeth/administration/sender-domain-health'}
                             ],
                         }
                     ]
@@ -1154,7 +1155,8 @@ export default defineConfig({
                         }, {
                             text: 'Administration', items: [
                                 {text: 'Security Settings', link: '/v6.0.2/using-octeth/administration/security'},
-                                {text: 'License', link: '/v6.0.2/using-octeth/administration/license'}
+                                {text: 'License', link: '/v6.0.2/using-octeth/administration/license'},
+                                {text: 'Sender Domain Health', link: '/v6.0.2/using-octeth/administration/sender-domain-health'}
                             ],
                         }
                     ]

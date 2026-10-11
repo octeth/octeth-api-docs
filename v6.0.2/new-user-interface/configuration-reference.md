@@ -29,6 +29,7 @@ enough.
 |---|---|---|
 | `UI_ENABLED` | `true` on a fresh install and on an upgrade that adds it (code default `false`) | The master switch. When off, the container still runs and reports healthy but serves nothing, and `/user/` and `/ui/` fall through to the classic application. An upgrade from a version older than v5.9.6 adds this key set to `true`. To keep the interface off, add `UI_ENABLED=false` to `.oempro_env` before upgrading, or set it afterwards and recreate the containers. |
 | `UI_LOG_LEVEL` | `error` | How much the interface writes to its log. One of `debug`, `info`, `notice`, `warning`, `error`, `critical`, `alert`, `emergency`. |
+| `UI_DEBUG_CONSOLE_ENABLED` | `false` | Lets staff open the API debug console on a production install. The console writes backend responses into the page, so turn it on only while investigating a problem, and turn it off afterwards. See the [configuration page](/v6.0.2/getting-started/octeth-configuration) for details. |
 
 ## Application key
 
@@ -102,8 +103,13 @@ Covered in full in [Branding the new user interface](./branding). The settings a
 | `UI_BRAND_NAME` | `Octeth` |
 | `UI_BRAND_LEGAL_NAME` | Empty, falls back to the brand name |
 | `UI_BRAND_SUPPORT_EMAIL` | Empty |
+| `UI_BRAND_SUPPORT_URL` | Empty |
 | `UI_BRAND_TERMS_URL` | Empty |
 | `UI_BRAND_PRIVACY_URL` | Empty |
+| `UI_BRAND_AUP_URL` | Empty |
+| `UI_BRAND_STATUS_URL` | Empty |
+| `UI_BRAND_TAGLINE` | Empty, hidden |
+| `UI_BRAND_TRUST_STATS` | Empty, hidden |
 | `UI_BRAND_MAIL_FOOTER` | Empty |
 | `UI_BRAND_LOGO_MARK` | `/ui/images/brand/brand-logo-mark-white.svg` |
 | `UI_BRAND_LOGO_HORIZONTAL` | `/ui/images/brand/brand-logo-horizontal-black.svg` |
@@ -111,6 +117,7 @@ Covered in full in [Branding the new user interface](./branding). The settings a
 | `UI_BRAND_PRIMARY` | `"#0A0A0A"` |
 | `UI_BRAND_PRIMARY_900` | `"#000000"` |
 | `UI_BRAND_PRIMARY_700` | `"#262626"` |
+| `UI_BRAND_PRIMARY_ON` | `"#FFFFFF"` |
 | `UI_BRAND_ACCENT` | `"#0A0A0A"` |
 | `UI_BRAND_ACCENT_HOVER` | `"#262626"` |
 | `UI_BRAND_ACCENT_LIGHT` | `"#F4F4F5"` |
@@ -118,12 +125,49 @@ Covered in full in [Branding the new user interface](./branding). The settings a
 | `UI_BRAND_ACCENT_700` | `"#000000"` |
 | `UI_BRAND_ACCENT_100` | `"#E4E4E7"` |
 | `UI_BRAND_ACCENT_050` | `"#FAFAFA"` |
+| `UI_BRAND_ACCENT_ON` | `"#FFFFFF"` |
+
+`UI_BRAND_TRUST_STATS` takes `value|label` pairs separated by semicolons, for example `UI_BRAND_TRUST_STATS="10M+|Emails sent per month;99.9%|Uptime"`. An entry missing its value or its label is skipped. Show only figures you can back.
 
 ::: danger
 Always quote the colour values. An unquoted `#` is read as the start of a comment, which
 leaves the colour empty on one side of the system and set on the other, with nothing on
 screen to explain the result.
 :::
+
+## Product mode and sections
+
+| Setting | Default | What it does |
+|---|---|---|
+| `UI_MODE` | `full` | `full` is the complete marketing product. `gateway` turns the interface into an email relay service: the marketing sections are hidden, the sidebar lists the transactional sections for a sending domain you pick, and users land on the transactional overview after signing in. Any other value is read as `full`. |
+
+Each setting below shows or hides one section. Set it to `true` or `false`. Leave it out of `.oempro_env` to use the default for your mode. A hidden section disappears from the sidebar and its pages answer "not found".
+
+| Setting | Section | Default in `full` | Default in `gateway` |
+|---|---|---|---|
+| `BRAND_FEATURE_DASHBOARD` | **Dashboard** | `true` | `false` |
+| `BRAND_FEATURE_CAMPAIGNS` | **Campaigns** | `true` | `false` |
+| `BRAND_FEATURE_JOURNEYS` | **Journeys** | `true` | `false` |
+| `BRAND_FEATURE_SMS` | **SMS** (**Campaigns** and **Replies**) and **Suppressions** > **SMS** | `true` | `false` |
+| `BRAND_FEATURE_LISTS` | **Lists** | `true` | `false` |
+| `BRAND_FEATURE_TEMPLATES` | **Templates** | `true` | `false` |
+| `BRAND_FEATURE_EMAIL_HEADER_FOOTER` | **Header & footer** | `true` | `false` |
+| `BRAND_FEATURE_ANALYTICS` | **Analytics** | `true` | `false` |
+| `BRAND_FEATURE_DELIVERABILITY` | **Deliverability** | `true` | `false` |
+| `BRAND_FEATURE_USER_WEBHOOKS` | The **Webhooks** tab on the **API & webhooks** page | `true` | `false` |
+
+For example, to run in gateway mode but keep SMS:
+
+```ini
+UI_MODE=gateway
+BRAND_FEATURE_SMS=true
+```
+
+::: warning
+Campaigns and journeys need lists. If you turn on `BRAND_FEATURE_CAMPAIGNS` or `BRAND_FEATURE_JOURNEYS`, turn on `BRAND_FEATURE_LISTS` too. The interface checks this every time it starts and writes a warning to its container log when a section is on while one it needs is off.
+:::
+
+Transactional email, email suppressions, senders and the API page have no setting and are always shown. Restart the interface container after a change.
 
 ## Billing
 
@@ -132,12 +176,12 @@ screen to explain the result.
 | `BRAND_FEATURE_BILLING` | `false` | Turns the whole subscription billing system on or off. |
 
 ::: warning
-This is the only setting for the interface that does not start with `UI_`. Writing
+Like the other `BRAND_FEATURE_*` settings, this one does not start with `UI_`. Writing
 `UI_BRAND_FEATURE_BILLING` has no effect.
 :::
 
-Everything else about billing is configured inside the interface, under **Staff**, then
-**Billing settings**. See [Setting up the billing system](./billing-setup).
+Everything else about billing is configured inside the interface, under **Billing**, then
+**Settings** in the staff sidebar. See [Setting up the billing system](./billing-setup).
 
 The three Stripe settings below are a starting point only. Once you save Stripe credentials
 on the **Payment gateways** screen, those saved values are used and these are ignored. Most
@@ -153,6 +197,10 @@ installs should leave them empty and use the screen.
 There is no equivalent for accept.blue. Those credentials are entered on the **Payment
 gateways** screen only.
 :::
+
+| Setting | Default | What it does |
+|---|---|---|
+| `UI_BILLING_TAX_CALCULATOR` | Empty | Leave empty. Every invoice is calculated with zero tax. This is an extension point for a developer, not a way to turn tax on. See the tax note in [Setting up the billing system](./billing-setup#tax). |
 
 ## Outbound email from the interface
 
@@ -225,6 +273,24 @@ shows fictional numbers to whoever uses it next, with nothing on screen saying s
 off when you are done.
 :::
 
+## Visitor IP addresses
+
+The interface records the visitor's IP address in its sign-in activity, in the staff audit log and when a contact unsubscribes. It finds that address with the same three settings Octeth uses, so set them once for both:
+
+| Setting | Default | What it does |
+|---|---|---|
+| `INTERNAL_PROXY_NETWORKS` | `192.168.99.0/24` | The network of Octeth's own reverse proxy. Change it only if you changed the subnet in `docker-compose.yml`. |
+| `TRUSTED_PROXIES` | Empty | A load balancer, reverse proxy or CDN that you put in front of Octeth, as comma-separated IPv4 addresses or ranges. Leave it empty on a standard install. |
+| `TRUST_CLOUDFLARE_CONNECTING_IP` | `false` | Set `true` only when your domain is served through Cloudflare and your server accepts traffic from Cloudflare alone. |
+
+The interface always trusts the server itself, then the networks in these two lists. The same list also decides whether the interface believes that the visitor connected over HTTPS.
+
+::: danger
+If you changed the compose subnet, set `INTERNAL_PROXY_NETWORKS` to match. Otherwise the interface stops trusting Octeth's own reverse proxy and can fall into a redirect loop.
+:::
+
+Restart the interface container after a change. For the full rules, including the Cloudflare setup, see **Trusted Proxies / Client IP Resolution** on the [configuration page](/v6.0.2/getting-started/octeth-configuration).
+
 ## Settings inherited from Octeth
 
 The interface reads a few of Octeth's own settings rather than having its own copy:
@@ -270,7 +336,8 @@ Use lowercase letters, digits and hyphens only, one word with no slashes. A valu
 Some settings exist inside the interface's own files but are not exposed in `.oempro_env`, so
 they cannot be changed on an Octeth install. Knowing which is which saves an afternoon.
 
-- **The sign-in page testimonial quotes.** These are empty and the block is hidden. The tagline and the trust figures can be set with `UI_BRAND_TAGLINE` and `UI_BRAND_TRUST_STATS`, see the [configuration page](/v6.0.2/getting-started/octeth-configuration).
+- **The sign-in page testimonial quotes.** These are empty and the block is hidden. The tagline and the trust figures can be set with `UI_BRAND_TAGLINE` and `UI_BRAND_TRUST_STATS`, see [Branding](#branding).
+- **Hiding transactional email, suppressions, senders or the API page.** Only the sections in [Product mode and sections](#product-mode-and-sections) can be hidden.
 - **Renaming things in the interface**, for example calling campaigns "broadcasts".
 - **Tax calculation.** Every invoice is calculated with zero tax, and no tax calculation ships with Octeth. `UI_BILLING_TAX_CALCULATOR` exists only as an extension point for a developer. See the tax note in [Setting up the billing system](./billing-setup#tax).
 - **Extra payment gateway addresses.** Only the card processors' own published addresses are
