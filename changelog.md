@@ -32,7 +32,7 @@ Release in progress. Changelog will be updated upon release.
 
 ### Upgrade Notes
 
-- (To be documented)
+- **Email Gateway SMTP host** - The upgrade adds `EMAILGATEWAY_SMTP_HOST=smtp.example.com` to `.oempro_env` when it is missing. Until you set your real SMTP host there, the user area and `emailgateway.getsmtps` show `smtp.example.com` instead of the previous built-in default. After setting it, run `./cli/octeth.sh smtp:sync-config` so the inbound SMTP server's greeting uses the same name. The upgrade also removes the product name from that greeting (#3313)
 
 ### Deprecations
 
