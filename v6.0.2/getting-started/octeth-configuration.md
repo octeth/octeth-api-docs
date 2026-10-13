@@ -1412,16 +1412,30 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
 
     Click tracking, open tracking, unsubscribe and web-version links use the sender domain's own tracking host when one is available. When it is not (for example an Email Gateway or journey sender domain whose DNS records do not include its tracking host, or a send without a sender domain), the links fall back to the tracking domains of the user group's delivery server, and to the `APP_URL` host when none is set. On a white-label install those are often the application or backend host name, which then appears in every subscriber-facing link.
 
-    Set `TRACKING_FALLBACK_DOMAIN` to a neutral host you own to use it for that fallback instead. It applies to every mail type: campaigns, autoresponders, transactional email, Email Gateway and journey email, including the `List-Unsubscribe` and `X-Report-Abuse` headers. A sender domain's own tracking host still takes precedence. With the key empty (the default), behavior is unchanged (issue #3308).
+    Set `TRACKING_FALLBACK_DOMAIN` to a neutral host you own to use it for that fallback instead. It applies to every mail type: campaigns, autoresponders, transactional email, Email Gateway and journey email, including the `List-Unsubscribe` and `X-Report-Abuse` headers. With the key empty (the default), behavior is unchanged (issue #3308).
+
+    Octeth picks the tracking host in this order, and the first one available wins:
+
+    1. The sender domain's own tracking host, when the domain is verified and its tracking host is provisioned.
+    2. `TRACKING_FALLBACK_DOMAIN`, when set.
+    3. The link and open tracking domains of the user group's delivery server.
+    4. The `APP_URL` host.
+
+    **Global segment routing.** A global segment can route its recipients through a specific delivery server, and that send normally uses the routed delivery server's tracking domains. When `TRACKING_FALLBACK_DOMAIN` is set, it replaces those tracking domains too, so no delivery server host reaches subscriber mail through that path. The routed delivery server still sends the email. Only the host in the links changes.
+
+    **Links already sent.** Changing the key affects new mail only. Links in email sent earlier keep their original host, so keep the previous host (a delivery server tracking domain or the `APP_URL` host) resolving and serving HTTPS for as long as those links should work.
 
     To set it up:
 
     - Enter the host only, without `https://` or a path, for example `track.example.net`. A value that is not a valid host name is ignored, and the previous fallback applies.
     - Create one DNS record for the host that points at this Octeth server: an `A` record to the server's IP address, or a `CNAME` to your `APP_URL` host. No MX, SPF or DKIM records are needed, because the host only serves the tracking and unsubscribe links.
-    - Keep the record DNS-only. Octeth's Caddy proxy issues the host's TLS certificate automatically on its first HTTPS request, which requires the host to reach this server directly. Behind a CDN or proxy (for example Cloudflare with the proxy enabled) the certificate cannot be issued, and links on the host fail over HTTPS.
+    - Keep the record DNS-only. Octeth's Caddy proxy issues the host's TLS certificate from Let's Encrypt automatically on its first HTTPS request, which requires the host to reach this server directly on ports 80 and 443.
+    - **CDN limitation.** Behind a CDN or proxy (for example Cloudflare with the proxy enabled) the certificate cannot be issued, and links on the host fail over HTTPS. Unlike the application domain, which can use a static certificate through `APP_DOMAIN_TLS_CERT`, the fallback tracking host has no static certificate option, so it must stay DNS-only.
     - Restart the backend workers after changing the key (`./cli/octeth.sh backend:restart`) so long-running workers pick it up.
 
-    The sender domain health report in the admin area and the user's sender domain edit page flag each Enabled domain whose Email Gateway and journey email uses the fallback host, and name the host.
+    The sender domain health report in the admin area and the user's sender domain edit page flag each Enabled domain whose Email Gateway and journey email uses the fallback host, and name the host. The flag follows the Email Gateway rule: a domain is on the fallback when Sender Domain Management is off for its user group, or when its stored DNS records do not include its tracking host. The health report API commands do not return this flag.
+
+    Click links in Email Gateway and journey email are accepted on the fallback host, the `APP_URL` host and every delivery server's link tracking domain, in addition to the sender domain's own subdomains. Any other host is still rejected as a possible phishing link.
 
 
 ::: warning Important
