@@ -58,12 +58,12 @@ Once it's completed, you will see a success message like:
 ║  ────────────────────────────────────────────────────────────────────────  ║
 ║  • Octeth Website:      https://octeth.com/                                ║
 ║  • Octeth Client Area:  https://my.octeth.com/                             ║
-║  • Octeth Help Portal:  https://help.octeth.com/                           ║
-║  • Octeth Dev Portal:   https://dev.octeth.com/                            ║
+║  • Octeth Docs:         https://dev.octeth.com/                            ║
 ║                                                                            ║
 ║  🚀 Getting Started:                                                       ║
 ║  ────────────────────────────────────────────────────────────────────────  ║
-║  Visit https://octeth.com/getting-started/ to learn more about:            ║
+║  https://dev.octeth.com/v6.0.2/getting-started/octeth-installation         ║
+║  Read the guide above to learn more about:                                 ║
 ║  • Configuring your Octeth installation                                    ║
 ║  • Setting up email delivery                                               ║
 ║  • Creating your first campaign                                            ║
