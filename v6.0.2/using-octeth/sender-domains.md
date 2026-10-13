@@ -71,6 +71,7 @@ Each sender domain has a status that determines whether it can be used for sendi
 |---|---|---|
 | **ENABLED** | Green checkmark | The domain is verified and ready for sending emails. |
 | **APPROVAL PENDING** | Yellow hourglass | DNS records have not been verified yet. The domain cannot be used for sending. |
+| **AWAITING APPROVAL** | Yellow checkmark | The domain is in **Blocked** status: it passed DNS verification, or was enabled before, and is waiting for an administrator to activate it. The domain cannot be used for sending. See [Suspended and Blocked Domains](#suspended-and-blocked-domains). |
 | **DISABLED** | Red exclamation | The domain has been disabled and cannot be used for sending. |
 | **SUSPENDED** | Red exclamation | The domain has been suspended and cannot be used for sending. |
 | **DELETED** | Grey trash icon | The domain has been soft-deleted and cannot be used for sending. |
