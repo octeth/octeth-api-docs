@@ -66,7 +66,7 @@ The **Health** column uses these labels:
 | **Failing 1/3** or **Failing 2/3** | Enabled, and that many background checks failed in a row. The third failure demotes the domain. |
 | **Last check failed** | The last check failed. For an enabled domain this is a failed **Re-check now**, which does not count toward the three. |
 | **Demoted by DNS drift** | Demoted, and the records still do not match. |
-| **Passing, awaiting approval** | Demoted, but the last check passed. |
+| **Passing, awaiting approval** | Demoted, but the last check passed. It stays **Approval Pending** until the owner verifies it again. |
 | **Awaiting approval** | Approval Pending for any other reason. |
 | **Never checked** | No stored check. |
 | **Last check passed** | Disabled, Suspended or Blocked, and the last check passed. |
@@ -91,7 +91,7 @@ A domain that cannot send while waiting for someone falls into one of these case
 
 - **Awaiting approval** (status **Approval Pending**): the owner has not verified the DNS records yet, changed the subdomain settings, or an administrator clicked **Unblock** on a suspended domain. The owner adds or fixes the records and verifies the domain.
 - **Demoted by DNS drift** (status **Approval Pending**, **DNS drift**): the records stopped matching. The owner fixes them and verifies the domain again. Background checks do not restore it.
-- **Blocked**: the domain passed verification, but the owner's user group has **Require new domain approval before email sending is allowed** turned on. An administrator blocking an enabled domain also gives this status. Filter by the **Blocked** status to find these domains, then click **Approve or block** and click **Activate** on the account's **Sender Domains** tab.
+- **Blocked**: the domain passed verification, but the owner's user group has **Require new domain approval before email sending is allowed** turned on. An administrator blocking an enabled domain also gives this status. Filter by the **Blocked** status to find these domains, then click **Manage domains** and click **Activate** on the account's **Sender Domains** tab.
 
 When the owner verifies a demoted domain and every record passes, it becomes **Enabled** again. If the owner's user group requires approval, it becomes **Blocked** and waits for you to activate it.
 
@@ -108,7 +108,7 @@ A re-check:
 
 **Re-check now** is available for **Enabled**, **Approval Pending**, **Blocked** and **Suspended** domains, not for **Disabled** ones. There is no limit on how often you can use it.
 
-To approve, suspend or block a domain, click **Approve or block** under its name. This opens the owner's **Sender Domains** tab.
+To activate, suspend or block a domain, click **Manage domains** under its name. This opens the owner's **Sender Domains** tab. The actions there depend on the status: an **Approval Pending** domain can only be suspended, because it leaves that status only when its owner verifies it again: it becomes **Enabled**, or **Blocked** for you to activate when the owner's user group requires approval.
 
 ## Related
 
