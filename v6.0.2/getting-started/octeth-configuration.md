@@ -1195,6 +1195,7 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     UI_DEMO_MODE=false
     UI_DEMO_EMAIL=demo@meridiancoffee.test
     UI_DEMO_PASSWORD=demo
+    UI_DEMO_STAFF_EMAIL=admin@octeth-demo.test
     ```
 
     Replaces the interface's Octeth client with an in-process one that answers from a fictional
@@ -1209,6 +1210,12 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     does nothing at all. On a local install it does take effect, and the interface then shows
     fictional numbers to whoever uses it next with no visible sign that anything is different.
     Turn it off when you are finished. `php artisan about` reports the current state.
+
+    `UI_DEMO_EMAIL` and `UI_DEMO_PASSWORD` sign in as the fictional customer.
+    `UI_DEMO_STAFF_EMAIL` with the same password signs in as an administrator, which opens the
+    staff area, the customer list and **Switch user** on the same dataset. Every customer in that
+    list opens the same fictional account. Product demo videos use this login. Set it empty to turn
+    the staff login off, and leave it out to use the default. Introduced in v6.0.2.
 
     Changing this value takes effect on the next start of the `oempro_ui` container, so a
     `docker compose restart oempro_ui` is enough: that container's entrypoint reads `.oempro_env`
