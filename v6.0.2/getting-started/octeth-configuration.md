@@ -113,7 +113,7 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
    SESSION_SECURE_COOKIE=false              # Enable for HTTPS/SSL only
    ```
 
-   `SESSION_LIFETIME_DAYS` must be a whole number written with 1 to 9 decimal digits, for example `30`. A leading zero is read as decimal, so `08` means 8 days. When the value is empty, has any other character (a sign, a decimal point, a space or a unit) or is longer than nine digits, the new user interface uses the default of 30 days and the `oempro_ui` container log shows a warning naming `SESSION_LIFETIME_DAYS`. The warning never prints the value itself.
+   `SESSION_LIFETIME_DAYS` must be a whole number written with 1 to 9 decimal digits, for example `30`, and the minimum is 1. A leading zero is read as decimal, so `08` means 8 days. An empty value silently uses the default of 30 days. When the value is 0 (including `00` or `000`), has any other character (a sign, a decimal point, a space or a unit) or is longer than nine digits, the new user interface also uses the default of 30 days, and the `oempro_ui` container log shows a warning naming `SESSION_LIFETIME_DAYS`. The warning never prints the value itself. The legacy admin and user areas also treat 0 as the 30-day default, so both interfaces behave the same.
 
 6. **Feature Flags**
    ```bash
