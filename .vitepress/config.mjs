@@ -1096,7 +1096,6 @@ export default defineConfig({
                         {text: 'Link Proxy Add-On Setup', link: '/v6.0.2/getting-started/link-proxy-addon-setup'},
                         {text: 'Octeth Configuration', link: '/v6.0.2/getting-started/octeth-configuration'},
                         {text: 'Whitelabel Deployment Checklist', link: '/v6.0.2/getting-started/whitelabel-deployment-checklist'},
-                        {text: 'Google Postmaster Tools Integration', link: '/v6.0.2/getting-started/google-postmaster-integration'},
                         {text: 'Monitoring', link: '/v6.0.2/getting-started/monitoring'},
                         {text: 'Octeth CLI Tool', link: '/v6.0.2/getting-started/octeth-cli-tool'},
                         {text: 'Sender Domain DNS Settings', link: '/v6.0.2/getting-started/sender-domain-dns-settings'},
