@@ -1404,6 +1404,25 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
 
     The default `EMAILGATEWAY_DNS_TEMPLATES` is built from these three values. When Octeth regenerates a gateway sender domain's DNS records with a custom subdomain or tracking prefix, it looks for these literal values in the template and replaces them with the domain's own values. If you set `EMAILGATEWAY_DNS_TEMPLATES` to your own JSON, write the host names in it with the same literals as these three keys. Otherwise the replacement finds nothing, and a domain's custom subdomain or tracking prefix never reaches its regenerated DNS records.
 
+55. **Neutral Fallback Tracking Host**
+
+    ```bash
+    TRACKING_FALLBACK_DOMAIN=            # Host for tracking and unsubscribe links when a send has no sender domain tracking host, e.g. track.example.net (default: empty)
+    ```
+
+    Click tracking, open tracking, unsubscribe and web-version links use the sender domain's own tracking host when one is available. When it is not (for example an Email Gateway or journey sender domain whose DNS records do not include its tracking host, or a send without a sender domain), the links fall back to the tracking domains of the user group's delivery server, and to the `APP_URL` host when none is set. On a white-label install those are often the application or backend host name, which then appears in every subscriber-facing link.
+
+    Set `TRACKING_FALLBACK_DOMAIN` to a neutral host you own to use it for that fallback instead. It applies to every mail type: campaigns, autoresponders, transactional email, Email Gateway and journey email, including the `List-Unsubscribe` and `X-Report-Abuse` headers. A sender domain's own tracking host still takes precedence. With the key empty (the default), behavior is unchanged (issue #3308).
+
+    To set it up:
+
+    - Enter the host only, without `https://` or a path, for example `track.example.net`. A value that is not a valid host name is ignored, and the previous fallback applies.
+    - Create one DNS record for the host that points at this Octeth server: an `A` record to the server's IP address, or a `CNAME` to your `APP_URL` host. No MX, SPF or DKIM records are needed, because the host only serves the tracking and unsubscribe links.
+    - Keep the record DNS-only. Octeth's Caddy proxy issues the host's TLS certificate automatically on its first HTTPS request, which requires the host to reach this server directly. Behind a CDN or proxy (for example Cloudflare with the proxy enabled) the certificate cannot be issued, and links on the host fail over HTTPS.
+    - Restart the backend workers after changing the key (`./cli/octeth.sh backend:restart`) so long-running workers pick it up.
+
+    The sender domain health report in the admin area and the user's sender domain edit page flag each Enabled domain whose Email Gateway and journey email uses the fallback host, and name the host.
+
 
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
