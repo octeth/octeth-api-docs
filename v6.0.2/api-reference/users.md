@@ -1520,6 +1520,9 @@ curl -X POST https://example.com/api.php \
 24: Invalid SMTP auth setting
 25: Email settings test failed
 28: Options is not an object and not a JSON string of one
+34: Another user group is already the default for this subscription plan (see
+    ConflictingUserGroupID). Also returned when a concurrent request made another
+    group the plan's default first (changed in v6.0.2)
 ```
 
 :::
@@ -1558,6 +1561,10 @@ curl -X POST https://example.com/api.php \
 | SendMethod | String | No | Group send method. Possible values: `System`, `SMTP`, `LocalMTA`, `PHPMail`, `PowerMTA`, `SaveToDisk`. Any value other than `System` sends a test email with the given settings before saving |
 | SendMethodSMTPUsername | String | No | SMTP username for the `SMTP` send method. **Changed in v6.0.1:** omit it to keep the stored username. A sent value, including an empty string, replaces it |
 | SendMethodSMTPPassword | String | No | SMTP password for the `SMTP` send method. **Changed in v6.0.1:** omit it to keep the stored password. A sent value, including an empty string, replaces it |
+
+::: warning One default group per plan (v6.0.2)
+This command cannot set `SubscriptionPlanIsDefault`, but it can move a group that is a plan's default onto another plan. When that plan already has a default, the update is refused with `ErrorCode 34`, the same answer `usergroup.create` and `usergroup.patch` give, and nothing is written. Before v6.0.2 the update succeeded and left the plan with two default groups. A parameter sent as an array or object, where a single value is expected, is refused with `ErrorCode 36` and `ErrorField` naming it.
+:::
 
 ::: tip Stored SMTP credentials are kept when omitted (v6.0.1)
 `usergroup.get` and `usergroups.get` no longer return the group's SMTP username or password, so an integration cannot read them back and resend them. `usergroup.update` therefore keeps the stored `SendMethodSMTPUsername` and `SendMethodSMTPPassword` when the request omits them, and the send-method test email uses the stored values. Before v6.0.1 an omitted value was stored as empty, which broke the group's sending.
@@ -1617,6 +1624,10 @@ curl -X POST https://example.com/api.php \
 23: Invalid SMTP secure setting
 24: Invalid SMTP auth setting
 25: Email settings test failed
+34: The group is a plan default and SubscriptionPlan names a plan that already has a
+    default (see ConflictingUserGroupID). Added in v6.0.2
+36: A parameter was sent as an array or object where a single value is expected
+    (ErrorField names it). Added in v6.0.2
 ```
 
 :::
@@ -1784,7 +1795,8 @@ curl -X POST https://example.com/api.php \
     "unlimited" sentinel.
 33: SubscriptionPlanIsDefault must be Yes or No
 34: Another user group is already the default for this subscription plan (see
-    ConflictingUserGroupID)
+    ConflictingUserGroupID). Also returned when a concurrent request made another
+    group the plan's default first (changed in v6.0.2)
 ```
 
 :::
@@ -2019,6 +2031,10 @@ curl -X POST https://example.com/api.php \
 
 ::: tip Copy name (v5.9.6)
 The copy is named `Duplicate of <original name>` (the screen language string when loaded, the same English text otherwise), so an API-driven duplicate never gets an empty name.
+:::
+
+::: tip The copy is never a plan default (v6.0.2)
+The copy keeps the original's `SubscriptionPlan` but is created with `SubscriptionPlanIsDefault` set to `No`, because a plan has one default group. Before v6.0.2 duplicating a plan's default group left that plan with two defaults.
 :::
 
 **Request Body Parameters:**
