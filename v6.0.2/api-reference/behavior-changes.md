@@ -22,6 +22,16 @@ There is no opt-in flag, because the commands had no working data source left.
 
 ## Tier 2: shape and value changes
 
+### Client IP
+
+#### Installs without Cloudflare record the visitor's address instead of `192.168.99.100`
+
+On an install whose app domain is served by the bundled Caddy proxy (no Cloudflare in front and `APP_DOMAIN_TLS_CERT` empty), and on every tracking domain not fronted by Cloudflare, Octeth recorded the bundled HAProxy's container address `192.168.99.100` as the visitor IP. Caddy ignored the PROXY protocol header HAProxy sends because no source was allowed to send one. v6.0.2 allows exactly HAProxy's address, so the visitor's public address is recorded again (issue #3353).
+
+This changes the values in `SubscriptionIP`, `OptInIP` and `UnsubscriptionIP`, in open and click records, in login records, and the address compared against the admin and user IP allow-lists and per-IP rate limits. Addresses recorded before the upgrade on affected installs stay `192.168.99.100` and cannot be recovered. `./cli/octeth.sh health:check` reports `ClientIPResolution` as OK once the fix is active. The upgrade recreates the containers, so no manual restart is needed.
+
+Installs behind Cloudflare with `TRUST_CLOUDFLARE_CONNECTING_IP=true`, and app domains served with a static certificate (`APP_DOMAIN_TLS_CERT`), were not affected.
+
 ### Email Gateway
 
 #### `emailgateway.getsmtps` and `emailgateway.addsmtp` return `smtp.example.com` as `SMTPHost` until `EMAILGATEWAY_SMTP_HOST` is set
@@ -65,6 +75,7 @@ The upgrade migration resolves any plan that already has more than one default: 
 
 ## Upgrade checklist
 
+- If you added `192.168.99.100` to an admin or user IP allow-list as a workaround for every visitor showing that address, replace it with your real public addresses after upgrading, because visitors now resolve to their own address.
 - If a subscription plan had more than one default user group, the upgrade kept the one with the lowest `UserGroupID` and logged the others. Search the application log for `Migration #3181` to see which groups were demoted, and check each affected plan's default on the admin user group screens.
 - If you set `EMAILGATEWAY_DNS_TRACK_PREFIX` to your campaign prefix as a workaround for journey and Email Gateway links leaving your sender domains, you can keep it or restore the previous value. Sender domains created on the Sender Domains page use their own verified tracking host again either way.
 - SMS content that still uses the v6.0.0 `{CustomField7}` merge tags sends correctly again, so it no longer has to be rewritten before the upgrade. Move it to <code v-pre>{{ Subscriber:CustomField7 }}</code> when convenient, because the single-brace form is deprecated.
