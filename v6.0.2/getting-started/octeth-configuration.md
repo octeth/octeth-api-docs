@@ -921,6 +921,8 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     UI_MYSQL_DATABASE=oempro_ui          # Its OWN database. MUST NOT equal MYSQL_DATABASE
     UI_DEBUG_CONSOLE_ENABLED=false       # Who may open the API debug console (default: false)
     MCP_REDIRECT_DOMAINS=                # Hosts a connected AI assistant may redirect to; empty = any https host
+    MCP_DISCOVERY_ENABLED=true           # Serve /llms.txt and /agents/openapi.json for AI agents (default: true)
+    MCP_DISCOVERY_HELP_URL=              # Help page /llms.txt links to; empty = Octeth's documentation
     ```
 
     `UI_DEBUG_CONSOLE_ENABLED` governs the interface's API debug console. When the console is
@@ -969,6 +971,26 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     registered earlier. A refused assistant sees "This assistant cannot connect" with the reason,
     and nothing is sent to the refused host. Like the other keys here, a change takes effect when
     the interface's container next starts. Introduced in v6.0.2 (issue #3372).
+
+    `MCP_DISCOVERY_ENABLED` publishes two files for AI agents at the root of the app domain while
+    `UI_ENABLED` is `true`: `/llms.txt`, which points an agent to the connector URL, the OpenAPI
+    document and the help article, and `/agents/openapi.json`, an OpenAPI 3.1 description of every
+    API command an AI agent key may call, with the scope each needs and the agent error codes
+    100010 to 100016. The document is generated from Octeth's agent allow-list
+    (`AgentPolicy::$AgentCommands`) and cached until the policy file or an API handler changes,
+    so it cannot drift from what the API allows. Parameters the policy refuses to agent keys are
+    left out. Neither file contains any account data. Set it to `false` (or `0`, `no`, `off`, in
+    any case) when the app domain serves its own `/llms.txt`, or to publish neither: the interface
+    then answers 404 for both and the reverse proxy stops routing the two paths to it, so they
+    reach the legacy application as before. Recreate the HAProxy and interface containers after
+    changing it (`./cli/octeth.sh docker:up`). The code default and the shipped example are both
+    `true`, so an upgrade that adds the key publishes the files. Introduced in v6.0.2 (issue #3393).
+
+    `MCP_DISCOVERY_HELP_URL` is the help page `/llms.txt` links to, an `http` or `https` URL.
+    Empty, the default, or a value that is not a plain http(s) URL (whitespace, brackets, angle
+    brackets, quotes or backslashes) links Octeth's documentation at https://dev.octeth.com/. Set
+    it to your own help page when you sell the service under your own brand. Restart the
+    interface's container after changing it.
 
     `UI_ENABLED` must be the **literal lowercase `true`**. `1`, `yes`, `on` and `TRUE` are all read
     as off, by the container entrypoint, by the reverse proxy, by the command line tool and, since

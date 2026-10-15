@@ -108,6 +108,54 @@ Each connection gets its own API key, created when you click **Allow**. You can 
 
 Disconnecting an assistant deletes its key. If you delete the key yourself on the API keys page, the assistant is disconnected too, and its status changes to **Revoked** the next time it tries to use your account.
 
+## Getting more from your AI assistant
+
+You can ask your assistant anything in your own words. For common multi-step jobs, Octeth also gives the assistant ready-made **prompts**: guided workflows that tell it which steps to take and in which order. It also gives it read-only **resources** it can load as background before it starts.
+
+### Guided prompts
+
+In Claude, prompts appear in the **+** menu (or when you type `/`) under the Octeth connector. Other assistants list them in a similar menu. Pick one, fill in its fields, and send it.
+
+| Prompt | What it does | You fill in |
+|---|---|---|
+| `plan_campaign` | Plans a campaign from a goal: picks or builds the audience, writes two content variants, checks them for spam signals, then creates, tests and sends the campaign in stages | The goal, and optionally who it is for and the most emails to send |
+| `reengage_inactive` | Finds subscribers who have not opened or clicked for a number of days, writes a win-back email, sends it, and suggests what to do with those who still do not respond | The number of days (90 if you leave it empty) |
+| `build_journey` | Turns a description of an automation into a journey plan (trigger, steps, waits and emails) and the steps to build it in the journey builder | A description, for example "welcome new subscribers with three emails over two weeks" |
+| `list_hygiene` | Checks one list's health (inactive, bounced and unsubscribed counts), plans a re-confirmation campaign, and suggests who to stop sending to | The list ID |
+| `explain_campaign_results` | Explains one campaign's results in plain words and compares them with your recent campaigns | The campaign ID |
+
+Every prompt adapts to what you allowed the connection to do. On a read-only connection the assistant plans and explains, and tells you which steps to finish in Octeth yourself. With **Change data** allowed it can also create segments, templates and campaigns, which sends nothing. With **Send** allowed it can send too.
+
+::: warning Sends always wait for you
+A prompt never lets the assistant send on its own. Before any send, the assistant shows you what will go out (the campaign, the recipients and how many) and waits for your explicit approval. When Octeth asks for a confirmation, the assistant shows you the preview and continues only after you approve it.
+:::
+
+The assistant cannot create or edit journeys, so `build_journey` ends with steps for you to follow in the journey builder. Clicks per link and A/B tests are also not available to the assistant: it points you to the campaign report and the campaign editor for those.
+
+### Background the assistant can read
+
+These resources are read-only and show only your own account:
+
+| Resource | What it holds |
+|---|---|
+| `account://policy` | Your account, your plan limits and sending usage, and what this connection may do: its permissions, daily sends, recipients per send and the confirmation threshold |
+| `account://lists` | Your subscriber lists with their IDs and subscriber counts |
+| `account://lists/<list ID>/segments` | The segments of one list |
+| `account://campaigns/recent` | Your last 10 sent campaigns, which the assistant uses as a baseline for comparisons |
+
+Reading a resource is recorded in **Recent activity** like a tool call, under the tool that served it (for example `list_lists`).
+
+### For developers and autonomous agents
+
+Agents that do not use MCP, such as scheduled scripts or bots that call HTTP APIs, can find their way from two public files at the root of your Octeth address:
+
+- `https://<your app domain>/llms.txt` points to the connector URL, the OpenAPI document and this article.
+- `https://<your app domain>/agents/openapi.json` is an OpenAPI 3.1 description of every API command an AI agent key may call, with the permission each one needs and the error codes an agent can receive (100010 to 100016). It is generated from Octeth's own list of agent commands, so it always matches what the API allows.
+
+Neither file contains anything from any account. An agent that calls the API directly authenticates with an agent key you create under **API & webhooks** > **Connected AI assistants**, and is bound by the same permissions, limits and confirmation step as a connector.
+
+Your Octeth administrator can turn both files off with `MCP_DISCOVERY_ENABLED=false`, for example when the app domain serves its own `llms.txt`, and can point `llms.txt` at their own help page with `MCP_DISCOVERY_HELP_URL`.
+
 ## Troubleshooting
 
 ### "Couldn't discover OAuth settings" or a similar error when adding the connector
