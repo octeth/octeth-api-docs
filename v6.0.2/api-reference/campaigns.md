@@ -528,6 +528,10 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
+::: info AI agent keys
+With an AI agent key, an update that leaves the campaign scheduled or sending needs the `send` scope when it schedules the campaign or changes a scheduled or sending one beyond its name. A new campaign is unscheduled, so building it is a `write`. Such a send counts against the key's daily send budget and recipients cap (`ErrorCode 100011`), with the recipients counted as the current size of every included list and segment, and above the confirm threshold it first returns `ErrorCode 100012` with a preview and a `ConfirmToken` to repeat the request with. Added in v6.0.2. See [AI agent keys](/v6.0.2/api-reference/users#ai-agent-keys).
+:::
+
 **Request Body Parameters:**
 
 | Parameter                    | Type    | Required | Description                                                       |
@@ -560,7 +564,7 @@ curl -X POST https://example.com/api.php \
 | OriginalCampaignID           | Integer | No       | ID of original campaign if this is a resend                       |
 | RecipientListsAndSegments    | String  | No       | Comma-separated list (format: ListID:SegmentID)                   |
 | Exclude_RecipientListsAndSegments | String | No  | Comma-separated exclusion list (format: ListID:SegmentID)         |
-| RulesJsonBundle              | String  | No       | JSON string with advanced recipient selection rules               |
+| RulesJsonBundle              | String  | No       | JSON string with advanced recipient selection rules. Every `list_id` in `criteria` and every `segments` rule value must be an existing list or segment owned by the authenticated user, otherwise the update is refused with ErrorCode 28 (or 29 for a value that is not a positive integer) and nothing is changed. An empty `list_id` names no list and is ignored. |
 | S2SEnabled                   | Boolean | No       | Enable server-to-server tracking                                  |
 | ABTesting                    | Object  | No       | A/B testing configuration (see [A/B Testing Parameters](#a-b-testing-parameters) below) |
 
@@ -645,6 +649,8 @@ curl -X POST https://example.com/api.php \
 25: A/B variation distribution percentage below 1%
 26: Auto-resend cannot be used with repeating (recursive) campaigns
 27: Scheduled send date and time is in the past
+28: RulesJsonBundle names a list or segment that does not exist or does not belong to the user
+29: RulesJsonBundle holds a list_id or segments rule value that is not a positive integer
 ```
 
 :::

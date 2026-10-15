@@ -20,6 +20,10 @@ The 11 `postmaster.*` admin commands stay registered for this release. Each one,
 
 There is no opt-in flag, because the commands had no working data source left.
 
+### Campaigns
+
+- `Campaign.Update` now refuses a `RulesJsonBundle` that names a list or segment the caller does not own, or one that no longer exists (`ErrorCode 28`), or that holds a list or segment reference that is not a positive integer (`ErrorCode 29`). Before, such a bundle was stored and later drove queue generation. Requests that name the caller's own existing lists and segments are unchanged. Queue generation also fails a campaign whose stored `RulesJsonBundle` names a list its owner does not own, instead of queueing that list (octeth/oempro#3383).
+
 ## Tier 2: shape and value changes
 
 ### Client IP
@@ -87,6 +91,17 @@ Approving a connection creates a user API key with the note `AI connector: <assi
 
 The connector's token signing keys, `ui/storage/oauth-private.key` and `ui/storage/oauth-public.key`, are created once by the interface container and kept across upgrades. Losing either file disconnects every assistant. See [AI assistant connector](/v6.0.2/new-user-interface/configuration-reference#ai-assistant-connector) in the configuration reference.
 
+#### AI agent keys: scopes, budgets, an operator policy and a confirm step
+
+v6.0.2 also adds AI agent keys (issue #3373). A key created with `IsAgentKey` (every connector connection, and the headless agent keys customers create under Connected AI assistants) is limited to the scopes the customer granted (`read`, `write`, `send`) and to per-key budgets, capped by a new AI agent access section on each user group in the admin area. Refusals use the new error codes `100010` to `100016`. See [AI agent keys](/v6.0.2/api-reference/users#ai-agent-keys).
+
+- Existing user groups get `AgentAccess = read`, so AI agents can read but not change data or send until you allow it on the user group.
+- Keys created by the connector before the upgrade become read-only agent keys the first time the connector uses them after the upgrade, which is what their consent screen promised.
+- An agent key can call only an explicit allow-list of commands (lists, subscribers, segments, templates, campaign content and delivery, journey on, off and trigger, and the reads that go with them). Every other command, including every admin, plug-in, credential and webhook command, is refused with `ErrorCode 100010`. Some parameters with side effects (list sync settings, remote content URLs and tags, auto-resend and recurring schedules, bulk unsubscribe, file and remote imports, and lists or segments of another account) are refused with `ErrorCode 100016`. See [AI agent keys](/v6.0.2/api-reference/users#ai-agent-keys) for the list.
+- An agent key needs the `send` scope to add, change or unsubscribe subscribers, because those actions can send opt-in confirmations, autoresponders and journey emails.
+- In `user.apikey.list`, rows of agent keys gain `IsAgentKey` and `Agent`. Rows of ordinary keys, and every response for ordinary keys, are unchanged.
+- An agent can confirm its own sends, so treat the user group's daily send and recipient caps as the limit that matters.
+
 ## Upgrade checklist
 
 - If you added `192.168.99.100` to an admin or user IP allow-list as a workaround for every visitor showing that address, replace it with your real public addresses after upgrading, because visitors now resolve to their own address.
@@ -95,6 +110,7 @@ The connector's token signing keys, `ui/storage/oauth-private.key` and `ui/stora
 - SMS content that still uses the v6.0.0 `{CustomField7}` merge tags sends correctly again, so it no longer has to be rewritten before the upgrade. Move it to <code v-pre>{{ Subscriber:CustomField7 }}</code> when convenient, because the single-brace form is deprecated.
 - Set `EMAILGATEWAY_SMTP_HOST` in `.oempro_env` to the SMTP host your customers use, then run `./cli/octeth.sh smtp:sync-config`.
 - If you run your own reverse proxy, load balancer or CDN in front of Octeth with path-based rules, forward `/mcp`, `/oauth/`, `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` to Octeth, or the AI assistant connector cannot be reached.
+- Review the new AI agent access section on each user group. Agents are read-only until you choose `write` or `send` and set the daily send and recipient caps you want.
 - Add `ui/storage/oauth-private.key` and `ui/storage/oauth-public.key` to your backups, and keep them when moving Octeth to another server.
 - Remove any calls to the `postmaster.*` commands. They answer `ErrorCode: 99` in v6.0.2 and will be deleted later.
 - The upgrade leaves `GOOGLE_POSTMASTER_CLIENT_ID`, `GOOGLE_POSTMASTER_CLIENT_SECRET` and `GOOGLE_POSTMASTER_REDIRECT_URI` in your `.oempro_env`. Nothing reads them any more, so you can delete them.

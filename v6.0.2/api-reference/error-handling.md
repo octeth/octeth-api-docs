@@ -40,6 +40,20 @@ Error codes can be single values or arrays:
 | 6 | Invalid 2FA code | Check your authenticator app |
 | 101 | 2FA required | Include `tfacode` parameter |
 
+### AI Agent Key Errors
+
+Returned only for requests made with an AI agent key. See [AI agent keys](/v6.0.2/api-reference/users#ai-agent-keys).
+
+| Code | HTTP | Description | Fix |
+|------|------|-------------|-----|
+| 100010 | 403 | The command needs a scope the key does not hold (`RequiredScope`, `GrantedScopes`), or is not on the agent allow-list (`RequiredScope: none`) | Ask the account owner to grant the scope on the Connected AI assistants page, or do it in the app |
+| 100011 | 429 | A budget was exceeded (`Budget`, `Limit`, `Usage`): sends per day, recipients per send or rows per import. `Usage: null` means the recipients could not be counted before the command runs, so a recipients cap or confirm threshold could not be honoured | Wait for the daily reset (midnight UTC) or send to fewer recipients. A confirmation cannot raise it. For an uncountable command, ask the account owner to do it in the app |
+| 100012 | 409 | The send needs confirmation. The response carries `Preview` and `ConfirmToken` | Show the preview, then repeat the identical request with `ConfirmToken` within ten minutes |
+| 100013 | 409 | The `ConfirmToken` is unknown, expired, already used, or was issued for different parameters | Repeat the request without `ConfirmToken` to get a new preview and token |
+| 100014 | 403 | An agent key was combined with a `SessionID` or an `AdminAPIKey` | Send the agent key as the only credential |
+| 100015 | 403 | The `Command` parameter and the endpoint route name two different commands | Call the endpoint of the command you mean, or drop the `Command` parameter |
+| 100016 | 403 | A parameter an agent key may not send to this command (`Parameter`), an ID that is not a plain positive whole number, or a list or segment that is not the account's own | Drop the parameter, send the ID as digits only, or ask the account owner to do it in the app |
+
 ### Validation Errors
 
 | Code | Description | Common Cause |

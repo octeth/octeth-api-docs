@@ -942,6 +942,12 @@ curl -X POST https://example.com/api.php \
 | APIKey    | String | No       | API key for authentication            |
 | Note | String | Yes | Administrative note for the API key |
 | BoundIPAddress | String | No | IP address to bind the key to |
+| IsAgentKey | Boolean | No | `true` creates an AI agent key, bound to the scopes and budgets below and to the user group's AI agent policy. Omitted or `false` creates an ordinary key with full access and the response is unchanged. Added in v6.0.2 |
+| AgentScopes | String \| Array | No | Agent keys only. Comma-separated list or array. Possible values: `read`, `write`, `send`. `read` is always on. Default `read` |
+| AgentSendsPerDay | Integer | No | Agent keys only. Sends the key may start per UTC day. `0` (default) means no key-level limit |
+| AgentMaxRecipientsPerSend | Integer | No | Agent keys only. Recipients one send may reach. `0` means no key-level limit |
+| AgentMaxImportRows | Integer | No | Agent keys only. Rows one subscriber import may carry. `0` means no limit |
+| AgentConfirmAbove | Integer | No | Agent keys only. A send to more recipients than this returns a confirmation request first. `0` means no key-level confirm step |
 
 ::: code-group
 
@@ -998,6 +1004,8 @@ curl -X POST https://example.com/api/v1/user.apikey \
 | LastUsedAt     | String \| null   | Last time this key was used to authenticate (always `null` for a freshly created key). |
 | LastUsedIP     | String \| null   | Client IP recorded at last use, `null` if never used. |
 | RequestCount   | Integer          | Lifetime number of authentications with this key (always `0` for a freshly created key). |
+
+**Agent keys:** when `IsAgentKey` is `true`, the `APIKey` object also carries `"IsAgentKey": true` and an `Agent` object: `Scopes` (array), `SendsPerDay`, `MaxRecipientsPerSend`, `MaxImportRows` and `ConfirmAbove`. See [AI agent keys](#ai-agent-keys) for how they are enforced.
 
 ::: info Counter semantics
 `RequestCount` and `LastUsedAt` are bumped each time the key is used to start a session via `User.Login` (with the `APIKey` parameter). They do **not** count every individual REST request made within a session. Once a client has a `SessionID`, subsequent calls authenticate with session credentials and do not re-touch the API key. Treat `RequestCount` as "how many times has this integration checked in?", which is what an operator cares about when answering "is this key still in use anywhere?".
@@ -1128,8 +1136,179 @@ No specific error codes for this endpoint
 | LastUsedAt     | String \| null   | Last time this key was used to authenticate, or `null` if the key has never been used. |
 | LastUsedIP     | String \| null   | Client IP recorded at last use (IPv4 or IPv6), `null` if never used. |
 | RequestCount   | Integer          | Lifetime number of authentications with this key. See counter semantics on the Create endpoint above. |
+| IsAgentKey     | Boolean          | Present, and `true`, only on AI agent keys. Added in v6.0.2 |
+| Agent          | Object           | Present only on AI agent keys: `Scopes`, `SendsPerDay`, `MaxRecipientsPerSend`, `MaxImportRows`, `ConfirmAbove`. Rows of ordinary keys are unchanged. Added in v6.0.2 |
 
 :::
+
+## Update an AI Agent Key
+
+<Badge type="info" text="POST" /> `/api/v1/user.apikey.update`
+
+Changes the scopes and budgets of an AI agent key. Only agent keys have settings to change. Values above the user group's AI agent policy are stored but have no effect beyond the group's limit. An agent key cannot call this command on itself.
+
+::: tip API Usage Notes
+- Authentication required: User API Key or SessionID (not an AI agent key)
+- Required permissions: `User.Update`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+- Added in v6.0.2
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `user.apikey.update`     |
+| SessionID | String | No       | Session ID obtained from login        |
+| APIKey    | String | No       | API key for authentication            |
+| APIKeyID | Integer | Yes | ID of the agent key to change |
+| AgentScopes | String \| Array | No | Possible values: `read`, `write`, `send`. `read` is always on |
+| AgentSendsPerDay | Integer | No | Sends per UTC day, `0` for no key-level limit |
+| AgentMaxRecipientsPerSend | Integer | No | Recipients per send, `0` for no key-level limit |
+| AgentMaxImportRows | Integer | No | Rows per import, `0` for no limit |
+| AgentConfirmAbove | Integer | No | Confirm sends above this many recipients, `0` for no key-level confirm step |
+| MarkAsAgentKey | Boolean | No | `true` first turns an ordinary key into a read-only agent key, then applies any settings sent with it. It can only narrow a key. The built-in MCP connector uses it to convert keys it created before v6.0.2 |
+
+Omitted parameters keep their stored value.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/user.apikey.update \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "user.apikey.update",
+    "SessionID": "your-session-id",
+    "APIKeyID": 17,
+    "AgentScopes": "read,write,send",
+    "AgentSendsPerDay": 5,
+    "AgentConfirmAbove": 1000
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "APIKeyID": "17",
+  "IsAgentKey": true,
+  "Agent": {
+    "Scopes": ["read", "write", "send"],
+    "SendsPerDay": 5,
+    "MaxRecipientsPerSend": 0,
+    "MaxImportRows": 0,
+    "ConfirmAbove": 1000
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Errors": [
+    {"Code": 3, "Message": "Only AI agent keys have scopes and budgets"}
+  ]
+}
+```
+
+```txt [Error Codes]
+1: Missing APIKeyID parameter
+2: API key not found
+3: Only AI agent keys have scopes and budgets
+4: API key update failed
+```
+
+:::
+
+## Get the AI Agent Policy
+
+<Badge type="info" text="GET" /> `/api/v1/user.agentpolicy`
+
+Returns the AI agent policy the service provider set on the account's user group. Called with an AI agent key, it also returns that key's effective limits under `Effective`, so an agent can learn its limits before it reaches one. A limit of `0` means no limit.
+
+::: tip API Usage Notes
+- Authentication required: User API Key, SessionID or AI agent key
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+- Added in v6.0.2
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `user.agentpolicy.get`   |
+| SessionID | String | No       | Session ID obtained from login        |
+| APIKey    | String | No       | API key for authentication            |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET https://example.com/api/v1/user.agentpolicy \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "user.agentpolicy.get",
+    "APIKey": "your-agent-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "AgentAccess": "send",
+  "AllowedScopes": ["read", "write", "send"],
+  "MaxSendsPerDay": 20,
+  "MaxRecipientsPerSend": 50000,
+  "ConfirmAbove": 1000,
+  "Effective": {
+    "Scopes": ["read", "write"],
+    "SendsPerDay": 5,
+    "MaxRecipientsPerSend": 50000,
+    "MaxImportRows": 0,
+    "ConfirmAbove": 1000
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99998
+}
+```
+
+```txt [Error Codes]
+99998: Authentication failed
+```
+
+:::
+
+## AI Agent Keys
+
+An API key created with `IsAgentKey` belongs to an AI agent: a connection approved through the built-in MCP connector, or a headless agent key created under Connected AI assistants. Every request made with it is checked before the command runs, through `/mcp` and through direct REST calls alike:
+
+- **Allow-list.** An agent key can call only the commands in the table below. Every other command, including every admin command, plug-in command, sign-in, key management, account setting and any command that creates or reveals a credential (gateway sender keys, SMTP credentials, webhook signing keys), is refused with `ErrorCode 100010` (HTTP 403) and `RequiredScope: none`. Commands added in later versions stay refused to agent keys until they are added to the list. `User.Current` leaves out the two-factor enrolment fields for an agent key.
+- **Scope.** Each allowed command needs `read`, `write` or `send`, as the table shows. A command outside the key's effective scopes is refused with `ErrorCode 100010` (HTTP 403), naming `RequiredScope` and `GrantedScopes`. `Campaign.Update` needs `send` when it leaves a campaign scheduled or sending and either schedules it or changes it beyond its name. A new campaign is unscheduled, so building one is a `write`. `Email.Update` and `UserEmailTemplate.Update` need `send` when the email is used by a scheduled or sent campaign, an autoresponder, a list's opt-in confirmation or a journey. `Segment.Update` is refused while a scheduled, sending or paused campaign, an active SMS campaign, an autoresponder or a journey uses the segment, directly, through a segment rule in its audience or journey criteria, or through another segment that nests it.
+- **Adding subscribers needs `send`.** Adding, changing or unsubscribing a subscriber can send email on its own: an opt-in confirmation, autoresponders, or a journey triggered by the subscription, a field change or the unsubscription. So `Subscriber.Create`, `Subscriber.Update`, `Subscriber.Unsubscribe`, `Subscribers.Import` and `Subscribers.Import.Post` need the `send` scope, and each call counts against the daily send budget, with the subscribers it adds or changes counted as its recipients.
+- **Refused parameters.** Some parameters of allowed commands have side effects outside the command's scope and are refused with `ErrorCode 100016` (HTTP 403), naming `Parameter`: on `List.Create` and `List.Update` anything other than the name, description, opt-in mode and sender details (`List.Update` also takes `HideInSubscriberArea`); `FetchURL` and `FetchPlainURL` on `Email.Update` and `UserEmailTemplate.Update`; `RulesJSON` and `RulesOperator` (bulk unsubscribe) on `Subscriber.Unsubscribe`; `BypassJourneyStatusCheck` on `Subscriber.Journey.Trigger`; the File and MySQL sources of `Subscribers.Import` (only `ImportType` `Copy` with inline `ImportData`); and on `Subscribers.Import.Post` anything but inline `ImportFrom.CSV.Data` (no CSV URL, no third-party source, no `ImportStatusUpdateWebhookURL`). On `Campaign.Create` and `Campaign.Update`, every `AutoResend*` and `ScheduleRec*` parameter and `ScheduleType` `Recursive` are refused, and so is scheduling or resuming a campaign that already has a recurring schedule or auto-resend turned on, because those send again later on their own. On every command, a value containing a remote content tag (`%RemoteContent=...%` or `%RemoteContentBeforeSend=...%`, in any letter case) is refused, because it makes Octeth fetch a URL, and a list or segment that is not the account's own, named anywhere in the request (an ID parameter, `RecipientListsAndSegments`, a `RulesJsonBundle` criterion or a segment rule), is refused. An ID parameter (`ListID`, `SubscriberListID`, `SegmentID`, `CampaignID`, `EmailID`, `JourneyID`, `SubscriberID` and the like) must be a plain positive whole number such as `42`, and `RecipientListsAndSegments` must be `ListID:SegmentID` pairs of plain whole numbers, because MySQL reads values such as `5.0` or `5abc` as `5`.
+- **One command per request.** When the `Command` parameter and the `/api/v1/<alias>` route name two different commands, an agent key is refused with `ErrorCode 100015` (HTTP 403).
+- **Effective policy.** The key's own settings capped by the user group's AI agent policy (`AgentAccess`, `AgentMaxSendsPerDay`, `AgentMaxRecipientsPerSend`, `AgentConfirmAbove`), taking the stricter non-zero limit of the two.
+- **Budgets.** A send above the recipients cap, the daily send budget, or an import above the row cap is refused with `ErrorCode 100011` (HTTP 429), naming `Budget`, `Limit` and `Usage`. These are hard limits that no confirmation can exceed. Recipients are counted before the command runs and the count is an upper bound: for a campaign, the current size of every included list and segment, with exclusions ignored. When a count cannot be made (enabling a journey, or a list or segment count that fails) and a recipients cap or a confirm threshold applies, the command is refused with `ErrorCode 100011` and `Usage: null`, because neither limit could be honoured. `Campaign.Update` checks the audience it is about to set before it changes anything.
+- **Confirm step.** A send to more recipients than the confirm threshold returns `ErrorCode 100012` (HTTP 409) with `ConfirmationRequired`, a `Preview` and a single-use `ConfirmToken` valid for ten minutes. Repeating the identical request with `ConfirmToken` runs it. A reused, expired or mismatched token (any changed parameter) answers `ErrorCode 100013`.
+- **One credential.** An agent key combined with a `SessionID` or an `AdminAPIKey` is refused with `ErrorCode 100014`.
+
+Commands an AI agent key can call:
+
+| Scope | Commands |
+|---|---|
+| `read` | `User.Current`, `User.AgentPolicy.Get`, `Lists.Get`, `List.Get`, `CustomFields.Get`, `Subscriber.Get`, `Segments.Get`, `UserEmailTemplates.Get`, `UserEmailTemplate.Get`, `UserEmailTemplate.Preview`, `Email.Get`, `Email.SpamTest`, `Campaigns.Get`, `Campaign.Get`, `Journey.List`, `Journey.Get` |
+| `write` | `List.Create`, `List.Update`, `Segment.Create`, `Segment.Update`, `UserEmailTemplate.Create`, `UserEmailTemplate.Update`, `Email.Create`, `Email.Update`, `Campaign.Create`, `Campaign.Update`, `Campaign.Pause`, `Campaign.Cancel`, `Journey.Disable` |
+| `send` | `Subscriber.Create`, `Subscriber.Update`, `Subscriber.Unsubscribe`, `Subscribers.Import`, `Subscribers.Import.Post`, `Email.EmailPreview` (sends a real test email to one address), `Campaign.Resume`, `Journey.Enable`, `Subscriber.Journey.Trigger` |
+
+`UserEmailTemplate.Preview` renders a template without sending anything, and `Email.SpamTest` scores an email without delivering it. `Email.EmailPreview` delivers a real email, so it needs `send` and counts as one recipient.
+
+An autonomous agent can confirm its own sends. The confirm step guards against an accidental large send; the budgets and the provider's caps are the real limit.
+
+Keys created without `IsAgentKey` are not affected and keep full access.
 
 ## Get Users List
 
@@ -1460,6 +1639,10 @@ curl -X GET https://example.com/api/v1/users.status \
 | CustomEmailHeaders | String | No | JSON-encoded SMTP header overrides for users in this group (e.g. `{"Add":{"X-Header":"value"},"Remove":["X-Other"]}`). |
 | Options | Object \| String | No | Object of user group option keys and values, or a JSON string of one when the request is form-encoded. The two shapes `usergroup.update` and `usergroup.patch` accept. Anything else is `ErrorCode 28`. Omitting the parameter is unchanged. `/api.php` lowercases nested keys, and `EmailGatewayApplyHeaderFooter` is stored under that canonical spelling; every other key is stored as sent. Changed in v5.9.6 |
 | SubscriptionPlan | String | No | Subscription plan identifier for the group. |
+| AgentAccess | String | No | Widest scope any AI agent key of the group's users may use. Possible values: `none`, `read`, `write`, `send`. Omit to keep the stored value (default `read` on create). See [AI agent keys](#ai-agent-keys). Added in v6.0.2 |
+| AgentMaxSendsPerDay | Integer | No | Sends per UTC day for each AI agent key of the group, `0` for no limit. Added in v6.0.2 |
+| AgentMaxRecipientsPerSend | Integer | No | Recipients one AI agent send may reach, `0` for no limit. Added in v6.0.2 |
+| AgentConfirmAbove | Integer | No | An AI agent send to more recipients than this needs a confirm token, `0` for no group-level confirm step. Added in v6.0.2 |
 
 ::: warning Options (v5.9.6)
 Before v5.9.6 this command JSON-encoded whatever it was handed, unconditionally. A JSON string was therefore **double-encoded**: the column ended up holding a JSON *string* instead of an object, so nothing could read the options back. It now accepts an object or a JSON string of one and refuses anything else with `ErrorCode 28`, matching `usergroup.patch`.
@@ -1561,6 +1744,10 @@ curl -X POST https://example.com/api.php \
 | SendMethod | String | No | Group send method. Possible values: `System`, `SMTP`, `LocalMTA`, `PHPMail`, `PowerMTA`, `SaveToDisk`. Any value other than `System` sends a test email with the given settings before saving |
 | SendMethodSMTPUsername | String | No | SMTP username for the `SMTP` send method. **Changed in v6.0.1:** omit it to keep the stored username. A sent value, including an empty string, replaces it |
 | SendMethodSMTPPassword | String | No | SMTP password for the `SMTP` send method. **Changed in v6.0.1:** omit it to keep the stored password. A sent value, including an empty string, replaces it |
+| AgentAccess | String | No | Widest scope any AI agent key of the group's users may use. Possible values: `none`, `read`, `write`, `send`. Omit to keep the stored value (default `read` on create). See [AI agent keys](#ai-agent-keys). Added in v6.0.2 |
+| AgentMaxSendsPerDay | Integer | No | Sends per UTC day for each AI agent key of the group, `0` for no limit. Added in v6.0.2 |
+| AgentMaxRecipientsPerSend | Integer | No | Recipients one AI agent send may reach, `0` for no limit. Added in v6.0.2 |
+| AgentConfirmAbove | Integer | No | An AI agent send to more recipients than this needs a confirm token, `0` for no group-level confirm step. Added in v6.0.2 |
 
 ::: warning One default group per plan (v6.0.2)
 This command cannot set `SubscriptionPlanIsDefault`, but it can move a group that is a plan's default onto another plan. When that plan already has a default, the update is refused with `ErrorCode 34`, the same answer `usergroup.create` and `usergroup.patch` give, and nothing is written. Before v6.0.2 the update succeeded and left the plan with two default groups. A parameter sent as an array or object, where a single value is expected, is refused with `ErrorCode 36` and `ErrorField` naming it.
@@ -1710,6 +1897,10 @@ The only safe way to change a single value through `usergroup.update` is to read
 | CustomEmailHeaders | String | No | Custom email headers |
 | SubscriptionPlan | String | No | Subscription plan identifier for the group |
 | SubscriptionPlanIsDefault | String | No | `Yes` or `No`. Marks this group as the default group for its `SubscriptionPlan`. Only one group may be the default for a plan, the same rule the admin edit screen enforces. Checked against the plan and flag the group will have after this patch, so moving a group that is already the default onto a plan that has one is refused as well. An empty plan never conflicts. New in v5.9.6 |
+| AgentAccess | String | No | Widest scope any AI agent key of the group's users may use. Possible values: `none`, `read`, `write`, `send`. Omit to keep the stored value (default `read` on create). See [AI agent keys](#ai-agent-keys). Added in v6.0.2 |
+| AgentMaxSendsPerDay | Integer | No | Sends per UTC day for each AI agent key of the group, `0` for no limit. Added in v6.0.2 |
+| AgentMaxRecipientsPerSend | Integer | No | Recipients one AI agent send may reach, `0` for no limit. Added in v6.0.2 |
+| AgentConfirmAbove | Integer | No | An AI agent send to more recipients than this needs a confirm token, `0` for no group-level confirm step. Added in v6.0.2 |
 
 Parameter names are matched case-insensitively, as everywhere on `/api.php`.
 
