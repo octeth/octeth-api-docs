@@ -47,6 +47,8 @@ The `.oempro_env` file is the primary configuration file for your Octeth install
 
 All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must be `KEY=VALUE`, and a value containing spaces must be wrapped in quotes. If `.oempro_env` cannot be parsed, Octeth does not start: web requests show a "Configuration error" page and CLI workers exit, with a message naming the file, line and key (never the value) on stderr and in the PHP error log. If one of the other `.oempro_*_env` files cannot be parsed, the same message is logged and that file's settings are ignored until the line is fixed. Check a file after editing it with `/opt/octeth/cli/octeth.sh env:validate .oempro_env`. The former `OEMPRO_USE_PHPDOTENV` setting has been removed and is ignored if still present.
 
+The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key registry. The comment lines above each key record who reads it (`@reader`), whether it is a secret (`@secret`), the code default when it differs from the shipped value (`@default`) and, rarely, an explicit restart (`@restart`). Its header describes the format.
+
 **Key Configuration Categories:**
 
 1. **Environment Settings**
@@ -1908,6 +1910,27 @@ cat /opt/octeth/.oempro_rabbitmq_env
 ls -la /opt/octeth/.oempro*_env
 ```
 
+To see what a setting does and what a change to it needs, ask the key registry:
+
+```bash
+/opt/octeth/cli/octeth.sh env:describe CAMPAIGN_DELIVERY_LOG_LEVEL
+```
+
+It prints who reads the key, what to run after changing it, whether it is a secret, the value shipped in `_dockerfiles/examples/.oempro_env.example`, the code default and the value on this install. The value of a secret key (passwords, salts, tokens, API keys and webhook URLs that carry a token) is never printed: the command only says whether it is set.
+
+| Read by | After changing the key |
+|---|---|
+| `app` (web and API requests) | Nothing. The next request reads it. |
+| `worker` (background workers and cron scripts) | `./cli/octeth.sh backend:restart` |
+| `sendengine` | `./cli/octeth.sh sendengine:restart` |
+| `system` (Laravel backend) | `docker restart oempro_system` |
+| `ui` (new user interface) | `docker restart oempro_ui` |
+| `compose` (Docker Compose or a container entrypoint) | `docker compose up -d --force-recreate` for the service that reads it |
+| `proxy` (HAProxy, Caddy) | `docker compose up -d --force-recreate haproxy link_proxy` |
+| `cli` (`./cli/octeth.sh` only) | Nothing. The next command reads it. |
+
+A key read by several of them needs each restart. `UI_ENABLED` is the exception: it needs `docker compose up -d --force-recreate oempro_ui haproxy`.
+
 ### Editing Environment Files
 
 To safely edit environment files:
@@ -1934,6 +1957,7 @@ Environment files use a simple `KEY=value` format. Important rules:
 - Quote values with spaces: `APP_NAME="My Company"`
 - Comments start with `#`
 - Empty values are allowed: `SENTRY_API=`
+- `/opt/octeth/cli/octeth.sh env:validate .oempro_env` also warns about a key that Octeth does not know, which is usually a typo. The warning names the key and never prints its value, and it does not fail the check.
 :::
 
 ## System Configuration Part II: Configuration Files
