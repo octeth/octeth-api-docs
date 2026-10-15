@@ -54,6 +54,8 @@ Returned only for requests made with an AI agent key. See [AI agent keys](/v6.0.
 | 100015 | 403 | The `Command` parameter and the endpoint route name two different commands | Call the endpoint of the command you mean, or drop the `Command` parameter |
 | 100016 | 403 | A parameter an agent key may not send to this command (`Parameter`), an ID that is not a plain positive whole number, or a list or segment that is not the account's own | Drop the parameter, send the ID as digits only, or ask the account owner to do it in the app |
 
+Admin agent keys (operator AI assistants, see [Admin agent keys](/v6.0.2/api-reference/admin#admin-agent-keys)) use the same codes. For them 100012 answers every action (`admin:act`) with a `Preview` of the values before and after, 100011 means the confirmation step could not run because Redis is unavailable, 100014 means the key is revoked, unknown or combined with another credential, and 100016 also covers a target user or campaign outside the admin's user groups (`RefusedParameter`).
+
 ### Validation Errors
 
 | Code | Description | Common Cause |

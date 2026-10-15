@@ -5193,3 +5193,404 @@ curl -X POST https://example.com/api/v1/admin.subscriber.search \
 ```
 
 :::
+
+## Admin Agent Keys
+
+An admin agent key is the credential of an operator AI assistant connected to the built-in MCP connector with a staff login. It is created when a staff member approves the assistant on the consent screen and is sent as `AdminAPIKey`. It starts with `oak_`, and the master `ADMIN_API_KEY` and per-admin API keys keep working unchanged next to it.
+
+An admin agent key is limited in four ways, all enforced in `api.php`, so a direct REST call gets the same rules as the assistant:
+
+- **Allow-list.** Only these commands, each with only its listed parameters. Any other command or parameter is refused (100010, 100016).
+
+| Command | Scope | Parameters |
+|---|---|---|
+| `admin.risk.digest` | admin:read | MinScore, Level, UserGroupID, Limit |
+| `admin.risk.user` | admin:read | UserID, Days |
+| `admin.risk.refresh` | admin:read | UserID |
+| `admin.users.search` | admin:read | Keyword, RecordsFrom, RecordsPerRequest |
+| `user.get` | admin:read | UserID |
+| `admin.user.sendactivity.get` | admin:read | UserID, From, To |
+| `admin.user.senderdomains.get` | admin:read | UserID |
+| `admin.delivery.metrics` | admin:read | Period, Limit |
+| `admin.overview.get` | admin:read | none |
+| `admin.campaigns.stuck` | admin:read | OrderField, OrderType, RecordsFrom, RecordsPerRequest (refused to an admin limited to some user groups) |
+| `admin.agentkey.revokeself` | admin:read | none (the key revokes itself) |
+| `user.update` | admin:act | UserID, ReputationLevel (Untrusted only), AccountStatus (Disabled only), RateLimits (may only lower limits) |
+
+- **Restrictive actions only.** An assistant can only lower what a customer account can do: lower its rate limits, move it to Untrusted so its campaigns wait for approval, or suspend it. Anything that raises trust or reaches the customer is done by the operator in the admin area: approving a campaign (`campaign.approve`), setting ReputationLevel to Trusted, re-enabling an account (AccountStatus Enabled) and messaging a user (`admin.user.message.send`). Each is refused (100010 or 100016) with an `ErrorText` that says so. This keeps instructions hidden in customer data (a campaign name, a subject) from loosening an account or contacting anyone.
+- **Scopes.** `admin:read` is always granted. `admin:act` only when the staff member ticked it on the consent screen.
+- **The admin's own limits.** The key acts as the admin who approved it: that admin's privileges always apply, and a target user or campaign outside the admin's user groups is refused. An admin limited to some user groups with none assigned reaches nobody: every command except `admin.agentkey.revokeself` is refused, and `admin.risk.digest` returns no users.
+- **Confirmation.** Every `admin:act` command first answers 100012 with a `Preview` (the values before, and the values requested) and a `ConfirmToken`. The identical request repeated with `ConfirmToken` within ten minutes runs the change. A token works once, for one key, one command and the exact parameters. Every confirmed action is recorded before it runs and completed with the values after, see `admin.agentactions.get`, so an action whose request died midway still shows up (with `Completed` false).
+
+Staff accounts with two-factor authentication cannot connect an assistant yet: the new interface's staff login does not support two-factor sign-in, so such an account never reaches the consent screen.
+
+::: code-group
+
+```json [Confirmation Required]
+{
+  "Success": false,
+  "ErrorCode": 100012,
+  "ErrorText": "This action changes a customer account. Show the preview to the operator you act for, and only if they agree, repeat the identical call with ConfirmToken set to 4f1c... within 10 minutes.",
+  "ConfirmationRequired": true,
+  "ConfirmToken": "4f1c2b7e9a0d4c3b8e6f1a2b3c4d5e6f",
+  "ConfirmTokenExpiresIn": 600,
+  "Preview": {
+    "Command": "user.update",
+    "Before": { "UserID": 7, "Username": "acme", "AccountStatus": "Enabled" },
+    "After": { "AccountStatus": "Disabled" }
+  }
+}
+```
+
+:::
+
+## Create Admin Agent Key
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: admin session or Admin API Key (sub-admins need the `Account` privilege)
+- Rate limit: 30 requests per 60 seconds
+- Not available to an admin agent key
+:::
+
+Creates an admin agent key for the calling admin. The new interface calls this when a staff member approves an operator AI assistant. The key is returned once, here; only its hash is stored.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.agentkey.create` |
+| SessionID | String | Yes | The admin's session, or `AdminAPIKey` |
+| Scopes | String | No | `admin:read` (always on), add `admin:act` to allow actions |
+| Note | String | No | Free text, for example the assistant's name |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "AdminAPIKey": "oak_9d2f4c1a7b3e5d6f8a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d",
+  "Key": {
+    "AdminAPIKeyID": 12,
+    "KeyHint": "oak_9d2f4c",
+    "Scopes": ["admin:read", "admin:act"],
+    "Note": "AI assistant: Claude",
+    "CreatedAt": "2026-10-16 09:12:00",
+    "LastUsedAt": null,
+    "RequestCount": 0,
+    "Revoked": false,
+    "RevokedAt": null
+  }
+}
+```
+
+```txt [Error Codes]
+1: The admin agent key could not be stored
+99998: Authentication failed
+99999: Not enough privileges
+```
+
+:::
+
+## List Admin Agent Keys
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: admin session or Admin API Key (sub-admins need the `Account` privilege)
+- Returns only the calling admin's keys, never a key or its hash
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.agentkeys.get` |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "Keys": [
+    { "AdminAPIKeyID": 12, "KeyHint": "oak_9d2f4c", "Scopes": ["admin:read"], "Note": "AI assistant: Claude", "CreatedAt": "2026-10-16 09:12:00", "LastUsedAt": "2026-10-16 10:01:44", "RequestCount": 31, "Revoked": false, "RevokedAt": null }
+  ],
+  "TotalKeys": 1
+}
+```
+
+```txt [Error Codes]
+1: The admin agent keys could not be read
+```
+
+:::
+
+## Revoke Admin Agent Key
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: admin session or Admin API Key (sub-admins need the `Account` privilege)
+- The key stops working at once. The admin's own API key and every other key are untouched
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.agentkey.revoke` |
+| AdminAPIKeyID | Integer | Yes | One of the calling admin's keys |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "AdminAPIKeyID": 12
+}
+```
+
+```txt [Error Codes]
+1: AdminAPIKeyID is required
+2: No admin agent key with this ID belongs to this admin
+3: The admin agent key could not be revoked
+```
+
+:::
+
+## Revoke Admin Agent Key (Self)
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: the admin agent key itself, sent as `AdminAPIKey`. Not available with an admin session or any other key
+- Revokes only the key that sends the request. The new interface uses it when a staff member disconnects an assistant, so revoking does not depend on the staff member's admin session. If the backend cannot be reached, the interface keeps the connection disconnected and retries every five minutes until the key is revoked
+- A key that is already revoked is refused with 99998 (Invalid API key), which callers can treat as revoked
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.agentkey.revokeself` |
+| AdminAPIKey | String | Yes | The admin agent key to revoke (`oak_...`) |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "AdminAPIKeyID": 12
+}
+```
+
+```txt [Error Codes]
+1: Only an admin AI assistant key can revoke itself
+3: The admin agent key could not be revoked
+99998: Invalid API key (the key is already revoked or unknown)
+```
+
+:::
+
+## List Admin Agent Actions
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: admin session or Admin API Key (sub-admins need the `Account` privilege)
+- Returns the actions the calling admin's AI assistants took, newest first
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.agentactions.get` |
+| Limit | Integer | No | 1 to 200, default 50 |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "Actions": [
+    {
+      "ActionID": 3,
+      "AdminAPIKeyID": 12,
+      "Command": "user.update",
+      "TargetUserID": 7,
+      "TargetCampaignID": 0,
+      "Succeeded": true,
+      "Before": { "UserID": 7, "Username": "acme", "ReputationLevel": "Trusted" },
+      "After": { "UserID": 7, "Username": "acme", "ReputationLevel": "Untrusted" },
+      "Completed": true,
+      "CreatedAt": "2026-10-16 10:02:10"
+    }
+  ],
+  "TotalActions": 1
+}
+```
+
+```txt [Error Codes]
+1: The admin agent actions could not be read
+```
+
+:::
+
+## Get Risk Digest
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `User.Browse` privilege)
+- Rate limit: 100 requests per 60 seconds
+- Read-only. Limited to enabled users in the admin's user groups
+:::
+
+Users that need attention, ranked by the newest daily risk snapshot. Each user carries the score (0 to 100), its level, the suggested action, every rule with its value, threshold and points, and the raw signals. Scores are deterministic rules over Octeth's own data: complaint rate, hard bounce rate, unknown-user rate (email gateway), volume against the user's own 30-day baseline, new and failing sender domains, the SpamAssassin score of the newest campaign, AI agent sends and recent reputation or status changes. A nightly job writes the snapshot; `admin.risk.refresh` rescores one user. A signal whose source could not be read is `null` and listed in `UnknownMetrics`, and `Complete` is false; it is never counted as 0.
+
+Levels: low (below 15), medium (15), high (35), critical (60). Suggested actions: `none`, `review`, `throttle_user`, `require_campaign_approval`, `suspend_user`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.risk.digest` |
+| AdminAPIKey | String | Yes | Admin API key |
+| MinScore | Integer | No | 0 to 100, default 15 |
+| Level | String | No | Minimum level: low, medium, high or critical |
+| UserGroupID | Integer | No | Only users of this group |
+| Limit | Integer | No | 1 to 200, default 25 |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "SnapshotDate": "2026-10-16",
+  "RulesVersion": "2026-10-16",
+  "Scoped": false,
+  "Users": [
+    {
+      "UserID": 7,
+      "Username": "acme",
+      "EmailAddress": "ops@acme.example",
+      "UserGroupID": 1,
+      "ReputationLevel": "Trusted",
+      "AccountStatus": "Enabled",
+      "Score": 45,
+      "Level": "high",
+      "SuggestedAction": "require_campaign_approval",
+      "Complete": true,
+      "FiredRules": [
+        { "Rule": "hard_bounce_rate", "Metric": "HardBounceRate7d", "Value": 0.06, "Status": "measured", "Fired": true, "Threshold": 0.05, "Points": 25, "Action": "require_campaign_approval" },
+        { "Rule": "unknown_user_rate", "Metric": "UnknownUserRate7d", "Value": 0.12, "Status": "measured", "Fired": true, "Threshold": 0.1, "Points": 20, "Action": "require_campaign_approval" }
+      ],
+      "Rules": [],
+      "UnknownMetrics": [],
+      "Signals": { "Sent7d": 1000, "HardBounces7d": 60, "GatewaySent7d": 500, "UnknownUser7d": 60 },
+      "ComputedAt": "2026-10-16 02:40:12"
+    }
+  ],
+  "TotalUsers": 1
+}
+```
+
+```txt [Error Codes]
+1: MinScore must be a number between 0 and 100
+2: Level must be low, medium, high or critical
+3: UserGroupID must be a positive whole number
+4: Limit must be a number between 1 and 200
+5: UserGroupID is outside the user groups this admin account may access
+6: The risk snapshots could not be read
+```
+
+:::
+
+## Get User Risk
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `User.Browse` privilege)
+- Read-only
+:::
+
+One user's newest risk snapshot and the score per day for the trend.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.risk.user` |
+| AdminAPIKey | String | Yes | Admin API key |
+| UserID | Integer | Yes | The user |
+| Days | Integer | No | 1 to 90, default 30 |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "UserID": 7,
+  "Username": "acme",
+  "EmailAddress": "ops@acme.example",
+  "ReputationLevel": "Trusted",
+  "AccountStatus": "Enabled",
+  "RulesVersion": "2026-10-16",
+  "Current": { "UserID": 7, "Score": 45, "Level": "high", "SuggestedAction": "require_campaign_approval", "Complete": true, "SnapshotDate": "2026-10-16" },
+  "Trend": [
+    { "SnapshotDate": "2026-10-16", "Score": 45, "Level": "high", "SuggestedAction": "require_campaign_approval" },
+    { "SnapshotDate": "2026-10-15", "Score": 10, "Level": "low", "SuggestedAction": "none" }
+  ]
+}
+```
+
+```txt [Error Codes]
+1: Days must be a number between 1 and 90
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+6: The risk snapshots could not be read
+```
+
+:::
+
+## Refresh User Risk
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `User.Browse` privilege)
+- Rate limit: 30 requests per 60 seconds
+- Rewrites today's snapshot for the user; changes no customer data
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.risk.refresh` |
+| AdminAPIKey | String | Yes | Admin API key |
+| UserID | Integer | Yes | The user |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "UserID": 7,
+  "RulesVersion": "2026-10-16",
+  "Current": { "UserID": 7, "Score": 45, "Level": "high", "SuggestedAction": "require_campaign_approval", "Complete": true, "SnapshotDate": "2026-10-16" }
+}
+```
+
+```txt [Error Codes]
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+6: The risk score could not be computed or stored
+```
+
+:::
