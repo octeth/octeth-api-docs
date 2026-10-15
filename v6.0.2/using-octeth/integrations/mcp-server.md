@@ -8,6 +8,10 @@ Octeth ships an official **MCP server** — [`@octeth/mcp`](https://www.npmjs.co
 
 This article covers what the MCP server is, how to connect it, the available configuration, and its built-in safety model.
 
+::: tip Using Claude or ChatGPT in a browser?
+Octeth also has a built-in connector that needs no Node.js, npm or API key: paste `https://<your app domain>/mcp` into Claude or ChatGPT and sign in. It is read-only in this release. See [Connect Claude or ChatGPT to Octeth](/v6.0.2/new-user-interface/ai-assistants). Use the MCP server on this page for local clients, scripted use, several accounts, or the write and send tools.
+:::
+
 ## What Is MCP?
 
 The Model Context Protocol (MCP) is an open standard that lets AI assistants talk to external tools and data sources. The Octeth MCP server exposes a curated set of Octeth actions as MCP "tools", so you can simply ask your AI client — for example, *"show me last week's top campaigns"* or *"draft a re-engagement campaign to my inactive subscribers"* — and it performs the work through Octeth's API on your behalf.
