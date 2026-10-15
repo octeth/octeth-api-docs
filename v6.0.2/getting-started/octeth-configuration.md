@@ -908,6 +908,7 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     UI_LOG_LEVEL=error                   # debug, info, notice, warning, error, critical, alert, emergency
     UI_MYSQL_DATABASE=oempro_ui          # Its OWN database. MUST NOT equal MYSQL_DATABASE
     UI_DEBUG_CONSOLE_ENABLED=false       # Who may open the API debug console (default: false)
+    MCP_REDIRECT_DOMAINS=                # Hosts a connected AI assistant may redirect to; empty = any https host
     ```
 
     `UI_DEBUG_CONSOLE_ENABLED` governs the interface's API debug console. When the console is
@@ -935,6 +936,27 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     `docker compose restart oempro_ui` has the same effect. Neither needs a rebuild: the flag is
     read at start time, not baked into the image. The shipped example value matches the application
     default, so an upgrade that adds this key does not change how your install behaves.
+
+    `MCP_REDIRECT_DOMAINS` limits which websites an AI assistant may send a customer back to after
+    the customer approves it on the **Connect an AI assistant** screen of the built-in MCP endpoint
+    (the OAuth redirect host). Set it to a comma-separated list of host names, for example
+    `MCP_REDIRECT_DOMAINS=claude.ai,chatgpt.com`. An entry that starts with `*.` allows every
+    subdomain of that host: `*.example.com` allows `app.example.com` but not `example.com` itself,
+    so list both when you need both.
+
+    Empty, the default, allows any https host, which is what most installs want: a list that names
+    only some assistants blocks every other one, Gemini and self-hosted agents included. Whatever
+    the list says, redirects back to the customer's own computer (`http://localhost`,
+    `http://127.0.0.1` and `http://[::1]`, on any port) are always allowed, because local agents
+    such as Claude Code, Gemini CLI and Codex receive the sign-in result that way. Every other
+    redirect must use https.
+
+    The list is checked when an assistant registers itself, when the server reads an assistant's
+    client metadata document (assistants that identify themselves by an https URL instead of
+    registering), and on every connection attempt, so narrowing it also stops assistants that
+    registered earlier. A refused assistant sees "This assistant cannot connect" with the reason,
+    and nothing is sent to the refused host. Like the other keys here, a change takes effect when
+    the interface's container next starts. Introduced in v6.0.2 (issue #3372).
 
     `UI_ENABLED` must be the **literal lowercase `true`**. `1`, `yes`, `on` and `TRUE` are all read
     as off, by the container entrypoint, by the reverse proxy, by the command line tool and, since
