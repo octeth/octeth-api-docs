@@ -1643,6 +1643,12 @@ curl -X GET https://example.com/api/v1/users.status \
 | AgentMaxSendsPerDay | Integer | No | Sends per UTC day for each AI agent key of the group, `0` for no limit. Added in v6.0.2 |
 | AgentMaxRecipientsPerSend | Integer | No | Recipients one AI agent send may reach, `0` for no limit. Added in v6.0.2 |
 | AgentConfirmAbove | Integer | No | An AI agent send to more recipients than this needs a confirm token, `0` for no group-level confirm step. Added in v6.0.2 |
+| ScreeningSignupThreshold | Integer | No | Signup screening score (0 to 100) at or above which a new account is flagged or held, `0` turns signup screening off. Omit to keep the stored value (default `50`). Added in v6.0.2 |
+| ScreeningSignupMode | String | No | Possible values: `off` (no signup is screened), `flag` (default, record only), `hold` (an account that took the default reputation stays `Untrusted`). Added in v6.0.2 |
+| ScreeningImportThreshold | Integer | No | List import screening threshold (0 to 100), `0` turns it off. Default `50`. Added in v6.0.2 |
+| ScreeningImportMode | String | No | Possible values: `off` (no import is screened), `flag` (default), `hold` (campaigns to the list need approval until the operator releases the import). Added in v6.0.2 |
+| ScreeningContentThreshold | Integer | No | Campaign content screening threshold (0 to 100), `0` turns it off. Default `50`. Added in v6.0.2 |
+| ScreeningContentMode | String | No | Possible values: `off` (default, no campaign is screened and SpamAssassin never runs), `flag` (record only), `hold` (the campaign goes to Pending Approval, and an email a sending campaign uses cannot be edited). Content screening stays off until you set `flag` or `hold`. An unknown value is stored as the default. See [Sender Screening](/v6.0.2/api-reference/admin#sender-screening). Added in v6.0.2 |
 
 ::: warning Options (v5.9.6)
 Before v5.9.6 this command JSON-encoded whatever it was handed, unconditionally. A JSON string was therefore **double-encoded**: the column ended up holding a JSON *string* instead of an object, so nothing could read the options back. It now accepts an object or a JSON string of one and refuses anything else with `ErrorCode 28`, matching `usergroup.patch`.
@@ -1748,6 +1754,12 @@ curl -X POST https://example.com/api.php \
 | AgentMaxSendsPerDay | Integer | No | Sends per UTC day for each AI agent key of the group, `0` for no limit. Added in v6.0.2 |
 | AgentMaxRecipientsPerSend | Integer | No | Recipients one AI agent send may reach, `0` for no limit. Added in v6.0.2 |
 | AgentConfirmAbove | Integer | No | An AI agent send to more recipients than this needs a confirm token, `0` for no group-level confirm step. Added in v6.0.2 |
+| ScreeningSignupThreshold | Integer | No | Signup screening score (0 to 100) at or above which a new account is flagged or held, `0` turns signup screening off. Omit to keep the stored value (default `50`). Added in v6.0.2 |
+| ScreeningSignupMode | String | No | Possible values: `off` (no signup is screened), `flag` (default, record only), `hold` (an account that took the default reputation stays `Untrusted`). Added in v6.0.2 |
+| ScreeningImportThreshold | Integer | No | List import screening threshold (0 to 100), `0` turns it off. Default `50`. Added in v6.0.2 |
+| ScreeningImportMode | String | No | Possible values: `off` (no import is screened), `flag` (default), `hold` (campaigns to the list need approval until the operator releases the import). Added in v6.0.2 |
+| ScreeningContentThreshold | Integer | No | Campaign content screening threshold (0 to 100), `0` turns it off. Default `50`. Added in v6.0.2 |
+| ScreeningContentMode | String | No | Possible values: `off` (default, no campaign is screened and SpamAssassin never runs), `flag` (record only), `hold` (the campaign goes to Pending Approval, and an email a sending campaign uses cannot be edited). Content screening stays off until you set `flag` or `hold`. An unknown value is stored as the default. See [Sender Screening](/v6.0.2/api-reference/admin#sender-screening). Added in v6.0.2 |
 
 ::: warning One default group per plan (v6.0.2)
 This command cannot set `SubscriptionPlanIsDefault`, but it can move a group that is a plan's default onto another plan. When that plan already has a default, the update is refused with `ErrorCode 34`, the same answer `usergroup.create` and `usergroup.patch` give, and nothing is written. Before v6.0.2 the update succeeded and left the plan with two default groups. A parameter sent as an array or object, where a single value is expected, is refused with `ErrorCode 36` and `ErrorField` naming it.
@@ -1901,6 +1913,12 @@ The only safe way to change a single value through `usergroup.update` is to read
 | AgentMaxSendsPerDay | Integer | No | Sends per UTC day for each AI agent key of the group, `0` for no limit. Added in v6.0.2 |
 | AgentMaxRecipientsPerSend | Integer | No | Recipients one AI agent send may reach, `0` for no limit. Added in v6.0.2 |
 | AgentConfirmAbove | Integer | No | An AI agent send to more recipients than this needs a confirm token, `0` for no group-level confirm step. Added in v6.0.2 |
+| ScreeningSignupThreshold | Integer | No | Signup screening score (0 to 100) at or above which a new account is flagged or held, `0` turns signup screening off. Omit to keep the stored value (default `50`). Added in v6.0.2 |
+| ScreeningSignupMode | String | No | Possible values: `off` (no signup is screened), `flag` (default, record only), `hold` (an account that took the default reputation stays `Untrusted`). Added in v6.0.2 |
+| ScreeningImportThreshold | Integer | No | List import screening threshold (0 to 100), `0` turns it off. Default `50`. Added in v6.0.2 |
+| ScreeningImportMode | String | No | Possible values: `off` (no import is screened), `flag` (default), `hold` (campaigns to the list need approval until the operator releases the import). Added in v6.0.2 |
+| ScreeningContentThreshold | Integer | No | Campaign content screening threshold (0 to 100), `0` turns it off. Default `50`. Added in v6.0.2 |
+| ScreeningContentMode | String | No | Possible values: `off` (default, no campaign is screened and SpamAssassin never runs), `flag` (record only), `hold` (the campaign goes to Pending Approval, and an email a sending campaign uses cannot be edited). Content screening stays off until you set `flag` or `hold`. An unknown value is stored as the default. See [Sender Screening](/v6.0.2/api-reference/admin#sender-screening). Added in v6.0.2 |
 
 Parameter names are matched case-insensitively, as everywhere on `/api.php`.
 

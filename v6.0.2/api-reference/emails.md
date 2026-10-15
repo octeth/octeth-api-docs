@@ -311,12 +311,17 @@ curl -X POST https://example.com/api.php \
 19: Missing UTMMedium parameter (required when UTMTracking is enabled)
 20: Missing UTMCampaign parameter (required when UTMTracking is enabled)
 21: FromEmail cannot be sent: it has no domain and no sender domain is set (only raised when ValidateScope=Campaign; OptIn and AutoResponder scopes bypass this check). The email is not changed.
+22: The email cannot be changed while a campaign that uses it is sending (only raised when the user group's ScreeningContentMode is hold). ErrorText names the campaigns. Pause the campaign or wait until it is sent. The email is not changed. Added in v6.0.2
 ```
 
 :::
 
 ::: warning FromEmail without a domain
 With `ValidateScope=Campaign`, `email.update` refuses a FromEmail that has no `@` and no merge tag unless a sender domain applies: the `SenderDomain` parameter, or the sender domain already stored on the email, and only when the user group has `SenderDomainManagement=Enabled`. The response is `{"Success": false, "ErrorCode": 21, "ErrorText": "..."}` and the email is left unchanged. The check is skipped when the user group's marketing delivery server enforces a From address. Before v6.0.1 the value was stored and every recipient of the campaign failed at send time.
+:::
+
+::: warning Untrusted Accounts
+For an account with `ReputationLevel` `Untrusted`, changing an email that a campaign uses (as its email, an A/B variation or a split test email) moves that campaign to `Pending Approval` when it is scheduled, sending, `Paused` or already `Pending Approval`. The campaign then waits for an administrator to approve the new content with `campaign.approve`. The response is still `Success: true`. For every account, an email changed after an approval is screened again when the campaign starts sending, and content screening in hold mode can move the campaign to `Pending Approval` at that point. When the user group's content screening is in hold mode, the email of a sending campaign cannot be changed (`ErrorCode` 22), and a change removes the approval of the `Ready` and `Paused` campaigns that use the email. Changed in v6.0.2.
 :::
 
 ## Delete an Email

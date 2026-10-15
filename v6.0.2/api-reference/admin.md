@@ -5519,6 +5519,8 @@ Levels: low (below 15), medium (15), high (35), critical (60). Suggested actions
 
 One user's newest risk snapshot and the score per day for the trend.
 
+Since v6.0.2 the response also carries `Screening`: the user's 20 newest signup, list import and campaign content screening results, newest first (null when they could not be read). Each has the score, the `CustomerScore` (the score without the rules that read other accounts' data, which alone decides a hold), the user group's threshold and mode, the `Outcome` (`clean`, `unknown`, `flagged` or `held`), the rules that fired with their evidence, the signup `Stage` (`local`, or `external` for the opt-in lookups), and the reason the customer sees when the item is held. Import evidence holds aggregate counts only, never an address or another tenant. Three risk rules read these results: `signup_screening`, `import_screening` and `content_screening`. See [Sender Screening](#sender-screening).
+
 **Request Body Parameters:**
 
 | Parameter | Type | Required | Description |
@@ -5543,6 +5545,32 @@ One user's newest risk snapshot and the score per day for the trend.
   "Trend": [
     { "SnapshotDate": "2026-10-16", "Score": 45, "Level": "high", "SuggestedAction": "require_campaign_approval" },
     { "SnapshotDate": "2026-10-15", "Score": 10, "Level": "low", "SuggestedAction": "none" }
+  ],
+  "Screening": [
+    {
+      "ScreeningResultID": 31,
+      "SubjectType": "import",
+      "SubjectID": 812,
+      "ListID": 44,
+      "Score": 75,
+      "Threshold": 40,
+      "Mode": "hold",
+      "Outcome": "held",
+      "Complete": true,
+      "FiredRules": [
+        { "Rule": "bounce_history", "Metric": "BounceHistoryShare", "Value": 0.125, "Status": "measured", "Fired": true, "Threshold": 0.1, "Points": 30, "Evidence": { "ValidAddresses": 400, "BounceHistoryAddresses": 50 } },
+        { "Rule": "role_addresses", "Metric": "RoleShare", "Value": 0.335, "Status": "measured", "Fired": true, "Threshold": 0.2, "Points": 25, "Evidence": { "SampleSize": 400, "TotalRows": 400, "RoleAddresses": 134 } },
+        { "Rule": "invalid_syntax", "Metric": "InvalidShare", "Value": 0.12, "Status": "measured", "Fired": true, "Threshold": 0.1, "Points": 20, "Evidence": { "SampleSize": 400, "TotalRows": 400, "InvalidSyntax": 48 } }
+      ],
+      "UnknownMetrics": [],
+      "DurationMs": 310,
+      "CustomerScore": 45,
+      "Stage": null,
+      "CustomerReason": "This import is waiting for a review by our team, and campaigns to the list need approval until then. Many addresses are shared role mailboxes such as info@ or sales@. Many addresses are not valid email addresses.",
+      "RulesVersion": "2026-10-17",
+      "CreatedAt": "2026-10-17 09:12:40",
+      "ReleasedAt": null
+    }
   ]
 }
 ```
@@ -5591,6 +5619,202 @@ One user's newest risk snapshot and the score per day for the trend.
 5002: User not found
 5003: User is outside the user groups this admin account may access
 6: The risk score could not be computed or stored
+```
+
+:::
+
+## Sender Screening
+
+Octeth screens three points where a sender enters the platform, with deterministic rules (no language model runs inside Octeth). Every result is stored and feeds the risk digest. Each user group sets a threshold (0 to 100, default 50) and a mode per point: `off` screens nothing, `flag` only records the result, `hold` also stops the item. Signup and list import screening default to `flag`. Campaign content screening defaults to `off` for every user group, existing and new, because it runs SpamAssassin on every send. Turn it on per group with `ScreeningContentMode` `flag` or `hold` in `UserGroup.Update` or `UserGroup.Patch`, or in the sender screening section of the user group page in the admin area.
+
+| Point | When | Rules | Hold |
+|---|---|---|---|
+| Signup | Every new account (`User.Create`, the public sign-up page, SSO), local checks only. The opt-in external lookups run a few minutes later in `cli/signup_screening.php` and store a second result | `disposable_domain`, `no_mx` (one DNS query, 2 seconds at most), `young_domain` (RDAP registration date, opt-in), `website_not_live` (opt-in, at most 256 KB read), `ip_signup_burst`, `suspended_domain` | An account that took the default reputation stays `Untrusted` |
+| List import | The import worker, after the import finished, on a bounded sample of up to 2,000 addresses | `role_addresses`, `invalid_syntax`, `no_mx_domains`, `spam_traps`, `bounce_history` (hard bounces and complaints on any tenant, counts only, operator only), `free_mail_shift` | Campaigns to the list go to Pending Approval until the import is released |
+| Campaign content | The campaign picker, when a `Ready` campaign starts sending (immediate, scheduled, resumed, recurring, auto-resend and A/B winner sends), on the emails and lists of that send | `spam_score` (SpamAssassin, local rules, one run per send), `link_text_mismatch`, `credential_form`, `url_shortener`, `brand_impersonation`, `suspended_reuse` (operator only) | The campaign goes to Pending Approval instead of sending. `Campaign.Approve` records what was approved, so the same emails and lists are not held again. While a campaign is sending, `email.update` refuses changes to the emails it uses (ErrorCode 22), and a change to an email of a `Ready` or `Paused` campaign removes its approval, so it is screened again when it starts or resumes |
+
+A signal that cannot be read (a DNS timeout, ClickHouse unreachable, SpamAssassin missing or timed out) makes the result `unknown`: it never holds anything by itself and is never counted as clean. Rules marked operator only read other accounts' data. They add to the operator's `Score` and can flag an item, but the hold decision and the customer's reason use `CustomerScore`, which leaves them out. `bounce_history` reads the suppression lists and the email gateway events of the last 30 days (`eg_events` keeps 31). The phishing rules allow the user's own verified sender domains. User group settings are the `Screening*` parameters of `UserGroup.Create`, `UserGroup.Update` and `UserGroup.Patch`, and the global lists are set with [Update Screening Settings](#update-screening-settings).
+
+## Release a Held Import
+
+<Badge type="info" text="POST" /> `/api/v1/admin.screening.release`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `User.Edit` privilege)
+- Rate limit: 60 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+- Not available to admin agent keys: a release loosens a hold
+:::
+
+Releases a held list import, so campaigns to its list stop going to Pending Approval because of it. A held campaign is released through the existing approval flow (`Campaign.Approve`), and a held signup by changing the account's `ReputationLevel`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.screening.release` |
+| SessionID | String | No | Session ID obtained from login |
+| AdminAPIKey | String | No | Admin API key |
+| ScreeningResultID | Integer | Yes | The held import result, from `admin.risk.user` `Screening` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.screening.release \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.screening.release",
+    "AdminAPIKey": "your-admin-api-key",
+    "ScreeningResultID": 31
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Result": { "ScreeningResultID": 31, "SubjectType": "import", "SubjectID": 812, "ListID": 44, "Outcome": "held", "ReleasedAt": "2026-10-17 10:02:11" }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Only a held import can be released. Approve a held campaign with campaign.approve."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: ScreeningResultID is required
+2: Screening result not found
+3: The result is not a held import
+4: The import was already released
+5003: User is outside the user groups this admin account may access
+6: The screening result could not be read or updated
+```
+
+:::
+
+## Get Screening Settings
+
+<Badge type="info" text="POST" /> `/api/v1/admin.screening.settings.get`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Settings` privilege)
+- Rate limit: 60 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+The operator's global screening settings. The three lists start empty, and `SignupExternalLookups` is `false` until the operator turns it on.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.screening.settings.get` |
+| SessionID | String | No | Session ID obtained from login |
+| AdminAPIKey | String | No | Admin API key |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.screening.settings.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.screening.settings.get",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ProtectedBrands": [{ "Name": "PayPal", "Domains": ["paypal.com"] }],
+  "SpamTrapPatterns": ["spamtrap*@trap.example.net"],
+  "DisposableDomains": ["tempbox.example"],
+  "SignupExternalLookups": false,
+  "BuiltInDisposableDomains": 104,
+  "RulesVersion": "2026-10-17"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999
+}
+```
+
+```txt [Error Codes]
+0: Success
+99999: Insufficient admin privileges
+```
+
+:::
+
+## Update Screening Settings
+
+<Badge type="info" text="POST" /> `/api/v1/admin.screening.settings.update`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Settings` privilege)
+- Rate limit: 30 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Replaces one or more global screening settings. A setting that is not sent is left as it is, and an empty list value empties the list. Invalid entries are dropped and at most 1,000 entries per list are kept.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.screening.settings.update` |
+| SessionID | String | No | Session ID obtained from login |
+| AdminAPIKey | String | No | Admin API key |
+| ProtectedBrands | Array or String | No | Brands for the `brand_impersonation` rule: an array of `{Name, Domains}`, its JSON, or lines of `Name: domain1, domain2`. A brand named in the From name or subject of an email that is not sent from one of its domains fires the rule |
+| SpamTrapPatterns | Array or String | No | Patterns for the `spam_traps` import rule, one per line: an address or a domain with `*` wildcards, such as `spamtrap*@trap.example.net` |
+| DisposableDomains | Array or String | No | Domains added to the built-in disposable list of the `disposable_domain` signup rule, separated by commas or new lines |
+| SignupExternalLookups | Boolean | No | `true` lets signup screening ask `rdap.org` for the email domain's registration date and fetch the website given at sign-up (at most 256 KB, 4 seconds each). The lookups run in the `cli/signup_screening.php` cron a few minutes after the sign-up, never during it. Default `false`: the outbound requests reach a third party and an address the sign-up chose, so they are opt-in |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.screening.settings.update \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.screening.settings.update",
+    "AdminAPIKey": "your-admin-api-key",
+    "ProtectedBrands": [{ "Name": "PayPal", "Domains": ["paypal.com"] }],
+    "DisposableDomains": "tempbox.example"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ProtectedBrands": [{ "Name": "PayPal", "Domains": ["paypal.com"] }],
+  "SpamTrapPatterns": [],
+  "DisposableDomains": ["tempbox.example"],
+  "SignupExternalLookups": false
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Give at least one of ProtectedBrands, SpamTrapPatterns, DisposableDomains and SignupExternalLookups"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: No setting was given
+6: The settings could not be saved
 ```
 
 :::

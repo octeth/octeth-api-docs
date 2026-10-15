@@ -18,6 +18,8 @@ Manage email marketing campaigns through programmatic API access. Create, update
 
 Approves a campaign that is waiting for administrator approval by setting its `CampaignStatus` to `Ready`, so the delivery engine can pick it up. This is the API equivalent of the approve action on the admin campaign screens. The campaign is looked up by `CampaignID` alone, so an administrator may approve a campaign in any account.
 
+Since v6.0.2 the approval records the version it approves (see What an Approval Covers below) and removes `Options.ScreeningHold`. Content screening runs again when the send starts, but a send whose campaign is still the approved version is not screened or held again. Any change made after the approval is screened anew. See [Sender Screening](/v6.0.2/api-reference/admin#sender-screening).
+
 **Request Body Parameters:**
 
 | Parameter  | Type    | Required | Description                                |
@@ -26,6 +28,7 @@ Approves a campaign that is waiting for administrator approval by setting its `C
 | SessionID  | String  | No       | Admin session ID obtained from login       |
 | AdminAPIKey| String  | No       | Admin API key for authentication           |
 | CampaignID | Integer | Yes      | ID of the campaign to approve              |
+| ExpectedFingerprint | String | No | The fingerprint of the campaign version the administrator reviewed. When given, the approval is refused with `ErrorCode 4` if the campaign changed since, and nothing is changed. When omitted, the current version is approved. Added in v6.0.2. |
 
 ::: code-group
 
@@ -57,8 +60,14 @@ curl -X POST https://example.com/api/v1/campaign.approve \
 0: Success
 1: Missing required parameter (CampaignID)
 2: Campaign not found
+3: The campaign could not be read to record the approval (retry)
+4: The campaign changed after the administrator opened it for review (ExpectedFingerprint does not match), review it again
 ```
 
+:::
+
+::: tip What an Approval Covers
+`campaign.approve` sets the campaign to `Ready` and records the version it approves: the campaign's emails (including A/B variations), sender, subject and other content, attachments, its audience, whether and how it repeats (`Recursive` and its recurrence settings) and its auto-resend settings. The administrator overview sends `ExpectedFingerprint` with each approval, so a campaign its owner changed after the overview was loaded is refused with `ErrorCode 4` and stays in `Pending Approval` for another review. For an account with `ReputationLevel` `Untrusted`, a later change to any of these by the account moves the campaign back to `Pending Approval`, and a campaign whose content changed since the approval is not sent. The same approval releases a campaign that content screening held in `Pending Approval`, for any account, and the screening that runs when the send starts skips the approved version. Changed in v6.0.2.
 :::
 
 ## Cancel a Campaign
@@ -112,6 +121,10 @@ curl -X POST https://example.com/api.php \
 2: Campaign not found or doesn't belong to user
 ```
 
+:::
+
+::: tip Status After Cancelling
+A cancelled campaign is stored as `Ready` with `ScheduleType` `Not Scheduled`. A campaign in `Pending Approval` is withdrawn to `Draft` instead, because only an administrator releases a campaign from `Pending Approval`. If the internal status update is refused, `campaign.cancel` returns that failure instead of `Success: true`. Changed in v6.0.2.
 :::
 
 ## Copy a Campaign
@@ -518,6 +531,12 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+::: warning Untrusted Accounts
+For an account with `ReputationLevel` `Untrusted`, a resumed campaign is stored as `Pending Approval` and waits for an administrator to approve it with `campaign.approve`. The response is still `Success: true`. Changed in v6.0.2.
+
+If the internal status update is refused, `campaign.resume` now returns that failure instead of `Success: true`. Changed in v6.0.2.
+:::
+
 ## Update a Campaign
 
 <Badge type="info" text="POST" /> `/api.php` (legacy)
@@ -530,6 +549,10 @@ curl -X POST https://example.com/api.php \
 
 ::: info AI agent keys
 With an AI agent key, an update that leaves the campaign scheduled or sending needs the `send` scope when it schedules the campaign or changes a scheduled or sending one beyond its name. A new campaign is unscheduled, so building it is a `write`. Such a send counts against the key's daily send budget and recipients cap (`ErrorCode 100011`), with the recipients counted as the current size of every included list and segment, and above the confirm threshold it first returns `ErrorCode 100012` with a preview and a `ConfirmToken` to repeat the request with. Added in v6.0.2. See [AI agent keys](/v6.0.2/api-reference/users#ai-agent-keys).
+:::
+
+::: info Content screening
+`Campaign.Update` does not screen content, and its response is unchanged. When a `Ready` campaign starts sending (immediately, on its schedule, after a resume, as a recurring or auto-resend copy, or when an A/B test picks its winner), Octeth screens the emails and recipient lists of that send with fixed rules (spam score, a link whose text shows another domain than its target, credential forms, link shorteners, protected brand names, links reused from suspended accounts) and records the result for the operator. An edit made after scheduling is therefore screened too. By default this only flags. When the operator set the user group's content screening to hold, or a recipient list has a held import, the campaign moves to `Pending Approval` instead of sending, with a plain reason in `Options.ScreeningHold.Reason`, and waits for `campaign.approve` like any other held campaign. A version an administrator approved is not screened again. Links reused from suspended accounts only flag for the operator and never hold. Added in v6.0.2. See [Sender Screening](/v6.0.2/api-reference/admin#sender-screening).
 :::
 
 **Request Body Parameters:**
@@ -585,10 +608,18 @@ When the `ABTesting` object is provided, the campaign is configured as an A/B sp
 - The system randomly distributes recipients across variations during queue generation, so each subscriber receives exactly one variation.
 :::
 
-::: warning Untrusted Accounts Are Held At Pending Approval
-When the campaign's owner has a `ReputationLevel` of `Untrusted`, a `Draft` → `Ready` transition is rewritten to `Pending Approval` and an approval notification is sent to the administrators. The campaign is not queued for sending until an administrator approves it.
+::: warning Pending Approval
+Only an administrator releases a campaign from `Pending Approval`, with `campaign.approve`. While a campaign is in `Pending Approval`, `campaign.update` accepts `CampaignStatus` of `Pending Approval` or `Draft` (to withdraw it and edit it) and refuses any other status with `ErrorCode 30`, leaving the campaign unchanged. Updates that do not send `CampaignStatus` are accepted as before. This applies to every account.
 
-The API still returns `Success: true` in this case — the response does **not** indicate that the status was changed from the one requested. Callers must not assume the requested `CampaignStatus` took effect; re-read the campaign with `campaign.get` to confirm the resulting status.
+When the campaign's owner has a `ReputationLevel` of `Untrusted`, every update that arms the campaign to send is stored as `Pending Approval` and an approval notification is sent to the administrators. A campaign is armed when it is `Sending`, or `Ready` with a `ScheduleType` other than `Not Scheduled`. The hold applies when the campaign was not armed before the update: `Draft`, `Ready` with `Not Scheduled` (the state of a new campaign), `Paused`, `Sent` or `Failed`. An update between armed states, such as rescheduling an approved campaign, is not held again. Changed in v6.0.2: before, only a `Draft` to `Ready` update was held.
+
+An approval covers one version of the campaign: its emails (including A/B variations and split test emails), sender, subject and other email content, attachments, audience (`RulesJsonBundle`, `RecipientListsAndSegments`, `ExcludeRecipientListsAndSegments`) and auto-resend settings (`AutoResendEnabled`, `AutoResendSubject`, `AutoResendPreHeaderText`). For an `Untrusted` owner, an update that changes any of these while the campaign is armed, `Paused` or `Pending Approval` stores it as `Pending Approval` again, whatever `CampaignStatus` the request named. The schedule is part of the approved version only as far as it decides how often the campaign sends: a new `SendDate`, `SendTime` or `SendTimeZone`, or a switch between `Immediate`, `Future` and `Not Scheduled`, keeps the approval of a one-time campaign. Changing `ScheduleType` to or from `Recursive`, or changing any recurrence setting of a `Recursive` campaign (`ScheduleRecDaysOfWeek`, `ScheduleRecDaysOfMonth`, `ScheduleRecMonths`, `ScheduleRecHours`, `ScheduleRecMinutes`, `ScheduleRecSendMaxInstance`), needs a new approval. When the campaign is about to send, a campaign of an `Untrusted` owner whose content no longer matches the approved version, or that has no approval on record, is moved back to `Pending Approval` instead of sending. Content screening runs at the same moment for every account (see Content screening above), and a campaign it holds also moves to `Pending Approval`. Changed in v6.0.2.
+
+An update that omits `ExcludeRecipientListsAndSegments` clears the campaign's exclusion lists (existing behavior). For an `Untrusted` owner that is an audience change, so it re-holds an approved campaign that had exclusions.
+
+Administrators receive at most one approval email per campaign per hour, so moving a campaign between `Draft` and `Ready` repeatedly does not send repeated emails. Campaigns held when they come up to send, by the approval check or by content screening, are reported in one summary email. Changed in v6.0.2.
+
+The API still returns `Success: true` when the update is held, and the response does **not** indicate that the status was changed from the one requested. Re-read the campaign with `campaign.get` to confirm the resulting status.
 :::
 
 ::: code-group
@@ -651,6 +682,7 @@ curl -X POST https://example.com/api.php \
 27: Scheduled send date and time is in the past
 28: RulesJsonBundle names a list or segment that does not exist or does not belong to the user
 29: RulesJsonBundle holds a list_id or segments rule value that is not a positive integer
+30: The campaign is in Pending Approval and the requested CampaignStatus is not Draft or Pending Approval (only campaign.approve releases it)
 ```
 
 :::

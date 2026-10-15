@@ -1067,6 +1067,10 @@ curl -X POST https://example.com/api/v1/subscribers.import \
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
+::: info Import screening
+A finished import is screened for the operator with fixed rules on a sample of up to 2,000 addresses (role mailboxes, invalid syntax, domains without mail servers, spam-trap patterns, addresses that bounced or complained anywhere on the platform, and the free-mail mix against your other lists). By default this only flags. Addresses that bounced or complained on other accounts only flag the import for the operator: they never hold it and never appear in the reason. When the operator set the user group's import screening to hold and the import scored at or above the threshold without that history, `ImportJob` adds `Screening` with `Status` (`held`, or `released` once the operator released it) and a plain `Reason`, and campaigns to the list wait for approval until the release. Otherwise the response is unchanged. Added in v6.0.2.
+:::
+
 **Request Body Parameters:**
 
 | Parameter | Type   | Required | Description                           |
