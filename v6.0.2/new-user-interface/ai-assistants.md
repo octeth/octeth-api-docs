@@ -156,6 +156,23 @@ Neither file contains anything from any account. An agent that calls the API dir
 
 Your Octeth administrator can turn both files off with `MCP_DISCOVERY_ENABLED=false`, for example when the app domain serves its own `llms.txt`, and can point `llms.txt` at their own help page with `MCP_DISCOVERY_HELP_URL`.
 
+## For Octeth operators: setup tools
+
+Staff can connect an assistant to the admin side of Octeth too. An operator connection gets these read tools: `get_setup_status` ("what is left to set up"), `list_delivery_servers`, `get_delivery_server`, `list_user_groups`, `get_user_group`, `get_settings`, `list_alerts` and `get_alert`. With **Act** ticked on the consent screen it also gets `create_delivery_server`, `update_delivery_server`, `test_delivery_server`, `create_user_group`, `update_user_group`, `assign_delivery_server` and `update_settings` (the bounce and FBL mailboxes).
+
+Every action shows a preview and waits for your yes. Passwords are write-only: the assistant can set one, but never sees it again. Secrets and webhook URLs in the settings it reads come back redacted.
+
+Some changes stay with you in the admin area, whatever you approve in the chat:
+
+- **Delivery servers you added, and mail that is already flowing.** The assistant changes where a delivery server sends, assigns it or tests it only when an assistant added that server and nothing sends through it yet: no user group, user override, delivery route, global segment or IP pool uses it. On any other server, including every server you added in the admin area, it can change only the name and the timeout: the host, port, encryption, login, password, tracking domains, MAIL FROM domain and enforced From address stay as they are. It assigns a delivery server only to a user group that has no users yet. When it changes the host, port, login or password of its own server, the server's test result is cleared, so it must pass a new test before it is assigned.
+- **Internal hosts.** A delivery server or mailbox host must resolve only to public internet addresses, on a standard port: 25, 465, 587 or 2525 for SMTP, and 143 or 993 for the IMAP mailbox. A test send checks the host again when it runs and connects to the address it checked. A server on your private network or another container on the install is set up in the admin area.
+- **Mailboxes that are already on.** The assistant turns on a bounce or FBL mailbox that is off. Changing the host, username or password of one that is on, or turning one off, is done in the admin area.
+- **Server error text.** When a test send or a mailbox login fails, the assistant gets a short explanation. The mail server's own reply is shown only in the admin area.
+
+The connector never reads or writes `.oempro_env` and never restarts a container. Server settings are changed on the server with `./cli/octeth.sh env:plan` and `env:apply`, by the operator or a local agent there.
+
+Octeth checks your alert rules every five minutes with no assistant running and sends an email or a webhook (a Telegram bot URL works). The assistant investigates afterwards with `list_alerts` and `get_alert`.
+
 ## Troubleshooting
 
 ### "Couldn't discover OAuth settings" or a similar error when adding the connector

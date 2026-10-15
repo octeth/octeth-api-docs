@@ -1183,6 +1183,7 @@ export default defineConfig({
                                 {text: 'Error Handling', link: '/v6.0.2/api-reference/error-handling'},
                                 {text: 'Behavior Changes in v6.0.2', link: '/v6.0.2/api-reference/behavior-changes'},
                                 {text: 'Admin', link: '/v6.0.2/api-reference/admin'},
+                                {text: 'Setup and Alerts', link: '/v6.0.2/api-reference/setup'},
                                 {text: 'Bounce Processing', link: '/v6.0.2/api-reference/bounce'},
                                 {text: 'Reports', link: '/v6.0.2/api-reference/reports'},
                                 {text: 'Auto Responders', link: '/v6.0.2/api-reference/autoresponders'},

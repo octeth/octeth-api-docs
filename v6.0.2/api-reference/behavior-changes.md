@@ -104,6 +104,15 @@ v6.0.2 also adds AI agent keys (issue #3373). A key created with `IsAgentKey` (e
 - In `user.apikey.list`, rows of agent keys gain `IsAgentKey` and `Agent`. Rows of ordinary keys, and every response for ordinary keys, are unchanged.
 - An agent can confirm its own sends, so treat the user group's daily send and recipient caps as the limit that matters.
 
+#### Operator AI assistants can help set up delivery servers, user groups and mailboxes
+
+v6.0.2 lets an operator AI assistant (an admin agent key with `admin:act`) take part in setting up an install (issue #3387): read the setup status, create and test delivery servers, create user groups, assign a delivery server to a group and turn on the bounce and FBL mailboxes. Every action waits for the operator's confirmation and is logged. See [Setup actions](/v6.0.2/api-reference/admin#setup-actions) and [Setup](/v6.0.2/api-reference/setup).
+
+- The assistant can repoint or test only a delivery server it created itself and that nothing uses yet. A server you created, or one a user group, user, delivery route, segment or IP pool refers to, keeps its host, port, credentials and domains, and only its name and timeout can change. Testing pins the connection to the public address that was checked.
+- The assistant can assign a delivery server only to a user group with no users that receives users only by your hand. The signup group, the groups a signup picks from and, with `UI_ENABLED=true`, every billing plan, signup, suspension, cancellation and default group of the new user interface stay manual. While the interface is on, an assignment that does not come through its built-in connector is refused.
+- The assistant can only make a user group's sender screening stricter: a mode moves from `off` to `flag` to `hold`, and a threshold only goes down and never to 0. Loosening screening, the screening lists and releasing a held item stay in the admin area.
+- Nothing the assistant can call reads or writes `.oempro_env` or restarts a container.
+
 ### Sender screening
 
 #### Signups, list imports and campaign sends are screened and fed to the risk digest

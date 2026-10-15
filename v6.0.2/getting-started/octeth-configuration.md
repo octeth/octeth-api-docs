@@ -1982,6 +1982,39 @@ Environment files use a simple `KEY=value` format. Important rules:
 - `/opt/octeth/cli/octeth.sh env:validate .oempro_env` also warns about a key that Octeth does not know, which is usually a typo. The warning names the key and never prints its value, and it does not fail the check.
 :::
 
+### Changing `.oempro_env` Safely: env:plan, env:apply, env:rollback
+
+Change `.oempro_env` with these three commands rather than by editing the file. They read the key registry in `_dockerfiles/examples/.oempro_env.example` (`@reader`, `@secret`, `@restart`) to work out which containers a change needs restarted. No `.oempro_env` key was added, removed or changed for them.
+
+- `/opt/octeth/cli/octeth.sh env:plan KEY=VALUE ...` prints the change (old and new values, secrets shown only as "(changed)") and the exact restarts it needs. It writes nothing.
+- `/opt/octeth/cli/octeth.sh env:apply KEY=VALUE ...` takes the same input, checks it again, saves a snapshot of `.oempro_env` in `data/env_snapshots/` (readable only by its owner), writes the file, runs only the restarts the plan named and records the change in the configuration change log (`oempro_config_changes`, with secrets masked).
+- `/opt/octeth/cli/octeth.sh env:rollback [SNAPSHOT]` restores a snapshot (the newest by default) and restarts what the restored keys need. `env:rollback --list` lists the snapshots. The newest 20 are kept.
+
+Input: `KEY=VALUE` arguments, `--file FILE` or `--stdin` (one `KEY=VALUE` per line) and `--unset KEY`. A key marked secret in the registry (passwords, salts, `LICENSE_KEY`, `ADMIN_API_KEY` and the like) is accepted only from `--file` or `--stdin`, never as an argument, so it never lands in shell history, and its value is never printed or logged. A key the registry does not know is refused, which catches typos.
+
+`env:apply` and `env:rollback` stop and ask for `--yes` when a campaign is sending (or Octeth cannot tell), or when the change force-recreates containers (for example `UI_ENABLED`, or a resource limit read by Docker Compose), because recreating containers drops sessions and pauses sending for a moment.
+
+Example, rotating a secret and changing the log level:
+
+```bash
+printf 'LICENSE_KEY=%s\nOEMPRO_LOG_LEVEL=INFO\n' "$NEW_KEY" | /opt/octeth/cli/octeth.sh env:apply --stdin
+```
+
+An AI assistant connected through the built-in connector can never read or change `.oempro_env` or restart a container. These commands are for an operator, or a local agent such as Claude Code, working on the server itself.
+
+### Operator Alerts: alerts:*
+
+Octeth raises its own alerts with no AI agent running. Add a rule on the server:
+
+```bash
+/opt/octeth/cli/octeth.sh alerts:add --metric=complaint_rate --threshold=0.1 --email=ops@example.com
+echo "https://api.telegram.org/bot<token>/sendMessage?chat_id=<chat>" | /opt/octeth/cli/octeth.sh alerts:add --metric=worker_down --threshold=0 --webhook-stdin
+```
+
+Metrics: `complaint_rate`, `bounce_rate`, `delivery_server_failure_rate` (percent over `--window` minutes, default 60), `queue_depth`, `worker_down`, `disk_usage`. For `complaint_rate` and `bounce_rate`, email gateway messages are counted over the window. Campaign and autoresponder sends are stored per UTC day, so their bounces and complaints are counted from the start of the same UTC day: each rate compares events with the sends of the same period. A rate needs at least 200 messages before it can fire.
+
+`--cooldown` (minutes, default 60) is the quiet time after an alert. A webhook URL is read from stdin only, because it can carry a token, and it is never shown again. `alerts:list`, `alerts:events`, `alerts:enable`, `alerts:disable`, `alerts:remove`, `alerts:test ID` and `alerts:check [--dry-run]` manage and exercise the rules. The check runs every five minutes from cron (`cli/operator_alerts.php` in `oempro_cron`).
+
 ## System Configuration Part II: Configuration Files
 
 While environment variables control system-level settings, configuration files provide detailed, structured PHP-based configuration for Octeth's features and behaviors. These files allow you to customize everything from SMS settings to email delivery parameters without modifying core application code.
