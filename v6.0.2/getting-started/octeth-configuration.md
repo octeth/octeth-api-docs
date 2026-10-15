@@ -111,7 +111,11 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
    ```bash
    SESSION_LIFETIME_DAYS=30                 # Session validity in whole days
    SESSION_SECURE_COOKIE=false              # Enable for HTTPS/SSL only
+   SESSION_HTTPONLY_COOKIE=true             # HttpOnly flag on the session cookie (default: true)
+   SESSION_SAMESITE=Lax                     # SameSite attribute of the session cookie: Strict, Lax or None (default: Lax)
    ```
+
+   `SESSION_HTTPONLY_COOKIE` keeps JavaScript from reading the legacy admin and user area session cookie, which protects the session against cross-site scripting. Leave it `true`. `SESSION_SAMESITE` sets the cookie's SameSite attribute. `Lax` lets a link from another site open Octeth while blocking cross-site form posts. `Strict` also drops the cookie on links from other sites, so a user who follows one is asked to log in again. `None` sends the cookie on every cross-site request and requires `SESSION_SECURE_COOKIE=true`. Both keys apply to the next request.
 
    `SESSION_LIFETIME_DAYS` must be a whole number written with 1 to 9 decimal digits, for example `30`, and the minimum is 1. A leading zero is read as decimal, so `08` means 8 days. An empty value silently uses the default of 30 days. When the value is 0 (including `00` or `000`), has any other character (a sign, a decimal point, a space or a unit) or is longer than nine digits, the new user interface also uses the default of 30 days, and the `oempro_ui` container log shows a warning naming `SESSION_LIFETIME_DAYS`. The warning never prints the value itself. The legacy admin and user areas also treat 0 as the 30-day default, so both interfaces behave the same.
 
@@ -247,6 +251,7 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED=false  # Reject Email Gateway sends while the send-rate counters (Redis) cannot be read
     EMAILGATEWAY_REQUIRE_TRUSTED=true    # Only Trusted accounts can send through the Email Gateway HTTP API
     EMAILGATEWAY_SMTP_HOST=smtp.example.com   # SMTP host customers connect to; also the inbound SMTP banner and EHLO name
+    EMAILGATEWAY_SMTP_PORTS=25,587,465        # SMTP ports shown next to the SMTP host (default: 25,587,465)
     ```
 
     When `PHONE_VERIFICATION_REQUIRED_TO_SEND_EG_EMAILS` is `true`, the owner user's phone must be verified (`PhoneVerified=1`) before email can be sent through the Email Gateway. The requirement is enforced on **both** ingress paths consistently: the HTTP API send endpoint (`EmailGateway.SendEmail`) and the inbound SMTP relay authentication (`EmailGateway.SMTPRelay`). When `false` (the default), the phone-verification gate is skipped on both paths, so a user with `PhoneVerified=0` can still authenticate over SMTP and send via the API.
@@ -257,7 +262,9 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
 
     `EMAILGATEWAY_REQUIRE_TRUSTED` decides whether the Email Gateway HTTP API requires the sending account to be `Trusted`. With the default `true`, `emailgateway.sendemail` rejects a request from an `Untrusted` account with HTTP 403 and error code `40`, and the delivery worker fails email already queued for an account that was moved to `Untrusted`. Journey "Send email" actions use `emailgateway.sendemail`, so they follow the same rule. An administrator allows an account to send by marking it `Trusted`. Set it to `false` to let `Untrusted` accounts send through the HTTP API as before v6.0.1. The SMTP relay (`emailgateway.smtprelay`) requires a `Trusted` account whatever this is set to (issue #3077).
 
-    `EMAILGATEWAY_SMTP_HOST` is the SMTP host your customers connect to for the Email Gateway. It is shown in the user area and returned by `emailgateway.getsmtps` and `emailgateway.addsmtp`. Give the host only, with no scheme or port, for example `smtp.mydomain.com`. It is also the name the inbound SMTP server announces in its greeting (`220 smtp.mydomain.com Mail ESMTP Service ready`) and in its EHLO reply, so the greeting does not reveal your application domain. A fresh install sets it from `--smtp-host`, or to `smtp.` followed by the `APP_URL` host when no host is given, and writes it into `_dockerfiles/inbound-smtp-server/config.json`. After changing it, run `./cli/octeth.sh smtp:sync-config`, which updates that file and restarts `oempro_emailgateway_inbound_smtp`. The upgrade runs the same step. The example value `smtp.example.com` is a placeholder: it is never written into the greeting, so an install that has not set a real host keeps its current greeting. The same step replaces the old product name `Oempro SMTP Server` in the greeting with `Mail`, and keeps any other name you set in `AppName` (issue #3313).
+    `EMAILGATEWAY_SMTP_HOST` is the SMTP host your customers connect to for the Email Gateway. It is shown in the user area and returned by `emailgateway.getsmtps` and `emailgateway.addsmtp`. Give the host only, with no scheme or port, for example `smtp.mydomain.com`. It is also the name the inbound SMTP server announces in its greeting (`220 smtp.mydomain.com Mail ESMTP Service ready`) and in its EHLO reply, so the greeting does not reveal your application domain. A fresh install sets it from `--smtp-host`, or to `smtp.` followed by the `APP_URL` host when no host is given, and writes it into `_dockerfiles/inbound-smtp-server/config.json`. After changing it, run `./cli/octeth.sh smtp:sync-config`, which updates that file and restarts `oempro_emailgateway_inbound_smtp`. The upgrade runs the same step. The example value `smtp.example.com` is a placeholder: it is never written into the greeting, so an install that has not set a real host keeps its current greeting. The same step replaces the old product name `Oempro SMTP Server` in the greeting with `Mail`, and keeps any other name you set in `AppName` (issue #3313). When the key is absent, the code default is also `smtp.example.com` (issue #3154).
+
+    `EMAILGATEWAY_SMTP_PORTS` is the comma-separated list of ports shown next to `EMAILGATEWAY_SMTP_HOST` in the user area and returned in `SMTPPorts` by `emailgateway.getsmtps` and `emailgateway.addsmtp`. It only changes what customers are told. It does not open or close a port on the inbound SMTP server.
 
 16. **Caddy Link Proxy (On-Demand TLS)**
 
@@ -635,6 +642,9 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     OEMPRO_SYSTEM_CPU_LIMIT=0
     OEMPRO_SYSTEM_MEM_LIMIT=0
     OEMPRO_SYSTEM_MEM_RESERVATION=0
+    OEMPRO_UI_CPU_LIMIT=0                   # New user interface container, oempro_ui (default: 0 = unlimited)
+    OEMPRO_UI_MEM_LIMIT=0
+    OEMPRO_UI_MEM_RESERVATION=0
     OEMPRO_CRON_CPU_LIMIT=0
     OEMPRO_CRON_MEM_LIMIT=0
     OEMPRO_CRON_MEM_RESERVATION=0
@@ -1468,6 +1478,142 @@ All `.oempro_*_env` files are parsed with phpdotenv. Every non-comment line must
     The sender domain health report in the admin area and the user's sender domain edit page flag each Enabled domain whose Email Gateway and journey email uses the fallback host, and name the host. The flag follows the Email Gateway rule: a domain is on the fallback when Sender Domain Management is off for its user group, or when its stored DNS records do not include its tracking host. The health report API commands do not return this flag.
 
     Click links in Email Gateway and journey email are accepted on the fallback host, the `APP_URL` host and every delivery server's link tracking domain, in addition to the sender domain's own subdomains. Any other host is still rejected as a possible phishing link.
+
+56. **Overrides for `config/global` Settings**
+
+    Each key in this item is read by a file in `config/global/` and falls back to the default shown when it is absent from `.oempro_env`. They are listed at the end of `_dockerfiles/examples/.oempro_env.example` (issue #3154), in two forms:
+
+    - **Shipped** keys are uncommented in the example with exactly their code default. An upgrade appends a missing key with the example's value, so adding these keys to an existing install changes nothing. Edit a value to tune the setting.
+    - **Commented** keys are documentation only, and an upgrade never adds them. They are rarely changed, are names that must match what is already deployed, or have a computed or placeholder default. Copy the line into `.oempro_env` without the leading `#` to override one.
+
+    Every key is read when a PHP process starts. A change applies to the next web request at once, and to the background workers after `./cli/octeth.sh backend:restart`.
+
+    **Logging, profiling and caching** (`config/global/app.php`)
+
+    | Key | Default | Form | What it does |
+    |---|---|---|---|
+    | `CAMPAIGN_DELIVERY_LOG_LEVEL` | `INFO` | Shipped | Log level of the campaign delivery workers: `DEBUG`, `INFO`, `NOTICE`, `WARNING`, `ERROR`, `CRITICAL`, `ALERT` or `EMERGENCY`. `SENDENGINE_LOG_LEVEL` covers the controller that starts them. |
+    | `CAMPAIGN_DELIVERY_PROFILING_ENABLED` | `false` | Shipped | Writes detailed timing logs for campaign delivery operations. |
+    | `CAMPAIGN_BATCH_PROFILING_RETENTION_DAYS` | `30` | Shipped | Days of campaign batch profiling data kept before the cleanup cron removes it. |
+    | `JOURNEY_WORKER_LOG_ENABLED` | `true` | Shipped | Turns journey worker logging on or off. |
+    | `JOURNEY_WORKER_LOG_LEVEL` | `INFO` | Shipped | Log level of the journey workers, with the same values as `CAMPAIGN_DELIVERY_LOG_LEVEL`. |
+    | `PERSONALIZATION_PROFILING_ENABLED` | `false` | Shipped | Writes personalization timing logs for 1 in 100 calls. |
+    | `LOG_MYSQL_QUERIES_GRANULAR` | `false` | Shipped | Writes MySQL query logs to a separate file per request or process. Very verbose, for debugging only. |
+    | `OEMPRO_OPTIONS_CACHE_TTL` | `86400` | Shipped | Seconds the cached application options are kept in Redis (24 hours). |
+    | `ALLOW_SAME_USER_EMAILADDRESS` | `false` | Commented | Lets several user accounts share one email address. |
+    | `POST_SUBSCRIPTION_DATA_TRANSFER_TYPE` | `INLINE` | Commented | How a subscription form passes the new subscriber to its redirect page: `INLINE` or `POST-JSON`. |
+    | `DEMO_MODE_ENABLED` | `false` | Commented | Demo mode: email delivery and other core tasks are disabled. |
+    | `DISABLE_LATEST_NEWS` | `false` | Commented | Hides the news fetched from Octeth servers in the admin area. |
+    | `CREDITS_SYSTEM_ENABLED` | `true` | Commented | Credit system for email delivery. When `false`, credit checks and deductions are skipped. |
+    | `MAINTENANCE_MODE_REDIRECT_TO` | empty | Commented | URL visitors are sent to while maintenance mode is on. Empty shows the built-in maintenance page. |
+    | `MYSQL_ERRORS_ON_SCREEN` | `false` | Commented | Shows MySQL errors on screen. Never enable it on a production install. |
+
+    **Email delivery** (`config/global/email_delivery.php`)
+
+    | Key | Default | Form | What it does |
+    |---|---|---|---|
+    | `BATCH_SIZE` | `100` | Shipped | Campaign recipients loaded per queue batch. |
+    | `BATCH_INTERVAL_SIZE` | `100` | Shipped | Recipients loaded per interval within a batch. |
+    | `BOUNCE_PROCESSING_THREADS` | `10` | Shipped | Maximum parallel threads for IMAP bounce and FBL mailbox processing. |
+    | `EMAILGATEWAY_MAX_RETRIES` | `3` | Shipped | Email Gateway retries of a transient SMTP failure (a 4xx reply, a connection, TLS or timeout error). |
+    | `EMAILGATEWAY_RETRY_BACKOFF_BASE_SECONDS` | `30` | Shipped | Base delay before an Email Gateway retry. It doubles on each retry: 30, 60, 120 seconds. |
+    | `ENFORCED_FROM_APPlY_TO_REPLYTO` | `false` | Commented | Also applies a user group's enforced From address to the Reply-To header. The key name is mixed case, write it exactly as shown. |
+    | `EMAIL_DELIVERY_HOSTNAME` | `localhost.localdomain` | Commented | Host name the mailer announces to the SMTP server when no web server name is known, which is the case in every background worker. |
+    | `SEND_FBL_NOTIFICATIONEMAIL` | `false` | Commented | Emails the administrator when FBL detection fails. |
+    | `EMAIL_REQUESTS_ENABLED` | `false` | Commented | Subscribe and unsubscribe by email request, for all lists. |
+    | `EMAIL_SOURCE_ENCODING` | `quoted-printable` | Commented | Content transfer encoding: `8bit`, `7bit`, `binary`, `base64` or `quoted-printable`. |
+    | `SENDGRID_EMAIL_HEADER` | `false` | Commented | Adds a SendGrid compatible `X-SMTPAPI` header for tracking. |
+    | `IMAGE_EMBEDDING_ENABLED` | `true` | Commented | Allows image embedding in email content. `false` turns it off for every email. |
+    | `DISABLE_PRIORITY_HEADER` | `true` | Commented | Leaves out the `X-Priority` header, which helps deliverability. |
+    | `DISABLE_LINK_REDIRECTION_HIJACKING_SECURITY` | `false` | Commented | Turns off the link redirection hijacking check on tracked links. Keep it `false`. |
+    | `TRACKING_URL_PROTOCOL` | `https` | Commented | Scheme of tracking links: `https` or `http`. |
+
+    **DNS** (`config/global/dns.php` and `config/global/sender_domain_dns.php`)
+
+    | Key | Default | Form | What it does |
+    |---|---|---|---|
+    | `MX_CACHE_TTL_SECONDS` | `86400` | Shipped | Seconds a recipient domain's MX lookup stays cached. |
+    | `RECIPIENT_MX_LOOKUP_DNS_SERVERS` | `1.1.1.1,8.8.8.8` | Shipped | Comma-separated name servers used for recipient domain MX lookups. |
+    | `DNS_SPF` | `include:spf.youdomain.com` | Commented | SPF fragment shown and checked on the admin delivery server screen. Placeholder, set your own. |
+    | `DNS_DKIM_KEY` | `key1` | Commented | DKIM selector shown on the admin delivery server screen. |
+    | `DNS_DKIM` | `<public_key>` | Commented | DKIM public key shown on the admin delivery server screen. Placeholder, set your own. |
+    | `DNS_DMARC` | `v=DMARC1; p=none; ...` | Commented | DMARC record shown on the admin delivery server screen. Placeholder with sample addresses, set your own and wrap it in double quotes because it contains spaces. |
+    | `DNS_SENDER_DOMAIN`, `DNS_LINK_TRACKER`, `DNS_OPEN_TRACKER` | `primary-sender-domain.com` | Commented | CNAME targets shown on the admin delivery server screen. Placeholders, set your own. |
+    | `EMAILCAMPAIGN_DNS_SUBDOMAIN` | `sl` | Commented | Subdomain Octeth uses under a campaign sender domain, for example `sl.example.com`. |
+    | `EMAILCAMPAIGN_DNS_TRACK_PREFIX` | `track` | Commented | Prefix of the campaign tracking host, for example `track-sl.example.com`. |
+    | `EMAILCAMPAIGN_DNS_TRACK_MERGE` | `-` | Commented | Character between the tracking prefix and the subdomain. |
+    | `EMAILCAMPAIGN_DNS_TEMPLATES` | built from `APP_URL` and the three keys above | Commented | JSON array of the DNS record templates for campaign sender domains. Leave it unset unless you replace the whole template. |
+    | `EMAILGATEWAY_DNS_TEMPLATES` | built from `APP_URL` and the `EMAILGATEWAY_DNS_*` keys (item 54) | Commented | JSON array of the DNS record templates for Email Gateway sender domains. Leave it unset unless you replace the whole template. |
+
+    Changing `EMAILCAMPAIGN_DNS_SUBDOMAIN`, `EMAILCAMPAIGN_DNS_TRACK_PREFIX` or `EMAILCAMPAIGN_DNS_TRACK_MERGE` changes the DNS records every new campaign sender domain must publish. The same substitution rule as item 54 applies: a custom `EMAILCAMPAIGN_DNS_TEMPLATES` must write its host names with the same literals as these three keys.
+
+    **Features and the user area** (`config/global/features.php`)
+
+    | Key | Default | Form | What it does |
+    |---|---|---|---|
+    | `WEBHOOK_TIMEOUT_SECONDS` | `5` | Shipped | Connection timeout of the webhook worker, in seconds. |
+    | `RETENTION_DAYS_CAMPAIGN_QUEUE` | `250` | Shipped | Days campaign queue tables are kept before the cleanup command drops them. |
+    | `WYSIWYG_ENABLED` | `true` | Commented | WYSIWYG editor for email content. |
+    | `REDIRECT_ON_LOGIN` | `false` | Commented | Adds the requested page as `RedirectURL` when a logged-out visitor is sent to the login page. |
+    | `HTACCESS_ENABLED` | `true` | Commented | Builds URLs without `index.php?`, which needs the bundled rewrite rules. |
+    | `OCTETH_TRACKERS` | `true` | Commented | Octeth trackers in the admin area footer. |
+    | `OPTOUT_CONFIRMATION` | `true` | Commented | Shows a confirmation page before an opt-out request is processed. |
+    | `DEDUCT_CREDITS_FROM_AR` | `true` | Commented | Deducts email credits for autoresponder deliveries. |
+    | `CURRENCY_DECIMALS` | `2` | Commented | Decimal places used to display currency in the user area. |
+    | `SEND_SUBSCRIBER_INFORMATION` | `true` | Commented | Sends subscriber information in the query string of a subscription redirect URL. |
+    | `DISABLE_WEB_CRONS` | `true` | Commented | When `true`, `cli/pop3_requests.php` (subscribe and unsubscribe by email) exits without running. |
+    | `DISPLAY_CREDIT_NOTICE` | `true` | Commented | Shows a notice in the user area when credits fall below `CREDIT_NOTICE_THRESHOLD`. |
+    | `CREDIT_NOTICE_THRESHOLD` | `5000` | Commented | Credit balance below which that notice appears. |
+    | `DISPLAY_LIMIT_NOTICE` | `true` | Commented | Shows a notice in the user area when the monthly campaign or email limit is reached. |
+    | `SUBSCRIBE_ON_UNSUBSCRIPTION_ENABLED` | `true` | Commented | Offers the "subscribe to another list on unsubscription" list option. |
+    | `REDIRECT_ON_UNSUBSCRIPTION_ENABLED` | `true` | Commented | Offers the "redirect to my own unsubscription confirmed page" list option. |
+    | `BLOCKED_MYSQL_HOSTS` | empty | Commented | Comma-separated hosts that list sync MySQL connections may not use, for example `localhost,127.0.0.1`. |
+    | `SIMPLIFIED_CAMPAIGN_DEFAULT_CONTENT_MODE` | `Both` | Commented | Default content mode of the simplified campaign editor: `HTML`, `Plain` or `Both`. |
+    | `FREE_USER_GROUP_IDS` | empty | Commented | Comma-separated IDs of free or trial user groups. |
+    | `ENFORCE_PHONE_VERIFICATION_ON_SIGNUP_TO_SEND_EMAILS` | `false` | Commented | Requires a verified phone number at signup before a new user can send email. |
+    | `OEMPRO_JOURNEY_BUILDER_DEBUG_HIDE_AFTER_DECISION_MERGE_BRANCH` | `true` | Commented | Journey Builder display aid that hides the branch after a decision merge. |
+
+    **SMS** (`config/global/sms.php`)
+
+    | Key | Default | Form | What it does |
+    |---|---|---|---|
+    | `SMS_LINK_SHORT_CODE_LENGTH` | `6` | Shipped | Length of generated short link codes, 4 to 10. |
+    | `SMS_LINK_TRACKING_ENABLED` | `true` | Shipped | Tracks SMS short link clicks. |
+    | `SMS_LINK_GEO_TRACKING` | `true` | Shipped | Resolves the location of an SMS link click. |
+    | `SMS_LINK_CLEANUP_DAYS` | `180` | Shipped | Days short links are kept before the cleanup cron deletes them. |
+    | `SMS_QUEUE_BATCH_SIZE` | `100` | Shipped | SMS queue messages processed per batch. |
+    | `SMS_RETRY_MAX_ATTEMPTS` | `3` | Shipped | Retries of a failed SMS send. |
+    | `SMS_GATEWAY_TIMEOUT` | `30` | Shipped | SMS gateway request timeout, in seconds. |
+    | `SMS_MAX_LENGTH_GSM7` | `1600` | Shipped | A journey SMS in GSM-7 text longer than this many characters is truncated. |
+    | `SMS_MAX_LENGTH_UNICODE` | `700` | Shipped | The same limit for Unicode text. |
+    | `SMS_SUPPRESSION_CACHE_TTL` | `3600` | Shipped | Seconds an SMS suppression lookup stays cached. |
+    | `SMS_SUPPRESSION_IMPORT_BATCH_SIZE` | `1000` | Shipped | Rows per batch when importing an SMS suppression list. |
+    | `SMS_LINK_DOMAIN` | empty | Commented | Host of SMS short links, optionally with `http://` or `https://` (`https` when omitted). Empty uses the `APP_URL` host. |
+    | `SMS_LINK_CHARSET` | `ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789` | Commented | Characters short codes are drawn from. A change does not affect codes already sent. |
+
+    **Website event and revenue tracking, services, cookies and charts**
+
+    | Key | Default | Form | What it does |
+    |---|---|---|---|
+    | `EVENT_TRACKER_JS_COMMENT` | `<!-- Octeth -->` | Commented | Comment written into the website event tracker snippet. Wrap the value in double quotes. |
+    | `EVENT_TRACKER_JS_OBJECT_NAME` | `oct` | Commented | JavaScript object name of the website event tracker. |
+    | `EVENT_TRACKER_JS_FILENAME` | `t-et.min.js` | Commented | File name of the tracker script: `track.min.js`, or a name starting with `t-` and ending with `.min.js`. |
+    | `EVENT_TRACKER_JS_DOMAIN` | the `APP_URL` host | Commented | Host serving the tracker script. Any host that points to the Octeth server. |
+    | `WEBSITE_EVENT_JS_OBJECT_VARIABLE_NAME` | `octObj` | Commented | JavaScript variable of the website event object. |
+    | `WEBSITE_EVENT_JS_COOKIE_NAME` | `octethUUID` | Commented | Cookie that identifies a website visitor. |
+    | `REVENUE_TRACKING_PARAMETER` | `pr` | Commented | URL parameter carrying the revenue tracking value. |
+    | `REVENUE_TRACKING_COOKIE_NAME` | `oempro_pr` | Commented | Revenue tracking cookie name. |
+    | `REVENUE_TRACKING_ATTRIBUTION_WINDOW` | `2592000` | Commented | Revenue attribution window in seconds (30 days). |
+    | `SPAM_FILTER_URL` | `http://192.168.99.105/system/email/spamtest` | Commented | Spam test endpoint. The default is the bundled `oempro_system` container. |
+    | `COOKIE_USER_LOGINREMIND`, `COOKIE_ADMIN_LOGINREMIND` | `oempro_user_loginreminder`, `oempro_admin_loginreminder` | Commented | Names of the "remember me" login cookies. A change logs everyone out of "remember me". |
+    | `CHART_COLORS` | `0176CC,FF9701,259E01,ED561B,E434FA` | Commented | Comma-separated series colours of the legacy report charts, hex without `#`. |
+    | `CHART_TEXT_COLOR`, `CHART_AXES_COLOR`, `CHART_INDICATOR_COLOR`, `CHART_INDICATOR_TEXTCOLOR` | `323232`, `666666`, `D9EBF7`, `000000` | Commented | Text, axis and indicator colours of the legacy report charts. |
+
+    The names in the first group are part of the tracking snippets already installed on websites, so changing one stops those snippets from reporting until they are replaced.
+
+    **No longer read from `.oempro_env`.** `CHARSET`, `APP_DIRNAME`, `FRAMEWORK_VERSION`, `ELASTICSEARCH_URL`, `DELETE_ALL_EMAILS`, `CRON_PHP_RUN_INTERVAL`, `REVENUE_TRACKING_ATTRIBUTION_TOUCH_POINTS`, `SMS_LINK_PREVIEW_ENABLED`, `SMS_SUPPRESSION_EXPORT_BATCH_SIZE` and `SMS_SUPPRESSION_USE_BLOOM_FILTER` were read from `.oempro_env` but are internal values or have no effect, so they are now fixed in code and a value set for them is ignored. Remove them from `.oempro_env` if present.
+
+    Introduced in v6.0.2 (issue #3154).
 
 
 ::: warning Important
