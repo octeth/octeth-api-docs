@@ -73,6 +73,20 @@ The database now enforces one default user group per subscription plan with a un
 
 The upgrade migration resolves any plan that already has more than one default: it keeps the group with the lowest `UserGroupID` as the default, sets the others to `No`, and writes each demoted group to the application log. The group it keeps is the one new signups on that plan were most likely already reaching.
 
+## Additions that need operator attention
+
+### AI assistant connector
+
+#### New root-level paths `/mcp`, `/oauth/` and `/.well-known/oauth-*` are served by the new user interface
+
+v6.0.2 adds a built-in connector so customers can connect Claude, ChatGPT and other AI assistants that support remote MCP connectors to their account with one URL, `https://<app domain>/mcp`, and their normal sign-in (issue #3369). The assistant gets read-only access. See [Connect Claude or ChatGPT](/v6.0.2/new-user-interface/ai-assistants).
+
+The connector requires `UI_ENABLED=true` and an app domain reachable from the internet over `https://`. When `UI_ENABLED` is `true`, the bundled HAProxy now sends `/mcp`, `/oauth/`, `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` to the interface container instead of the classic application. These paths sit at the root of the app domain, not under `/user/`. Installs with `UI_ENABLED=false` route them as before.
+
+Approving a connection creates a user API key with the note `AI connector: <assistant name>`. These keys appear in `user.apikey.list` responses and on the customer's API keys page, and deleting one disconnects that assistant. Staff accounts cannot connect an assistant, and a customer can connect one only when their plan includes API access.
+
+The connector's token signing keys, `ui/storage/oauth-private.key` and `ui/storage/oauth-public.key`, are created once by the interface container and kept across upgrades. Losing either file disconnects every assistant. See [AI assistant connector](/v6.0.2/new-user-interface/configuration-reference#ai-assistant-connector) in the configuration reference.
+
 ## Upgrade checklist
 
 - If you added `192.168.99.100` to an admin or user IP allow-list as a workaround for every visitor showing that address, replace it with your real public addresses after upgrading, because visitors now resolve to their own address.
@@ -80,6 +94,8 @@ The upgrade migration resolves any plan that already has more than one default: 
 - If you set `EMAILGATEWAY_DNS_TRACK_PREFIX` to your campaign prefix as a workaround for journey and Email Gateway links leaving your sender domains, you can keep it or restore the previous value. Sender domains created on the Sender Domains page use their own verified tracking host again either way.
 - SMS content that still uses the v6.0.0 `{CustomField7}` merge tags sends correctly again, so it no longer has to be rewritten before the upgrade. Move it to <code v-pre>{{ Subscriber:CustomField7 }}</code> when convenient, because the single-brace form is deprecated.
 - Set `EMAILGATEWAY_SMTP_HOST` in `.oempro_env` to the SMTP host your customers use, then run `./cli/octeth.sh smtp:sync-config`.
+- If you run your own reverse proxy, load balancer or CDN in front of Octeth with path-based rules, forward `/mcp`, `/oauth/`, `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` to Octeth, or the AI assistant connector cannot be reached.
+- Add `ui/storage/oauth-private.key` and `ui/storage/oauth-public.key` to your backups, and keep them when moving Octeth to another server.
 - Remove any calls to the `postmaster.*` commands. They answer `ErrorCode: 99` in v6.0.2 and will be deleted later.
 - The upgrade leaves `GOOGLE_POSTMASTER_CLIENT_ID`, `GOOGLE_POSTMASTER_CLIENT_SECRET` and `GOOGLE_POSTMASTER_REDIRECT_URI` in your `.oempro_env`. Nothing reads them any more, so you can delete them.
 - Octeth does not revoke the OAuth grant you gave it in your Google account. Revoke it there, under your Google account's third-party access settings, and delete the OAuth client in Google Cloud if nothing else uses it.

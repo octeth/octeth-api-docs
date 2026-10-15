@@ -1115,6 +1115,7 @@ export default defineConfig({
                         {text: 'Running Billing', link: '/v6.0.2/new-user-interface/billing-operations'},
                         {text: 'Webhooks', link: '/v6.0.2/new-user-interface/webhooks'},
                         {text: 'SMS Campaigns', link: '/v6.0.2/new-user-interface/sms-campaigns'},
+                        {text: 'Connect Claude or ChatGPT', link: '/v6.0.2/new-user-interface/ai-assistants'},
                         {text: 'Configuration Reference', link: '/v6.0.2/new-user-interface/configuration-reference'},
                         {text: 'Troubleshooting', link: '/v6.0.2/new-user-interface/troubleshooting'}
                     ]

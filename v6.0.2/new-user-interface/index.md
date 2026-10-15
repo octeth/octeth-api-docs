@@ -126,6 +126,7 @@ as well.
 | `/user/staff/customers` | The staff customer list, visible to Octeth administrators only |
 | `/user/staff/billing/...` | The staff billing screens, when billing is enabled |
 | `/ui/` | Images, stylesheets, the health check, and inbound payment webhooks |
+| `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants) |
 | `/app/user/`, `/app/admin/` | The classic interface, unchanged |
 
 ::: info

@@ -291,6 +291,33 @@ If you changed the compose subnet, set `INTERNAL_PROXY_NETWORKS` to match. Other
 
 Restart the interface container after a change. For the full rules, including the Cloudflare setup, see **Trusted Proxies / Client IP Resolution** on the [configuration page](/v6.0.2/getting-started/octeth-configuration).
 
+## AI assistant connector
+
+The interface includes a connector that lets your customers connect Claude, ChatGPT and other AI assistants to their account, see [Connect Claude or ChatGPT](./ai-assistants). It has no setting of its own. It works when:
+
+- `UI_ENABLED` is `true`. The connector runs inside the interface container.
+- The app domain is reachable from the internet over `https://` with a valid certificate. Claude and ChatGPT connect from their own servers, so a domain that resolves only on a private network, or serves plain `http://`, fails with an error such as "Couldn't discover OAuth settings".
+- The customer's plan includes API access, and `BRAND_FEATURE_API` is not set to `false`. The connector follows the same rules as the **API & webhooks** page.
+
+The connector URL is `https://<app domain>/mcp`. Its paths sit at the root of the app domain, not under `/user/`, because assistants look for the sign-in details there. The bundled HAProxy sends these paths to the interface container when `UI_ENABLED` is `true`:
+
+| Path | What it serves |
+|---|---|
+| `/mcp` | The connector itself |
+| `/oauth/` | Sign-in, consent, client registration and tokens |
+| `/.well-known/oauth-protected-resource` | Discovery document read by the assistant |
+| `/.well-known/oauth-authorization-server` | Discovery document read by the assistant |
+
+::: warning
+If you run your own reverse proxy, load balancer or CDN in front of Octeth with path-based rules, forward all four paths to Octeth unchanged. A proxy that drops or rewrites any of them breaks the connector. Path rules for `/.well-known/acme-challenge/` are unaffected.
+:::
+
+### Signing keys
+
+The connector signs its access tokens with a key pair stored at `ui/storage/oauth-private.key` and `ui/storage/oauth-public.key` in the Octeth directory. The interface container creates them the first time it starts and never replaces them while both files exist. Upgrades leave `ui/storage/` alone, so the keys survive an upgrade.
+
+Include both files in your backups and keep them when you move Octeth to another server. If either file is missing, the container creates a new pair, every connected assistant stops working, and each customer has to connect their assistants again.
+
 ## Settings inherited from Octeth
 
 The interface reads a few of Octeth's own settings rather than having its own copy:
