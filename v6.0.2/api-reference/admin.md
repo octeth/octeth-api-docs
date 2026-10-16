@@ -2779,6 +2779,79 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## Get Own Administrator Account (Session)
+
+<Badge type="info" text="GET" /> `/api/v1/admin.self.get`
+
+::: tip API Usage Notes
+- Authentication is done by admin SessionID only. The master Admin API key, a per-sub-admin API key and an admin AI assistant key are refused with error code 2
+- Required privilege: none. Every administrator, including a sub-administrator without the `Account` privilege, can read its own account
+- v1 REST alias: `GET /api/v1/admin.self.get`. Legacy access via `/api.php` is also supported
+:::
+
+Returns the administrator the session belongs to, in the same shape as `AdminInfo` from `admin.login`
+and without any credential. `Options` carries the sub-administrator limits (`AccessLimited`,
+`AccessOptions`, `AccessAllowedUserGroupIDs`) as they are stored now, so a client that signed in earlier
+can pick up permission changes without signing in again. The new user interface uses it to refresh a
+staff member's permissions during the session. The command has no parameter that selects an
+administrator: it only ever describes the caller.
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                            |
+|-----------|--------|----------|----------------------------------------|
+| Command   | String | Yes      | API command: `admin.self.get`          |
+| SessionID | String | Yes      | Session ID obtained from `admin.login` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.self.get",
+    "SessionID": "your-admin-session-id"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "AdminInfo": {
+    "AdminID": 4,
+    "Name": "Support Team",
+    "Username": "support",
+    "EmailAddress": "support@example.com",
+    "2FA_Enabled": "No",
+    "Options": {
+      "AccessLimited": true,
+      "AccessOptions": ["Users", "User.Browse"],
+      "AccessAllowedUserGroupIDs": [5]
+    },
+    "APIKeyIssued": false
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "admin.self.get requires an admin session (SessionID). API keys and AI assistant keys are not accepted."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Admin account not found
+2: Not called with an admin session (an Admin API key or AI assistant key was used)
+99998: Authentication failure or session expired
+```
+
+:::
+
 ## Update Administrator Account
 
 <Badge type="info" text="POST" /> `/api/v1/admin.update`

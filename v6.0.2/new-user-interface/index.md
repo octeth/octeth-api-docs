@@ -129,7 +129,9 @@ sub-administrator sees only the users in the user groups their account may acces
 only the actions their permissions allow: for example, without the "User.Impersonate"
 permission there is no "Switch user" button. A sub-administrator who may not browse users
 lands on the Webhooks page instead of the user list. Changes to a sub-administrator's
-permissions take full effect at their next sign-in.
+permissions reach the staff area within about a minute, and switching to a user always
+checks the current permissions. A switch to a user that is already running is not ended by
+a permission change.
 
 ::: info
 After upgrading to this version, everyone signed in to the staff area is signed out once
