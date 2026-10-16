@@ -138,6 +138,18 @@ The four "US & Canada" time zones are now stored as `(GMT-05:00) Eastern Time (U
 - `user.create`, `user.update` and `campaign.update` convert `&amp;` to `&` in `TimeZone` and `SendTimeZone` before storing. Clients that send either form keep working, and `user.get` returns the plain form.
 - The upgrade repairs existing `oempro_users.TimeZone` and `oempro_campaigns.SendTimeZone` values that still hold `&amp;`. Users whose time zone a later save already reset to Hawaii must set it again.
 
+### Journeys
+
+#### Journey names are stored and returned as typed
+
+Journey names that contain `&`, `<`, `>`, `"` or `'` are now stored with the literal characters. Before this fix, `journey.create`, `journey.update`, `journey.copytouser` and `journeys.clone` stored them HTML-encoded, so a journey named "Tom's series" through the API or the new interface showed as "Tom&#039;s series" in the legacy journey pages and in the new interface's subscriber journey list (octeth/oempro#3417).
+
+- `journey.create` and `journey.update` responses (`Journey.JourneyName`), `subscriber.get` and `subscriber.create` (`SubscriberJourneys[*].JourneyName`) and the subscriber activity timeline now return the name as typed, for example `A & B` instead of `A &amp; B`. They now match `journey.get` for the same journey.
+- `journey.get`, `journey.list`, `journey.sendemailactions` and `journey.clone` return the same value as before. One exception: a name created in the legacy interface that literally contains entity text, such as `R&amp;D`, was returned as `R&D` and is now returned as typed.
+- The upgrade decodes existing encoded names in `oempro_journeys.JourneyName` once. A legacy name that literally contains entity text, such as `R&amp;D`, is decoded to `R&D` by this step.
+- Tags are still stripped from API-supplied names. Integrations that read `oempro_journeys.JourneyName` directly and decoded it themselves should stop decoding.
+- Journey Builder steps that saved a copy of another journey's name (Start Journey, Journey Completed trigger) keep the encoded copy until that journey is selected again in the step.
+
 ### Send engine
 
 #### The send engine waits for MySQL instead of crashing when it becomes unreachable

@@ -24,7 +24,7 @@ Journey management endpoints for creating, updating, and managing customer journ
 | Command   | String | Yes      | API command: `journey.create`         |
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
-| Name      | String | Yes      | Name of the journey                   |
+| Name      | String | Yes      | Name of the journey. HTML tags are stripped, and the name is stored and returned as typed (no HTML encoding) |
 | Trigger   | String | No       | Journey trigger type (default: `Manual`). Possible values: `Manual`, `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Tag`, `UnTag`, `CustomFieldValueChanged`, `RevenueHit`, `JourneyCompleted`, `ScheduledPull`, `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, `WebsiteEvent_conversion`. See [Scheduled Pull Trigger](#scheduled-pull-trigger) for its additional parameters. |
 | TriggerParameters | Object | No | Trigger-specific settings. Required for the `ScheduledPull` trigger (interval, subscriber count, time window, frequency cap). See [Scheduled Pull Trigger](#scheduled-pull-trigger). |
 | Trigger_ListID | Integer | No  | List ID for list-based triggers      |
@@ -775,7 +775,7 @@ The endpoint joins to `oempro_emails` via the `EmailID` stored in the action's `
 | SessionID | String  | No       | Session ID obtained from login        |
 | APIKey    | String  | No       | API key for authentication            |
 | JourneyID | Integer | Yes      | ID of the journey to update           |
-| Name      | String  | No       | Updated journey name                  |
+| Name      | String  | No       | Updated journey name. HTML tags are stripped, and the name is stored and returned as typed (no HTML encoding) |
 | Notes     | String  | No       | Updated journey notes                 |
 | Trigger   | String  | No       | Updated trigger type. Possible values: `Manual`, `ListSubscription`, `ListUnsubscription`, `EmailOpen`, `EmailConversion`, `EmailLinkClick`, `Tag`, `UnTag`, `CustomFieldValueChanged`, `RevenueHit`, `JourneyCompleted`, `ScheduledPull`, `WebsiteEvent_pageView`, `WebsiteEvent_identify`, `WebsiteEvent_customEvent`, `WebsiteEvent_conversion`. See [Scheduled Pull Trigger](#scheduled-pull-trigger) for its additional parameters. |
 | Trigger_ListID | Integer | No  | Updated list ID for triggers         |
