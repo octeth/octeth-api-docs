@@ -32,8 +32,14 @@ disagreeing.
 | Customer area | `/app/user/` | `/user/` (classic still at `/app/user/`) |
 | Staff area | `/app/admin/` | `/app/admin/`, plus new staff screens at `/user/staff/...` |
 | Admin shortcut `/admin/` | Redirects to `/app/admin/` | Unchanged, still redirects to `/app/admin/` |
+| Classic admin **Users** section | `/app/admin/users/` | Forwards to the matching page under `/user/staff/customers` |
 
-The classic areas are untouched and stay fully usable. Your customers can keep using them.
+The classic areas stay fully usable, with one exception: the classic admin **Users** section
+(`/app/admin/users/`) forwards to the staff Users screens of the new interface. The user list,
+the create form, each user's page and its tabs open their new counterparts, and links to users
+from other classic admin pages, plugins and Slack alerts point there too. A form posted to the
+old section is refused and nothing is changed. The classic payment history tab and invoice
+editor have no new counterpart and are not carried over. Your customers are not affected.
 
 ::: warning
 There is no single sign-on between the two interfaces yet. Someone who wants to use both
@@ -135,11 +141,11 @@ and signs in again. This loads their permissions into the new interface.
 | Path | What it serves |
 |---|---|
 | `/user/` | The whole interface: sign-in, sign-up, dashboard, campaigns, lists, journeys, billing |
-| `/user/staff/customers` | The staff customer list, visible to Octeth administrators only |
+| `/user/staff/customers` | The staff Users list, create and edit screens, visible to Octeth administrators only, see [Managing Users in the Staff Area](./staff-users) |
 | `/user/staff/billing/...` | The staff billing screens, when billing is enabled |
 | `/ui/` | Images, stylesheets, the health check, and inbound payment webhooks |
 | `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants) |
-| `/app/user/`, `/app/admin/` | The classic interface, unchanged |
+| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users** section, which forwards to `/user/staff/customers` while `UI_ENABLED=true` |
 
 ::: info
 These path names are settings, not fixed values. See the
@@ -151,7 +157,8 @@ proxy configuration.
 ## Managing one user from the staff area
 
 In the staff sidebar, open **Users** and pick a user. The page shows who the user is and
-lets you act on the account. The tabs and buttons follow the administrator permissions
+lets you act on the account. The Users list, **Create user** and the **Edit** page are described
+in [Managing Users in the Staff Area](./staff-users). The tabs and buttons follow the administrator permissions
 described above, and the server checks the same permission again when you use one.
 
 | Tab | What it shows | Permission |
@@ -222,6 +229,20 @@ The same API commands are available to scripts: `admin.user.emailgateway.apikeys
 [Email Gateway](../api-reference/emailgateway#list-a-user-s-email-gateway-api-keys-admin) and
 [Admin](../api-reference/admin#end-a-user-session-admin) API reference.
 
+### Coming from the classic Users section
+
+With `UI_ENABLED=true`, every page of the classic admin **Users** section opens its counterpart
+here: the list (with its group, status, reputation, category, online, sender domain and limit
+filters carried over), **Create user**, a user's page, its **Edit** form, and its **Limits** and
+**Sender domains & keys** tabs. Switching to a user, sending a message, and enabling, disabling
+and deleting an account now happen on the user's page here.
+
+The two interfaces have separate sign-ins, so the first time you follow one of these links you
+may be asked to sign in to the new interface.
+
+With `UI_ENABLED=false` the classic Users section works as before. It will be removed in a later
+release, which will need the new interface turned on.
+
 ## What to do next
 
 1. **[Branding](./branding)** puts your own name, logo, colours and legal links on the
@@ -239,7 +260,8 @@ The same API commands are available to scripts: `admin.user.emailgateway.apikeys
 
 Set `UI_ENABLED=false` in `.oempro_env` and run `./cli/octeth.sh docker:up`. The `/user/`
 and `/ui/` paths go back to the classic application, and nothing is lost. Your customers'
-data was never stored in the new interface in the first place.
+data was never stored in the new interface in the first place. The classic admin **Users**
+section also stops forwarding and works as before.
 
 ::: tip
 Turning the interface off does not delete its database. If you turn it back on later, any

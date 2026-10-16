@@ -1109,6 +1109,7 @@ export default defineConfig({
                     collapsed: true,
                     items: [
                         {text: 'Overview', link: '/v6.0.2/new-user-interface/'},
+                        {text: 'Managing Users in the Staff Area', link: '/v6.0.2/new-user-interface/staff-users'},
                         {text: 'Branding', link: '/v6.0.2/new-user-interface/branding'},
                         {text: 'Setting Up Billing', link: '/v6.0.2/new-user-interface/billing-setup'},
                         {text: 'Payment Gateways', link: '/v6.0.2/new-user-interface/payment-gateways'},
