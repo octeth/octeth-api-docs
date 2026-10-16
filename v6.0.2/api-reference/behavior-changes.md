@@ -93,6 +93,15 @@ The database now enforces one default user group per subscription plan with a un
 
 The upgrade migration resolves any plan that already has more than one default: it keeps the group with the lowest `UserGroupID` as the default, sets the others to `No`, and writes each demoted group to the application log. The group it keeps is the one new signups on that plan were most likely already reaching.
 
+### Time zones
+
+#### Time zone labels are stored with a plain `&`
+
+The four "US & Canada" time zones are now stored as `(GMT-05:00) Eastern Time (US & Canada)` everywhere. Before this fix the admin user create and edit pages saved them as `(US &amp; Canada)`, and the edit page then showed "(GMT-10:00) Hawaii", so the next save replaced the user's time zone with Hawaii (octeth/oempro#3360).
+
+- `user.create`, `user.update` and `campaign.update` convert `&amp;` to `&` in `TimeZone` and `SendTimeZone` before storing. Clients that send either form keep working, and `user.get` returns the plain form.
+- The upgrade repairs existing `oempro_users.TimeZone` and `oempro_campaigns.SendTimeZone` values that still hold `&amp;`. Users whose time zone a later save already reset to Hawaii must set it again.
+
 ## Additions that need operator attention
 
 ### AI assistant connector
@@ -162,6 +171,7 @@ v6.0.2 screens three points with fixed rules (issue #3392): every new account, a
 - Run `./cli/octeth.sh users:orphans` once to see the lists, segments, subscriber tables and themes that earlier user and user group deletions left behind. It changes nothing unless you add `--delete --yes`.
 - If you rely on administrators approving the campaigns of `Untrusted` accounts, expect one summary email after the upgrade listing the campaigns approved before it, which are held once more when they next come up to send.
 - Add `ui/storage/oauth-private.key` and `ui/storage/oauth-public.key` to your backups, and keep them when moving Octeth to another server.
+- Users whose time zone was reset to "(GMT-10:00) Hawaii" by an admin save of a "US & Canada" time zone must have it set again. The upgrade repairs only values still stored as `&amp;`.
 - Remove any calls to the `postmaster.*` commands. They answer `ErrorCode: 99` in v6.0.2 and will be deleted later.
 - The upgrade leaves `GOOGLE_POSTMASTER_CLIENT_ID`, `GOOGLE_POSTMASTER_CLIENT_SECRET` and `GOOGLE_POSTMASTER_REDIRECT_URI` in your `.oempro_env`. Nothing reads them any more, so you can delete them.
 - Octeth does not revoke the OAuth grant you gave it in your Google account. Revoke it there, under your Google account's third-party access settings, and delete the OAuth client in Google Cloud if nothing else uses it.

@@ -570,7 +570,7 @@ With an AI agent key, an update that leaves the campaign scheduled or sending ne
 | ScheduleType                 | String  | No       | Schedule type (Not Scheduled, Immediate, Future, Recursive)       |
 | SendDate                     | String  | No       | Send date (YYYY-MM-DD format) - required if ScheduleType=Future. Must be a valid future date (not `0000-00-00`) |
 | SendTime                     | String  | No       | Send time (HH:MM:SS format) - required if ScheduleType=Future. Combined with SendDate and SendTimeZone, the scheduled datetime must be in the future |
-| SendTimeZone                 | String  | No       | Timezone for scheduled send                                       |
+| SendTimeZone                 | String  | No       | Timezone for scheduled send. An HTML-encoded `&amp;` is stored as `&`, so `(US &amp; Canada)` is stored as `(US & Canada)`. Changed in v6.0.2 |
 | ScheduleRecDaysOfWeek        | String  | No       | Days of week for recurring campaigns                              |
 | ScheduleRecDaysOfMonth       | String  | No       | Days of month for recurring campaigns                             |
 | ScheduleRecMonths            | String  | No       | Months for recurring campaigns - required if ScheduleType=Recursive |

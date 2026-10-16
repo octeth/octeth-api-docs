@@ -36,7 +36,7 @@ See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for the
 | EmailAddress | String | Yes | User's email address |
 | Username | String | Yes | Username for login (must be unique) |
 | Password | String | Yes | User's password (will be hashed) |
-| TimeZone | String | Yes | User's timezone |
+| TimeZone | String | Yes | User's timezone. An HTML-encoded `&amp;` is stored as `&`, so `(GMT-05:00) Eastern Time (US &amp; Canada)` is stored as `(GMT-05:00) Eastern Time (US & Canada)`. Changed in v6.0.2 |
 | Language | String | Yes | User's language code (e.g., 'en') |
 | CompanyName | String | Conditional | Company name (required if FirstName not provided) |
 | FirstName | String | Conditional | First name (required if CompanyName not provided) |
@@ -508,7 +508,7 @@ curl -X POST https://example.com/api.php \
 | Phone | String | No | Phone number |
 | PhoneVerified | Boolean | No | Phone verification status |
 | Fax | String | No | Fax number |
-| TimeZone | String | No | Timezone |
+| TimeZone | String | No | Timezone. An HTML-encoded `&amp;` is stored as `&`, so `(GMT-05:00) Eastern Time (US &amp; Canada)` is stored as `(GMT-05:00) Eastern Time (US & Canada)`. Changed in v6.0.2 |
 | Language | String | No | Language code |
 | AccountStatus | String | No | Account status (admin only) |
 | AvailableCredits | Integer | No | Available credits (admin only) |
