@@ -93,6 +93,14 @@ The database now enforces one default user group per subscription plan with a un
 
 The upgrade migration resolves any plan that already has more than one default: it keeps the group with the lowest `UserGroupID` as the default, sets the others to `No`, and writes each demoted group to the application log. The group it keeps is the one new signups on that plan were most likely already reaching.
 
+### SMS rate limits
+
+#### The upgrade repairs SMS rate limits that held every SMS send
+
+- An upgrade rewrites a user group's SMS rate limits to unlimited (`-1` for all six intervals) when they are exactly `{"Minute": -1, "Hour": 0, "Day": 0, "Week": 0, "Month": 0, "Year": 0}`. Two earlier upgrade migrations wrote those values into every user group that existed when they ran, including the default group of a fresh install, and because `0` means "no sends" every SMS campaign and journey SMS of those groups stayed queued with nothing logged (octeth/oempro#3379). Groups with any other SMS limits, the email gateway limits of every group, and per-user `RateLimits` overrides are not changed. A group an operator deliberately set to Hour, Day, Week, Month and Year `0` with Minute left at `-1`, to block SMS for that group, carries the same values and is also rewritten to unlimited: set its limits again after upgrading (a block that also sets Minute to `0` is left alone). `UserGroup.Get` and `UserGroups.Get` return the rewritten values.
+- Fresh installs seed the default user group with unlimited SMS and email gateway rate limits.
+- When an account rate limit holds an SMS campaign, the release worker logs a WARNING naming the interval and the limit, once per campaign per interval, and the admin SMS campaign browser shows "Waiting: SMS rate limit for this account reached (Day = 0)" under the campaign status. A journey SMS held by the same limit is logged as "SMS rate limit for this account reached (Day = 0)" instead of "SMS rate limit exceeded for interval: Day". The `SMS.Send` and `SMSCampaign.Test` API error messages are unchanged.
+
 ### Time zones
 
 #### Time zone labels are stored with a plain `&`
@@ -171,6 +179,7 @@ v6.0.2 screens three points with fixed rules (issue #3392): every new account, a
 - Run `./cli/octeth.sh users:orphans` once to see the lists, segments, subscriber tables and themes that earlier user and user group deletions left behind. It changes nothing unless you add `--delete --yes`.
 - If you rely on administrators approving the campaigns of `Untrusted` accounts, expect one summary email after the upgrade listing the campaigns approved before it, which are held once more when they next come up to send.
 - Add `ui/storage/oauth-private.key` and `ui/storage/oauth-public.key` to your backups, and keep them when moving Octeth to another server.
+- If you blocked SMS for a user group by setting its SMS limits for Hour, Day, Week, Month and Year to `0` with Minute left at `-1`, the upgrade rewrites that group to unlimited. Set its limits again after upgrading, with Minute `0` as well.
 - Users whose time zone was reset to "(GMT-10:00) Hawaii" by an admin save of a "US & Canada" time zone must have it set again. The upgrade repairs only values still stored as `&amp;`.
 - Remove any calls to the `postmaster.*` commands. They answer `ErrorCode: 99` in v6.0.2 and will be deleted later.
 - The upgrade leaves `GOOGLE_POSTMASTER_CLIENT_ID`, `GOOGLE_POSTMASTER_CLIENT_SECRET` and `GOOGLE_POSTMASTER_REDIRECT_URI` in your `.oempro_env`. Nothing reads them any more, so you can delete them.
