@@ -170,6 +170,22 @@ On PHP 8.1, the send engine (`cli/email_campaign_controller/run.php`) crashed wi
 
 A failed connection now reports the MySQL connect error on both PHP versions, for example `MySql Error: Couldn't connect to database - Connection refused`, where PHP 8.1 reported the `TypeError` instead. Startup behavior with MySQL down is unchanged.
 
+### New user interface sessions
+
+#### Revoked sessions are now signed out (octeth/oempro#3354)
+
+Revoking a session from Account > Active sessions, "Sign out all other sessions", and changing the password now sign the other devices out on their next page load or click. Before this release these actions marked the sessions as signed out but the devices stayed signed in until their sessions expired on their own.
+
+What to expect after upgrading:
+
+- Any session that was revoked at any point since the new interface shipped, and is still open, is signed out on its next request and lands on the login page with "Your session was signed out from another device." This includes sessions signed out by an earlier password change. Users only need to sign in again.
+- The "Last active" time in Account > Active sessions now updates while a session is in use (at most once a minute), instead of always showing the sign-in time.
+- Sessions that were opened before sign-in tracking existed appear in the Active sessions list the first time they are used after the upgrade.
+- When the revoked session belongs to one of several saved accounts in the same browser, only that account is removed from the account switcher, and the browser moves to the next saved account that is still signed in.
+- Staff sessions, including staff impersonating a customer, are never listed in the customer's Active sessions and are not signed out by the customer's revoke.
+
+No configuration change is needed.
+
 ## Additions that need operator attention
 
 ### AI assistant connector
