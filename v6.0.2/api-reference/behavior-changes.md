@@ -34,6 +34,18 @@ There is no opt-in flag, because the commands had no working data source left.
 
 - `Users.Delete` now deletes what the deleted user owned: their lists with each list's subscriber tables, their segments, user API keys (AI agent keys included), email gateway API keys and SMTP credentials, and their risk snapshots. Their email gateway sender domains are soft-deleted, and unfinished SMS campaigns are cancelled. Before, all of these were left behind, and a deleted user's email gateway SMTP login kept working (octeth/oempro#3389). Statistics, logs and other history rows are kept. The response is unchanged. To find what earlier deletions left behind, run `./cli/octeth.sh users:orphans`, which reports orphaned lists, segments, subscriber tables and themes and deletes them only with `--delete --yes`.
 
+### SMTP delivery
+
+#### A refused or failed STARTTLS now fails the SMTP connection instead of continuing in plaintext
+
+When an SMTP relay is configured with **Secure = TLS** (the admin SMTP send method, a user group's SMTP settings or a delivery server), Octeth sends `STARTTLS` after connecting. Before this release, if the relay refused `STARTTLS` (for example `454 TLS not available` or `502`) or the TLS handshake failed, Octeth carried on over the unencrypted connection: it sent SMTP AUTH with the username and password, then the sender, recipients and the full message, all in plaintext. A send could therefore succeed while exposing the relay credentials and the message to anyone on the network path (octeth/oempro#3228).
+
+From this release a STARTTLS failure on a TLS-configured relay is a failed connection to that host. Octeth closes the socket without writing AUTH, MAIL FROM, RCPT TO or the message, tries the next host when `Host` lists several, and reports the send as a connection failure when none succeeds. The error text names the failure and the server's reply, for example `SMTP Error: Could not connect to SMTP host. SMTP Error: STARTTLS failed on smtp.example.com:587, the connection was closed without sending credentials or mail. STARTTLS not accepted from server. Server reply: 454 4.7.0 TLS not available`. Because the failure is now at the connection stage, a transactional email gateway send that fails this way returns its reserved credit, and the email gateway treats it as a retryable connection failure, whatever the reply code.
+
+There is no opt-in flag and no setting to restore the old fallback, because the old behavior sent credentials in plaintext against an explicit TLS setting. Relays that accept STARTTLS, and relays configured with Secure = SSL (port 465) or Secure = none, are unaffected.
+
+**Upgrade note.** If your relay does not support STARTTLS on the configured port but Secure is set to TLS, your sends have been going out unencrypted and will start failing after the upgrade. Before upgrading, run **Settings > Email Delivery > Send test email** (and the same test for each user group or delivery server with its own SMTP settings). If a test fails with `STARTTLS failed`, either enable STARTTLS on the relay, switch to Secure = SSL on port 465 if the relay offers it, or, only for a relay on a trusted private network, set Secure to none deliberately.
+
 ## Tier 2: shape and value changes
 
 ### Remote content and URL imports
