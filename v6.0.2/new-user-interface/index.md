@@ -148,6 +148,37 @@ warning there first: changing a path also means changing a matching line in the 
 proxy configuration.
 :::
 
+## Managing one user from the staff area
+
+In the staff sidebar, open **Users** and pick a user. The page shows who the user is and
+lets you act on the account. The tabs and buttons follow the administrator permissions
+described above, and the server checks the same permission again when you use one.
+
+| Tab | What it shows | Permission |
+|---|---|---|
+| **Overview** | A chart of unsubscriptions, hard bounces, spam complaints or subscriptions over the last 1, 3 or 6 months, the ten newest campaigns with their unique open rate, and the user's lists with their active subscriber counts, 25 per page | User.Edit |
+| **Limits** | How much of each user group limit the account has used, in four groups: send rate, assets, time-based and thresholds. A limit turns amber at 80% and red at 100% | User.Edit |
+| **Billing** | The subscription, invoices, payments and credits. Shown only when billing is enabled, see [Running billing day to day](./billing-operations#one-customer) | None |
+
+The tab is part of the address (`?tab=limits`), so you can bookmark or share it.
+
+[[SCREENSHOT: The staff user page showing the user's email in the header, the Send message, Switch to user, Switch with full permissions and Delete buttons, and the Overview tab with the activity chart]]
+
+The buttons at the top of the page:
+
+- **Send message** (User.Edit) emails the user a subject and message using the system
+  notification template.
+- **Switch to user** (User.Impersonate) opens the customer area as this user, with the
+  permissions their account has.
+- **Switch with full permissions** (User.Impersonate) does the same with every permission of
+  the user's group, including the ones the account itself restricts. It asks you to confirm
+  first, and the banner at the top of the page says "with full permissions" while it lasts.
+- **Delete** (User.Delete) deletes the account with all of its lists, subscribers, campaigns
+  and reports. Type the username to confirm. It cannot be undone.
+
+If a section of the Overview cannot be loaded, it says so instead of showing a zero. Refresh
+the page to try again. Every action is written to the staff audit log.
+
 ## What to do next
 
 1. **[Branding](./branding)** puts your own name, logo, colours and legal links on the
