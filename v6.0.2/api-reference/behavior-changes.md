@@ -80,6 +80,10 @@ The fallback now follows the email rules too: a field value of `0` shows the fal
 
 The single-brace form is deprecated. `sms.mergetags.get` returns only the email syntax, and new content should use it.
 
+#### Xeebi delivery reports name the reason a number was rejected
+
+A Xeebi delivery report or status poll that marked a message as a generic failure while also naming the reason (an invalid number, a number Xeebi has no route for, or a number on the Xeebi stop list) was recorded as the generic failure, "Xeebi could not submit the message to the network". From v6.0.2 the specific reason wins. The recipient's `GatewayErrorCode` is `INVALID_NUMBER`, `UNROUTABLE` or `STOP_LIST`, `ErrorMessage` carries the matching description, and the recipient's status is Rejected instead of Failed, so `smscampaign.recipients.browse` and the recipient list show it under `Rejected`, not `Failed`. It is still one undelivered message in the SMS event history. A report that names no reason is still recorded as `FAILED`. Messages already recorded are not changed (octeth/oempro#3380).
+
 ### User Groups
 
 #### A subscription plan has exactly one default user group
