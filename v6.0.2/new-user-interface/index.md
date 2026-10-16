@@ -118,6 +118,18 @@ One sign-in form serves everyone. Enter a customer's credentials and you land in
 customer area. Enter an Octeth administrator's credentials and you land in the staff area
 as well.
 
+The staff area follows the same administrator permissions as the classic admin area. A
+sub-administrator sees only the users in the user groups their account may access, and
+only the actions their permissions allow: for example, without the "User.Impersonate"
+permission there is no "Switch user" button. A sub-administrator who may not browse users
+lands on the Webhooks page instead of the user list. Changes to a sub-administrator's
+permissions take full effect at their next sign-in.
+
+::: info
+After upgrading to this version, everyone signed in to the staff area is signed out once
+and signs in again. This loads their permissions into the new interface.
+:::
+
 ## Where things live
 
 | Path | What it serves |
