@@ -675,6 +675,100 @@ Triggered before password reset operation.
 
 ---
 
+### `Admin.User.PluginFields` <Badge type="tip" text="Filter" />
+
+Adds per-user settings to the admin user edit screen and to `admin.user.pluginfields.get`.
+
+| Property | Value |
+|---|---|
+| **Type** | Filter |
+| **Parameters** | `$fields` (array) - Field descriptors collected so far for your plug-in (starts empty)<br>`$user` (array) - The target user's row<br>`$admin` (array) - The calling administrator's row |
+| **Returns** | Array: `[$fields, $user, $admin]` |
+| **Location** | includes/classes/user_plugin_fields.inc.php |
+
+Octeth calls your listener on its own (once per plug-in), so every descriptor you return is attributed to your plug-in. Append one descriptor per field to `$fields`:
+
+| Key | Required | Description |
+|-----|----------|-------------|
+| `plugin` | No | Your plug-in code. Defaults to it; a descriptor naming another plug-in is dropped |
+| `key` | Yes | Letters, digits and underscores, at most 64 characters. The field's name is `plugin.key` |
+| `label` | Yes | Label shown next to the field |
+| `type` | Yes | `checkbox`, `text`, `number`, `select` or `textarea` |
+| `options` | For `select` | `value => label` pairs, in display order |
+| `value` | No | The current value for `$user` |
+| `help` | No | Help text |
+| `section` | No | `account` (default) or `settings` |
+| `privilege` | No | Admin privilege needed to see and change the field. Default `PluginAccess` |
+| `min`, `max`, `integer` | No | For `number`: the allowed range, and `true` to accept whole numbers only |
+
+A malformed descriptor (an invalid `key`, `type` or `section`, a `select` without `options`, or a `min` above `max`) is dropped, and so is a second field with the same name. Do not check privileges yourself and never call `Admins::CheckAccess()` without its return-bool flag here: Octeth hides a field from an admin who lacks its `privilege`, and a hard 403 would break the whole screen.
+
+**Example:**
+
+::: code-group
+
+```php [Plugin Registration]
+parent::RegisterHook('Filter', 'Admin.User.PluginFields', 'myplugin', 'AdminUserPluginFields', 10, 3);
+
+public static function AdminUserPluginFields($Fields, $User, $Admin)
+{
+    $Fields[] = [
+        'key' => 'DailyCap',
+        'label' => 'Daily sending cap',
+        'type' => 'number',
+        'integer' => true,
+        'min' => 0,
+        'section' => 'settings',
+        'value' => self::_GetDailyCap($User['UserID']),
+    ];
+    return [$Fields, $User, $Admin];
+}
+```
+
+:::
+
+---
+
+### `Admin.User.PluginFields.Save` <Badge type="info" text="Action" />
+
+Saves the values an administrator submitted for your plug-in's per-user fields through `admin.user.pluginfields.update`.
+
+| Property | Value |
+|---|---|
+| **Type** | Action |
+| **Parameters** | `$user` (array) - The target user's row<br>`$values` (array) - `'plugin.key' => value` for your plug-in's submitted fields only |
+| **Returns** | Array of errors keyed `'plugin.key' => message`; an empty array on success |
+| **Location** | includes/classes/user_plugin_fields.inc.php |
+
+Octeth calls your listener only with your own fields, and only after every submitted value has passed the checks it can make from your descriptors (known field, privilege, type, `options`, `min`, `max`, `integer`). A field you did not receive was not submitted: keep its stored value. Values arrive normalised: Boolean for `checkbox`, int, float or `null` (cleared) for `number`, the option value for `select`, string for `text` and `textarea`.
+
+Validate anything the descriptor cannot express before you write, and return errors without writing anything: other plug-ins in the same request may already have saved. A plug-in whose fields are submitted but which has no listener for this hook makes the whole request fail before anything is saved.
+
+**Example:**
+
+::: code-group
+
+```php [Plugin Registration]
+parent::RegisterHook('Action', 'Admin.User.PluginFields.Save', 'myplugin', 'AdminUserPluginFieldsSave', 10, 2);
+
+public static function AdminUserPluginFieldsSave($User, $Values)
+{
+    if (!array_key_exists('myplugin.DailyCap', $Values)) {
+        return [];
+    }
+    if (self::_SaveDailyCap($User['UserID'], $Values['myplugin.DailyCap']) == false) {
+        return ['myplugin.DailyCap' => 'The cap could not be saved'];
+    }
+    return [];
+}
+```
+
+:::
+
+The legacy admin user edit form still uses `FormItem.AddTo.User.Edit`, `FormItem.AddTo.User.Edit.Settings` and `User.Update.Post.Successful`. Register both pairs while that form exists, and share one save routine between them so both paths write the same stored value.
+
+---
+
 ## Campaign Hooks
 
 Hooks for email campaign creation, management, and sending.
@@ -2539,6 +2633,8 @@ grep -n "RegisterHook\|HookListener" path/to/file.php
 - User.Create
 - User.Update.Post
 - User.Update.Post.Successful
+- Admin.User.PluginFields
+- Admin.User.PluginFields.Save
 - User.Delete.Post
 - User.PasswordReset.Before
 - UserGroup.Create.Post

@@ -3528,6 +3528,200 @@ NOT AVAILABLE IN DEMO MODE.: Demo mode is enabled
 
 :::
 
+## Get a User's Plug-in Fields (Admin)
+
+<Badge type="info" text="GET" /> `/api/v1/admin.user.pluginfields.get`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- v1 REST alias: `GET /api/v1/admin.user.pluginfields.get`. Legacy access via `/api.php` is also supported
+:::
+
+The per-user settings that enabled plug-ins add to the admin user edit screen, with their current value for the user. Each enabled plug-in that listens to the `Admin.User.PluginFields` filter contributes its own fields; a disabled plug-in contributes none. Each field carries the admin privilege needed to see and change it (`PluginAccess` unless the plug-in names another). A field whose privilege the calling admin lacks is left out of the response; the call itself still succeeds.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.pluginfields.get` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Target user account |
+
+**Field object:**
+
+| Key | Type | Description |
+|-----|------|-------------|
+| name | String | The field's identifier, `plugin.key`. Use it as the key in `admin.user.pluginfields.update` |
+| plugin | String | Code of the plug-in that owns the field |
+| key | String | The field's key within the plug-in |
+| label | String | Label to show next to the field |
+| type | String | `checkbox`, `text`, `number`, `select` or `textarea` |
+| section | String | Where the field belongs on the edit screen: `account` or `settings` |
+| privilege | String | Admin privilege required to see and change the field |
+| help | String | Help text, empty when there is none |
+| options | Array | For `select`, the allowed choices in display order as `{"value": "...", "label": "..."}` objects. Empty for other types |
+| min, max | Number or null | For `number` only: the allowed range, `null` when unbounded |
+| integer | Boolean | For `number` only: `true` when only whole numbers are accepted |
+| value | Mixed | The current value: Boolean for `checkbox`, number or `null` (empty, the plug-in's default applies) for `number`, string or `null` for `select`, string for `text` and `textarea` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.user.pluginfields.get", "AdminAPIKey": "your-admin-api-key", "UserID": 42}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserID": 42,
+  "Fields": [
+    {
+      "name": "amazonses.WhitelistUserForSenderIdentityStatusChecks",
+      "plugin": "amazonses",
+      "key": "WhitelistUserForSenderIdentityStatusChecks",
+      "label": "Exclude this user from SES domain verification",
+      "type": "checkbox",
+      "section": "account",
+      "privilege": "PluginAccess",
+      "help": "",
+      "options": [],
+      "value": false
+    },
+    {
+      "name": "upsender.cpm_rate",
+      "plugin": "upsender",
+      "key": "cpm_rate",
+      "label": "CPM Rate ($)",
+      "type": "number",
+      "section": "settings",
+      "privilege": "PluginAccess",
+      "help": "Cost per 1,000 emails. Leave empty to use the default rate ($0.20).",
+      "options": [],
+      "min": 0,
+      "max": null,
+      "integer": false,
+      "value": null
+    }
+  ],
+  "TotalFields": 2
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 5003,
+  "ErrorText": "User is outside the user groups this admin account may access"
+}
+```
+
+```txt [Error Codes]
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+```
+
+:::
+
+The bundled plug-ins contribute these fields when enabled:
+
+| Plug-in | Field name | Type | Section |
+|---------|-----------|------|---------|
+| Amazon SES | `amazonses.WhitelistUserForSenderIdentityStatusChecks` | checkbox | account |
+| SpamAssassin Content Validator | `spamassassincontentvalidator.WhitelistUser` | checkbox | account |
+| Upsender | `upsender.ip_count` | number (whole, 0 or more) | settings |
+| Upsender | `upsender.cpm_rate` | number (0 or more, empty uses the default rate) | settings |
+| Upsender | `upsender.ip_cost` | number (0 or more, empty uses the default cost) | settings |
+
+## Update a User's Plug-in Fields (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.user.pluginfields.update`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Update`
+- v1 REST alias: `POST /api/v1/admin.user.pluginfields.update`. Legacy access via `/api.php` is also supported
+:::
+
+Saves per-user plug-in field values. `Values` maps field names (`plugin.key`, as returned by `admin.user.pluginfields.get`) to new values. Field names match case-insensitively. Only the fields you send change; the others keep their stored values.
+
+The update is all or nothing. Every value is checked first, and nothing is saved when any value is refused: an unknown field name, a field whose privilege you lack, a field sent twice, or a value that does not fit the field (for example `"maybe"` for a checkbox, `1.5` for a whole-number field, or a value outside `min` and `max`). The response lists each refused field in `FieldErrors`. After that check, each plug-in receives only its own values and saves them. If a plug-in then reports an error, the call answers `ErrorCode` 4 with that plug-in's `FieldErrors`; other plug-ins' values in the same request may already be saved, so the response includes the current `Fields`.
+
+Value formats: a checkbox accepts `true`, `false`, `1`, `0`, `"true"`, `"false"`, `"yes"`, `"no"`, `"on"`, `"off"`, `"enabled"`, `"disabled"`, or `""` and `null` (unticked). A number accepts a number, a numeric string, or `""` or `null` to clear it, and refuses `true` and `false`. A select accepts one of its option values exactly as `options` lists them. Text and textarea accept a string of at most 65,535 bytes, and `null` saves an empty string.
+
+On success, `SavedFields` lists the saved field names and `Fields` lists every field you can see with its stored value, in the same shape as `admin.user.pluginfields.get` returns them.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.pluginfields.update` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Target user account |
+| Values | Object or String | Yes | Field name to new value, as an object or a JSON-encoded string |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.user.pluginfields.update", "AdminAPIKey": "your-admin-api-key", "UserID": 42, "Values": {"amazonses.WhitelistUserForSenderIdentityStatusChecks": true, "upsender.cpm_rate": "0.35"}}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserID": 42,
+  "SavedFields": [
+    "amazonses.WhitelistUserForSenderIdentityStatusChecks",
+    "upsender.cpm_rate"
+  ],
+  "Fields": [
+    {
+      "name": "amazonses.WhitelistUserForSenderIdentityStatusChecks",
+      "plugin": "amazonses",
+      "key": "WhitelistUserForSenderIdentityStatusChecks",
+      "label": "Exclude this user from SES domain verification",
+      "type": "checkbox",
+      "section": "account",
+      "privilege": "PluginAccess",
+      "help": "",
+      "options": [],
+      "value": true
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "One or more values were refused, nothing was saved",
+  "FieldErrors": {
+    "amazonses.WhitelistUserForSenderIdentityStatusChecks": "You do not have the privilege to change this field",
+    "upsender.ip_count": "The value must be a whole number"
+  }
+}
+```
+
+```txt [Error Codes]
+1: Values is required (missing or empty)
+2: Values must be a JSON object of plugin.key => value
+3: One or more values were refused, nothing was saved (see FieldErrors)
+4: A plug-in could not save one or more values (see FieldErrors)
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+```
+
+:::
+
 ## Get a Payment Period
 
 <Badge type="info" text="GET" /> `/api/v1/user.paymentperiod.get`
