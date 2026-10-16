@@ -43,6 +43,10 @@ cat /opt/octeth/.oempro_env | grep PRODUCT_VERSION
 
 ## Running the Upgrade
 
+::: tip Let an AI coding agent upgrade Octeth
+Tell Claude Code, Codex or a similar agent on the server: `Follow https://dev.octeth.com/agent/upgrade.md to upgrade the Octeth installation in /opt/octeth.` The agent downloads the latest release your license covers with the license key already in your installation, checks its checksum, runs a dry run, and asks you about active campaigns and new settings before it upgrades. Release packages from v6.0.2 include an `AGENTS.md` that points agents to the same instructions.
+:::
+
 The upgrade command takes a path to the release zip file:
 
 ```bash
