@@ -132,6 +132,9 @@ v6.0.2 screens three points with fixed rules (issue #3392): every new account, a
 - `subscribers.import.get` adds `ImportJob.Screening` for a held import. Bounce and complaint history from other accounts, and links reused from suspended accounts, only flag for the operator: they never hold an import or a campaign and never appear in the reason the customer reads.
 - New admin commands: `admin.screening.release`, `admin.screening.settings.get` and `admin.screening.settings.update`. User group commands accept six `Screening*` parameters.
 
+- AI agent keys can use the email gateway (octeth/oempro#3320). `EmailGateway.SendEmail` accepts an agent key with the `send` scope whose user group has `EmailGateway.ManageDomain`, resolves the sender domain from the From address and runs the send checks first, so the agent never holds a sender key and no sender key is created for it. Agent keys can also list, add and verify sending domains, read events, list suppressions, and manage and test event webhooks. Removing a suppressed address needs the `send` scope and always asks for confirmation. `EmailGateway.GetWebhooks` leaves out `SigningKey` and masks webhook URLs for an agent key, and `IncludeDiagnostics` returns no resolved DNS values to one. Sender keys, SMTP credentials and signing key rotation stay unavailable to agent keys.
+- New opt-in parameters: `IncludeSendingState` on `user.current`, `IncludeDiagnostics` on `emailgateway.verifydomain`, `ExactMessageID` on `emailgateway.getevents` and `IdempotencyKey` on `emailgateway.sendemail` (new error codes 41 to 44). Responses without them are unchanged. New command `emailgateway.testwebhook` posts a signed sample event to a webhook.
+
 ## Upgrade checklist
 
 - If you added `192.168.99.100` to an admin or user IP allow-list as a workaround for every visitor showing that address, replace it with your real public addresses after upgrading, because visitors now resolve to their own address.

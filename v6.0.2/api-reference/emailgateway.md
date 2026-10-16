@@ -241,6 +241,7 @@ curl -X POST https://example.com/api.php \
 | SessionID | String  | No       | Session ID obtained from login         |
 | APIKey    | String  | No       | API key for authentication             |
 | DomainID  | Integer | Yes      | Sender domain ID                       |
+| IncludeDiagnostics | Boolean | No | Since v6.0.2. `true` adds `DNSDiagnostics` to the response: each record's resolved value and the reason it fails. For an AI agent key each record carries `Status` and `Reason` only, never `Resolved`. Without it the response is unchanged |
 
 ::: code-group
 
@@ -283,6 +284,19 @@ curl -X POST https://example.com/api.php \
 2: Domain not found or access denied
 ```
 
+:::
+
+::: tip Per-record diagnostics (IncludeDiagnostics)
+With `IncludeDiagnostics=true` the response also carries `DNSDiagnostics`: `CheckedAt` and one entry per record with `Type`, `Host`, `Expected`, `Resolved` (the value DNS returned, or `null`), `Pass`, `Status` and a readable `Reason`. `Status` is one of `pass`, `missing` (no record found), `points_elsewhere` (a CNAME with another target), `spf_mismatch` (the SPF record differs; the reason names the missing and extra terms) or `wrong_value`. Results are cached for a minute, so a repeat within that minute returns the same check. For an AI agent key (an API key created with `IsAgentKey`) each record carries `Type`, `Host`, `Expected`, `Pass`, `Status` and `Reason` only: `Resolved` is left out, and `Reason` does not quote the resolved value.
+
+```json
+"DNSDiagnostics": {
+  "CheckedAt": "2026-10-16 09:01:00",
+  "Records": [
+    {"Type": "CNAME", "Host": "track.example.com", "Expected": "track.mta.example.net", "Resolved": "other.example.net", "Pass": false, "Status": "points_elsewhere", "Reason": "track.example.com is a CNAME to other.example.net, but it must point to track.mta.example.net."}
+  ]
+}
+```
 :::
 
 ::: tip How the domain status changes
@@ -1254,6 +1268,78 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+::: tip AI agent keys do not receive the signing key
+Since v6.0.2 an AI agent key (an API key created with `IsAgentKey`) can call this command. Its response leaves out `SigningKey` and each webhook's `LastResponseBody`, and masks `WebhookURL`: any `user:password@` part becomes `***@`, every query value becomes `***` (the parameter names stay) and the fragment is dropped. The account owner reads the signing key and the full URLs in the app. Every other key and session gets the response above unchanged.
+:::
+
+## Send a Test Event to a Webhook
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `EmailGateway.ManageDomain`
+- Rate limit: 10 requests per 60 seconds per user
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Available since v6.0.2
+:::
+
+Posts one sample event, marked `"test": true`, to a registered webhook URL and reports the HTTP status the receiver answered with. The event is signed with the domain's signing key exactly like a real delivery, so the receiver can check its signature verification. Every redirect hop is checked against the outbound URL policy. The response body of the receiver is never returned. No email is sent.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                             |
+|-----------|---------|----------|-----------------------------------------|
+| Command   | String  | Yes      | API command: `emailgateway.testwebhook` |
+| SessionID | String  | No       | Session ID obtained from login          |
+| APIKey    | String  | No       | API key for authentication              |
+| DomainID  | Integer | Yes      | Sender domain ID                        |
+| WebhookID | Integer | Yes      | Webhook ID, from `emailgateway.getwebhooks` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "emailgateway.testwebhook",
+    "APIKey": "your-api-key",
+    "DomainID": 123,
+    "WebhookID": 999
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "WebhookID": 999,
+  "Event": "delivery",
+  "Delivered": true,
+  "ResponseCode": 200,
+  "Error": ""
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "Webhook not found"
+}
+```
+
+```txt [Error Codes]
+0: Success. Delivered is true for a 2xx answer; ResponseCode is 0 and Error is set when the URL could not be reached or is not an allowed destination
+1: Missing DomainID
+2: Missing WebhookID
+3: Sender domain not found
+4: Webhook not found on that domain
+5: Too many webhook tests (HTTP 429)
+```
+
+:::
+
 ## Delete Domain Webhook
 
 <Badge type="info" text="POST" /> `/api.php`
@@ -1500,6 +1586,8 @@ Note that the public variant (`emailgateway.getevents.public`) still requires `D
 | EndDate       | String  | No       | End date filter (Y-m-d format)                           |
 | Event         | String  | No       | Filter by event type (delivery, bounce, open, click, etc.) |
 | Query         | String  | No       | Search query string                                      |
+| MessageID     | String  | No       | A `MessageID` returned by the send endpoint. Without `ExactMessageID` it is matched as free text anywhere in the event |
+| ExactMessageID | Boolean | No      | Since v6.0.2. `true` matches `MessageID` exactly against the message's ID, so only that message's events are returned. Without it `MessageID` keeps its free-text behaviour |
 
 ::: code-group
 
@@ -1814,6 +1902,7 @@ curl -X POST https://example.com/api.php \
 | SubscriberID  | Integer | No       | Subscriber ID for personalization                          |
 | JourneyID     | Integer | No       | Journey ID for tracking                                    |
 | ActionID      | Integer | No       | Journey action ID for tracking                             |
+| IdempotencyKey | String | No       | Since v6.0.2. 1 to 128 letters, digits, dots, colons, underscores or hyphens. A repeat with the same key from the same account and sending domain within 24 hours returns the first `MessageID` with `IdempotentReplay: true` and sends nothing. Applies only to sends to explicit recipients, not `TargetListID` |
 
 ::: code-group
 
@@ -1883,6 +1972,10 @@ curl -X POST https://example.com/api/v1/email \
 38: Invalid ActionID
 39: Failed to resolve list recipients (returned with HTTP 502)
 40: Account pending approval (the account is not Trusted, returned with HTTP 403)
+41: A send with this IdempotencyKey is still in progress (HTTP 409)
+42: Invalid IdempotencyKey, or IdempotencyKey with TargetListID (HTTP 422)
+43: AI agent key only: the From address domain is not a sender domain of the account (HTTP 422)
+44: The IdempotencyKey could not be checked because Redis is unavailable, nothing was sent (HTTP 503)
 429: Email send rate limit exceeded (or the send-rate counters could not be read and EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED is true)
 ```
 
@@ -1930,6 +2023,10 @@ Send rate limits come from the sender domain owner's user group (`DefaultRateLim
 The user group's daily email limit (`LimitEmailSendPerDay`) applies to this endpoint from v6.0.1. A send that would take the account's gateway email for the current day over the limit is rejected with HTTP `429` and error code `17`. The day is the server's calendar day, and email that is queued but not yet delivered counts toward it.
 
 If the send-rate counters cannot be read (Redis is unavailable), the send is allowed and the event is logged at ERROR. Set `EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED=true` to reject it with error code `429` instead. See the [configuration guide](../getting-started/octeth-configuration.md).
+:::
+
+::: tip Sending with an AI agent key
+Since v6.0.2 an AI agent key (an API key created with `IsAgentKey` and the `send` scope) can call this endpoint with `APIKey` instead of a sender key. The owner's user group needs the `EmailGateway.ManageDomain` permission (otherwise `Code 99999`, HTTP 403). Octeth finds the account's sender domain whose name is the From address domain (otherwise `Code 43`, HTTP 422) and checks the account status, the `Trusted` requirement, the domain status and phone verification before it looks at any sender key, so a refused send creates and changes nothing. The send then uses the domain's existing enabled sender key on the server, or, when the domain has none, an authorisation that lasts only for this request. No sender key is ever created for an agent send, and no key is ever returned. Every check above still applies. An agent key may send only `From`, `To`, `CC`, `BCC`, `ReplyTo`, `Subject`, `ContentType`, `HTMLContent`, `PlainContent`, `Tags`, `TrackLinks`, `TrackOpens` and `IdempotencyKey`; any other parameter, `SenderAPIKey` included, is refused with `ErrorCode 100016`. Each send counts against the key's daily send budget, and its To, CC and BCC addresses count as recipients for the recipients cap and the confirm step (`ErrorCode 100012`). See [AI agent keys](./users.md).
 :::
 
 ::: tip A `TargetListID` send delivers to the first 250 recipients unless full-list mode is enabled

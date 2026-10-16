@@ -230,6 +230,7 @@ curl -X POST https://example.com/api.php \
 | Command   | String | Yes      | API command: `user.current`          |
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
+| IncludeSendingState | Boolean | No | Since v6.0.2. `true` adds `SendingState`, the email gateway sending verdict described below. Without it the response is unchanged |
 
 ::: code-group
 
@@ -343,6 +344,10 @@ curl -X POST https://example.com/api.php \
 An explicit, user-safe projection of the authenticated user's **user group**. It intentionally exposes only capability flags and plan quotas the user is already subject to.
 
 ::: warning Not exposed here, by design
+::: tip Email gateway sending state (IncludeSendingState)
+With `IncludeSendingState=true` the response carries `SendingState`, built from the same checks the gateway send endpoint applies. `State` is the first entry of `Blockers`, or `ready`: `account_disabled` (code 12), `awaiting_account_approval` (40, the account is not `Trusted`), `phone_verification_required` (34), `no_sending_domain`, `domain_not_verified` (32, DNS has not passed), `awaiting_domain_approval` (32, held for the operator's approval), `domain_suspended` (32) or `quota_exhausted` (17). It also returns `CanSend`, `ErrorCode` (the code a send would get), `Message`, `NextStep`, `DomainID` (for a domain state), `ReadyDomains`, `Usage` (monthly, lifetime and daily sent and limits), `RateLimits` and `Domains`.
+:::
+
 Delivery-server records and their `ConnectionParams`, the group's `SendMethod*` SMTP settings (including `SendMethodSMTPPassword`), all `Payment*` values, and the `ThresholdImport` / `ThresholdEmailSend` abuse-moderation thresholds are **not** returned by `user.current`. They remain reachable only through the admin-authenticated `user.get`.
 :::
 
@@ -1302,9 +1307,9 @@ Commands an AI agent key can call:
 
 | Scope | Commands |
 |---|---|
-| `read` | `User.Current`, `User.AgentPolicy.Get`, `Lists.Get`, `List.Get`, `CustomFields.Get`, `Subscriber.Get`, `Segments.Get`, `UserEmailTemplates.Get`, `UserEmailTemplate.Get`, `UserEmailTemplate.Preview`, `Email.Get`, `Email.SpamTest`, `Campaigns.Get`, `Campaign.Get`, `Journey.List`, `Journey.Get` |
-| `write` | `List.Create`, `List.Update`, `Segment.Create`, `Segment.Update`, `UserEmailTemplate.Create`, `UserEmailTemplate.Update`, `Email.Create`, `Email.Delete`, `Email.Update`, `Campaign.Create`, `Campaign.Update`, `Campaign.Pause`, `Campaign.Cancel`, `Journey.Disable` |
-| `send` | `Subscriber.Create`, `Subscriber.Update`, `Subscriber.Unsubscribe`, `Subscribers.Import`, `Subscribers.Import.Post`, `Email.EmailPreview` (sends a real test email to one address), `Campaign.Resume`, `Journey.Enable`, `Subscriber.Journey.Trigger` |
+| `read` | `User.Current`, `User.AgentPolicy.Get`, `Lists.Get`, `List.Get`, `CustomFields.Get`, `Subscriber.Get`, `Segments.Get`, `UserEmailTemplates.Get`, `UserEmailTemplate.Get`, `UserEmailTemplate.Preview`, `Email.Get`, `Email.SpamTest`, `Campaigns.Get`, `Campaign.Get`, `Journey.List`, `Journey.Get`, `EmailGateway.GetDomains`, `EmailGateway.GetDomain`, `EmailGateway.GetEvents`, `EmailGateway.GetWebhooks` (without `SigningKey`, URLs masked), `Suppression.Browse` |
+| `write` | `List.Create`, `List.Update`, `Segment.Create`, `Segment.Update`, `UserEmailTemplate.Create`, `UserEmailTemplate.Update`, `Email.Create`, `Email.Delete`, `Email.Update`, `Campaign.Create`, `Campaign.Update`, `Campaign.Pause`, `Campaign.Cancel`, `Journey.Disable`, `EmailGateway.AddDomain` (`DomainName` only), `EmailGateway.VerifyDomain`, `EmailGateway.AddWebhook`, `EmailGateway.DeleteWebhook`, `EmailGateway.TestWebhook` |
+| `send` | `Subscriber.Create`, `Subscriber.Update`, `Subscriber.Unsubscribe`, `Subscribers.Import`, `Subscribers.Import.Post`, `Email.EmailPreview` (sends a real test email to one address), `Campaign.Resume`, `Journey.Enable`, `Subscriber.Journey.Trigger`, `EmailGateway.SendEmail` (explicit recipients only; To, CC and BCC count as recipients), `Suppression.Delete` (one `EmailAddress` at a time; always asks for confirmation and does not count against the daily send budget) |
 
 `UserEmailTemplate.Preview` renders a template without sending anything, and `Email.SpamTest` scores an email without delivering it. `Email.EmailPreview` delivers a real email, so it needs `send` and counts as one recipient.
 
