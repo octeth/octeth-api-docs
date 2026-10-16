@@ -113,6 +113,18 @@ The upgrade migration resolves any plan that already has more than one default: 
 - Fresh installs seed the default user group with unlimited SMS and email gateway rate limits.
 - When an account rate limit holds an SMS campaign, the release worker logs a WARNING naming the interval and the limit, once per campaign per interval, and the admin SMS campaign browser shows "Waiting: SMS rate limit for this account reached (Day = 0)" under the campaign status. A journey SMS held by the same limit is logged as "SMS rate limit for this account reached (Day = 0)" instead of "SMS rate limit exceeded for interval: Day". The `SMS.Send` and `SMSCampaign.Test` API error messages are unchanged.
 
+#### An SMS rate limit of `0` now blocks every send
+
+An SMS rate limit of `0` on any interval means "no SMS", and `-1` means unlimited. Before v6.0.2, `SMS.Send`, `SMSCampaign.Test` and the journey **Send SMS** action let the first message of each window through when a limit was `0`, because a counter that did not exist yet was skipped instead of counted as zero. An account limited to `0` per minute could send one SMS per minute. These paths now reject that first send too: `SMS.Send` returns HTTP `429` with `ErrorCode 11`, `SMSCampaign.Test` returns `429` with `ErrorCode 10`, and a journey Send SMS action fails with "SMS rate limit exceeded" (octeth/oempro#3416). SMS campaigns already treated `0` this way. Limits of `1` or more are unchanged and still allow exactly that many messages per window.
+
+If an account or user group has a `0` SMS limit and is expected to send, set that interval to `-1` (unlimited) or to the intended number.
+
+#### Journey Send SMS actions fall back to the user group's SMS limits
+
+The journey **Send SMS** action now resolves its SMS rate limits the same way `SMS.Send` does: a user's own SMS limits replace the group's, and a user whose stored rate limits carry no SMS limits uses the user group's SMS limits. Before, such a user's journey SMS ran with no rate limit at all (octeth/oempro#3416). Accounts without per-user rate limits, and accounts with per-user SMS limits, are unchanged.
+
+When Redis cannot be reached, SMS sends are still allowed without a rate limit check, but each one now logs an error line naming the user.
+
 ### Time zones
 
 #### Time zone labels are stored with a plain `&`
