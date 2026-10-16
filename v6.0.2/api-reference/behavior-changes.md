@@ -103,7 +103,7 @@ v6.0.2 adds a built-in connector so customers can connect Claude, ChatGPT and ot
 
 The connector requires `UI_ENABLED=true` and an app domain reachable from the internet over `https://`. When `UI_ENABLED` is `true`, the bundled HAProxy now sends `/mcp`, `/oauth/`, `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` to the interface container instead of the classic application. These paths sit at the root of the app domain, not under `/user/`. Installs with `UI_ENABLED=false` route them as before.
 
-Approving a connection creates a user API key with the note `AI connector: <assistant name>`. These keys appear in `user.apikey.list` responses and on the customer's API keys page, and deleting one disconnects that assistant. Staff accounts cannot connect an assistant, and a customer can connect one only when their plan includes API access.
+Approving a connection creates a user API key with the note `AI connector: <assistant name>`. These keys appear in `user.apikey.list` responses and on the customer's API keys page, and deleting one disconnects that assistant. A customer can connect an assistant only when their plan includes API access. Staff connect operator assistants with their own login, two-factor authentication included (octeth/oempro#3406), but not while impersonating a customer.
 
 The connector's token signing keys, `ui/storage/oauth-private.key` and `ui/storage/oauth-public.key`, are created once by the interface container and kept across upgrades. Losing either file disconnects every assistant. See [AI assistant connector](/v6.0.2/new-user-interface/configuration-reference#ai-assistant-connector) in the configuration reference.
 

@@ -160,6 +160,8 @@ Your Octeth administrator can turn both files off with `MCP_DISCOVERY_ENABLED=fa
 
 Staff can connect an assistant to the admin side of Octeth too. An operator connection gets these read tools: `get_setup_status` ("what is left to set up"), `list_delivery_servers`, `get_delivery_server`, `list_user_groups`, `get_user_group`, `get_settings`, `list_alerts` and `get_alert`. With **Act** ticked on the consent screen it also gets `create_delivery_server`, `update_delivery_server`, `test_delivery_server`, `create_user_group`, `update_user_group`, `assign_delivery_server` and `update_settings` (the bounce and FBL mailboxes).
 
+Staff sign in on the same page customers use, with their admin username and password. If two-factor authentication is on for the staff account, the next page asks for the 6-digit code from the authenticator app. Recovery keys are not entered there. If you lost your authenticator, follow the **Lost your authenticator?** link on the code page. It opens the admin area's reset page, where your recovery key turns two-factor authentication off. Then sign in again.
+
 Every action shows a preview and waits for your yes. Passwords are write-only: the assistant can set one, but never sees it again. Secrets and webhook URLs in the settings it reads come back redacted.
 
 Some changes stay with you in the admin area, whatever you approve in the chat:
@@ -184,9 +186,9 @@ The assistant could not reach the sign-in details at your connector URL. This ha
 
 Check that the URL opens in a browser outside your network and starts with `https://`. If it does, ask your Octeth administrator to check that the new user interface is enabled and that their reverse proxy forwards the connector paths.
 
-### "Sign in as a customer to connect"
+### "An AI assistant cannot be connected to a customer account by staff"
 
-You are signed in with a staff account. Sign out of Octeth, sign in with the customer account you want to connect, then start the connection again from the assistant.
+You are a staff member impersonating a customer. A customer approves an assistant for their own account. To connect an assistant to the operator tools, stop impersonating and open the connector link again. To connect a customer account, sign out, sign in as that customer and start the connection again from the assistant.
 
 ### "AI assistants are not available"
 

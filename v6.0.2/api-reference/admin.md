@@ -5236,7 +5236,7 @@ An admin agent key is limited in four ways, all enforced in `api.php`, so a dire
 - **The admin's own limits.** The key acts as the admin who approved it: that admin's privileges always apply, and a target user or campaign outside the admin's user groups is refused. An admin limited to some user groups with none assigned reaches nobody: every command except `admin.agentkey.revokeself` is refused, and `admin.risk.digest` returns no users.
 - **Confirmation.** Every `admin:act` command first answers 100012 with a `Preview` (the values before, and the values requested) and a `ConfirmToken`. The identical request repeated with `ConfirmToken` within ten minutes runs the change. A token works once, for one key, one command and the exact parameters. Every confirmed action is recorded before it runs and completed with the values after, see `admin.agentactions.get`, so an action whose request died midway still shows up (with `Completed` false).
 
-Staff accounts with two-factor authentication cannot connect an assistant yet: the new interface's staff login does not support two-factor sign-in, so such an account never reaches the consent screen.
+Staff accounts with two-factor authentication can connect an assistant. After the password, the new interface asks for the 6-digit code from the authenticator app, sends it to `admin.login` as `TFACode` and returns to the consent screen. A staff recovery key is not accepted there, because `admin.login` does not take one. The code page links to the admin area's reset page (`/app/admin/reset2fa/`), which turns two-factor authentication off with the recovery key.
 
 ::: code-group
 
