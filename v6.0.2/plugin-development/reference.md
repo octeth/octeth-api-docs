@@ -693,13 +693,15 @@ Octeth calls your listener on its own (once per plug-in), so every descriptor yo
 | `plugin` | No | Your plug-in code. Defaults to it; a descriptor naming another plug-in is dropped |
 | `key` | Yes | Letters, digits and underscores, at most 64 characters. The field's name is `plugin.key` |
 | `label` | Yes | Label shown next to the field |
-| `type` | Yes | `checkbox`, `text`, `number`, `select` or `textarea` |
+| `type` | Yes | `checkbox`, `text`, `number`, `select`, `textarea` or `info` |
 | `options` | For `select` | `value => label` pairs, in display order |
 | `value` | No | The current value for `$user` |
 | `help` | No | Help text |
 | `section` | No | `account` (default) or `settings` |
 | `privilege` | No | Admin privilege needed to see and change the field. Default `PluginAccess` |
 | `min`, `max`, `integer` | No | For `number`: the allowed range, and `true` to accept whole numbers only |
+
+Use `info` to show a read-only value, such as a counter or a state, without a new command. Octeth shows its `value` as text (several lines are kept), never offers to change it, and refuses it in `admin.user.pluginfields.update`, so an `info` field needs no `Admin.User.PluginFields.Save` listener.
 
 A malformed descriptor (an invalid `key`, `type` or `section`, a `select` without `options`, or a `min` above `max`) is dropped, and so is a second field with the same name. Do not check privileges yourself and never call `Admins::CheckAccess()` without its return-bool flag here: Octeth hides a field from an admin who lacks its `privilege`, and a hard 403 would break the whole screen.
 
@@ -766,6 +768,98 @@ public static function AdminUserPluginFieldsSave($User, $Values)
 :::
 
 The legacy admin user edit form still uses `FormItem.AddTo.User.Edit`, `FormItem.AddTo.User.Edit.Settings` and `User.Update.Post.Successful`. Register both pairs while that form exists, and share one save routine between them so both paths write the same stored value.
+
+---
+
+### `Admin.User.PluginActions` <Badge type="tip" text="Filter" />
+
+Adds one-shot actions for a user to `admin.user.pluginactions.get` and to the Plugins tab of the staff user page in the new interface.
+
+| Property | Value |
+|---|---|
+| **Type** | Filter |
+| **Parameters** | `$actions` (array) - Action descriptors collected so far for your plug-in (starts empty)<br>`$user` (array) - The target user's row<br>`$admin` (array) - The calling administrator's row |
+| **Returns** | Array: `[$actions, $user, $admin]` |
+| **Location** | includes/classes/user_plugin_actions.inc.php |
+
+Octeth calls your listener on its own (once per plug-in), so every descriptor you return is attributed to your plug-in. Append one descriptor per action to `$actions`:
+
+| Key | Required | Description |
+|-----|----------|-------------|
+| `plugin` | No | Your plug-in code. Defaults to it; a descriptor naming another plug-in is dropped |
+| `key` | Yes | Letters, digits and underscores, at most 64 characters. The action's name is `plugin.key` |
+| `label` | Yes | Label for the button |
+| `description` | No | What the action does |
+| `confirm` | No | Text the interface shows in a confirmation before running the action. Omit it for an action that runs at once |
+| `tone` | No | `default`, or `danger` for an action that is hard to undo |
+| `privilege` | No | Admin privilege needed to see and run the action. Default `PluginAccess` |
+| `available` | No | Boolean, default `true`. Set `false` when the action cannot run for `$user` right now |
+| `reason` | No | Why the action is not available. Shown next to the disabled button |
+
+A malformed descriptor is dropped. Do not check privileges yourself here: Octeth hides an action from an admin who lacks its `privilege` and refuses to run it. An action with `available` set to `false` cannot be run.
+
+**Example:**
+
+::: code-group
+
+```php [Plugin Registration]
+parent::RegisterHook('Filter', 'Admin.User.PluginActions', 'myplugin', 'AdminUserPluginActions', 10, 3);
+
+public static function AdminUserPluginActions($Actions, $User, $Admin)
+{
+    $Actions[] = [
+        'key' => 'clear_cache',
+        'label' => 'Clear the sending cache',
+        'confirm' => 'Clear the sending cache for this user?',
+        'privilege' => 'User.Update',
+        'available' => self::_HasCache($User['UserID']),
+        'reason' => 'There is nothing to clear.',
+    ];
+    return [$Actions, $User, $Admin];
+}
+```
+
+:::
+
+---
+
+### `Admin.User.PluginActions.Run` <Badge type="info" text="Action" />
+
+Runs one of your plug-in's actions through `admin.user.pluginactions.run`.
+
+| Property | Value |
+|---|---|
+| **Type** | Action |
+| **Parameters** | `$user` (array) - The target user's row<br>`$plugin` (string) - Your plug-in code<br>`$key` (string) - The action's key |
+| **Returns** | Array: `['ok' => bool, 'message' => string]` |
+| **Location** | includes/classes/user_plugin_actions.inc.php |
+
+Octeth calls only your listener, and only for an action your `Admin.User.PluginActions` listener offered for this user in the same request, available, to an admin with its privilege. Return `ok` `false` with a message when the action fails, for example when a remote API call fails: the command then fails with error code 5 and your message. A missing or malformed result, or a listener that throws, is treated as a failure. A message longer than 1,000 bytes is cut to that length without splitting a UTF-8 character.
+
+**Example:**
+
+::: code-group
+
+```php [Plugin Registration]
+parent::RegisterHook('Action', 'Admin.User.PluginActions.Run', 'myplugin', 'AdminUserPluginActionsRun', 10, 3);
+
+public static function AdminUserPluginActionsRun($User, $Plugin, $Key)
+{
+    if ($Key !== 'clear_cache') {
+        return ['ok' => false, 'message' => 'Unknown action'];
+    }
+    try {
+        self::_ClearCache($User['UserID']);
+    } catch (Exception $e) {
+        return ['ok' => false, 'message' => $e->getMessage()];
+    }
+    return ['ok' => true, 'message' => 'The sending cache was cleared.'];
+}
+```
+
+:::
+
+The legacy admin user page still uses `UI.User.Edit.Form`, `UI.User.Edit.UserOptionsMenu` and `Admin.UserController.Edit.Events` for the same controls. Register both while that page exists, and share one routine between them so both paths do the same thing.
 
 ---
 
@@ -2635,6 +2729,8 @@ grep -n "RegisterHook\|HookListener" path/to/file.php
 - User.Update.Post.Successful
 - Admin.User.PluginFields
 - Admin.User.PluginFields.Save
+- Admin.User.PluginActions
+- Admin.User.PluginActions.Run
 - User.Delete.Post
 - User.PasswordReset.Before
 - UserGroup.Create.Post

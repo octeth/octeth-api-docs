@@ -166,6 +166,7 @@ described above, and the server checks the same permission again when you use on
 | **Overview** | A chart of unsubscriptions, hard bounces, spam complaints or subscriptions over the last 1, 3 or 6 months, the ten newest campaigns with their unique open rate, and the user's lists with their active subscriber counts, 25 per page | User.Edit |
 | **Limits** | How much of each user group limit the account has used, in four groups: send rate, assets, time-based and thresholds. A limit turns amber at 80% and red at 100% | User.Edit |
 | **Sender domains & keys** | The user's sender domains and email gateway API keys, with the containment actions described in [Containing an account](#containing-an-account) | User.Edit |
+| **Plugins** | What enabled plug-ins add for this user: read-only information (for example PhishGuard's detection counter), plug-in settings with a link to **Edit**, and plug-in actions (for example Peak Monitor's stats reset or SendLayer's suspend and activate), see [Plug-in information and actions](#plug-in-information-and-actions). Shown only when a plug-in offers a field or an action you may see | User.Edit |
 | **Billing** | The subscription, invoices, payments and credits. Shown only when billing is enabled, see [Running billing day to day](./billing-operations#one-customer) | None |
 
 The tab is part of the address (`?tab=limits`), so you can bookmark or share it.
@@ -189,6 +190,30 @@ The buttons at the top of the page:
 
 If a section of the Overview cannot be loaded, it says so instead of showing a zero. Refresh
 the page to try again. Every action is written to the staff audit log.
+
+### Plug-in information and actions
+
+The **Plugins** tab collects what enabled plug-ins add to a user's page. It appears only when at
+least one plug-in offers a field or an action that your permissions let you see for this user.
+
+**Plug-in information.** Read-only values, such as PhishGuard's detection counter and
+history or the date Peak Monitor's stats were last reset. They cannot be changed here.
+
+**Plug-in settings.** The plug-in options you can change for the user, shown with their current
+value. Change them with **Edit**, see
+[Managing Users in the Staff Area](./staff-users#plug-in-fields).
+
+**Plug-in actions.** Each action is a button, for example Peak Monitor's stats reset or
+SendLayer's **Suspend account** and **Activate account**. An action asks you to confirm first
+when its plug-in supplies a confirmation text. An action that does not apply to the account
+right now is greyed out with the reason. The plug-in's own message is shown when the action
+finishes, including when it fails. Running an action needs User.Update, and every run is
+written to the staff audit log. SendLayer's own impersonation link is not carried over: use
+**Switch to user**.
+
+Scripts use the same commands: `admin.user.pluginactions.get` and
+`admin.user.pluginactions.run`, see the
+[Users](../api-reference/users#get-a-user-s-plug-in-actions-admin) API reference.
 
 ### Containing an account
 

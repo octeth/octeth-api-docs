@@ -3556,14 +3556,14 @@ The per-user settings that enabled plug-ins add to the admin user edit screen, w
 | plugin | String | Code of the plug-in that owns the field |
 | key | String | The field's key within the plug-in |
 | label | String | Label to show next to the field |
-| type | String | `checkbox`, `text`, `number`, `select` or `textarea` |
+| type | String | `checkbox`, `text`, `number`, `select`, `textarea` or `info`. An `info` field is read-only: show its value, never offer to change it |
 | section | String | Where the field belongs on the edit screen: `account` or `settings` |
 | privilege | String | Admin privilege required to see and change the field |
 | help | String | Help text, empty when there is none |
 | options | Array | For `select`, the allowed choices in display order as `{"value": "...", "label": "..."}` objects. Empty for other types |
 | min, max | Number or null | For `number` only: the allowed range, `null` when unbounded |
 | integer | Boolean | For `number` only: `true` when only whole numbers are accepted |
-| value | Mixed | The current value: Boolean for `checkbox`, number or `null` (empty, the plug-in's default applies) for `number`, string or `null` for `select`, string for `text` and `textarea` |
+| value | Mixed | The current value: Boolean for `checkbox`, number or `null` (empty, the plug-in's default applies) for `number`, string or `null` for `select`, string for `text`, `textarea` and `info` (an `info` value may hold several lines) |
 
 ::: code-group
 
@@ -3636,6 +3636,10 @@ The bundled plug-ins contribute these fields when enabled:
 | Upsender | `upsender.ip_count` | number (whole, 0 or more) | settings |
 | Upsender | `upsender.cpm_rate` | number (0 or more, empty uses the default rate) | settings |
 | Upsender | `upsender.ip_cost` | number (0 or more, empty uses the default cost) | settings |
+| Peak Monitor | `peakmonitor.stats_last_reset` | info (the last stats reset, or `Never`) | account |
+| PhishGuard | `phishguard.detection_counter` | info (detections in the last 24 hours) | account |
+| PhishGuard | `phishguard.notifications` | info (whether alerts are muted) | account |
+| PhishGuard | `phishguard.detection_history` | info (the 10 most recently detected keywords, one per line) | account |
 
 ## Update a User's Plug-in Fields (Admin)
 
@@ -3652,6 +3656,8 @@ Saves per-user plug-in field values. `Values` maps field names (`plugin.key`, as
 The update is all or nothing. Every value is checked first, and nothing is saved when any value is refused: an unknown field name, a field whose privilege you lack, a field sent twice, or a value that does not fit the field (for example `"maybe"` for a checkbox, `1.5` for a whole-number field, or a value outside `min` and `max`). The response lists each refused field in `FieldErrors`. After that check, each plug-in receives only its own values and saves them. If a plug-in then reports an error, the call answers `ErrorCode` 4 with that plug-in's `FieldErrors`; other plug-ins' values in the same request may already be saved, so the response includes the current `Fields`.
 
 Value formats: a checkbox accepts `true`, `false`, `1`, `0`, `"true"`, `"false"`, `"yes"`, `"no"`, `"on"`, `"off"`, `"enabled"`, `"disabled"`, or `""` and `null` (unticked). A number accepts a number, a numeric string, or `""` or `null` to clear it, and refuses `true` and `false`. A select accepts one of its option values exactly as `options` lists them. Text and textarea accept a string of at most 65,535 bytes, and `null` saves an empty string.
+
+An `info` field is read-only. Sending its name refuses the request with error code 3 and `"This field is read-only"` in `FieldErrors`, and nothing is saved.
 
 On success, `SavedFields` lists the saved field names and `Fields` lists every field you can see with its stored value, in the same shape as `admin.user.pluginfields.get` returns them.
 
@@ -3715,6 +3721,173 @@ curl -X POST https://example.com/api.php \
 2: Values must be a JSON object of plugin.key => value
 3: One or more values were refused, nothing was saved (see FieldErrors)
 4: A plug-in could not save one or more values (see FieldErrors)
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+```
+
+:::
+
+## Get a User's Plug-in Actions (Admin)
+
+<Badge type="info" text="GET" /> `/api/v1/admin.user.pluginactions.get`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- v1 REST alias: `GET /api/v1/admin.user.pluginactions.get`. Legacy access via `/api.php` is also supported
+:::
+
+The one-shot actions that enabled plug-ins offer for a user, such as resetting a counter or suspending an account. Each enabled plug-in that listens to the `Admin.User.PluginActions` filter contributes its own actions; a disabled plug-in contributes none. Each action carries the admin privilege needed to see and run it (`PluginAccess` unless the plug-in names another). An action whose privilege the calling admin lacks is left out of the response; the call itself still succeeds. Run an action with `admin.user.pluginactions.run`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.pluginactions.get` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Target user account |
+
+**Action object:**
+
+| Key | Type | Description |
+|-----|------|-------------|
+| name | String | The action's identifier, `plugin.key`. Pass it as `Action` to `admin.user.pluginactions.run` |
+| plugin | String | Code of the plug-in that owns the action |
+| key | String | The action's key within the plug-in |
+| label | String | Label for the button |
+| description | String | What the action does, empty when there is none |
+| confirm | String | Text to show in a confirmation before running the action, empty when it runs without one |
+| tone | String | `default`, or `danger` for an action that is hard to undo |
+| privilege | String | Admin privilege required to see and run the action |
+| available | Boolean | `false` when the action cannot run for this user right now (for example, activating an account that is not suspended) |
+| reason | String | Why the action is not available, empty while it is |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.user.pluginactions.get", "AdminAPIKey": "your-admin-api-key", "UserID": 42}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserID": 42,
+  "Actions": [
+    {
+      "name": "peakmonitor.reset_stats",
+      "plugin": "peakmonitor",
+      "key": "reset_stats",
+      "label": "Reset spam/bounce rate stats",
+      "description": "All stats that were collected before the reset will be ignored in the Peak Monitoring.",
+      "confirm": "Are you sure that you want to reset spam/bounce rate stats?",
+      "tone": "default",
+      "privilege": "User.Update",
+      "available": true,
+      "reason": ""
+    },
+    {
+      "name": "phishguard.unmute_notifications",
+      "plugin": "phishguard",
+      "key": "unmute_notifications",
+      "label": "Unmute notifications",
+      "description": "Sends the next PhishGuard alert for this user without waiting for the mute to expire.",
+      "confirm": "",
+      "tone": "default",
+      "privilege": "User.Update",
+      "available": false,
+      "reason": "Notifications are not muted for this user."
+    }
+  ],
+  "TotalActions": 2
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 5003,
+  "ErrorText": "User is outside the user groups this admin account may access"
+}
+```
+
+```txt [Error Codes]
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+```
+
+:::
+
+The bundled plug-ins offer these actions when enabled. All of them need `User.Update`.
+
+| Plug-in | Action name | What it does | Available when |
+|---------|-------------|--------------|----------------|
+| Peak Monitor | `peakmonitor.reset_stats` | Peak Monitoring ignores every spam and bounce rate stat collected before now | Always |
+| PhishGuard | `phishguard.reset_detection_counter` | Clears the 24-hour detection counter and the detection history | The counter is above zero |
+| PhishGuard | `phishguard.unmute_notifications` | Lets the next alert for the user through without waiting for the mute to expire | Alerts are muted |
+| SendLayer | `sendlayer.suspend_account` | Sets the user's WooCommerce subscription to suspended | The account is not suspended |
+| SendLayer | `sendlayer.activate_account` | Sets the user's WooCommerce subscription to active | The account is suspended |
+
+## Run a User's Plug-in Action (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.user.pluginactions.run`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Update`
+- v1 REST alias: `POST /api/v1/admin.user.pluginactions.run`. Legacy access via `/api.php` is also supported
+:::
+
+Runs one plug-in action on a user. `Action` is the action's `name` from `admin.user.pluginactions.get` and matches case-insensitively. Octeth reads the user's action list again first, so only an action the plug-in offers for this user right now can run, and the call is refused when the calling admin lacks the action's privilege. The action runs in its own plug-in only. When the plug-in reports a failure (for example, a remote API call failed), the call fails with error code 5 and the plug-in's message in `ErrorText`; it never reports a failure as a success. The plug-in's message, returned in `Message` or `ErrorText`, is cut to 1,000 bytes without splitting a UTF-8 character.
+
+The command does not ask for confirmation. Show the action's `confirm` text to the user before calling it.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.pluginactions.run` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Target user account |
+| Action | String | Yes | The action's name, `plugin.key` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.user.pluginactions.run", "AdminAPIKey": "your-admin-api-key", "UserID": 42, "Action": "peakmonitor.reset_stats"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserID": 42,
+  "Action": "peakmonitor.reset_stats",
+  "Message": "The spam/bounce rate stats reset successfully."
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 5,
+  "ErrorText": "WooCommerce settings are empty.",
+  "Action": "sendlayer.suspend_account"
+}
+```
+
+```txt [Error Codes]
+1: Action is required
+2: Unknown action (not offered for this user, or the plug-in is not enabled)
+3: You do not have the privilege to run this action
+4: The action is not available for this user now (ErrorText carries the plug-in's reason)
+5: The plug-in reported a failure (ErrorText carries its message)
 5001: UserID is required
 5002: User not found
 5003: User is outside the user groups this admin account may access
