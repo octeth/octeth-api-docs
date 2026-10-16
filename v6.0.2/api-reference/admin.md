@@ -2932,6 +2932,72 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## End a User Session (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.user.session.end`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key
+- Required privilege: `User.Impersonate`
+- v1 REST alias: `POST /api/v1/admin.user.session.end`. Legacy access via `/api.php` is also supported
+:::
+
+Ends one user session, typically the one `user.switch` returned when an administrator started acting as a user, so it stops working at once instead of living until it expires. After the call, `api.php` rejects that `SessionID` with error 99998.
+
+Only a session signed in as a user is ended. A session that holds an administrator login, any other kind of session, and the calling session itself are refused (error 3) and left unchanged. A session that no longer exists answers `Success` with `Ended` `false`.
+
+The session to end is passed as `TargetSessionID`, not `SessionID`, because `SessionID` names the caller's own session. Call this command with an Admin API key. An admin `SessionID` call works too, but the API key form never touches the caller's own session.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.session.end` |
+| AdminAPIKey | String | Yes | Admin API key |
+| TargetSessionID | String | Yes | The user session to end, for example the `SessionID` returned by `user.switch` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.user.session.end",
+    "AdminAPIKey": "your-admin-api-key",
+    "TargetSessionID": "q8l1v0c3m2k5t7r9a4b6d8f0e1"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Ended": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Only a user session can be ended with this command"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: TargetSessionID is missing
+2: TargetSessionID is not a valid session id
+3: The session belongs to an administrator, is not a user session, or is the calling session
+4: The session could not be ended
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
+
 ## Provision Two-Factor Authentication
 
 <Badge type="info" text="POST" /> `/api/v1/admin.2fa.provision`

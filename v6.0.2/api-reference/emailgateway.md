@@ -2667,3 +2667,180 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+## List a User's Email Gateway API Keys (Admin)
+
+<Badge type="info" text="GET" /> `/api/v1/admin.user.emailgateway.apikeys.get`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- v1 REST alias: `GET /api/v1/admin.user.emailgateway.apikeys.get`. Legacy access via `/api.php` is also supported
+:::
+
+Lists every email gateway API key of one user, in every status, so an administrator can find the key to take out of service. The full key is a credential and is never returned: `APIKeyPrefix` holds its first 8 characters. `SenderDomain` is `null` for a key of the default sender domain (`DomainID` 0). Keys are ordered `Enabled`, then `Disabled`, then `Deleted`, newest first within each status. Deleted keys are listed as a record. A domain holds at most one key per status, so at most one `Deleted` key per domain is kept. A restricted sub-admin can only list users in the user groups they may access.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.emailgateway.apikeys.get` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Owner of the keys |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.user.emailgateway.apikeys.get",
+    "AdminAPIKey": "your-admin-api-key",
+    "UserID": 42
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserID": 42,
+  "APIKeys": [
+    {
+      "APIKeyID": 71,
+      "DomainID": 7,
+      "SenderDomain": "mail.example.com",
+      "Status": "Enabled",
+      "Description": "Production",
+      "CreatedAt": "2026-10-01 10:00:00",
+      "APIKeyPrefix": "3F9A1C2B"
+    },
+    {
+      "APIKeyID": 64,
+      "DomainID": 7,
+      "SenderDomain": "mail.example.com",
+      "Status": "Disabled",
+      "Description": "Old integration",
+      "CreatedAt": "2026-08-12 09:30:00",
+      "APIKeyPrefix": "88D0E417"
+    }
+  ],
+  "TotalAPIKeys": 2
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 5003,
+  "ErrorText": "User is outside the user groups this admin account may access"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: The API keys could not be read
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
+
+## Disable or Re-enable a User's Email Gateway API Key (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.user.emailgateway.apikey.status.update`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- v1 REST alias: `POST /api/v1/admin.user.emailgateway.apikey.status.update`. Legacy access via `/api.php` is also supported
+:::
+
+Sets one of a user's email gateway API keys to `Disabled` or back to `Enabled` without deleting it, so the key and its description stay as a record and a mistaken disable can be undone. The change takes effect at once: `emailgateway.sendemail` refuses a `Disabled` key on the next call (error 13, "Invalid SenderAPIKey"), and mail already queued with it fails in the delivery worker. `Status` is matched case-insensitively.
+
+A domain can hold only one key per status:
+
+- Disabling a key when another key of the same domain is already `Disabled` moves that older key to `Deleted`. It can no longer be re-enabled.
+- Re-enabling a key is refused (error 6) while another key of the same domain is `Enabled`, for example one the user created after the disable. Disable or delete that key first.
+
+A `Deleted` key is never re-enabled (error 5). Disabling a key does not stop the user from creating a new one. To stop a user sending, disable the account ([`user.update`](./users#update-user) with `AccountStatus` set to `Disabled`) or suspend the sender domain ([`admin.senderdomain.status.update`](./user-senderdomains#moderate-a-sender-domain-admin)).
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.emailgateway.apikey.status.update` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserID | Integer | Yes | Owner of the key |
+| APIKeyID | Integer | Yes | Key to change, from `admin.user.emailgateway.apikeys.get` |
+| Status | String | Yes | `Enabled` or `Disabled` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.user.emailgateway.apikey.status.update",
+    "AdminAPIKey": "your-admin-api-key",
+    "UserID": 42,
+    "APIKeyID": 71,
+    "Status": "Disabled"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserID": 42,
+  "APIKeyID": 71,
+  "Status": "Disabled",
+  "PreviousStatus": "Enabled",
+  "Changed": true,
+  "APIKey": {
+    "APIKeyID": 71,
+    "DomainID": 7,
+    "SenderDomain": "mail.example.com",
+    "Status": "Disabled",
+    "Description": "Production",
+    "CreatedAt": "2026-10-01 10:00:00",
+    "APIKeyPrefix": "3F9A1C2B"
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 6,
+  "ErrorText": "Another API key of this sender domain is enabled. Disable it first."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: APIKeyID is missing or not a positive integer
+2: Status is missing
+3: Status must be Enabled or Disabled
+4: API key not found for this user
+5: A deleted API key cannot be changed
+6: Another API key of this sender domain is enabled
+7: The status change could not be saved
+5001: UserID is required
+5002: User not found
+5003: User is outside the user groups this admin account may access
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
+
+`Changed` is `false` when the key already had the requested status. When `APIKeyID` or `Status` is missing, `ErrorCode` is an array of the codes above, for example `[1, 2]`.

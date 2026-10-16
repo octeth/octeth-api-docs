@@ -158,6 +158,7 @@ described above, and the server checks the same permission again when you use on
 |---|---|---|
 | **Overview** | A chart of unsubscriptions, hard bounces, spam complaints or subscriptions over the last 1, 3 or 6 months, the ten newest campaigns with their unique open rate, and the user's lists with their active subscriber counts, 25 per page | User.Edit |
 | **Limits** | How much of each user group limit the account has used, in four groups: send rate, assets, time-based and thresholds. A limit turns amber at 80% and red at 100% | User.Edit |
+| **Sender domains & keys** | The user's sender domains and email gateway API keys, with the containment actions described in [Containing an account](#containing-an-account) | User.Edit |
 | **Billing** | The subscription, invoices, payments and credits. Shown only when billing is enabled, see [Running billing day to day](./billing-operations#one-customer) | None |
 
 The tab is part of the address (`?tab=limits`), so you can bookmark or share it.
@@ -173,11 +174,53 @@ The buttons at the top of the page:
 - **Switch with full permissions** (User.Impersonate) does the same with every permission of
   the user's group, including the ones the account itself restricts. It asks you to confirm
   first, and the banner at the top of the page says "with full permissions" while it lasts.
+- **Disable account** (User.Update) stops the account, see
+  [Containing an account](#containing-an-account). On a disabled account the button reads
+  **Enable account**.
 - **Delete** (User.Delete) deletes the account with all of its lists, subscribers, campaigns
   and reports. Type the username to confirm. It cannot be undone.
 
 If a section of the Overview cannot be loaded, it says so instead of showing a zero. Refresh
 the page to try again. Every action is written to the staff audit log.
+
+### Containing an account
+
+When an account is sending abuse, you can take it out of service from its staff page,
+without SQL and without the legacy admin area. Every action asks you to confirm first and is
+written to the staff audit log.
+
+**Disable the account.** Use **Disable account** at the top of the page and type the
+username to confirm. A disabled account cannot sign in or call the API, and the email
+gateway refuses its mail, including gateway mail already queued. **Enable account** reverses
+it. Needs User.Update.
+
+**Suspend or block a sender domain.** The **Sender domains & keys** tab lists the account's
+sending domains with **Suspend**, **Block** and **Enable**. The email gateway refuses mail
+from a Suspended or Blocked domain, and gateway mail already queued from it fails. A domain
+the user turned off themselves (Disabled) is shown but cannot be changed here. Needs
+User.Edit.
+
+**Disable an email gateway API key.** The same tab lists the account's gateway API keys by
+their first eight characters. **Disable** makes the email gateway refuse the key from the
+user's next send and fails mail already queued with it. **Enable** puts it back, unless
+another key of the same domain is enabled. Disabling a second key of the same domain moves
+the key disabled before it to Deleted, which cannot be enabled again. The user can still
+create a new key, so disable the account or suspend the domain to stop sending altogether.
+Needs User.Edit.
+
+[[SCREENSHOT: The Sender domains & keys tab of the staff user page, with the Sender domains table showing Suspend and Block buttons and the email gateway API keys table showing key prefixes with Disable buttons]]
+
+**Stopping a switch ends the user's session.** When you use **Stop impersonating** in the
+banner, or sign out while acting as the user, the session that **Switch to user** or
+**Switch with full permissions** opened for the user is ended at once and can no longer be
+used. If it cannot be ended, the interface says so: on the staff page after you stop, or on
+the sign-in page after you sign out. That session then stays valid
+until it expires, so report it to an administrator.
+
+The same API commands are available to scripts: `admin.user.emailgateway.apikeys.get`,
+`admin.user.emailgateway.apikey.status.update` and `admin.user.session.end`, see the
+[Email Gateway](../api-reference/emailgateway#list-a-user-s-email-gateway-api-keys-admin) and
+[Admin](../api-reference/admin#end-a-user-session-admin) API reference.
 
 ## What to do next
 
