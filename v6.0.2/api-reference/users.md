@@ -2188,6 +2188,10 @@ curl -X POST https://example.com/api.php \
 - Note: Not available in demo mode
 :::
 
+::: tip The group's own theme is deleted too (v6.0.2)
+Every group has its own theme copy (`usergroup.duplicate` and the admin group screen create one). Deleting a group now deletes that theme as well, unless another group still uses it or it is the system default theme. Before v6.0.2 the theme stayed behind. Run `./cli/octeth.sh users:orphans` to list themes that earlier deletes left behind, and add `--delete --yes` to remove them.
+:::
+
 **Request Body Parameters:**
 
 | Parameter | Type   | Required | Description                           |
