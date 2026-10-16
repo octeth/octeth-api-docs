@@ -28,10 +28,18 @@ Release in progress. Changelog will be updated upon release.
 
 ### Security Patches
 
-- (To be documented)
+- **Campaign audiences are limited to the account's own lists and segments.** `Campaign.Update` refuses a recipient rule that names another account's list or segment, and queue generation refuses one stored before the fix, so an account can no longer send its campaign to another account's subscribers. See [API Behavior Changes](/v6.0.2/api-reference/behavior-changes#campaigns) (#3383)
+- **Remote content follows only checked redirects.** Remote content tags, URL imports, embedded images and list integrations check every redirect and refuse one that leads to a private, loopback or link-local address, so a public URL can no longer redirect Octeth into its own network. See [API Behavior Changes](/v6.0.2/api-reference/behavior-changes#every-redirect-is-checked-before-octeth-follows-it) (#3385)
+- **Campaign approval can no longer be skipped.** Only an administrator can release a campaign from Pending Approval. An `Untrusted` account's campaign is held on every path that arms it to send, including scheduling, resuming and re-sending, and changing a campaign's content, sender, audience or attachments after approval holds it again (#3399)
+- **A deleted user's email gateway credentials stop working.** Deleting a user now deletes their SMTP credentials and API keys, along with their lists, subscriber tables and segments. Before, the deleted user's SMTP login still sent email (#3389)
 
 ### Upgrade Notes
 
+- **Untrusted accounts' approved campaigns are held once more.** Campaigns of `Untrusted` accounts approved before v6.0.2 have no record of which version was approved, so each returns to Pending Approval once when it next comes up to send. Administrators get one summary email listing them, not one email per campaign (#3399)
+- **Campaign content screening is off after the upgrade.** v6.0.2 adds sender screening for signups, list imports and campaign sends. Signup and import screening only flag for review, and content screening is off for every user group until you set it to flag or hold on the user group page. See [API Behavior Changes](/v6.0.2/api-reference/behavior-changes#sender-screening) (#3392)
+- **AI assistants are read-only until you allow more.** Every user group gets AI agent access set to read. Choose write or send, and the daily send and recipient caps, on each user group where customers should let an assistant change data or send. Back up `ui/storage/oauth-private.key` and `ui/storage/oauth-public.key`, because losing either disconnects every assistant. See [API Behavior Changes](/v6.0.2/api-reference/behavior-changes#ai-assistant-connector) (#3369, #3373)
+- **Reverse proxies must forward the connector paths.** If you run your own proxy or CDN with path rules in front of Octeth, forward `/mcp`, `/oauth/`, `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server`, or AI assistants cannot connect (#3369)
+- **Clean up after earlier deletions.** Run `./cli/octeth.sh users:orphans` to list lists, segments, subscriber tables and themes that deleted users and user groups left behind. It deletes nothing without `--delete --yes` (#3389, #3391)
 - **Email Gateway SMTP host** - The upgrade adds `EMAILGATEWAY_SMTP_HOST=smtp.example.com` to `.oempro_env` when it is missing. Until you set your real SMTP host there, the user area and `emailgateway.getsmtps` show `smtp.example.com` instead of the previous built-in default. After setting it, run `./cli/octeth.sh smtp:sync-config` so the inbound SMTP server's greeting uses the same name. The upgrade also removes the product name from that greeting (#3313)
 
 ### Deprecations

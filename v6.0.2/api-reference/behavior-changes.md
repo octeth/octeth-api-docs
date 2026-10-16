@@ -30,7 +30,17 @@ There is no opt-in flag, because the commands had no working data source left.
 
 - `UserGroup.Delete` now also deletes the deleted group's own theme when no other group references it and it is not the system default theme (octeth/oempro#3391). The response is unchanged.
 
+### Users
+
+- `Users.Delete` now deletes what the deleted user owned: their lists with each list's subscriber tables, their segments, user API keys (AI agent keys included), email gateway API keys and SMTP credentials, and their risk snapshots. Their email gateway sender domains are soft-deleted, and unfinished SMS campaigns are cancelled. Before, all of these were left behind, and a deleted user's email gateway SMTP login kept working (octeth/oempro#3389). Statistics, logs and other history rows are kept. The response is unchanged. To find what earlier deletions left behind, run `./cli/octeth.sh users:orphans`, which reports orphaned lists, segments, subscriber tables and themes and deletes them only with `--delete --yes`.
+
 ## Tier 2: shape and value changes
+
+### Remote content and URL imports
+
+#### Every redirect is checked before Octeth follows it
+
+Octeth already refused a remote content, import or integration URL that resolves to a private, loopback or link-local address. It now checks every redirect the same way, and connects only to the address it checked. This covers <code v-pre>%RemoteContent=...%</code> and <code v-pre>%RemoteContentBeforeSend=...%</code> tags, the email editor's remote fetch, images embedded from email HTML, the public archive, `Subscribers.Import.Post` with a CSV URL, and list web service integrations. A redirect to an internal address now fails the fetch the same way an unreachable URL does, where before its content was returned (octeth/oempro#3385). Public redirect chains of up to five hops work as before.
 
 ### Client IP
 
@@ -132,6 +142,10 @@ v6.0.2 screens three points with fixed rules (issue #3392): every new account, a
 - `subscribers.import.get` adds `ImportJob.Screening` for a held import. Bounce and complaint history from other accounts, and links reused from suspended accounts, only flag for the operator: they never hold an import or a campaign and never appear in the reason the customer reads.
 - New admin commands: `admin.screening.release`, `admin.screening.settings.get` and `admin.screening.settings.update`. User group commands accept six `Screening*` parameters.
 
+### Email gateway for AI agents
+
+#### AI agent keys can send through the email gateway and manage sending domains
+
 - AI agent keys can use the email gateway (octeth/oempro#3320). `EmailGateway.SendEmail` accepts an agent key with the `send` scope whose user group has `EmailGateway.ManageDomain`, resolves the sender domain from the From address and runs the send checks first, so the agent never holds a sender key and no sender key is created for it. Agent keys can also list, add and verify sending domains, read events, list suppressions, and manage and test event webhooks. Removing a suppressed address needs the `send` scope and always asks for confirmation. `EmailGateway.GetWebhooks` leaves out `SigningKey` and masks webhook URLs for an agent key, and `IncludeDiagnostics` returns no resolved DNS values to one. Sender keys, SMTP credentials and signing key rotation stay unavailable to agent keys.
 - New opt-in parameters: `IncludeSendingState` on `user.current`, `IncludeDiagnostics` on `emailgateway.verifydomain`, `ExactMessageID` on `emailgateway.getevents` and `IdempotencyKey` on `emailgateway.sendemail` (new error codes 41 to 44). Responses without them are unchanged. New command `emailgateway.testwebhook` posts a signed sample event to a webhook.
 
@@ -145,6 +159,8 @@ v6.0.2 screens three points with fixed rules (issue #3392): every new account, a
 - If you run your own reverse proxy, load balancer or CDN in front of Octeth with path-based rules, forward `/mcp`, `/oauth/`, `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` to Octeth, or the AI assistant connector cannot be reached.
 - Review the new sender screening section on each user group, and choose hold for the points where you want items stopped for review. Campaign content screening is off until you choose flag or hold for it. Add protected brands and spam-trap patterns with `admin.screening.settings.update` if you use those rules.
 - Review the new AI agent access section on each user group. Agents are read-only until you choose `write` or `send` and set the daily send and recipient caps you want.
+- Run `./cli/octeth.sh users:orphans` once to see the lists, segments, subscriber tables and themes that earlier user and user group deletions left behind. It changes nothing unless you add `--delete --yes`.
+- If you rely on administrators approving the campaigns of `Untrusted` accounts, expect one summary email after the upgrade listing the campaigns approved before it, which are held once more when they next come up to send.
 - Add `ui/storage/oauth-private.key` and `ui/storage/oauth-public.key` to your backups, and keep them when moving Octeth to another server.
 - Remove any calls to the `postmaster.*` commands. They answer `ErrorCode: 99` in v6.0.2 and will be deleted later.
 - The upgrade leaves `GOOGLE_POSTMASTER_CLIENT_ID`, `GOOGLE_POSTMASTER_CLIENT_SECRET` and `GOOGLE_POSTMASTER_REDIRECT_URI` in your `.oempro_env`. Nothing reads them any more, so you can delete them.
