@@ -75,6 +75,67 @@ In a new chat, turn on the Octeth connector from the tools menu and ask your que
 The names of menus in Claude and ChatGPT change from time to time. If a step does not match what you see, look for "connectors", "apps" or "custom connector" in the assistant's settings.
 :::
 
+## Connect Claude Code, Codex and other coding agents
+
+Coding agents that run in a terminal connect to the same URL and sign in the same way. Run these commands on your own computer. `<your app domain>` is the domain of your Octeth, for example `mailer.example.com`.
+
+### Claude Code
+
+```bash
+claude mcp add --transport http octeth https://<your app domain>/mcp
+```
+
+Start Claude Code, type `/mcp`, choose **octeth** and **Authenticate**. Your browser opens the Octeth sign-in page. Sign in and click **Allow**.
+
+### Codex
+
+```bash
+codex mcp add octeth --url https://<your app domain>/mcp
+codex mcp login octeth
+```
+
+The login opens your browser. Sign in to Octeth and click **Allow**.
+
+### Gemini CLI
+
+Add the server to `~/.gemini/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "octeth": {
+      "httpUrl": "https://<your app domain>/mcp"
+    }
+  }
+}
+```
+
+Start Gemini CLI and run `/mcp auth octeth` to sign in. If the sign-in does not complete, connect with an agent key as described below.
+
+### Other agents
+
+Any agent that supports remote MCP servers over HTTP with OAuth works the same way: give it the connector URL and sign in when it opens your browser.
+
+### Agents that cannot sign in
+
+A script, a scheduled job or a hosted agent with no browser uses an agent key instead of the sign-in:
+
+1. In Octeth, open **API & webhooks** > **Connected AI assistants** and click **Create agent key**.
+2. Choose what the agent may do and its daily limits, then copy the key. It is shown only once.
+3. Store the key in an environment variable on the machine that runs the agent, for example `OCTETH_AGENT_KEY`, and send it as `Authorization: Bearer <key>`. Keep it out of files that are committed or shared.
+
+With the key in `OCTETH_AGENT_KEY`:
+
+- **Claude Code**: add the server to the project's `.mcp.json` with the header `"Authorization": "Bearer ${OCTETH_AGENT_KEY}"`.
+- **Codex**: `codex mcp add octeth --url https://<your app domain>/mcp --bearer-token-env-var OCTETH_AGENT_KEY`
+- **Gemini CLI**: add `"headers": { "Authorization": "Bearer $OCTETH_AGENT_KEY" }` next to `httpUrl`.
+
+An agent key has the same permissions, limits and confirmation step as a connection made through the sign-in, and it appears on the same page, where you can revoke it.
+
+### Installing and upgrading Octeth with an agent
+
+Coding agents can also install and upgrade Octeth itself. See [Let an AI coding agent install Octeth](/v6.0.2/getting-started/octeth-installation) and [Let an AI coding agent upgrade Octeth](/v6.0.2/getting-started/upgrading-octeth#running-the-upgrade).
+
 ## The consent screen
 
 Before anything is connected, Octeth shows a consent screen. It tells you:
