@@ -2767,7 +2767,7 @@ Sets one of a user's email gateway API keys to `Disabled` or back to `Enabled` w
 
 A domain can hold only one key per status:
 
-- Disabling a key when another key of the same domain is already `Disabled` moves that older key to `Deleted`. It can no longer be re-enabled.
+- Disabling a key when another key of the same domain is already `Disabled` moves that older key to `Deleted`, and removes the domain's previous `Deleted` key. The older key can no longer be re-enabled. Both changes are reported in `ChangedKeys`.
 - Re-enabling a key is refused (error 6) while another key of the same domain is `Enabled`, for example one the user created after the disable. Disable or delete that key first.
 
 A `Deleted` key is never re-enabled (error 5). Disabling a key does not stop the user from creating a new one. To stop a user sending, disable the account ([`user.update`](./users#update-user) with `AccountStatus` set to `Disabled`) or suspend the sender domain ([`admin.senderdomain.status.update`](./user-senderdomains#moderate-a-sender-domain-admin)).
@@ -2813,7 +2813,11 @@ curl -X POST https://example.com/api.php \
     "Description": "Production",
     "CreatedAt": "2026-10-01 10:00:00",
     "APIKeyPrefix": "3F9A1C2B"
-  }
+  },
+  "ChangedKeys": [
+    { "APIKeyID": 64, "From": "Disabled", "To": "Deleted" },
+    { "APIKeyID": 71, "From": "Enabled", "To": "Disabled" }
+  ]
 }
 ```
 
@@ -2834,6 +2838,7 @@ curl -X POST https://example.com/api.php \
 5: A deleted API key cannot be changed
 6: Another API key of this sender domain is enabled
 7: The status change could not be saved
+8: The API key changed while its status was being updated. Nothing was changed
 5001: UserID is required
 5002: User not found
 5003: User is outside the user groups this admin account may access
@@ -2843,4 +2848,8 @@ curl -X POST https://example.com/api.php \
 
 :::
 
-`Changed` is `false` when the key already had the requested status. When `APIKeyID` or `Status` is missing, `ErrorCode` is an array of the codes above, for example `[1, 2]`.
+`Changed` is `false` when the key already had the requested status. `ChangedKeys` lists every key the call changed, in the order it changed them, as `APIKeyID`, `From` and `To`. When a disable retires an older key, the list starts with the domain's previous `Deleted` key if there was one (`To` is `Purged`, the row no longer exists), then the older key (`Disabled` to `Deleted`), and ends with the requested key. It is an empty list when nothing changed. Record every entry when you audit a containment action, not only the key you asked about.
+
+The call locks all of the domain's keys before it reads and changes the requested key, so a delete or replacement by the user at the same moment either finishes first (the call then answers 4 or 5) or waits for this change. Error 8 means the key or another key of its domain changed between the check and the write. Nothing was changed: reload the keys with `admin.user.emailgateway.apikeys.get` and try again.
+
+When `APIKeyID` or `Status` is missing, `ErrorCode` is an array of the codes above, for example `[1, 2]`.
