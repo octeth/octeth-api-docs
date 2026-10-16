@@ -166,6 +166,14 @@ With **Prevent user login from IP addresses not in the list** ticked in Settings
 The error code is the ordinary invalid-login code, so an integration that reads only the code treats it as a failed login. A login with `APIKey` is not affected. With the setting off or the list empty, nothing changes.
 :::
 
+::: warning Behavior change (v6.0.2, #2986)
+Repeated failed sign-ins are refused. After `LOGIN_THROTTLE_MAX_FAILURES_PER_IDENTITY` failures for one username (default 10) or `LOGIN_THROTTLE_MAX_FAILURES_PER_IP` failures from one client address (default 50) within `LOGIN_THROTTLE_WINDOW_SECONDS` (default 900), further attempts are refused for `LOGIN_THROTTLE_LOCKOUT_SECONDS` (default 900) with **HTTP 429**, a `Retry-After` header and:
+
+`{"Success":false,"ErrorCode":429,"ErrorText":"Too many failed attempts. Try again later.","RetryAfterSeconds":840}`
+
+The check runs before the credentials are looked up, so the answer is identical for an unknown username, and a correct password is refused too until the lock expires. A wrong `TFACode` or `TFARecoveryCode` counts as a failure. A successful login clears the count for that username. A login with `APIKey` is not counted or refused. The settings are under **Login Brute-Force Protection** in [Octeth Configuration](/v6.0.2/getting-started/octeth-configuration#main-configuration-file-oempro-env).
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -210,6 +218,7 @@ curl -X POST https://example.com/api.php \
 3: Invalid login information
 3: Access from this IP address is not allowed (user-area IP restriction, see above)
 6: Invalid 2FA code or recovery code
+429: Too many failed attempts, try again after RetryAfterSeconds (HTTP 429, see above)
 ```
 
 :::
@@ -832,6 +841,10 @@ curl -X POST https://example.com/api.php \
 | ResetEmailSubject | String | No | Custom email subject (requires AdminAPIKey) |
 | ResetEmailContent | String | No | Custom email content (requires AdminAPIKey) |
 
+::: warning Behavior change (v6.0.2, #2986)
+Every request counts, not only failed ones, because each one that matches a user sends an email. After `LOGIN_THROTTLE_MAX_FAILURES_PER_IDENTITY` requests for one `EmailAddress` (default 10) within `LOGIN_THROTTLE_WINDOW_SECONDS` (default 900), further requests for it are refused for `LOGIN_THROTTLE_LOCKOUT_SECONDS` (default 900) with **HTTP 429**, a `Retry-After` header and `{"Success":false,"ErrorCode":429,"ErrorText":"Too many failed attempts. Try again later.","RetryAfterSeconds":840}`. The refusal is identical for an email address that belongs to no user. Over the API the count is per email address only, so an integration that sends reminders for many customers from one server is not limited by its own address. The user forgot-password screen also counts per client address (default 50, `LOGIN_THROTTLE_MAX_FAILURES_PER_IP`).
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -866,6 +879,7 @@ curl -X POST https://example.com/api.php \
 1: Missing EmailAddress parameter
 2: Invalid email address format
 3: Email address not found (Note: For security, this returns success even if not found)
+429: Too many reminder requests for this email address, try again after RetryAfterSeconds (HTTP 429, see above)
 ```
 
 :::

@@ -1436,7 +1436,29 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     Introduced in v6.0.0 (issue #2887).
 
-52. **API ResponseFormat Case-Insensitive Matching**
+52. **Login Brute-Force Protection**
+
+    ```bash
+    LOGIN_THROTTLE_ENABLED=true                    # Refuse repeated failed sign-ins and password reminders (on by default, including on upgrades)
+    LOGIN_THROTTLE_MAX_FAILURES_PER_IDENTITY=10    # Failures one username or email address may make within the window (3 to 1000, default: 10)
+    LOGIN_THROTTLE_MAX_FAILURES_PER_IP=50          # Failures one client address may make within the window, across all accounts (3 to 100000, default: 50)
+    LOGIN_THROTTLE_WINDOW_SECONDS=900              # Counting window in seconds, starting at the first failure (60 to 86400, default: 900)
+    LOGIN_THROTTLE_LOCKOUT_SECONDS=900             # How long a locked name or address stays refused, in seconds (60 to 86400, default: 900)
+    ```
+
+    These settings limit repeated failed sign-ins on the user, administrator and subscriber login (the login screens and the `User.Login`, `Admin.Login` and `Subscriber.Login` API commands) and repeated password-reminder requests (the forgot-password screens and `User.PasswordRemind` and `Admin.PasswordRemind`). Failures are counted in Redis, separately for the name being signed in as and for the client address, and separately for each area, so failures on the user login never count against the administrator login. The name is the username or email address, or the list and email address for a subscriber, and it is matched the way the login itself matches it, ignoring case and accents, so `Admin`, `admin` and `ádmin` share one count. The client address is the one resolved through `TRUSTED_PROXIES`, and an IPv6 client is counted by its /64 network.
+
+    When either count reaches its limit within `LOGIN_THROTTLE_WINDOW_SECONDS`, further attempts for that name, or from that address, are refused for `LOGIN_THROTTLE_LOCKOUT_SECONDS`. A refused attempt answers `ErrorCode` 429 with `RetryAfterSeconds`, and over `api.php` also **HTTP 429** with a `Retry-After` header. The refusal happens before the credentials are looked up, so it is the same for an existing and an unknown account, and it refuses a correct password too until the lock expires. A lock always expires, so there is no permanent lockout.
+
+    A successful sign-in clears the count for that name, so a few typos followed by the right password leave nothing behind. A successful administrator sign-in also clears the user-area count for the same name, because the new user interface tries a user sign-in before an administrator one. A wrong two-factor code or recovery code counts as a failure, and the first step of a two-factor sign-in, which sends no code, does not. Sign-in with a user API key or a valid `AdminAPIKey` is not counted.
+
+    A password reminder counts every request, not only failures, because each one that matches an account sends an email. `Admin.PasswordRemind` and both forgot-password screens count per email address and per client address. `User.PasswordRemind` called through `api.php` needs an admin credential and is often called by one server on behalf of many customers, so there it is counted per email address only.
+
+    The code default is `true`, like `API_ENFORCE_RATE_LIMITS`, so an upgraded install is protected with no action. Set it to `false` to switch the limiter off. If many of your users sign in from one shared address, or an integration signs many people in from one server, raise `LOGIN_THROTTLE_MAX_FAILURES_PER_IP`. A numeric value outside its allowed range falls back to the default, and if Redis is unreachable, attempts are allowed rather than refused.
+
+    Introduced in v6.0.2 (issue #2986).
+
+53. **API ResponseFormat Case-Insensitive Matching**
 
     ```bash
     API_RESPONSEFORMAT_CASE_INSENSITIVE=false   # Match ResponseFormat case-insensitively (off by default)
@@ -1448,7 +1470,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     Introduced in v6.0.1 (issue #2684).
 
-53. **Journey Worker Fairness**
+54. **Journey Worker Fairness**
 
     ```bash
     JOURNEY_WORKER_MAX_PER_JOURNEY=10   # Max journey workers busy with the same journey at once, 0 disables (default: 10)
@@ -1460,7 +1482,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     Introduced in v6.0.1 (issue #1902).
 
-54. **Email Gateway DNS Host Names**
+55. **Email Gateway DNS Host Names**
 
     ```bash
     EMAILGATEWAY_DNS_SUBDOMAIN=sl        # Subdomain Octeth uses under an email gateway sender domain, e.g. sl.example.com (default: sl)
@@ -1472,7 +1494,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     The default `EMAILGATEWAY_DNS_TEMPLATES` is built from these three values. When Octeth regenerates a gateway sender domain's DNS records with a custom subdomain or tracking prefix, it looks for these literal values in the template and replaces them with the domain's own values. If you set `EMAILGATEWAY_DNS_TEMPLATES` to your own JSON, write the host names in it with the same literals as these three keys. Otherwise the replacement finds nothing, and a domain's custom subdomain or tracking prefix never reaches its regenerated DNS records.
 
-55. **Neutral Fallback Tracking Host**
+56. **Neutral Fallback Tracking Host**
 
     ```bash
     TRACKING_FALLBACK_DOMAIN=            # Host for tracking and unsubscribe links when a send has no sender domain tracking host, e.g. track.example.net (default: empty)
@@ -1505,7 +1527,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     Click links in Email Gateway and journey email are accepted on the fallback host, the `APP_URL` host and every delivery server's link tracking domain, in addition to the sender domain's own subdomains. Any other host is still rejected as a possible phishing link.
 
-56. **Overrides for `config/global` Settings**
+57. **Overrides for `config/global` Settings**
 
     Each key in this item is read by a file in `config/global/` and falls back to the default shown when it is absent from `.oempro_env`. They are listed at the end of `_dockerfiles/examples/.oempro_env.example` (issue #3154), in two forms:
 
@@ -1569,9 +1591,9 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     | `EMAILCAMPAIGN_DNS_TRACK_PREFIX` | `track` | Commented | Prefix of the campaign tracking host, for example `track-sl.example.com`. |
     | `EMAILCAMPAIGN_DNS_TRACK_MERGE` | `-` | Commented | Character between the tracking prefix and the subdomain. |
     | `EMAILCAMPAIGN_DNS_TEMPLATES` | built from `APP_URL` and the three keys above | Commented | JSON array of the DNS record templates for campaign sender domains. Leave it unset unless you replace the whole template. |
-    | `EMAILGATEWAY_DNS_TEMPLATES` | built from `APP_URL` and the `EMAILGATEWAY_DNS_*` keys (item 54) | Commented | JSON array of the DNS record templates for Email Gateway sender domains. Leave it unset unless you replace the whole template. |
+    | `EMAILGATEWAY_DNS_TEMPLATES` | built from `APP_URL` and the `EMAILGATEWAY_DNS_*` keys (item 55) | Commented | JSON array of the DNS record templates for Email Gateway sender domains. Leave it unset unless you replace the whole template. |
 
-    Changing `EMAILCAMPAIGN_DNS_SUBDOMAIN`, `EMAILCAMPAIGN_DNS_TRACK_PREFIX` or `EMAILCAMPAIGN_DNS_TRACK_MERGE` changes the DNS records every new campaign sender domain must publish. The same substitution rule as item 54 applies: a custom `EMAILCAMPAIGN_DNS_TEMPLATES` must write its host names with the same literals as these three keys.
+    Changing `EMAILCAMPAIGN_DNS_SUBDOMAIN`, `EMAILCAMPAIGN_DNS_TRACK_PREFIX` or `EMAILCAMPAIGN_DNS_TRACK_MERGE` changes the DNS records every new campaign sender domain must publish. The same substitution rule as item 55 applies: a custom `EMAILCAMPAIGN_DNS_TEMPLATES` must write its host names with the same literals as these three keys.
 
     **Features and the user area** (`config/global/features.php`)
 

@@ -2259,6 +2259,14 @@ Disable2FAToken = HMAC_SHA256("admin.login.disable2fa", SCRTY_SALT)   // lowerca
 `AdminInfo` never contains the sub-admin `APIKey` column, whichever way the login was performed. When a sub-admin logs in and `ADMIN_API_ENFORCE_PRIVILEGES` is enabled on the install, the returned `SessionID` is limited to the commands that sub-admin's privileges allow; other admin commands answer `99999`. See [Authorization](/v6.0.2/api-reference/authorization#sub-admin-api-keys-and-privilege-enforcement).
 :::
 
+::: warning Behavior change (v6.0.2, #2986)
+Repeated failed sign-ins are refused. After `LOGIN_THROTTLE_MAX_FAILURES_PER_IDENTITY` failures for one username (default 10) or `LOGIN_THROTTLE_MAX_FAILURES_PER_IP` failures from one client address (default 50) within `LOGIN_THROTTLE_WINDOW_SECONDS` (default 900), further attempts are refused for `LOGIN_THROTTLE_LOCKOUT_SECONDS` (default 900) with **HTTP 429**, a `Retry-After` header and:
+
+`{"Success":false,"ErrorCode":429,"ErrorText":"Too many failed attempts. Try again later.","RetryAfterSeconds":840}`
+
+The check runs before the credentials are looked up, so the answer is identical for an unknown username, and a correct password is refused too until the lock expires. A wrong `TFACode` counts as a failure. A successful login clears the count for that username. A login with a valid `AdminAPIKey` is not counted or refused, while an `AdminAPIKey` that does not resolve falls back to `Username` and `Password` and is counted like any password attempt. The settings are under **Login Brute-Force Protection** in [Octeth Configuration](/v6.0.2/getting-started/octeth-configuration#main-configuration-file-oempro-env).
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -2331,6 +2339,7 @@ username: Missing required parameter username
 password: Missing required parameter password
 3: Invalid username or password
 101: Invalid 2FA code
+429: Too many failed attempts, try again after RetryAfterSeconds (HTTP 429, see above)
 ```
 
 :::
@@ -2353,6 +2362,10 @@ Sends a password reset link to the administrator's email address. This endpoint 
 | Command          | String | Yes      | API command: `admin.passwordremind`                                                              |
 | EmailAddress     | String | Yes      | Administrator email address                                                                      |
 | CustomResetLink  | String | No       | Custom password reset URL template (base64 encoded). Use `%s` placeholder for MD5 hash. If not provided, default reset link will be used |
+
+::: warning Behavior change (v6.0.2, #2986)
+Every request counts, not only failed ones, because each one that matches an administrator sends an email. After `LOGIN_THROTTLE_MAX_FAILURES_PER_IDENTITY` requests for one `EmailAddress` (default 10) or `LOGIN_THROTTLE_MAX_FAILURES_PER_IP` requests from one client address (default 50) within `LOGIN_THROTTLE_WINDOW_SECONDS` (default 900), further requests are refused for `LOGIN_THROTTLE_LOCKOUT_SECONDS` (default 900) with **HTTP 429**, a `Retry-After` header and `{"Success":false,"ErrorCode":429,"ErrorText":"Too many failed attempts. Try again later.","RetryAfterSeconds":840}`. The refusal is identical for an email address that belongs to no administrator. The settings are under **Login Brute-Force Protection** in [Octeth Configuration](/v6.0.2/getting-started/octeth-configuration#main-configuration-file-oempro-env).
+:::
 
 ::: code-group
 
@@ -2402,6 +2415,7 @@ emailaddress: Missing required parameter emailaddress
 2: Invalid email address format
 3: Email address not found
 NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+429: Too many reminder requests, try again after RetryAfterSeconds (HTTP 429, see above)
 ```
 
 :::

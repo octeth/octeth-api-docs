@@ -1926,6 +1926,10 @@ curl -X POST https://example.com/api.php \
 | ListID    | Integer| Yes      | ID of the subscriber list             |
 | EmailAddress | String | Yes   | Email address of the subscriber       |
 
+::: warning Behavior change (v6.0.2, #2986)
+Repeated failed sign-ins are refused. Failures are counted for the `ListID` and `EmailAddress` pair and for the client address. After `LOGIN_THROTTLE_MAX_FAILURES_PER_IDENTITY` failures for one pair (default 10) or `LOGIN_THROTTLE_MAX_FAILURES_PER_IP` failures from one client address (default 50) within `LOGIN_THROTTLE_WINDOW_SECONDS` (default 900), further attempts are refused for `LOGIN_THROTTLE_LOCKOUT_SECONDS` (default 900) with **HTTP 429**, a `Retry-After` header and `{"Success":false,"ErrorCode":429,"ErrorText":"Too many failed attempts. Try again later.","RetryAfterSeconds":840}`. The check runs before the list and the subscriber are looked up, so the answer is identical when either does not exist, and valid credentials are refused too until the lock expires. A successful login clears the count for that pair, unless the caller already had a subscriber session. The settings are under **Login Brute-Force Protection** in [Octeth Configuration](/v6.0.2/getting-started/octeth-configuration#main-configuration-file-oempro-env).
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -1964,6 +1968,7 @@ curl -X POST https://example.com/api.php \
 2: Missing EmailAddress parameter
 3: Invalid EmailAddress
 4: Subscriber not found
+429: Too many failed attempts, try again after RetryAfterSeconds (HTTP 429, see above)
 ```
 
 :::

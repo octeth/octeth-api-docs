@@ -46,6 +46,18 @@ There is no opt-in flag and no setting to restore the old fallback, because the 
 
 **Upgrade note.** If your relay does not support STARTTLS on the configured port but Secure is set to TLS, your sends have been going out unencrypted and will start failing after the upgrade. Before upgrading, run **Settings > Email Delivery > Send test email** (and the same test for each user group or delivery server with its own SMTP settings). If a test fails with `STARTTLS failed`, either enable STARTTLS on the relay, switch to Secure = SSL on port 465 if the relay offers it, or, only for a relay on a trusted private network, set Secure to none deliberately.
 
+### Login and password reminders
+
+#### Repeated failed sign-ins and password reminders are refused with `ErrorCode 429`, even for a correct password
+
+`User.Login`, `Admin.Login`, `Subscriber.Login`, `Admin.PasswordRemind` and `User.PasswordRemind` now refuse repeated attempts. The user, administrator and subscriber login screens and the forgot-password screens are covered too, because they call these commands. Failures are counted per name being signed in as (the username or email address, or the list and email address for a subscriber) and per client address, separately for each command. Names are matched the way the login matches them, ignoring case and accents, so `Admin`, `admin` and `ádmin` share one count. After 10 failures for one name, or 50 from one address, within 15 minutes, further attempts are refused for 15 minutes.
+
+A refused attempt answers `{"Success": false, "ErrorCode": 429, "ErrorText": "Too many failed attempts. Try again later.", "RetryAfterSeconds": 840}`, and over `api.php` the HTTP status is 429 with a `Retry-After` header. The refusal happens before the credentials are looked up, so it is identical for an existing and an unknown account, and it refuses a correct password until the lock expires. An integration that treats every non-success login as a wrong password, or that retries a login in a loop, must handle `ErrorCode 429` and wait `RetryAfterSeconds`.
+
+A successful sign-in clears the count for that name, and a successful `Admin.Login` also clears the `User.Login` count for the same name. A wrong `TFACode` or `TFARecoveryCode` counts as a failure. A login with a user API key or a valid `AdminAPIKey` is not counted or refused. Password reminders count every request, not only failures, because each one sends an email: per email address, and also per client address for `Admin.PasswordRemind` and the forgot-password screens. `User.PasswordRemind` called through `api.php` is counted per email address only. If Redis is unreachable, attempts are allowed.
+
+This is on by default, including on upgrade. Set `LOGIN_THROTTLE_ENABLED=false` in `.oempro_env` to switch it off, and tune the limits with `LOGIN_THROTTLE_MAX_FAILURES_PER_IDENTITY`, `LOGIN_THROTTLE_MAX_FAILURES_PER_IP`, `LOGIN_THROTTLE_WINDOW_SECONDS` and `LOGIN_THROTTLE_LOCKOUT_SECONDS`. An integration that signs many people in from one server address may need a higher `LOGIN_THROTTLE_MAX_FAILURES_PER_IP` (octeth/oempro#2986).
+
 ## Tier 2: shape and value changes
 
 ### Remote content and URL imports
