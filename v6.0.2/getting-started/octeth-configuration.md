@@ -166,13 +166,15 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
 8. **Test Database (PHPUnit)**
 
-   Used only when the automated test suite is running (the `OEMPRO_LARAVEL_TESTS` constant is defined by the PHPUnit bootstrap, or the `X-Octeth-Test-Database` header is sent in the local environment). Ignored during normal operation, so it is safe to point these at a throwaway database.
+   Used only when the automated test suite is running (the `OEMPRO_LARAVEL_TESTS` constant is defined by the PHPUnit bootstrap, or the `X-Octeth-Test-Database` header is sent in the local environment). Ignored during normal operation.
+
+   Leave `TEST_MYSQL_HOST`, `TEST_MYSQL_USERNAME` and `TEST_MYSQL_DATABASE` empty to use the `DB_HOST`, `DB_USERNAME`, `DB_PASSWORD` and `DB_DATABASE` values in `system/.env.testing`, the same database the Laravel tests use. Set any of the three to configure the test connection here instead. The test settings never fall back to the production `MYSQL_*` values, and a database name that does not contain `_test` is refused, so tests cannot reach real data.
    ```bash
-   TEST_MYSQL_HOST=192.168.99.108   # Test MySQL host
-   TEST_MYSQL_USERNAME=oempro       # Test MySQL username
-   TEST_MYSQL_PASSWORD=password     # Test MySQL password
-   TEST_MYSQL_DATABASE=oempro_test  # Test database (keep separate from production data)
-   TEST_MYSQL_TABLE_PREFIX=oempro_  # Test table prefix
+   TEST_MYSQL_HOST=                 # Test MySQL host. Empty = DB_HOST from system/.env.testing
+   TEST_MYSQL_USERNAME=             # Test MySQL username. Empty = DB_USERNAME from system/.env.testing
+   TEST_MYSQL_PASSWORD=             # Test MySQL password. Used only when the settings above are set
+   TEST_MYSQL_DATABASE=             # Test database, must contain "_test". Empty = DB_DATABASE from system/.env.testing
+   TEST_MYSQL_TABLE_PREFIX=         # Test table prefix. Empty = oempro_
    ```
 
 9. **Error Tracking (Bugsnag / Sentry)**

@@ -122,6 +122,14 @@ The four "US & Canada" time zones are now stored as `(GMT-05:00) Eastern Time (U
 - `user.create`, `user.update` and `campaign.update` convert `&amp;` to `&` in `TimeZone` and `SendTimeZone` before storing. Clients that send either form keep working, and `user.get` returns the plain form.
 - The upgrade repairs existing `oempro_users.TimeZone` and `oempro_campaigns.SendTimeZone` values that still hold `&amp;`. Users whose time zone a later save already reset to Hawaii must set it again.
 
+### Send engine
+
+#### The send engine waits for MySQL instead of crashing when it becomes unreachable
+
+On PHP 8.1, the send engine (`cli/email_campaign_controller/run.php`) crashed with a `TypeError` when MySQL became unreachable after it had started, and supervisord restarted it. It now logs the failure and retries every second until MySQL is back, the same as the PHP 5.6 workers (octeth/oempro#3367).
+
+A failed connection now reports the MySQL connect error on both PHP versions, for example `MySql Error: Couldn't connect to database - Connection refused`, where PHP 8.1 reported the `TypeError` instead. Startup behavior with MySQL down is unchanged.
+
 ## Additions that need operator attention
 
 ### AI assistant connector
