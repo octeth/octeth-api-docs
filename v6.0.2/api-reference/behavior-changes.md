@@ -84,6 +84,14 @@ The single-brace form is deprecated. `sms.mergetags.get` returns only the email 
 
 A Xeebi delivery report or status poll that marked a message as a generic failure while also naming the reason (an invalid number, a number Xeebi has no route for, or a number on the Xeebi stop list) was recorded as the generic failure, "Xeebi could not submit the message to the network". From v6.0.2 the specific reason wins. The recipient's `GatewayErrorCode` is `INVALID_NUMBER`, `UNROUTABLE` or `STOP_LIST`, `ErrorMessage` carries the matching description, and the recipient's status is Rejected instead of Failed, so `smscampaign.recipients.browse` and the recipient list show it under `Rejected`, not `Failed`. It is still one undelivered message in the SMS event history. A report that names no reason is still recorded as `FAILED`. Messages already recorded are not changed (octeth/oempro#3380).
 
+#### SMS campaigns use every short domain of their gateway
+
+Before v6.0.2, SMS campaigns sent every tracked link on the first domain in the gateway's **URL Shortening Domains** list and ignored the rest. Now each recipient is assigned one of the gateway's domains, spread evenly across the list, and keeps it for the whole campaign. The estimate and the queued cost use the recipient's own domain, so the part count billed equals the part count sent. Messages queued before the upgrade keep sending on the first domain (octeth/oempro#3371).
+
+On a gateway with several domains of different lengths, `smscampaign.create` and `smscampaign.update` now check the part limit against the longest domain, so a message that was exactly at the limit on the first domain can now be refused with error `9` if a longer domain pushes it over. Gateways with one or no short domain behave exactly as before.
+
+The new `oempro_sms_campaign_queue.ShortDomain` column is added by an upgrade migration (instant, no table rebuild). Until it runs, campaigns keep using the first domain.
+
 ### User Groups
 
 #### A subscription plan has exactly one default user group

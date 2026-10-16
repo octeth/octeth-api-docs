@@ -77,7 +77,7 @@ This tab displays provider-specific fields based on the selected gateway type. F
 | **Sender Numbers** | Phone numbers used as sender IDs when sending SMS messages. Enter one number per line, including the country code (e.g., `+1234567890`). |
 | **Message Concatenation Limit** | The maximum number of SMS parts that can be concatenated for long messages (1-10). Default is 3. |
 | **Default Sender Number** | The default phone number to use when sending SMS messages. Select from the sender numbers you entered. |
-| **URL Shortening Domains** | Optional domains for shortening links in SMS messages. Enter one domain per line. These domains must point to your Octeth server via a CNAME record. |
+| **URL Shortening Domains** | Optional domains for shortening links in SMS messages. Enter one domain per line. These domains must point to your Octeth server via a CNAME record. When several domains are listed, all of them are used. |
 | **Country Restrictions** | Optional 2-letter country codes to restrict SMS sending to specific countries. Leave empty to allow all countries. |
 
 [[SCREENSHOT: SMS Settings tab showing sender numbers textarea, concatenation limit, default sender dropdown, URL shortening domains, and country restrictions]]
@@ -371,7 +371,12 @@ When you enable link tracking in a Send SMS action and include the <code v-pre>{
 
 ### Short URL Domains
 
-Administrators can configure custom short URL domains in the SMS gateway settings under the **URL Shortening Domains** field. These domains must be pointed to your Octeth server via a DNS CNAME record. If multiple domains are configured, Octeth randomly selects one for each message.
+Administrators can configure custom short URL domains in the SMS gateway settings under the **URL Shortening Domains** field. These domains must be pointed to your Octeth server via a DNS CNAME record. When several domains are configured, Octeth uses all of them:
+
+- **SMS campaigns** assign each recipient one of the gateway's domains, spreading recipients evenly across the list. A recipient keeps the same domain for the whole campaign, and the message part count and cost shown in the estimate are calculated with that recipient's domain, so the message that is sent matches the cost you confirmed. Adding domains after a campaign has been queued does not change the domain of messages already queued. Removing a domain moves the queued messages that use it to another domain of equal or shorter length when one exists, so they never cost more parts than you confirmed. If no such domain is left, they are sent on the removed domain.
+- **Journey Send SMS actions** pick one of the domains at random for each message.
+
+Because domains can differ in length, the part limit check when you create or edit a campaign uses the longest configured domain, so a message accepted there fits on every domain.
 
 If no custom domain is configured, the application's main domain is used.
 

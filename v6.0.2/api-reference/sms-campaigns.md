@@ -43,6 +43,8 @@ The campaign is created as a `Draft`. Its list must have a mobile phone number f
 
 The audience is the whole list, a saved segment of it (`SegmentID`), or conditions from the segment rule builder (`RulesJsonBundle`). It is never both a segment and conditions. While the campaign is a `Draft`, `smscampaign.update` can change it, and `smscampaign.audience.count` counts an audience before anything is saved.
 
+The message is measured with the gateway's longest short URL domain, because each recipient is sent links on one of the gateway's **URL Shortening Domains**. On a gateway with several domains of different lengths, a message that fits on the shortest domain but not on the longest is refused with error `9`. With one domain or none, nothing changed. Changed in v6.0.2.
+
 **Request Body Parameters:**
 
 | Parameter | Type | Required | Description |
@@ -108,7 +110,7 @@ curl -X POST https://example.com/api/v1/smscampaign.create \
 6: A link in MessageContent could not be used
 7: MessageContent is empty
 8: Invalid GatewayID, or the gateway is not available to this account
-9: The message is too long for the gateway's concatenation limit
+9: The message is too long for the gateway's concatenation limit, measured with the gateway's longest short URL domain
 10: The campaign could not be created
 11: Invalid SegmentID, or the segment does not belong to this list (also returned when the campaign could not be created as a single transaction)
 12: The audience conditions in RulesJsonBundle cannot be used; the message says why
@@ -164,6 +166,8 @@ Conditions that could not be applied in full are refused rather than read as "ev
 - Changing `ListID` without sending either of them resets the audience to the whole new list, because a segment and a set of conditions each belong to the old list.
 
 The audience is part of the content fingerprint, so an audience change invalidates an earlier estimate like any other edit.
+
+The message is measured with the gateway's longest short URL domain, because each recipient is sent links on one of the gateway's **URL Shortening Domains**. On a gateway with several domains of different lengths, a message that fits on the shortest domain but not on the longest is refused with error `9`. With one domain or none, nothing changed. Changed in v6.0.2.
 
 **Request Body Parameters:**
 
@@ -223,7 +227,7 @@ curl -X POST https://example.com/api/v1/smscampaign.update \
 6: Nothing to update
 7: The campaign could not be updated, so nothing was changed
 8: Invalid GatewayID, or the gateway is not available to this account
-9: The message is too long for the gateway's concatenation limit
+9: The message is too long for the gateway's concatenation limit, measured with the gateway's longest short URL domain
 10: The campaign could not be updated as a single transaction, so nothing was changed
 11: The campaign, or its links, could not be read, so nothing was changed
 12: Invalid ListID
