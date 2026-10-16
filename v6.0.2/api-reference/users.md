@@ -517,6 +517,7 @@ curl -X POST https://example.com/api.php \
 | Phone | String | No | Phone number |
 | PhoneVerified | Boolean | No | Phone verification status |
 | Fax | String | No | Fax number |
+| ClearEmptyFields | Boolean | No | Set to `true` to let an empty value clear a field. With it, `CompanyName`, `FirstName`, `LastName`, `Website`, `Street`, `Street2`, `City`, `State`, `Zip`, `Country`, `Phone`, `Fax` and `VAT` given as an empty string are stored empty. A parameter that is left out is never changed. Without `ClearEmptyFields` an empty value for these fields is ignored, as before. Added in v6.0.2 |
 | TimeZone | String | No | Timezone. An HTML-encoded `&amp;` is stored as `&`, so `(GMT-05:00) Eastern Time (US &amp; Canada)` is stored as `(GMT-05:00) Eastern Time (US & Canada)`. Changed in v6.0.2 |
 | Language | String | No | Language code |
 | AccountStatus | String | No | Account status (admin only) |
@@ -585,6 +586,10 @@ curl -X POST https://example.com/api.php \
 
 ::: tip Two-factor recovery code returned once (v6.0.1)
 The call that enables two-factor authentication (`Enable2FA=true` with a valid `2FACode`) returns the account's recovery code as a top-level `MFA_RecoveryCode` key. Every other `user.update` response is unchanged. Store the code when it is returned, because no API call returns it again: `user.current` stopped returning it in v6.0.1. To issue a new recovery code, disable two-factor authentication with `Cancel2FA=true` and enable it again.
+:::
+
+::: tip Clearing a field (v6.0.2)
+`user.update` skips an empty value for the contact and address fields, so a field could not be blanked. Send `ClearEmptyFields: true` with the fields to clear set to an empty string, for example `{"Command": "user.update", "UserID": 123, "CompanyName": "", "ClearEmptyFields": true}`. Only fields present in the request are cleared. A call without the flag behaves exactly as before.
 :::
 
 ## Get Monthly User Snapshot
@@ -1349,23 +1354,39 @@ Keys created without `IsAgentKey` are not affected and keep full access.
 | APIKey    | String | No       | API key for authentication            |
 | RecordsPerRequest | Integer | No | Number of records per page (default: 25) |
 | RecordsFrom | Integer | No | Starting record offset (default: 0) |
-| OrderField | String | No | Field to order by (default: `UserID`). Must be a plain column identifier: letters, digits and underscores only, starting with a letter or underscore. Pipe-separate for multi-column sort (e.g. `AccountStatus\|UserID`). See the sorting note below. |
-| OrderType | String | No | Order direction: 'ASC' or 'DESC' (default: `ASC`). Pipe-separate to match a multi-column `OrderField`. See the sorting note below. |
-| RelUserGroupID | Mixed | No | A user group id, an array of group ids, or one of six pseudo-values that select on something other than the group: `Online`, `Enabled`, `Disabled`, `Trusted`, `Untrusted`, `ActivationPendingSenderDomains`. See the note below |
-| RelUserCategoryID | Integer | No | User category ID (-1 for uncategorized) |
-| SearchField | String | No | Field to search in |
-| SearchKeyword | String | No | Search keyword |
+| OrderField | String | No | Column to order by (default: `UserID`). One of `UserID`, `Username`, `EmailAddress`, `FirstName`, `LastName`, `CompanyName`, `UserSince`, `LastActivityDateTime`, `AccountStatus`, `ReputationLevel`, `RelUserGroupID`, `RelUserCategoryID`, `SSOID`, matched without regard to case. Pipe-separate for multi-column sort (e.g. `AccountStatus\|UserID`). See the sorting note below. Changed in v6.0.2 |
+| OrderType | String | No | Order direction: `ASC` or `DESC` (default: `ASC`). Pipe-separate to match a multi-column `OrderField`. |
+| Filters | Object or String | No | Combinable filters, as a JSON object or a JSON-encoded string. Every key given is AND-ed with the others and with the admin's user-group scope. See "Combinable filters" below. When `Filters` or `Keyword` is supplied, `RelUserGroupID` and `RelUserCategoryID` are ignored. Added in v6.0.2 |
+| Keyword | String | No | Free-text search: a substring match on `FirstName`, `LastName`, `CompanyName`, `EmailAddress` and `Username`, plus an exact `UserID` match when the keyword is all digits. `%` and `_` are matched literally. Combines with `Filters`, `SearchField`/`SearchKeyword` and `LimitUtilizationStatus`. Same matching as `admin.users.search`. Added in v6.0.2 |
+| RelUserGroupID | Mixed | No | A user group id, an array of group ids, or one of six pseudo-values that select on something other than the group: `Online`, `Enabled`, `Disabled`, `Trusted`, `Untrusted`, `ActivationPendingSenderDomains`. Ignored when `Filters` or `Keyword` is supplied. See the note below |
+| RelUserCategoryID | Integer | No | User category ID (-1 for uncategorized). Ignored when `Filters` or `Keyword` is supplied |
+| SearchField | String | No | Column to search in: `UserID`, `EmailAddress`, `Username`, `FirstName`, `LastName`, `CompanyName` or `SSOID`, matched without regard to case. Any other value answers `ErrorCode 4`. Changed in v6.0.2 |
+| SearchKeyword | String | No | Substring searched for in `SearchField` |
 | ReturnStats | Boolean | No | Set to true to include statistics |
-| IncludeLimitUtilization | Boolean | No | Set to true to include limit utilization data |
+| IncludeLimitUtilization | Boolean | No | Set to true to include limit utilization data, computed live for every row |
+| IncludeLimitUtilizationStatus | Boolean | No | Set to `true` to add `LimitUtilizationStatus` to every row: `ok`, `warning`, `exceeded`, or `unknown` when the `user_limit_utilization` cron has not classified the user yet. Read from the cron's cached result, never recomputed, so it is cheap on every page. Added in v6.0.2 |
 | LimitUtilizationStatus | String | No | `OK`, `Warning` or `Exceeded`: only users whose cached limit-utilization status is that bucket. Combines with every other filter. The buckets are written by the `user_limit_utilization` cron; until it has run the call answers `ErrorCode 2` rather than an empty list. |
 
-::: warning Sorting parameters are format-filtered (v5.9.3)
-`OrderField` and `OrderType` are validated for **shape**, not against a list of sortable columns. Each pipe-separated segment of `OrderField` must be a plain identifier, and each segment of `OrderType` must be `ASC` or `DESC`.
+::: tip Combinable filters (v6.0.2)
+`Filters` takes these keys. Key names are matched without regard to case, so `GroupIDs` and `groupids` are the same key.
 
-- A value containing anything else (backticks, quotes, spaces, parentheses or any other metacharacter) is **silently discarded**. When that happens the pair is reset together. Ordering falls back to `UserID ASC` even if only one of the two parameters was malformed. The response is still HTTP `200` with `Success: true` and no error code.
-- Because there is no column allow-list, a value that *is* identifier-shaped but names a column that does not exist (for example `OrderField: "Bogus"`) is passed through to the query and surfaces as a **database error**. It does not fall back to the default.
+| Key | Value | Selects |
+|-----|-------|---------|
+| `GroupIDs` | Non-empty array of positive group ids | Users in any of those groups |
+| `AccountStatus` | `Enabled` or `Disabled` | Users with that account status |
+| `ReputationLevel` | `Trusted` or `Untrusted` | Users with that reputation level |
+| `CategoryID` | Positive category id, or `-1` | Users in that category, or uncategorized users |
+| `Online` | `true` or `false` | `true`: users active in the last 600 seconds. `false` is the same as leaving the key out |
+| `BlockedSenderDomains` | `true` or `false` | `true`: users owning at least one sender domain with status `Blocked`. Each user is listed once however many blocked domains it has. `false` is the same as leaving the key out |
+| `LimitUtilizationStatus` | `OK`, `Warning` or `Exceeded` | Same as the top-level parameter of that name, and the same error codes |
 
-Neither case returns a validation error. If results come back in an unexpected order after upgrading, your sort parameter is being rejected silently. Check it against the shape rules above.
+All keys given are AND-ed, so `{"GroupIDs": [5], "AccountStatus": "Disabled", "CategoryID": 3}` lists disabled users of group 5 in category 3. `TotalUsers` is the true number of matching users. For an admin account limited to specific user groups the result is further limited to those groups, so a group outside its reach returns an empty list, not an error. Unlike `RelUserGroupID: "ActivationPendingSenderDomains"`, `BlockedSenderDomains` is available to such an admin.
+
+An unknown key, an invalid value or malformed JSON answers `ErrorCode 3` with an `ErrorText` naming the problem. Without `Filters` and `Keyword`, every existing parameter combination returns the same response as before.
+:::
+
+::: warning Sorting parameters are allow-listed (changed in v6.0.2)
+Each pipe-separated segment of `OrderField` must be one of the columns listed in the table, and each segment of `OrderType` must be `ASC` or `DESC`. Any other value, including a column that exists but is not listed and a value with backticks, quotes, spaces or other characters, is **silently discarded**: the pair is reset together and ordering falls back to `UserID ASC`. The response is still `Success: true` with no error code. Before v6.0.2 an identifier-shaped name that is not on the list reached the query: an existing column was used for sorting, and an unknown one answered a database error.
 :::
 
 ::: warning RelUserGroupID pseudo-values are exact, case-sensitive strings
@@ -1406,6 +1427,20 @@ curl -X POST https://example.com/api.php \
   }'
 ```
 
+```bash [Example Request (filters and keyword)]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "users.get",
+    "AdminAPIKey": "your-admin-api-key",
+    "Filters": {"GroupIDs": [5], "AccountStatus": "Disabled"},
+    "Keyword": "acme",
+    "IncludeLimitUtilizationStatus": true,
+    "OrderField": "LastActivityDateTime",
+    "OrderType": "DESC"
+  }'
+```
+
 ```json [Success Response]
 {
   "Success": true,
@@ -1431,8 +1466,11 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
-1: LimitUtilizationStatus is not OK, Warning or Exceeded
+1: LimitUtilizationStatus (top-level or in Filters) is not OK, Warning or Exceeded
 2: The limit-utilization status buckets are not available yet (the cron has not run)
+3: Filters is not a JSON object, has an unknown key or an invalid value (v6.0.2)
+4: SearchField is not one of the allowed columns (v6.0.2)
+5003: The ActivationPendingSenderDomains pseudo-value is not available to an admin limited to specific user groups
 ```
 
 :::
@@ -2336,6 +2374,10 @@ curl -X POST https://example.com/api.php \
 `usergroups.get` no longer returns `SendMethodSMTPUsername` or `SendMethodSMTPPassword`. Each group carries `HasSendMethodSMTPPassword` instead, which is `true` when a password is stored. Credential keys nested inside `Options` and `ThemeInformation` (for example `Password`, `APIKey`, `SendMethodSMTPPassword` or `smtp_password`) are removed at any depth, matched case-insensitively. When `Options` holds such a key, it is returned re-encoded without it, so its bytes can differ from the stored value. An `Options` value with no such key is returned byte for byte as stored.
 
 The group fields are an allow-list: every other existing field is returned as before, and a column added to the user groups table in a later release is not returned until it is added to the response deliberately. To change the stored credentials, use `usergroup.update`, which keeps them when they are omitted.
+:::
+
+::: tip Group scope for limited admin accounts (changed in v6.0.2)
+For an admin account limited to specific user groups, `usergroups.get` returns only those groups. Before v6.0.2 it returned every group on the install, so the group pickers offered groups the admin could not use. The master Admin API key and admin accounts without a group limit get the same response as before.
 :::
 
 ::: code-group
@@ -3330,6 +3372,98 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+## Get Send Activity for Several Users (Admin)
+
+<Badge type="info" text="GET" /> `/api/v1/admin.users.sendactivity.get`
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `User.Edit`
+- Rate limit: 60 requests per 60 seconds
+- v1 REST alias: `GET /api/v1/admin.users.sendactivity.get`. Legacy access via `/api.php` is also supported
+- Added in v6.0.2
+:::
+
+Per-day campaign send totals for up to 100 users in one call, for send sparklines on a page of the user list. It answers what `admin.user.sendactivity.get` answers for one user, from a single query. `From` and `To` are `Y-m-d` dates, both inclusive, at most 31 days apart.
+
+A user that does not exist, or that is outside the user groups of an admin account limited to specific groups, is left out of `Users` without an error. Users keep the order of `UserIDs`, and every series has one point per day, with `0` for days without sends.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.users.sendactivity.get` |
+| AdminAPIKey | String | Yes | Admin API key (or admin `SessionID`) |
+| UserIDs | String or Array | Yes | 1 to 100 positive user ids, as an array or a comma-separated string. Duplicates are ignored |
+| From | String | Yes | Start date `Y-m-d` |
+| To | String | Yes | End date `Y-m-d`, not before `From`, at most 31 days after it |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "admin.users.sendactivity.get", "AdminAPIKey": "your-admin-api-key", "UserIDs": [42, 43], "From": "2026-09-01", "To": "2026-09-03"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "FromDate": "2026-09-01",
+  "ToDate": "2026-09-03",
+  "Users": [
+    {
+      "UserID": 42,
+      "TotalSent": 1250,
+      "Series": [
+        {"Date": "2026-09-01", "TotalSent": 0},
+        {"Date": "2026-09-02", "TotalSent": 1250},
+        {"Date": "2026-09-03", "TotalSent": 0}
+      ]
+    },
+    {
+      "UserID": 43,
+      "TotalSent": 0,
+      "Series": [
+        {"Date": "2026-09-01", "TotalSent": 0},
+        {"Date": "2026-09-02", "TotalSent": 0},
+        {"Date": "2026-09-03", "TotalSent": 0}
+      ]
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 5,
+  "ErrorText": "From and To may be at most 31 days apart"
+}
+```
+
+```txt [Error Codes]
+1: UserIDs is missing, holds a value that is not a positive integer, or lists more than 100 ids
+2: From is not a valid Y-m-d date
+3: To is not a valid Y-m-d date
+4: From is after To
+5: From and To are more than 31 days apart
+6: The send activity could not be read
+```
+
+:::
+
+**Response Field Reference:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| FromDate, ToDate | String | The window, as requested |
+| Users | Array | One entry per reachable user, in the order of `UserIDs` |
+| Users[].UserID | Integer | User id |
+| Users[].TotalSent | Integer | Emails sent by the user's campaigns in the window, by the day each campaign started sending |
+| Users[].Series | Array | One `{Date, TotalSent}` point per day from `FromDate` to `ToDate` |
 
 ## Send a Message to a User (Admin)
 

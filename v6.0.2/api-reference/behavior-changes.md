@@ -33,6 +33,8 @@ There is no opt-in flag, because the commands had no working data source left.
 ### Users
 
 - `Users.Delete` now deletes what the deleted user owned: their lists with each list's subscriber tables, their segments, user API keys (AI agent keys included), email gateway API keys and SMTP credentials, and their risk snapshots. Their email gateway sender domains are soft-deleted, and unfinished SMS campaigns are cancelled. Before, all of these were left behind, and a deleted user's email gateway SMTP login kept working (octeth/oempro#3389). Statistics, logs and other history rows are kept. The response is unchanged. To find what earlier deletions left behind, run `./cli/octeth.sh users:orphans`, which reports orphaned lists, segments, subscriber tables and themes and deletes them only with `--delete --yes`.
+- `users.get` accepts only `UserID`, `EmailAddress`, `Username`, `FirstName`, `LastName`, `CompanyName` and `SSOID` in `SearchField`, matched without regard to case. Any other column answers `{"Success": false, "ErrorCode": 4}`. Before, any column was accepted, so an admin with the `User.Browse` privilege could search credential columns such as `Password`, `APIKey` or `AuthToken` with repeated partial matches and recover their values. There is no opt-in flag, because the old behavior exposed credentials (octeth/oempro#3444).
+- `users.get` accepts only the listed sortable columns in `OrderField`: `UserID`, `Username`, `EmailAddress`, `FirstName`, `LastName`, `CompanyName`, `UserSince`, `LastActivityDateTime`, `AccountStatus`, `ReputationLevel`, `RelUserGroupID`, `RelUserCategoryID` and `SSOID`. Any other column now falls back to `UserID ASC`, the same as a malformed value. Before, an identifier-shaped name of another column was passed to the query and either sorted by that column or answered a database error (octeth/oempro#3444).
 
 ### SMTP delivery
 
@@ -132,6 +134,10 @@ The database now enforces one default user group per subscription plan with a un
 - `usergroup.update` refuses a parameter sent as an array or object, where a single value is expected, with `ErrorCode 36` and `ErrorField` naming it.
 
 The upgrade migration resolves any plan that already has more than one default: it keeps the group with the lowest `UserGroupID` as the default, sets the others to `No`, and writes each demoted group to the application log. The group it keeps is the one new signups on that plan were most likely already reaching.
+
+#### `usergroups.get` is scoped for limited admin accounts
+
+`usergroups.get` returns only the allowed groups for an admin account limited to specific user groups. Before, it returned every group on the install. The master Admin API key and admin accounts without a group limit are unaffected (octeth/oempro#3444).
 
 ### SMS rate limits
 
