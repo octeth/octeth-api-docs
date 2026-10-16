@@ -92,6 +92,10 @@ On a gateway with several domains of different lengths, `smscampaign.create` and
 
 The new `oempro_sms_campaign_queue.ShortDomain` column is added by an upgrade migration (instant, no table rebuild). Until it runs, campaigns keep using the first domain.
 
+#### SMS gateway short domains must be ASCII hostnames
+
+`smsgateway.create`, `smsgateway.update` and the admin SMS gateway form now reject a short domain that is not an ASCII hostname (a non-ASCII or internationalized domain, a URL with a scheme, port or path, or a single label) with error `18` and the rejected entries in `ErrorText`. Enter an internationalized domain in its punycode form. A non-ASCII domain switches an otherwise GSM-7 message to UCS-2, so it could pass the part-limit check on another domain and then be skipped as too long at send (octeth/oempro#3421). Gateways that already store such an entry keep working: SMS campaigns skip a stored non-ASCII domain and log it, and the other entries are only checked again when the list is saved.
+
 ### User Groups
 
 #### A subscription plan has exactly one default user group

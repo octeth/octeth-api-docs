@@ -257,7 +257,7 @@ curl -X POST https://example.com/api/v1/smsgateway.get \
 | GatewayStatus | String | No | `Active` (default) or `Inactive` |
 | GatewaySettings | Object | Yes | Per-connector configuration keyed by field name |
 | SenderNumbers | Array | No | Sender numbers; each must match `+?[1-9][0-9]{6,14}` |
-| ShortDomains | Array | No | Link-shortening domains |
+| ShortDomains | Array | No | Link-shortening domains. ASCII hostnames such as `go.example.com`, at least two labels, no scheme, port or path. Convert an internationalized domain to its punycode form |
 | CountryRestrictions | Array | No | Two-letter country codes the gateway may send to; stored upper-cased |
 | MessageConcatenation | Integer | No | Maximum SMS parts per message, 1 to 10 (default 10) |
 | IsGlobal | Boolean | No | `1` = available to every user; `0` (default) = only to assigned users |
@@ -336,6 +336,7 @@ curl -X POST https://example.com/api/v1/smsgateway.create \
 15: UserIDs outside the user groups this admin account may access
 16: Gateway could not be created
 17: Users could not be assigned to the new gateway (the gateway is not created)
+18: Invalid ShortDomains: an entry is not an ASCII hostname (ErrorText lists them)
 ```
 
 :::
@@ -368,7 +369,7 @@ curl -X POST https://example.com/api/v1/smsgateway.create \
 | GatewayStatus | String | No | `Active` or `Inactive` |
 | GatewaySettings | Object | No | Per-connector configuration, partial (see notes) |
 | SenderNumbers | Array | No | Replaces the sender number list |
-| ShortDomains | Array | No | Replaces the short domain list |
+| ShortDomains | Array | No | Replaces the short domain list. ASCII hostnames such as `go.example.com`, at least two labels, no scheme, port or path. Convert an internationalized domain to its punycode form |
 | CountryRestrictions | Array | No | Replaces the country restriction list |
 | MessageConcatenation | Integer | No | 1 to 10 |
 | IsGlobal | Boolean | No | `1` or `0` |
@@ -439,6 +440,7 @@ curl -X POST https://example.com/api/v1/smsgateway.update \
 15: Redaction marker not allowed when GatewayType changes
 16: Gateway could not be updated
 17: Gateway updated but its user assignments could not be saved
+18: Invalid ShortDomains: an entry is not an ASCII hostname (ErrorText lists them)
 ```
 
 :::
