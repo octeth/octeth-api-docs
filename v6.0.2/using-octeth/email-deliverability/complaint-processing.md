@@ -341,7 +341,7 @@ Each campaign report includes a complaint count showing how many recipients file
 
 ### Staff Dashboard
 
-The **Users** card of the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) in the new interface ranks users by total complaint count on its **Top complaints** tab. The classic **Admin Area** > **Overview** page no longer shows this ranking. This helps administrators identify which user accounts may have list quality issues or are generating an unusually high number of complaints.
+The **Top complaints** view of the **Users** section of the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) in the new interface ranks users by total complaint count. The classic **Admin Area** > **Overview** page no longer shows this ranking. This helps administrators identify which user accounts may have list quality issues or are generating an unusually high number of complaints.
 
 ### Journey Builder
 

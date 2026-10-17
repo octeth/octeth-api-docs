@@ -123,7 +123,7 @@ The staff dashboard, billing screens, Webhooks, User groups and Subscriber searc
 
 | Staff screen | Permission it needs |
 |---|---|
-| Dashboard | Dashboard. Each card needs its own permission as well, see [The Staff Dashboard](./staff-dashboard#how-the-cards-work) |
+| Dashboard | Dashboard. Each section needs its own permission as well, see [The Staff Dashboard](./staff-dashboard#sections) |
 | Billing: Revenue, Worklists, Transactions | Reports |
 | Billing: Discounts, Catalog, Health, Settings | Settings |
 | Webhooks | Settings |
