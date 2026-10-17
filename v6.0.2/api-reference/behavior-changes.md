@@ -127,7 +127,7 @@ The delivery forecast and history charts, the Active users, Online users, Top bo
 
 The legacy chart endpoint `/app/admin/overview/chartDataHistory/<days>/true` is removed. Use `admin.delivery.history` for the same series.
 
-The "campaign pending approval" notification email to administrators now says to review the campaign in the Pending approval card of the staff dashboard, instead of on the Admin Overview page.
+The "campaign pending approval" notification email to administrators now says to review the campaign in the Pending approval section of the staff dashboard, instead of on the Admin Overview page.
 
 #### The new user interface is always on
 
