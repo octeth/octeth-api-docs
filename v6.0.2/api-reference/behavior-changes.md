@@ -42,8 +42,8 @@ There is no opt-in flag, because the commands had no working data source left.
 
 ### User Groups (plugin hooks)
 
-- The `UserGroup.Create.Post` and `UserGroup.Update.Post` plugin actions now fire from the API: `UserGroup.Create.Post` after a successful `usergroup.create` and `usergroup.duplicate`, `UserGroup.Update.Post` after a `usergroup.patch` or `usergroup.options.patch` that writes at least one column. Before, only the legacy admin User Groups screens fired them, so they stop depending on that section, which the new interface replaces (octeth/oempro#3481, epic #3486). The first argument is unchanged in kind: the new group for `Create.Post`, the group as stored before the write for `Update.Post`. **The second argument is now the API request parameters, whose keys are lowercased and from which credentials (`adminapikey`, `apikey`, `sessionid`, `username`, `password`, `disable2fa`, `disable2fatoken`, `sendmethodsmtppassword`) are removed** (`groupname`, `sendmethodsmtphost`, `addpermissions`), not the legacy form's posted fields (`GroupName`, `SendMethodSMTPHost`, `Permissions`). A plugin that reads the CamelCase posted keys from the second argument gets nothing and must read the lowercase keys instead. The legacy create screen calls `usergroup.create`, so it now fires `Create.Post` once, from the API, with the API parameters. The legacy edit screen writes directly and still fires `Update.Post` with its posted fields until it is retired. No bundled plugin listens to either action.
-- The `UserGroup.Update.FieldValidator` filter is not called by the API or by the new interface's user group screens. Only the legacy edit screen calls it, and it is dropped when that screen is retired (epic #3486, D10). A plugin that adds validation rules to the user group edit form through it has no replacement hook.
+- The `UserGroup.Create.Post` and `UserGroup.Update.Post` plugin actions now fire from the API: `UserGroup.Create.Post` after a successful `usergroup.create` and `usergroup.duplicate`, `UserGroup.Update.Post` after a `usergroup.patch` or `usergroup.options.patch` that writes at least one column. Before, only the legacy admin User Groups screens fired them, so they stop depending on that section, which the new interface replaces (octeth/oempro#3481, epic #3486). The first argument is unchanged in kind: the new group for `Create.Post`, the group as stored before the write for `Update.Post`. **The second argument is now the API request parameters, whose keys are lowercased and from which credentials (`adminapikey`, `apikey`, `sessionid`, `username`, `password`, `disable2fa`, `disable2fatoken`, `sendmethodsmtppassword`) are removed** (`groupname`, `sendmethodsmtphost`, `addpermissions`), not the legacy form's posted fields (`GroupName`, `SendMethodSMTPHost`, `Permissions`). A plugin that reads the CamelCase posted keys from the second argument gets nothing and must read the lowercase keys instead. The legacy admin User Groups screens are removed (octeth/oempro#3485), so the API is now the only place these actions fire, and their second argument is always the API parameters. No bundled plugin listens to either action.
+- The `UserGroup.Update.FieldValidator` filter and the `FormItem.AddTo.Admin.UserGroupLimitsForm` form hook are removed with the legacy admin User Groups screens, the only places that called them (octeth/oempro#3485). A plugin that registers them no longer has them called. It does not error. Neither has a replacement, and no bundled plugin used either. `UI.User.Group.SubscriptionPlans` is unchanged: `admin.usergroup.editor.get` calls it.
 
 ### Admin area
 
@@ -77,6 +77,25 @@ A POST to any of these URLs is refused: it changes nothing and answers a short p
 | `UI.User.Browse.ImpersonateLink` | none: the new interface's own impersonation replaces custom links |
 
 `User.Create`, `User.Update.Post`, `User.Delete.Post` and `Delete.User` are unchanged. The bundled plugins (amazonses, spamassassincontentvalidator, upsender, sendlayer, phishguard, peakmonitor) already use the replacements. The SendLayer custom impersonation page (`/app/sendlayer/impersonate/<id>`) still exists but nothing links to it.
+
+There is no opt-in flag: the section is removed, and its URLs answer as above.
+
+#### The legacy User Groups section is removed
+
+The legacy admin User Groups section (`/app/admin/usergroups/...`: the group list, the create form and the edit form) is removed. User groups are managed in the new interface's staff screens (`/<UI_STAFF_PREFIX>/staff/user-groups`), which cover the same work through the `usergroup.*` commands. The theme and payment fields of the old form are not carried over (epic octeth/oempro#3486, D2 and D3) (octeth/oempro#3485).
+
+**The old URLs keep working.** `/app/admin/usergroups/...` is now a redirect shim, and every classic admin link into the section (the Users menu, the overview button, the delivery server settings page and the admin help page) points at the new screens:
+
+| Old URL | Answer while `UI_ENABLED=true` |
+|---|---|
+| `/app/admin/usergroups/`, `/browse/` | 302 to `/<staff>/staff/user-groups` |
+| `/create/` | 302 to `/<staff>/staff/user-groups/new` |
+| `/edit/<id>` | 302 to `/<staff>/staff/user-groups/<id>/edit` |
+| `/edit/` with a missing or non-numeric id, anything else under `/app/admin/usergroups/` | 302 to `/<staff>/staff/user-groups` |
+
+A POST to any of these URLs is refused: it changes nothing and answers a short page that links to the new screen. The new screens apply the `UserGroups` privilege and a sub-admin's user group limits themselves.
+
+**User group management now needs `UI_ENABLED=true`.** With `UI_ENABLED` off, every `/app/admin/usergroups/...` URL shows a page in the admin area saying that user groups are managed in the new interface and that it needs `UI_ENABLED=true`. There is no legacy fallback. The upgrade warning added for the Users section now names user groups too (one warning, not two). The `usergroup.*` and `usergroups.get` API commands are unchanged.
 
 There is no opt-in flag: the section is removed, and its URLs answer as above.
 

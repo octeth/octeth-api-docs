@@ -33,13 +33,19 @@ disagreeing.
 | Staff area | `/app/admin/` | `/app/admin/`, plus new staff screens at `/user/staff/...` |
 | Admin shortcut `/admin/` | Redirects to `/app/admin/` | Unchanged, still redirects to `/app/admin/` |
 | Classic admin **Users** section | `/app/admin/users/` | Forwards to the matching page under `/user/staff/customers` |
+| Classic admin **User Groups** section | `/app/admin/usergroups/` | Forwards to the matching page under `/user/staff/user-groups` |
 
-The classic areas stay fully usable, with one exception: the classic admin **Users** section
-(`/app/admin/users/`) forwards to the staff Users screens of the new interface. The user list,
+The classic areas stay fully usable, with two exceptions: the classic admin **Users** section
+(`/app/admin/users/`) forwards to the staff Users screens of the new interface, and the classic
+admin **User Groups** section (`/app/admin/usergroups/`) forwards to the staff User groups
+screens. The user list,
 the create form, each user's page and its tabs open their new counterparts, and links to users
 from other classic admin pages, plugins and Slack alerts point there too. A form posted to the
 old section is refused and nothing is changed. The classic payment history tab and invoice
-editor have no new counterpart and are not carried over. Your customers are not affected.
+editor have no new counterpart and are not carried over. The user group list, create form and
+edit form open their new counterparts, and the classic admin menu, overview button and delivery
+server settings link there too. A form posted to the old User Groups section is refused and
+nothing is changed. Your customers are not affected.
 
 ::: warning
 There is no single sign-on between the two interfaces yet. Someone who wants to use both
@@ -165,7 +171,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/billing/...` | The staff billing screens, when billing is enabled |
 | `/ui/` | Images, stylesheets, the health check, and inbound payment webhooks |
 | `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants) |
-| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users** section, which forwards to `/user/staff/customers` while `UI_ENABLED=true` |
+| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users** and **User Groups** sections, which forward to `/user/staff/customers` and `/user/staff/user-groups` while `UI_ENABLED=true` |
 
 ::: info
 These path names are settings, not fixed values. See the

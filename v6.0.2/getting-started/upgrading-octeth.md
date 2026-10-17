@@ -369,6 +369,14 @@ This needs `UI_ENABLED=true`. When it is not, the upgrade prints a warning befor
 
 Plugins that added fields, tabs or actions to the old user page must use `Admin.User.PluginFields` and `Admin.User.PluginActions` instead. See [API Behavior Changes](/v6.0.2/api-reference/behavior-changes).
 
+### The legacy admin User Groups section is removed
+
+User groups are managed in the new interface at `/user/staff/user-groups`, and old `/app/admin/usergroups/` links forward there. A form posted to one of the old URLs is refused without changing anything.
+
+If `UI_ENABLED` is not `true` on your installation, the admin area can no longer list, create or edit user groups, and the upgrade warns about it before you confirm and again in the summary (the same warning as for the Users section). Set `UI_ENABLED=true` in `.oempro_env` and run `./cli/octeth.sh docker:up` to manage them. The `usergroup.*` API commands are unchanged.
+
+Plugins that registered `UserGroup.Update.FieldValidator` or `FormItem.AddTo.Admin.UserGroupLimitsForm` no longer have them called. See [API Behavior Changes](/v6.0.2/api-reference/behavior-changes).
+
 ## Post-Upgrade Verification
 
 After the upgrade completes, verify everything is working:

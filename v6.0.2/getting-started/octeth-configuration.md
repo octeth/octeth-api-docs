@@ -1007,11 +1007,13 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     `/app/user/` and `/app/admin/` either way. The two use **separate logins**: there is no single
     sign-on between them yet.
 
-    **User management needs `UI_ENABLED=true`.** The legacy admin Users section
-    (`/app/admin/users/`) is removed (issue #3450). Its URLs redirect to the new interface's
-    customer screens while `UI_ENABLED` is `true`. With it off they show a page saying user
-    accounts are managed in the new interface, so the admin area has no way to list, create, edit
-    or impersonate user accounts. The upgrade warns when the key is not `true`.
+    **User and user group management need `UI_ENABLED=true`.** The legacy admin Users section
+    (`/app/admin/users/`, issue #3450) and User Groups section (`/app/admin/usergroups/`, issue
+    #3485) are removed. Their URLs redirect to the new interface's staff screens while
+    `UI_ENABLED` is `true`. With it off they show a page saying the section is managed in the new
+    interface, so the admin area has no way to list, create, edit or impersonate user accounts, or
+    to list, create or edit user groups. The API is unaffected. The upgrade warns when the key is
+    not `true`.
 
     `UI_APP_KEY` must not be changed once set. Changing it invalidates every session, makes
     anything the interface has encrypted unreadable, and moves Livewire's endpoint paths, which
