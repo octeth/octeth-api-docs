@@ -30,6 +30,10 @@ There is no opt-in flag, because the commands had no working data source left.
 
 - `UserGroup.Delete` now also deletes the deleted group's own theme when no other group references it and it is not the system default theme (octeth/oempro#3391). The response is unchanged.
 
+### User Groups (sub-admin limits)
+
+- A sub-admin limited to some user groups (`AccessLimited` with `AccessAllowedUserGroupIDs`) is now held to those groups by the `usergroup.*` commands. `usergroup.get`, `usergroup.update`, `usergroup.patch` and `usergroup.options.patch` answer `{"Success": false, "ErrorCode": 5003, "ErrorText": "User group is outside the user groups this admin account may access"}` for a group outside the list, including an id that does not exist, and write nothing. `usergroup.create` and `usergroup.duplicate` answer `ErrorCode 5003` with `An admin limited to some user groups cannot create user groups`, and `usergroup.delete` answers `ErrorCode 5003` with `An admin limited to some user groups cannot delete user groups`, whatever groups are named. Before, such a sub-admin holding the `UserGroups` privilege could read, change, create, duplicate and delete any group. The master admin API key and admins without user group limits get the same responses as before. There is no opt-in flag, because the old behavior let a restricted sub-admin change the limits of accounts outside its reach (octeth/oempro#3480).
+
 ### Admin area
 
 #### The legacy Users section is removed

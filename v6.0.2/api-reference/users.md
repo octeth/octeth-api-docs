@@ -1676,6 +1676,7 @@ curl -X GET https://example.com/api/v1/users.status \
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - v1 REST alias: `POST /api/v1/usergroup.create`. Legacy access via `/api.php` is also supported
+- Sub-admins limited to some user groups (changed in v6.0.2): a restricted sub-admin cannot create or duplicate a user group, because the new group would be outside its allowed list. The call answers `ErrorCode 5003` and no group is created. The master admin API key and admins without user group limits are unaffected.
 :::
 
 **Request Body Parameters:**
@@ -1772,6 +1773,7 @@ curl -X POST https://example.com/api.php \
 34: Another user group is already the default for this subscription plan (see
     ConflictingUserGroupID). Also returned when a concurrent request made another
     group the plan's default first (changed in v6.0.2)
+5003: An admin limited to some user groups cannot create user groups
 ```
 
 :::
@@ -1783,6 +1785,7 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - v1 REST alias: `POST /api/v1/usergroup.update`. Legacy access via `/api.php` is also supported
+- Sub-admins limited to some user groups (changed in v6.0.2): a restricted sub-admin can only name a group in its allowed list. Any other `UserGroupID`, including one that does not exist, answers `ErrorCode 5003` and nothing is read or written. The master admin API key and admins without user group limits are unaffected.
 :::
 
 **Request Body Parameters:**
@@ -1887,6 +1890,7 @@ curl -X POST https://example.com/api.php \
     default (see ConflictingUserGroupID). Added in v6.0.2
 36: A parameter was sent as an array or object where a single value is expected
     (ErrorField names it). Added in v6.0.2
+5003: User group is outside the user groups this admin account may access
 ```
 
 :::
@@ -1901,6 +1905,7 @@ curl -X POST https://example.com/api.php \
 - Authentication required: Admin API Key
 - v1 REST alias: `POST /api/v1/usergroup.patch`. Legacy access via `/api.php` is also supported
 - **Partial update.** Only the fields present in the request body are written. Every other column of the user group is left untouched. It is not included in the `UPDATE` statement at all.
+- Sub-admins limited to some user groups (changed in v6.0.2): a restricted sub-admin can only name a group in its allowed list. Any other `UserGroupID`, including one that does not exist, answers `ErrorCode 5003` and nothing is read or written. The master admin API key and admins without user group limits are unaffected.
 :::
 
 ### Why this exists alongside `usergroup.update`
@@ -2066,6 +2071,7 @@ curl -X POST https://example.com/api.php \
 34: Another user group is already the default for this subscription plan (see
     ConflictingUserGroupID). Also returned when a concurrent request made another
     group the plan's default first (changed in v6.0.2)
+5003: User group is outside the user groups this admin account may access
 ```
 
 :::
@@ -2085,6 +2091,7 @@ curl -X POST https://example.com/api.php \
 - v1 REST alias: `POST /api/v1/usergroup.options.patch`. Legacy access via `/api.php` is also supported
 - **Merge semantics.** Only the keys present in `Options` are written into the group's stored Options JSON. Every other key, including keys written by plugins, is preserved verbatim. The whole-blob `Options` parameter of `usergroup.update` / `usergroup.patch` is unchanged and still replaces the entire JSON.
 - **An unreadable stored blob is refused, not overwritten.** If the group's stored `Options` column is not empty and does not decode to a JSON array or object, the command answers `ErrorCode 8` and writes nothing, rather than merging into an empty set and thereby discarding whatever was stored. An empty column, and the literal `null` that `usergroup.create` writes when it is given no `Options` at all, both mean "no options yet" and patch normally.
+- Sub-admins limited to some user groups (changed in v6.0.2): a restricted sub-admin can only name a group in its allowed list. Any other `UserGroupID`, including one that does not exist, answers `ErrorCode 5003` and nothing is read or written. The master admin API key and admins without user group limits are unaffected.
 :::
 
 `usergroup.update` and `usergroup.patch` take `Options` as an opaque replace, so changing one key meant reading the group, decoding, mutating and re-encoding, with no validation. This command validates every key and value the way the admin user group screen does, and stores values in the same shape the screen stores them, so a group edited through either path reads identically to the sending engine.
@@ -2164,6 +2171,7 @@ curl -X POST https://example.com/api.php \
 7: TargetDeliveryServerID_* refers to a delivery server that does not exist
 8: The group's stored Options column is unreadable (non-empty but not a JSON array or
    object); GroupName names the group and nothing is written
+5003: User group is outside the user groups this admin account may access
 ```
 
 :::
@@ -2175,6 +2183,7 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - v1 REST alias: `GET /api/v1/usergroup.get`. Legacy access via `/api.php` is also supported
+- Sub-admins limited to some user groups (changed in v6.0.2): a restricted sub-admin can only name a group in its allowed list. Any other `UserGroupID`, including one that does not exist, answers `ErrorCode 5003` and nothing is read or written. The master admin API key and admins without user group limits are unaffected.
 :::
 
 **Request Body Parameters:**
@@ -2228,10 +2237,19 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Sub-admin Refusal]
+{
+  "Success": false,
+  "ErrorCode": 5003,
+  "ErrorText": "User group is outside the user groups this admin account may access"
+}
+```
+
 ```txt [Error Codes]
 0: Success
 1: Missing UserGroupID parameter
 2: User group not found
+5003: User group is outside the user groups this admin account may access
 ```
 
 :::
@@ -2244,6 +2262,7 @@ curl -X POST https://example.com/api.php \
 - Authentication required: Admin API Key
 - v1 REST alias: `POST /api/v1/usergroup.delete`. Legacy access via `/api.php` is also supported
 - Note: Not available in demo mode
+- Sub-admins limited to some user groups (changed in v6.0.2): a restricted sub-admin cannot delete user groups, even groups in its allowed list. The call answers `ErrorCode 5003` before any group is touched. The master admin API key and admins without user group limits are unaffected.
 :::
 
 ::: tip The group's own theme is deleted too (v6.0.2)
@@ -2289,6 +2308,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing UserGroupID parameter
 4: Cannot delete the last user group
+5003: An admin limited to some user groups cannot delete user groups
 ```
 
 :::
@@ -2300,6 +2320,7 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - v1 REST alias: `POST /api/v1/usergroup.duplicate`. Legacy access via `/api.php` is also supported
+- Sub-admins limited to some user groups (changed in v6.0.2): a restricted sub-admin cannot create or duplicate a user group, because the new group would be outside its allowed list. The call answers `ErrorCode 5003` and no group is created. The master admin API key and admins without user group limits are unaffected.
 :::
 
 ::: tip Copy name (v5.9.6)
@@ -2350,6 +2371,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing UserGroupID parameter
 2: User group not found
+5003: An admin limited to some user groups cannot create user groups
 ```
 
 :::
