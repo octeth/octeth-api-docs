@@ -5281,25 +5281,31 @@ curl -X GET "https://example.com/api/v1/admin.journey.action.audit?AdminAPIKey=y
 
 :::
 
-## Search a Subscriber Email Across All Lists
+## Search Subscribers Across All Lists
 
 <Badge type="info" text="POST" /> `/api/v1/admin.subscriber.search`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key
+- Authentication required: Admin API Key, or an administrator session
+- Required privilege: `Search`
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-Given one email address, returns every user/list (across all users) where that address is subscribed — the API analogue of the admin-area "Subscriber Email Search" page (issue #2185). When authenticated as an access-limited subadmin, results are restricted to lists owned by users in the admin's allowed user groups; the global Admin API Key is unrestricted.
+Searches the subscriber lists of every user for one email address, or for every subscriber on one domain. Send either `EmailAddress` or `SearchDomain`, not both. The staff **Subscriber search** screen of the new interface calls this command.
+
+An administrator limited to some user groups (`AccessLimited` with `AccessAllowedUserGroupIDs`) sees only the lists of users in those groups. The master Admin API Key and administrators without user group limits see every list. A list whose owner was deleted is returned with an empty `OwnerName` to an administrator without limits.
+
+Every list probe runs with a time limit, and the whole search has a time budget. When a probe fails or times out, or the budget runs out before every list was searched, the response is still a success but carries `Incomplete: true`, so the results may be missing lists. A domain search returns at most 500 subscribers and sets `Truncated: true` when that cap stopped it.
 
 **Request Body Parameters:**
 
-| Parameter    | Type   | Required | Description                            |
-|--------------|--------|----------|----------------------------------------|
+| Parameter    | Type   | Required | Description |
+|--------------|--------|----------|-------------|
 | Command      | String | Yes      | API command: `admin.subscriber.search` |
-| AdminAPIKey  | String | Yes      | Admin API key for authentication       |
-| EmailAddress | String | Yes      | Exact email address to search for      |
+| AdminAPIKey  | String | Yes      | Admin API key for authentication |
+| EmailAddress | String | One of the two | Exact email address to search for |
+| SearchDomain | String | One of the two | A domain such as `example.com` (a leading `@` is accepted, case does not matter). Finds every address that ends in `@` followed by that domain. A subdomain is a different domain. Letters, digits, hyphens and dots only, with at least two labels. Added in v6.0.2 |
 
 ::: code-group
 
@@ -5328,9 +5334,57 @@ curl -X POST https://example.com/api/v1/admin.subscriber.search \
       "OwnerName": "Acme Inc",
       "SubscriberID": 1234,
       "SubscriptionStatus": "Subscribed",
-      "BounceType": "Not Bounced"
+      "BounceType": "Not Bounced",
+      "Archived": false
+    },
+    {
+      "ListID": 57,
+      "ListName": "Spring promo",
+      "OwnerUserID": 7,
+      "OwnerName": "Acme Inc",
+      "SubscriberID": 88,
+      "SubscriptionStatus": "Unsubscribed",
+      "BounceType": "Hard",
+      "Archived": true
     }
-  ]
+  ],
+  "Incomplete": false
+}
+```
+
+```bash [Domain Request]
+curl -X POST https://example.com/api/v1/admin.subscriber.search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.subscriber.search",
+    "AdminAPIKey": "your-admin-api-key",
+    "SearchDomain": "example.com"
+  }'
+```
+
+```json [Domain Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "SearchDomain": "example.com",
+  "TotalLists": 1,
+  "TotalMatches": 2,
+  "Lists": [
+    {
+      "ListID": 42,
+      "ListName": "Newsletter",
+      "OwnerUserID": 7,
+      "OwnerName": "Acme Inc",
+      "Archived": false,
+      "Matches": [
+        {"ListID": 42, "SubscriberID": 1234, "EmailAddress": "john@example.com", "SubscriptionStatus": "Subscribed", "BounceType": "Not Bounced"},
+        {"ListID": 42, "SubscriberID": 1301, "EmailAddress": "mary@example.com", "SubscriptionStatus": "Opt-In Pending", "BounceType": "Not Bounced"}
+      ]
+    }
+  ],
+  "Incomplete": false,
+  "Truncated": false
 }
 ```
 
@@ -5344,10 +5398,31 @@ curl -X POST https://example.com/api/v1/admin.subscriber.search \
 
 ```txt [Error Codes]
 0: Success
-1: Missing EmailAddress parameter
+1: Missing EmailAddress parameter (neither EmailAddress nor SearchDomain was sent)
 2: Invalid EmailAddress parameter
+3: Invalid SearchDomain parameter
+4: Pass either EmailAddress or SearchDomain, not both
 ```
 
+:::
+
+**Response fields:**
+
+| Field | Mode | Description |
+|---|---|---|
+| `EmailAddress` | Address | The address searched |
+| `SearchDomain` | Domain | The domain searched, lowercased and without `@` |
+| `TotalLists` | Both | Number of entries in `Lists` |
+| `TotalMatches` | Domain | Number of subscribers in all `Matches` arrays |
+| `Lists[].ListID`, `ListName`, `OwnerUserID`, `OwnerName` | Both | The list and its owner. `OwnerName` is empty when the owner account was deleted |
+| `Lists[].SubscriberID`, `SubscriptionStatus`, `BounceType` | Address | The subscriber on that list |
+| `Lists[].Archived` | Both | `true` when the list is archived. Added in v6.0.2 |
+| `Lists[].Matches[]` | Domain | Each subscriber on that list with an address on the domain: `ListID`, `SubscriberID`, `EmailAddress`, `SubscriptionStatus`, `BounceType` |
+| `Incomplete` | Both | `true` when a list probe failed or timed out, or the time budget ran out, so lists may be missing. Added in v6.0.2 |
+| `Truncated` | Domain | `true` when the 500-subscriber cap stopped the search, so there may be more matches |
+
+::: warning
+A domain search reads every list table in reach in full, because it cannot use the email address index. On an install with many large lists it is far heavier than an address search. The cap and the time limits bound one request.
 :::
 
 ## Admin Agent Keys

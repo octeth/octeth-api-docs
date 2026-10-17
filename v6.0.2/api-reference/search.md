@@ -10,6 +10,10 @@ belongs to the authenticated user and is grouped by a `Scope` (currently
 are owner-scoped — a user can only read, create, update, or delete their own
 filters.
 
+::: tip Looking for a subscriber across every account?
+These commands store a user's saved filters. To find an email address, or every subscriber on a domain, across the lists of all users, administrators use [`admin.subscriber.search`](/v6.0.2/api-reference/admin#search-subscribers-across-all-lists).
+:::
+
 ## Get Saved Filters
 
 <Badge type="info" text="POST" /> `/api.php` (legacy)

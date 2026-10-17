@@ -45,6 +45,10 @@ There is no opt-in flag, because the commands had no working data source left.
 - The `UserGroup.Create.Post` and `UserGroup.Update.Post` plugin actions now fire from the API: `UserGroup.Create.Post` after a successful `usergroup.create` and `usergroup.duplicate`, `UserGroup.Update.Post` after a `usergroup.patch` or `usergroup.options.patch` that writes at least one column. Before, only the legacy admin User Groups screens fired them, so they stop depending on that section, which the new interface replaces (octeth/oempro#3481, epic #3486). The first argument is unchanged in kind: the new group for `Create.Post`, the group as stored before the write for `Update.Post`. **The second argument is now the API request parameters, whose keys are lowercased and from which credentials (`adminapikey`, `apikey`, `sessionid`, `username`, `password`, `disable2fa`, `disable2fatoken`, `sendmethodsmtppassword`) are removed** (`groupname`, `sendmethodsmtphost`, `addpermissions`), not the legacy form's posted fields (`GroupName`, `SendMethodSMTPHost`, `Permissions`). A plugin that reads the CamelCase posted keys from the second argument gets nothing and must read the lowercase keys instead. The legacy admin User Groups screens are removed (octeth/oempro#3485), so the API is now the only place these actions fire, and their second argument is always the API parameters. No bundled plugin listens to either action.
 - The `UserGroup.Update.FieldValidator` filter and the `FormItem.AddTo.Admin.UserGroupLimitsForm` form hook are removed with the legacy admin User Groups screens, the only places that called them (octeth/oempro#3485). A plugin that registers them no longer has them called. It does not error. Neither has a replacement, and no bundled plugin used either. `UI.User.Group.SubscriptionPlans` is unchanged: `admin.usergroup.editor.get` calls it.
 
+### Subscriber search (sub-admin limits)
+
+- `admin.subscriber.search` now limits an administrator by the same rule as every other staff screen and admin command: only when `AccessLimited` is on is the search held to `AccessAllowedUserGroupIDs`. Before, it read `AccessAllowedUserGroupIDs` alone, so an administrator with `AccessLimited` off but group ids left over from an earlier limit was still restricted to those groups. That administrator now sees every list. An administrator with `AccessLimited` on, the master Admin API Key and administrators without group ids get the same lists as before. There is no opt-in flag, because the old rule disagreed with what the administrator's settings say (octeth/oempro#3496).
+
 ### Admin area
 
 #### The legacy Users section is removed
@@ -98,6 +102,21 @@ A POST to any of these URLs is refused: it changes nothing and answers a short p
 **User group management lives only in the new interface**, which is always on from v6.0.2. There is no legacy fallback. The `usergroup.*` and `usergroups.get` API commands are unchanged.
 
 There is no opt-in flag: the section is removed, and its URLs answer as above.
+
+#### The legacy Subscriber Email Search is removed
+
+The legacy admin **Subscriber Email Search** (`/app/admin/subscribersearch/`, in the classic **Users** menu) is removed. Subscriber search is in the new interface's staff area (`/<UI_STAFF_PREFIX>/staff/subscriber-search`), which also searches a whole domain, marks archived lists, and records every search in the staff audit log (octeth/oempro#3496).
+
+**The old URLs keep working.** `/app/admin/subscribersearch/...` is now a redirect shim, and the classic **Users** menu entry points at the new screen. It is shown only to administrators with the `Search` privilege:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/subscribersearch/`, anything under it | 302 to `/<staff>/staff/subscriber-search` |
+| the same with `?email=<address>` (or `?EmailAddress=`) | 302 to `/<staff>/staff/subscriber-search?email=<address>`, which runs that search |
+
+A POST to any of these URLs, including the old results endpoint `/app/admin/subscribersearch/search`, is refused: nothing is searched, and the answer is a short page that links to the new screen. The new screen applies the `Search` privilege and a sub-admin's user group limits itself.
+
+There is no opt-in flag: the section is removed, and its URLs answer as above. `admin.subscriber.search` stays available.
 
 #### The new user interface is always on
 
@@ -298,6 +317,12 @@ What to expect after upgrading:
 
 No configuration change is needed.
 
+### Subscriber search
+
+- `admin.subscriber.search` adds two fields to its response: `Incomplete` (top level) and `Archived` (on each entry of `Lists`). Every other field and its order are unchanged. `Incomplete: true` means a list probe failed or ran past its time limit, or the search's time budget ran out, so the results may be missing lists. Before, such a probe was skipped silently. A failure to read the list of lists or the list tables also returns `Incomplete: true` with no lists, where it returned an empty result before (octeth/oempro#3496).
+- Each list probe now runs with a MySQL `MAX_EXECUTION_TIME` limit (5 seconds for an address search, 10 seconds for a domain search), and the whole search stops after 25 seconds.
+- New opt-in parameter `SearchDomain` finds every subscriber on a domain, capped at 500, with `TotalMatches`, a `Matches` array per list and `Truncated`. Requests without it are unchanged apart from the two fields above. Two new error codes: `3` for an invalid `SearchDomain` and `4` when both `EmailAddress` and `SearchDomain` are sent.
+
 ## Additions that need operator attention
 
 ### AI assistant connector
@@ -375,6 +400,8 @@ v6.0.2 screens three points with fixed rules (issue #3392): every new account, a
 - Remove any calls to the `postmaster.*` commands. They answer `ErrorCode: 99` in v6.0.2 and will be deleted later.
 - The upgrade leaves `GOOGLE_POSTMASTER_CLIENT_ID`, `GOOGLE_POSTMASTER_CLIENT_SECRET` and `GOOGLE_POSTMASTER_REDIRECT_URI` in your `.oempro_env`. Nothing reads them any more, so you can delete them.
 - Octeth does not revoke the OAuth grant you gave it in your Google account. Revoke it there, under your Google account's third-party access settings, and delete the OAuth client in Google Cloud if nothing else uses it.
+- If an administrator has `AccessLimited` off but still carries `AccessAllowedUserGroupIDs`, `admin.subscriber.search` now shows them every list. Turn `AccessLimited` on for that administrator if the limit was intended.
+- Update bookmarks to the classic Subscriber Email Search: `/app/admin/subscribersearch/` redirects to the staff Subscriber search.
 
 ---
 

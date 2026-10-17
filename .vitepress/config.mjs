@@ -1111,6 +1111,7 @@ export default defineConfig({
                         {text: 'Overview', link: '/v6.0.2/new-user-interface/'},
                         {text: 'Managing Users in the Staff Area', link: '/v6.0.2/new-user-interface/staff-users'},
                         {text: 'Managing User Groups in the Staff Area', link: '/v6.0.2/new-user-interface/staff-user-groups'},
+                        {text: 'Searching Subscribers in the Staff Area', link: '/v6.0.2/new-user-interface/staff-subscriber-search'},
                         {text: 'Branding', link: '/v6.0.2/new-user-interface/branding'},
                         {text: 'Setting Up Billing', link: '/v6.0.2/new-user-interface/billing-setup'},
                         {text: 'Payment Gateways', link: '/v6.0.2/new-user-interface/payment-gateways'},
