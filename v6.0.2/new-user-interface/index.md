@@ -133,13 +133,14 @@ permissions reach the staff area within about a minute, and switching to a user 
 checks the current permissions. A switch to a user that is already running is not ended by
 a permission change.
 
-The staff billing screens and Webhooks follow the administrator permissions too:
+The staff billing screens, Webhooks and User groups follow the administrator permissions too:
 
 | Staff screen | Permission it needs |
 |---|---|
 | Billing: Revenue, Worklists, Transactions | Reports |
 | Billing: Discounts, Catalog, Health, Settings | Settings |
 | Webhooks | Settings |
+| User groups | UserGroups. A sub-administrator limited to some user groups sees only those groups and cannot create, duplicate or delete one, see [Managing User Groups in the Staff Area](./staff-user-groups) |
 | AI assistants | None. The keys it creates carry the administrator's own permissions |
 
 A screen the sub-administrator may not use is hidden from the menu and refuses a direct
@@ -160,6 +161,7 @@ and signs in again. This loads their permissions into the new interface.
 |---|---|
 | `/user/` | The whole interface: sign-in, sign-up, dashboard, campaigns, lists, journeys, billing |
 | `/user/staff/customers` | The staff Users list, create and edit screens, visible to Octeth administrators only, see [Managing Users in the Staff Area](./staff-users) |
+| `/user/staff/user-groups` | The staff User groups list, create and edit screens, see [Managing User Groups in the Staff Area](./staff-user-groups) |
 | `/user/staff/billing/...` | The staff billing screens, when billing is enabled |
 | `/ui/` | Images, stylesheets, the health check, and inbound payment webhooks |
 | `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants) |
