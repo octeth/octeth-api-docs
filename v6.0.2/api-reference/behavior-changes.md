@@ -119,6 +119,16 @@ A POST to any of these URLs, including the old results endpoint `/app/admin/subs
 
 There is no opt-in flag: the section is removed, and its URLs answer as above. `admin.subscriber.search` stays available.
 
+#### The legacy admin overview points to the new dashboard
+
+The legacy admin overview (`/app/admin/overview/`) is still where the legacy admin login lands, but it no longer shows the reports. It shows a "The dashboard moved" card with a link to the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) of the new interface (`/<UI_STAFF_PREFIX>/staff/dashboard`), the setup checklist (admins with the Settings privilege and no user group limit) and the quick links (admins with `Admin.Dashboard.Links`).
+
+The delivery forecast and history charts, the Active users, Online users, Top bounces and Top spam complaints lists, the campaigns pending approval list with its Approve link, and the sender domain health counts are on the staff dashboard, which applies the same privileges and sub-admin user group limits. Loading the legacy overview no longer runs any of their queries.
+
+The legacy chart endpoint `/app/admin/overview/chartDataHistory/<days>/true` is removed. Use `admin.delivery.history` for the same series.
+
+The "campaign pending approval" notification email to administrators now says to review the campaign in the Pending approval card of the staff dashboard, instead of on the Admin Overview page.
+
 #### The new user interface is always on
 
 The `UI_ENABLED` setting is removed, and the new user interface runs on every install (octeth/oempro#3494). An install could not manage user accounts or user groups with it off, since those screens exist only there. What an integration or operator can observe:

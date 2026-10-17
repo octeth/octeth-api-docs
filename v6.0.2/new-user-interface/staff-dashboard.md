@@ -1,6 +1,6 @@
 # The Staff Dashboard
 
-The **Dashboard** is the first page of the staff area. It brings together what the classic admin overview shows: the setup checklist, campaigns waiting for approval, sender domain health, scheduled and past sending, and the accounts that stand out.
+The **Dashboard** is the first page of the staff area. It holds the reports that used to be on the classic admin overview, which now shows only a link here, the setup checklist and the quick links. The cards cover the setup checklist, campaigns waiting for approval, sender domain health, scheduled and past sending, and the accounts that stand out.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|

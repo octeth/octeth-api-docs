@@ -339,9 +339,9 @@ Octeth tracks complaint data at multiple levels — per campaign, per user, and 
 
 Each campaign report includes a complaint count showing how many recipients filed spam complaints for that specific campaign. Navigate to **Campaigns** > select a campaign > **Reports** to view complaint statistics alongside delivery, open, click, and bounce metrics.
 
-### Admin Overview
+### Staff Dashboard
 
-The **Admin Area** > **Overview** page displays a ranking of users by total complaint count. This helps administrators identify which user accounts may have list quality issues or are generating an unusually high number of complaints.
+The **Users** card of the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) in the new interface ranks users by total complaint count on its **Top complaints** tab. The classic **Admin Area** > **Overview** page no longer shows this ranking. This helps administrators identify which user accounts may have list quality issues or are generating an unusually high number of complaints.
 
 ### Journey Builder
 

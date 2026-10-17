@@ -23,7 +23,7 @@ Returns the readiness checks in dependency order: `license`, `delivery_server`, 
 
 The report reads stored state only and never contacts an external host. The SPF, DKIM and DMARC results are the ones the last delivery server verification stored. A check that cannot be measured (for example the reverse DNS of the sending IPs, which Octeth does not know) is `unknown`, never `ok`.
 
-Send `Cached=true` to get the copy of the report that the admin overview reuses for up to 60 seconds instead of a fresh evaluation. A cached response has the same keys plus `FromCache`, and its `CheckedAt` is the time that report was evaluated, not the time of the request. Without `Cached` every call evaluates the report again, as before.
+Send `Cached=true` to get the copy of the report that the admin overview and the staff dashboard reuse for up to 60 seconds instead of a fresh evaluation. A cached response has the same keys plus `FromCache`, and its `CheckedAt` is the time that report was evaluated, not the time of the request. Without `Cached` every call evaluates the report again, as before.
 
 **Request Body Parameters:**
 

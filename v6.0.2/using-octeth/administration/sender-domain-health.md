@@ -14,7 +14,7 @@ Navigate to **Reports** > **Sender Domain Health** in the admin area.
 
 The menu entry appears only for administrators with permission to edit users. An administrator who is limited to some user groups sees only the domains of accounts in those groups. Deleted domains are not listed.
 
-The admin **Overview** page also shows a **Sender Domain Health** tab with four counts: **Healthy**, **Failing**, **Demoted by DNS drift** and **Never checked**. Click a count to open the report filtered to it. The tab appears when there is at least one sender domain.
+The **Sender domain health** card of the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) in the new interface shows the same counts: **Healthy**, **Failing**, **Demoted by DNS drift** and **Never checked**. The classic admin **Overview** page no longer shows them.
 
 ## How Domains Are Checked
 
