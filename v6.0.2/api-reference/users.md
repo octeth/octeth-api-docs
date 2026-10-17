@@ -2263,10 +2263,18 @@ curl -X POST https://example.com/api.php \
 - v1 REST alias: `POST /api/v1/usergroup.delete`. Legacy access via `/api.php` is also supported
 - Note: Not available in demo mode
 - Sub-admins limited to some user groups (changed in v6.0.2): a restricted sub-admin cannot delete user groups, even groups in its allowed list. The call answers `ErrorCode 5003` before any group is touched. The master admin API key and admins without user group limits are unaffected.
+- Destination group (added in v6.0.2): send `TargetUserGroupID` to choose where the users of the deleted groups go. Without it the call behaves as before and moves them to the signup group (`USER_SIGNUP_GROUPID`).
+- Users move before the group is deleted (changed in v6.0.2): the `Delete.UserGroup` and `UserGroup.Delete.Post` plugin hooks now fire after the group's users have moved, so a listener never sees an account in a group that no longer exists.
 :::
 
 ::: tip The group's own theme is deleted too (v6.0.2)
 Every group has its own theme copy (`usergroup.duplicate` and the admin group screen create one). Deleting a group now deletes that theme as well, unless another group still uses it or it is the system default theme. Before v6.0.2 the theme stayed behind. Run `./cli/octeth.sh users:orphans` to list themes that earlier deletes left behind, and add `--delete --yes` to remove them.
+:::
+
+::: tip Choosing where the users go (v6.0.2)
+With `TargetUserGroupID`, every listed group is checked before anything changes. The call refuses, deletes nothing and answers `ErrorCode 7` with `RefusedUserGroups` when a listed group does not exist, is the signup group (`USER_SIGNUP_GROUPID`) or is one of the groups a signup can choose (`USER_SIGNUP_GROUPIDS`). Each entry names the group and the reason. Otherwise each group's users move to the target group, the group is deleted, and `MovedUsers` reports how many users each group had.
+
+Without `TargetUserGroupID`, the signup group is still skipped silently and groups listed in `USER_SIGNUP_GROUPIDS` can still be deleted. When `USER_SIGNUP_GROUPID` does not name an existing group (for example `-1`, "let the user choose"), a group that still has users is now skipped as well, instead of moving its users to a group that does not exist.
 :::
 
 **Request Body Parameters:**
@@ -2277,6 +2285,17 @@ Every group has its own theme copy (`usergroup.duplicate` and the admin group sc
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
 | UserGroupID | String | Yes | Comma-separated list of user group IDs to delete |
+| TargetUserGroupID | Integer | No | User group that receives the users of the deleted groups. Must exist, must not be one of the groups being deleted, and must be within the admin's reach. When sent, refused groups are reported instead of skipped (see the tip above) |
+
+**Response Fields (`TargetUserGroupID` only):**
+
+| Field | Type | Description |
+|---|---|---|
+| TargetUserGroupID | Integer | The group that received the users |
+| DeletedUserGroupIDs | Array of integers | Deleted groups, in request order |
+| MovedUsers | Array of objects | `{UserGroupID, Users}` per deleted group, `Users` is the number of accounts moved |
+| RefusedUserGroups | Array of objects | With `ErrorCode 7`: `{UserGroupID, Reason}` per refused group |
+| FailedUserGroupID | Integer | With `ErrorCode 8`: the group whose users could not be moved |
 
 ::: code-group
 
@@ -2297,6 +2316,30 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```bash [Example Request with a target group]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "usergroup.delete",
+    "SessionID": "your-session-id",
+    "UserGroupID": "5,6",
+    "TargetUserGroupID": 3
+  }'
+```
+
+```json [Success Response with a target group]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "TargetUserGroupID": 3,
+  "DeletedUserGroupIDs": [5, 6],
+  "MovedUsers": [
+    { "UserGroupID": 5, "Users": 12 },
+    { "UserGroupID": 6, "Users": 0 }
+  ]
+}
+```
+
 ```json [Error Response]
 {
   "Success": false,
@@ -2304,11 +2347,29 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Refused Groups Response]
+{
+  "Success": false,
+  "ErrorCode": 7,
+  "ErrorText": "One or more user groups cannot be deleted, nothing was deleted",
+  "RefusedUserGroups": [
+    { "UserGroupID": 2, "Reason": "New signups are created in this user group" },
+    { "UserGroupID": 4, "Reason": "New signups can choose this user group" },
+    { "UserGroupID": 99, "Reason": "This user group does not exist" }
+  ]
+}
+```
+
 ```txt [Error Codes]
 0: Success
 1: Missing UserGroupID parameter
 4: Cannot delete the last user group
-5003: An admin limited to some user groups cannot delete user groups
+5: Target user group not found (TargetUserGroupID only)
+6: Target user group is one of the user groups being deleted (TargetUserGroupID only)
+7: One or more user groups cannot be deleted, nothing was deleted; see RefusedUserGroups (TargetUserGroupID only)
+8: The users of a user group could not be moved; that group and the ones after it were not deleted, DeletedUserGroupIDs lists the ones that were (TargetUserGroupID only)
+9: Another user group delete is in progress, try again (TargetUserGroupID only; deletes run one at a time and a call waits up to 30 seconds first)
+5003: An admin limited to some user groups cannot delete user groups, or the target user group is outside the user groups this admin account may access
 ```
 
 :::
