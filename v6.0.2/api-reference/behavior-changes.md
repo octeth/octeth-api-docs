@@ -122,6 +122,8 @@ The new `oempro_sms_campaign_queue.ShortDomain` column is added by an upgrade mi
 
 `smsgateway.create`, `smsgateway.update` and the admin SMS gateway form now reject a short domain that is not an ASCII hostname (a non-ASCII or internationalized domain, a URL with a scheme, port or path, or a single label) with error `18` and the rejected entries in `ErrorText`. Enter an internationalized domain in its punycode form. A non-ASCII domain switches an otherwise GSM-7 message to UCS-2, so it could pass the part-limit check on another domain and then be skipped as too long at send (octeth/oempro#3421). Gateways that already store such an entry keep working: SMS campaigns skip a stored non-ASCII domain and log it, and the other entries are only checked again when the list is saved.
 
+- `user.switch` with `PrivilegeType=Full` now grants every user permission to the session it returns. Before, the flag was stored but never applied, so a Full switch had the user group's permissions, the same as `Default`. A bare user-group read (`usergroup.get` and the other admin user-group commands) made in a browser session that also held a Full switch used to see the group's `Permissions` as `*`. It now sees the stored permissions (octeth/oempro#3471).
+
 ### User Groups
 
 #### A subscription plan has exactly one default user group

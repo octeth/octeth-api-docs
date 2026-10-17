@@ -432,6 +432,7 @@ Everything below `DefaultSenderDomain` in the table above was added in v5.9.3. P
 | APIKey    | String | No       | API key for authentication            |
 | UserID    | Integer | Conditional | User ID (required if EmailAddress not provided) |
 | EmailAddress | String | Conditional | Email address (required if UserID not provided) |
+| LimitAvailability | Boolean | No | Set to `1` to add `LimitUtilizationAvailable` to the response: `false` when the limit utilization could not be calculated (the error is logged). `LimitUtilization` is `null` both then and when the user has no limits, so read this field to tell the two apart. Without the parameter the response is unchanged. Added in v6.0.2 |
 
 ::: code-group
 
@@ -767,7 +768,7 @@ The response is the merge of two payloads: a stat-strip header (the overall fiel
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
 | UserID    | Integer | Yes | User ID to switch to |
-| PrivilegeType | String | No | Privilege type: 'Default' or 'Full' (default: 'Default') |
+| PrivilegeType | String | No | `Default` (or empty) logs in with the user group's permissions. `Full` lets the admin act as the user with every user permission, whatever the user group allows. Full applies only to the session `user.switch` returns, while it is logged in as this user: another lookup of the same user (for example `user.get`) and any account the session later switches to keep the group's real permissions. Changed in v6.0.2 |
 
 The target account must be enabled. `user.switch` refuses an account whose status is not `Enabled` with `ErrorCode 4` and creates no session, because a session for a disabled account cannot authenticate any user command. Enable the account first, or read it through admin commands such as `user.get`. (Changed in v6.0.1.)
 
