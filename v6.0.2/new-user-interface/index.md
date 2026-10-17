@@ -128,10 +128,26 @@ The staff area follows the same administrator permissions as the classic admin a
 sub-administrator sees only the users in the user groups their account may access, and
 only the actions their permissions allow: for example, without the "User.Impersonate"
 permission there is no "Switch user" button. A sub-administrator who may not browse users
-lands on the Webhooks page instead of the user list. Changes to a sub-administrator's
+lands on the AI assistants page instead of the user list. Changes to a sub-administrator's
 permissions reach the staff area within about a minute, and switching to a user always
 checks the current permissions. A switch to a user that is already running is not ended by
 a permission change.
+
+The staff billing screens and Webhooks follow the administrator permissions too:
+
+| Staff screen | Permission it needs |
+|---|---|
+| Billing: Revenue, Worklists, Transactions | Reports |
+| Billing: Discounts, Catalog, Health, Settings | Settings |
+| Webhooks | Settings |
+| AI assistants | None. The keys it creates carry the administrator's own permissions |
+
+A screen the sub-administrator may not use is hidden from the menu and refuses a direct
+link. On Worklists, Transactions and a discount's redemptions, a sub-administrator limited
+to some user groups sees only the customers in those groups, and the counts and totals
+cover only those customers. This needs the "User.Browse" permission, so a group-limited
+sub-administrator without it sees no customer records on those screens. Revenue shows
+install-wide figures and names no customer.
 
 ::: info
 After upgrading to this version, everyone signed in to the staff area is signed out once
