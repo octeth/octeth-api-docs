@@ -3021,6 +3021,8 @@ Ends one user session, typically the one `user.switch` returned when an administ
 
 Only a session signed in as a user is ended. A session that holds an administrator login, any other kind of session, and the calling session itself are refused (error 3) and left unchanged. A session that no longer exists answers `Success` with `Ended` `false`.
 
+An administrator limited to some user groups can end only the sessions of accounts in those groups. A session of any other account is refused with error 5003 and keeps working.
+
 The session to end is passed as `TargetSessionID`, not `SessionID`, because `SessionID` names the caller's own session. Call this command with an Admin API key. An admin `SessionID` call works too, but the API key form never touches the caller's own session.
 
 **Request Body Parameters:**
@@ -3065,6 +3067,7 @@ curl -X POST https://example.com/api.php \
 2: TargetSessionID is not a valid session id
 3: The session belongs to an administrator, is not a user session, or is the calling session
 4: The session could not be ended
+5003: The session's account is outside the user groups this admin account may access
 99998: Authentication failure
 99999: Not enough privileges
 ```

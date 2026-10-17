@@ -225,6 +225,10 @@ On PHP 8.1, the send engine (`cli/email_campaign_controller/run.php`) crashed wi
 
 A failed connection now reports the MySQL connect error on both PHP versions, for example `MySql Error: Couldn't connect to database - Connection refused`, where PHP 8.1 reported the `TypeError` instead. Startup behavior with MySQL down is unchanged.
 
+### Users
+
+- `user.update` leaves `OtherEmailAddresses` unchanged when the parameter is left out, like `RateLimits`, `CustomEmailHeaders` and `WhiteListedEmailAddresses`. Before, any call without it (an account status change, a user group change, enabling two-factor authentication, a profile edit) stored an empty value, so the account's other email addresses were silently erased. Sending the parameter, an empty string included, still writes it, so to clear the field send `"OtherEmailAddresses": ""`. The response is unchanged. There is no opt-in flag, because the old behavior destroyed data the caller never asked to change (octeth/oempro#3468).
+
 ### New user interface sessions
 
 #### Revoked sessions are now signed out (octeth/oempro#3354)

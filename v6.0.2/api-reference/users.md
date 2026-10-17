@@ -507,7 +507,7 @@ curl -X POST https://example.com/api.php \
 | LastName | String | No | Last name |
 | CompanyName | String | No | Company name |
 | Website | String | No | Website URL |
-| OtherEmailAddresses | String | No | Additional email addresses |
+| OtherEmailAddresses | String | No | Additional email addresses. Omit to keep the existing value; pass an empty string to clear it. Before v6.0.2 a call that left it out cleared the stored value. Changed in v6.0.2 |
 | Street | String | No | Street address |
 | Street2 | String | No | Street address line 2 |
 | City | String | No | City |
