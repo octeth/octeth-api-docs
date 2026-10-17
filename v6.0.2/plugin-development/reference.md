@@ -261,7 +261,7 @@ Most hooks follow this three-part pattern:
 
 **Examples:**
 - `Campaign.Create.Post` - After a campaign is created
-- `User.Update.Post.Successful` - After successful user update
+- `User.Update.Post` - After a user update
 - `Email.Send.Before` - Before email is sent
 - `Subscriber.Delete.Post` - After subscriber deletion
 
@@ -278,7 +278,6 @@ System-level hooks for application-wide events:
 
 User interface hooks for visual customization:
 
-- `UI.User.Edit.Form` - User edit form rendering
 - `UI.Campaign.Details` - Campaign details page
 - `UI.User.HeaderLogo` - Header logo customization
 - `UI.User.BeforeBodyClose` - Before closing body tag
@@ -637,18 +636,6 @@ Triggered after user account update.
 
 ---
 
-### `User.Update.Post.Successful` <Badge type="info" text="Action" />
-
-Triggered after successful user update operation.
-
-| Property | Value |
-|---|---|
-| **Type** | Action |
-| **Parameters** | `$userID` (int) - User ID |
-| **Returns** | N/A |
-
----
-
 ### `User.Delete.Post` <Badge type="info" text="Action" />
 
 Triggered after user deletion.
@@ -767,7 +754,7 @@ public static function AdminUserPluginFieldsSave($User, $Values)
 
 :::
 
-The legacy admin user edit form still uses `FormItem.AddTo.User.Edit`, `FormItem.AddTo.User.Edit.Settings` and `User.Update.Post.Successful`. Register both pairs while that form exists, and share one save routine between them so both paths write the same stored value.
+The legacy admin user edit form and its `FormItem.AddTo.User.Edit`, `FormItem.AddTo.User.Edit.Settings` and `User.Update.Post.Successful` hooks are removed (issue #3450). These two hooks are the only way to add a per-user field.
 
 ---
 
@@ -859,7 +846,7 @@ public static function AdminUserPluginActionsRun($User, $Plugin, $Key)
 
 :::
 
-The legacy admin user page still uses `UI.User.Edit.Form`, `UI.User.Edit.UserOptionsMenu` and `Admin.UserController.Edit.Events` for the same controls. Register both while that page exists, and share one routine between them so both paths do the same thing.
+The legacy admin user page and its `UI.User.Edit.*` and `Admin.UserController.Edit.Events` hooks are removed (issue #3450). These two hooks are the only way to add a per-user action.
 
 ---
 
@@ -1713,30 +1700,6 @@ public static function addTrackingCode()
 ```
 
 :::
-
----
-
-### `UI.User.Edit.Form` <Badge type="info" text="Action" />
-
-Add custom fields to user edit form.
-
-| Property | Value |
-|---|---|
-| **Type** | Action |
-| **Parameters** | `$userID` (int) - User being edited<br>`$userData` (array) - User data |
-| **Returns** | N/A |
-
----
-
-### `UI.User.Edit.LeftSide` <Badge type="info" text="Action" />
-
-Add content to left sidebar of user edit page.
-
-| Property | Value |
-|---|---|
-| **Type** | Action |
-| **Parameters** | `$userID` (int) - User ID<br>`$userData` (array) - User data |
-| **Returns** | N/A |
 
 ---
 
@@ -2726,7 +2689,6 @@ grep -n "RegisterHook\|HookListener" path/to/file.php
 **User Management:**
 - User.Create
 - User.Update.Post
-- User.Update.Post.Successful
 - Admin.User.PluginFields
 - Admin.User.PluginFields.Save
 - Admin.User.PluginActions
@@ -2806,8 +2768,6 @@ grep -n "RegisterHook\|HookListener" path/to/file.php
 
 **UI:**
 - UI.All
-- UI.User.Edit.Form
-- UI.User.Edit.LeftSide
 - UI.User.BeforeBodyClose
 - UI.Campaign.Details
 
@@ -2846,7 +2806,6 @@ grep -n "RegisterHook\|HookListener" path/to/file.php
 
 **UI:**
 - UI.User.HeaderLogo
-- UI.User.Browse.ImpersonateLink
 - UI.User.Group.SubscriptionPlans
 
 **Integrations:**

@@ -361,6 +361,14 @@ If you edited `docker-compose.yml`:
 
 A failed upgrade restores your original `docker-compose.yml` from the backup it takes in step 3. With `--skip-backup` there is no such copy, so the old tag in the upgrade log is what to change the lines back to.
 
+### The legacy admin Users section is removed
+
+User accounts are managed in the new interface's staff screens. The old `/app/admin/users/...` links redirect there, and a form posted to one of them is refused without changing anything. The payment history tab and the invoice editor are not carried over.
+
+This needs `UI_ENABLED=true`. When it is not, the upgrade prints a warning before you confirm, in a dry run and in the final summary, and finishes normally. To manage users afterwards, set `UI_ENABLED=true` in `.oempro_env` and run `./cli/octeth.sh docker:up`.
+
+Plugins that added fields, tabs or actions to the old user page must use `Admin.User.PluginFields` and `Admin.User.PluginActions` instead. See [API Behavior Changes](/v6.0.2/api-reference/behavior-changes).
+
 ## Post-Upgrade Verification
 
 After the upgrade completes, verify everything is working:

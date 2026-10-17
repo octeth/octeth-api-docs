@@ -30,6 +30,41 @@ There is no opt-in flag, because the commands had no working data source left.
 
 - `UserGroup.Delete` now also deletes the deleted group's own theme when no other group references it and it is not the system default theme (octeth/oempro#3391). The response is unchanged.
 
+### Admin area
+
+#### The legacy Users section is removed
+
+The legacy admin Users section (`/app/admin/users/...`: the user list, the create form, the user edit pages with their Account Activity, Limit Utilization, Payment History, Sender Domains, Send Message and account action tabs, and the invoice editor) is removed. User accounts are managed in the new interface's staff screens (`/<UI_STAFF_PREFIX>/staff/customers`), which cover the same work. The payment history tab and the invoice editor are dropped, not moved (octeth/oempro#3450).
+
+**The old URLs keep working.** `/app/admin/users/...` is now a redirect shim, so bookmarks, emails, Slack alerts and plugin links still land on the right page:
+
+| Old URL | Answer while `UI_ENABLED=true` |
+|---|---|
+| `/app/admin/users/`, `/browse/...` with any filter | 302 to `/<staff>/staff/customers`, with the filter mapped to the list's query parameters |
+| `/create/` | 302 to `/<staff>/staff/customers/new` |
+| `/edit/<id>/`, `/edit/<id>/AccountActivity` | 302 to `/<staff>/staff/customers/<id>` |
+| `/edit/<id>/Edit` | 302 to `/<staff>/staff/customers/<id>/edit` |
+| `/edit/<id>/LimitUtilization` | 302 to `/<staff>/staff/customers/<id>?tab=limits` |
+| `/edit/<id>/PendingDomains` | 302 to `/<staff>/staff/customers/<id>?tab=sender-domains` |
+| any other `/edit/<id>/...` sub-page, `/invoice/...` | 302 to `/<staff>/staff/customers/<id>` |
+| anything else under `/app/admin/users/` | 302 to `/<staff>/staff/customers` |
+
+A POST to any of these URLs is refused: it changes nothing and answers a short page that links to the new screen.
+
+**User management now needs `UI_ENABLED=true`.** With `UI_ENABLED` off, every `/app/admin/users/...` URL shows a page in the admin area saying that user accounts are managed in the new interface and that it needs `UI_ENABLED=true`. There is no legacy fallback. The upgrade prints a warning (before the confirmation prompt, in a dry run, and in the final summary) when `UI_ENABLED` is not `true`, and does not stop. The user API commands (`user.*`, `users.*`, `admin.user.*`) are unchanged.
+
+**Plugin hooks removed.** These hooks were fired only by the removed section and are gone. A plugin that registers them no longer has them called. It does not error.
+
+| Removed hook | Replacement |
+|---|---|
+| `FormItem.AddTo.User.Edit`, `FormItem.AddTo.User.Edit.Settings`, `User.Update.Post.Successful` | `Admin.User.PluginFields` and `Admin.User.PluginFields.Save` (octeth/oempro#3445) |
+| `UI.User.Edit.LeftSide`, `UI.User.Edit.Form`, `UI.User.Edit.UserOptionsMenu`, `UI.User.Edit.UserOptionsMenu.ShowResetAccountStatsItem`, `UI.User.Edit.Form.ResetAccountStats`, `Admin.UserController.Edit.Events` | `Admin.User.PluginActions` and `Admin.User.PluginActions.Run` (octeth/oempro#3449), plus `Admin.User.PluginFields` for read-only panels |
+| `UI.User.Browse.ImpersonateLink` | none: the new interface's own impersonation replaces custom links |
+
+`User.Create`, `User.Update.Post`, `User.Delete.Post` and `Delete.User` are unchanged. The bundled plugins (amazonses, spamassassincontentvalidator, upsender, sendlayer, phishguard, peakmonitor) already use the replacements. The SendLayer custom impersonation page (`/app/sendlayer/impersonate/<id>`) still exists but nothing links to it.
+
+There is no opt-in flag: the section is removed, and its URLs answer as above.
+
 ### Users
 
 - `Users.Delete` now deletes what the deleted user owned: their lists with each list's subscriber tables, their segments, user API keys (AI agent keys included), email gateway API keys and SMTP credentials, and their risk snapshots. Their email gateway sender domains are soft-deleted, and unfinished SMS campaigns are cancelled. Before, all of these were left behind, and a deleted user's email gateway SMTP login kept working (octeth/oempro#3389). Statistics, logs and other history rows are kept. The response is unchanged. To find what earlier deletions left behind, run `./cli/octeth.sh users:orphans`, which reports orphaned lists, segments, subscriber tables and themes and deletes them only with `--delete --yes`.
@@ -277,6 +312,7 @@ v6.0.2 screens three points with fixed rules (issue #3392): every new account, a
 - Add `ui/storage/oauth-private.key` and `ui/storage/oauth-public.key` to your backups, and keep them when moving Octeth to another server.
 - If you blocked SMS for a user group by setting its SMS limits for Hour, Day, Week, Month and Year to `0` with Minute left at `-1`, the upgrade rewrites that group to unlimited. Set its limits again after upgrading, with Minute `0` as well.
 - Users whose time zone was reset to "(GMT-10:00) Hawaii" by an admin save of a "US & Canada" time zone must have it set again. The upgrade repairs only values still stored as `&amp;`.
+- Set `UI_ENABLED=true` in `.oempro_env` before or right after upgrading if administrators manage user accounts, because the legacy admin Users section is removed and its replacement is the new interface. Move any plugin that used the removed user page hooks to `Admin.User.PluginFields` and `Admin.User.PluginActions`.
 - Remove any calls to the `postmaster.*` commands. They answer `ErrorCode: 99` in v6.0.2 and will be deleted later.
 - The upgrade leaves `GOOGLE_POSTMASTER_CLIENT_ID`, `GOOGLE_POSTMASTER_CLIENT_SECRET` and `GOOGLE_POSTMASTER_REDIRECT_URI` in your `.oempro_env`. Nothing reads them any more, so you can delete them.
 - Octeth does not revoke the OAuth grant you gave it in your Google account. Revoke it there, under your Google account's third-party access settings, and delete the OAuth client in Google Cloud if nothing else uses it.

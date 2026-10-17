@@ -393,10 +393,10 @@ With this option on, a new domain still starts in **Approval Pending**. When its
 
 To approve a domain:
 
-1. Navigate to **Users** > **User Accounts**, edit the domain owner and open the **Sender Domains** tab.
-2. Click **Activate** next to the blocked domain. The domain becomes **Enabled**.
+1. In the new interface, open **Users**, click the domain owner and open the **Sender domains & keys** tab.
+2. Click **Enable** next to the blocked domain and confirm with **Enable domain**. The domain becomes **Enabled**.
 
-On the same tab, **Suspend** stops a domain and **Block** puts an enabled domain on hold. **Unblock** returns a suspended domain to **Approval Pending**, and the owner has to verify it again. Owners cannot move a domain out of **Suspended** or **Blocked** themselves.
+On the same tab, **Suspend** stops a domain and **Block** puts a domain on hold. **Enable** returns a suspended or blocked domain to **Enabled**. Owners cannot move a domain out of **Suspended** or **Blocked** themselves.
 
 To see every domain that is waiting, open **Reports** > **Sender Domain Health** and filter by the **Blocked** status. See [Sender Domain Health](/v6.0.2/using-octeth/administration/sender-domain-health).
 
