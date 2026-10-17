@@ -111,16 +111,19 @@ as well.
 The staff area follows the same administrator permissions as the classic admin area. A
 sub-administrator sees only the users in the user groups their account may access, and
 only the actions their permissions allow: for example, without the "User.Impersonate"
-permission there is no "Switch user" button. A sub-administrator who may not browse users
-lands on the AI assistants page instead of the user list. Changes to a sub-administrator's
+permission there is no "Switch user" button. An administrator with the "Dashboard" permission
+lands on the staff dashboard, see [The Staff Dashboard](./staff-dashboard). Without it, an
+administrator lands on the user list, and a sub-administrator who may not browse users
+lands on the AI assistants page. Changes to a sub-administrator's
 permissions reach the staff area within about a minute, and switching to a user always
 checks the current permissions. A switch to a user that is already running is not ended by
 a permission change.
 
-The staff billing screens, Webhooks, User groups and Subscriber search follow the administrator permissions too:
+The staff dashboard, billing screens, Webhooks, User groups and Subscriber search follow the administrator permissions too:
 
 | Staff screen | Permission it needs |
 |---|---|
+| Dashboard | Dashboard. Each card needs its own permission as well, see [The Staff Dashboard](./staff-dashboard#how-the-cards-work) |
 | Billing: Revenue, Worklists, Transactions | Reports |
 | Billing: Discounts, Catalog, Health, Settings | Settings |
 | Webhooks | Settings |
@@ -145,6 +148,7 @@ and signs in again. This loads their permissions into the new interface.
 | Path | What it serves |
 |---|---|
 | `/user/` | The whole interface: sign-in, sign-up, dashboard, campaigns, lists, journeys, billing |
+| `/user/staff/dashboard` | The staff dashboard and landing page, see [The Staff Dashboard](./staff-dashboard) |
 | `/user/staff/customers` | The staff Users list, create and edit screens, visible to Octeth administrators only, see [Managing Users in the Staff Area](./staff-users) |
 | `/user/staff/user-groups` | The staff User groups list, create and edit screens, see [Managing User Groups in the Staff Area](./staff-user-groups) |
 | `/user/staff/subscriber-search` | The staff Subscriber search, see [Searching Subscribers in the Staff Area](./staff-subscriber-search) |

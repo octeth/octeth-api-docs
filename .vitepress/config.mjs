@@ -1109,6 +1109,7 @@ export default defineConfig({
                     collapsed: true,
                     items: [
                         {text: 'Overview', link: '/v6.0.2/new-user-interface/'},
+                        {text: 'The Staff Dashboard', link: '/v6.0.2/new-user-interface/staff-dashboard'},
                         {text: 'Managing Users in the Staff Area', link: '/v6.0.2/new-user-interface/staff-users'},
                         {text: 'Managing User Groups in the Staff Area', link: '/v6.0.2/new-user-interface/staff-user-groups'},
                         {text: 'Searching Subscribers in the Staff Area', link: '/v6.0.2/new-user-interface/staff-subscriber-search'},
