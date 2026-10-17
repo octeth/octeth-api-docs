@@ -53,7 +53,7 @@ The legacy admin Users section (`/app/admin/users/...`: the user list, the creat
 
 **The old URLs keep working.** `/app/admin/users/...` is now a redirect shim, so bookmarks, emails, Slack alerts and plugin links still land on the right page:
 
-| Old URL | Answer while `UI_ENABLED=true` |
+| Old URL | Answer |
 |---|---|
 | `/app/admin/users/`, `/browse/...` with any filter | 302 to `/<staff>/staff/customers`, with the filter mapped to the list's query parameters |
 | `/create/` | 302 to `/<staff>/staff/customers/new` |
@@ -66,7 +66,7 @@ The legacy admin Users section (`/app/admin/users/...`: the user list, the creat
 
 A POST to any of these URLs is refused: it changes nothing and answers a short page that links to the new screen.
 
-**User management now needs `UI_ENABLED=true`.** With `UI_ENABLED` off, every `/app/admin/users/...` URL shows a page in the admin area saying that user accounts are managed in the new interface and that it needs `UI_ENABLED=true`. There is no legacy fallback. The upgrade prints a warning (before the confirmation prompt, in a dry run, and in the final summary) when `UI_ENABLED` is not `true`, and does not stop. The user API commands (`user.*`, `users.*`, `admin.user.*`) are unchanged.
+**User management lives only in the new interface**, which is always on from v6.0.2 (see [The new user interface is always on](#the-new-user-interface-is-always-on)). There is no legacy fallback. The user API commands (`user.*`, `users.*`, `admin.user.*`) are unchanged.
 
 **Plugin hooks removed.** These hooks were fired only by the removed section and are gone. A plugin that registers them no longer has them called. It does not error.
 
@@ -86,7 +86,7 @@ The legacy admin User Groups section (`/app/admin/usergroups/...`: the group lis
 
 **The old URLs keep working.** `/app/admin/usergroups/...` is now a redirect shim, and every classic admin link into the section (the Users menu, the overview button, the delivery server settings page and the admin help page) points at the new screens:
 
-| Old URL | Answer while `UI_ENABLED=true` |
+| Old URL | Answer |
 |---|---|
 | `/app/admin/usergroups/`, `/browse/` | 302 to `/<staff>/staff/user-groups` |
 | `/create/` | 302 to `/<staff>/staff/user-groups/new` |
@@ -95,9 +95,22 @@ The legacy admin User Groups section (`/app/admin/usergroups/...`: the group lis
 
 A POST to any of these URLs is refused: it changes nothing and answers a short page that links to the new screen. The new screens apply the `UserGroups` privilege and a sub-admin's user group limits themselves.
 
-**User group management now needs `UI_ENABLED=true`.** With `UI_ENABLED` off, every `/app/admin/usergroups/...` URL shows a page in the admin area saying that user groups are managed in the new interface and that it needs `UI_ENABLED=true`. There is no legacy fallback. The upgrade warning added for the Users section now names user groups too (one warning, not two). The `usergroup.*` and `usergroups.get` API commands are unchanged.
+**User group management lives only in the new interface**, which is always on from v6.0.2. There is no legacy fallback. The `usergroup.*` and `usergroups.get` API commands are unchanged.
 
 There is no opt-in flag: the section is removed, and its URLs answer as above.
+
+#### The new user interface is always on
+
+The `UI_ENABLED` setting is removed, and the new user interface runs on every install (octeth/oempro#3494). An install could not manage user accounts or user groups with it off, since those screens exist only there. What an integration or operator can observe:
+
+- `/user/`, `/ui/` and `/livewire-` are always served by the new interface, and `/mcp`, `/oauth/` and `/.well-known/oauth-` by its AI assistant connector unless `MCP_ENABLED` is `false` (see below). On an install that had `UI_ENABLED=false`, these paths went to the classic application before the upgrade and are now internet-facing.
+- `system.health.check` always includes the `NewUserInterface` check in `Checks` and `Timings`. Before, it appeared only while `UI_ENABLED` was `true`, so an install that had the interface off sees a new key, and the whole call answers HTTP 503 when the interface does not answer. Its failure text no longer mentions `UI_ENABLED`.
+- The `/app/admin/users/...` and `/app/admin/usergroups/...` URLs always redirect as described above. The page saying the section needs the new interface is gone.
+- The admin API IP allow-list (`ADMIN_API_ENFORCE_ALLOWED_IP`) always exempts calls received from the interface's own container, matched on the connection's address. Before, the exemption applied only while `UI_ENABLED` was `true`.
+- An AI assistant's `usergroup.options.patch` always checks the user groups the new interface places accounts in, so a call that does not come through the built-in connector is refused for that check on every install (`ErrorCode` and text unchanged). Before, an install with `UI_ENABLED=false` skipped the check.
+- The upgrade deletes a leftover `UI_ENABLED` line from `.oempro_env`, `true` or `false`, with a one-line notice, and recreates the `oempro_ui` and `haproxy` containers. A failed interface asset build, interface migration or interface Composer install now fails the upgrade and rolls it back instead of warning.
+
+There is no opt-in flag: the interface is part of every install. The only part that can be switched off is the AI assistant connector, with `MCP_ENABLED=false`.
 
 ### Users
 
@@ -293,7 +306,9 @@ No configuration change is needed.
 
 v6.0.2 adds a built-in connector so customers can connect Claude, ChatGPT and other AI assistants that support remote MCP connectors to their account with one URL, `https://<app domain>/mcp`, and their normal sign-in (issue #3369). The assistant gets read-only access. See [Connect Claude or ChatGPT](/v6.0.2/new-user-interface/ai-assistants).
 
-The connector requires `UI_ENABLED=true` and an app domain reachable from the internet over `https://`. When `UI_ENABLED` is `true`, the bundled HAProxy now sends `/mcp`, `/oauth/`, `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` to the interface container instead of the classic application. These paths sit at the root of the app domain, not under `/user/`. Installs with `UI_ENABLED=false` route them as before.
+The connector requires an app domain reachable from the internet over `https://`. The bundled HAProxy now sends `/mcp`, `/oauth/`, `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` to the interface container instead of the classic application. These paths sit at the root of the app domain, not under `/user/`.
+
+**`MCP_ENABLED` turns the connector off.** It is a new `.oempro_env` setting, `true` by default and in the shipped example, so the connector is on after an upgrade. Set it to `false` (or `0`, `no`, `off`, in any case) and HAProxy answers 404 for `/mcp`, `/oauth/` and `/.well-known/oauth-`, the interface answers 404 for the same routes, and `/llms.txt` leaves out its connector section. The rest of the interface is unaffected, and agent keys keep working against the HTTP API. Recreate the HAProxy and interface containers after changing it (`./cli/octeth.sh docker:up`). See [the configuration page](/v6.0.2/getting-started/octeth-configuration) (octeth/oempro#3494).
 
 Approving a connection creates a user API key with the note `AI connector: <assistant name>`. These keys appear in `user.apikey.list` responses and on the customer's API keys page, and deleting one disconnects that assistant. A customer can connect an assistant only when their plan includes API access. Staff connect operator assistants with their own login, two-factor authentication included (octeth/oempro#3406), but not while impersonating a customer.
 
@@ -316,7 +331,7 @@ v6.0.2 also adds AI agent keys (issue #3373). A key created with `IsAgentKey` (e
 v6.0.2 lets an operator AI assistant (an admin agent key with `admin:act`) take part in setting up an install (issue #3387): read the setup status, create and test delivery servers, create user groups, assign a delivery server to a group and turn on the bounce and FBL mailboxes. Every action waits for the operator's confirmation and is logged. See [Setup actions](/v6.0.2/api-reference/admin#setup-actions) and [Setup](/v6.0.2/api-reference/setup).
 
 - The assistant can repoint or test only a delivery server it created itself and that nothing uses yet. A server you created, or one a user group, user, delivery route, segment or IP pool refers to, keeps its host, port, credentials and domains, and only its name and timeout can change. Testing pins the connection to the public address that was checked.
-- The assistant can assign a delivery server only to a user group with no users that receives users only by your hand. The signup group, the groups a signup picks from and, with `UI_ENABLED=true`, every billing plan, signup, suspension, cancellation and default group of the new user interface stay manual. While the interface is on, an assignment that does not come through its built-in connector is refused.
+- The assistant can assign a delivery server only to a user group with no users that receives users only by your hand. The signup group, the groups a signup picks from and every billing plan, signup, suspension, cancellation and default group of the new user interface stay manual. An assignment that does not come through the interface's built-in connector is refused.
 - The assistant can only make a user group's sender screening stricter: a mode moves from `off` to `flag` to `hold`, and a threshold only goes down and never to 0. Loosening screening, the screening lists and releasing a held item stay in the admin area.
 - Nothing the assistant can call reads or writes `.oempro_env` or restarts a container.
 
@@ -356,7 +371,7 @@ v6.0.2 screens three points with fixed rules (issue #3392): every new account, a
 - Add `ui/storage/oauth-private.key` and `ui/storage/oauth-public.key` to your backups, and keep them when moving Octeth to another server.
 - If you blocked SMS for a user group by setting its SMS limits for Hour, Day, Week, Month and Year to `0` with Minute left at `-1`, the upgrade rewrites that group to unlimited. Set its limits again after upgrading, with Minute `0` as well.
 - Users whose time zone was reset to "(GMT-10:00) Hawaii" by an admin save of a "US & Canada" time zone must have it set again. The upgrade repairs only values still stored as `&amp;`.
-- Set `UI_ENABLED=true` in `.oempro_env` before or right after upgrading if administrators manage user accounts, because the legacy admin Users section is removed and its replacement is the new interface. Move any plugin that used the removed user page hooks to `Admin.User.PluginFields` and `Admin.User.PluginActions`.
+- The new user interface is always on after the upgrade, and the upgrade deletes any `UI_ENABLED` line from `.oempro_env`. If your install had it off, `/user/`, `/ui/`, `/livewire-` and the AI assistant connector paths become reachable from the internet: add `MCP_ENABLED=false` before upgrading to keep the connector off, check the server's memory against [Server Requirements](/v6.0.2/getting-started/server-requirements), and point any path-based rules in your own reverse proxy at Octeth for those paths. Move any plugin that used the removed user page hooks to `Admin.User.PluginFields` and `Admin.User.PluginActions`.
 - Remove any calls to the `postmaster.*` commands. They answer `ErrorCode: 99` in v6.0.2 and will be deleted later.
 - The upgrade leaves `GOOGLE_POSTMASTER_CLIENT_ID`, `GOOGLE_POSTMASTER_CLIENT_SECRET` and `GOOGLE_POSTMASTER_REDIRECT_URI` in your `.oempro_env`. Nothing reads them any more, so you can delete them.
 - Octeth does not revoke the OAuth grant you gave it in your Google account. Revoke it there, under your Google account's third-party access settings, and delete the OAuth client in Google Cloud if nothing else uses it.

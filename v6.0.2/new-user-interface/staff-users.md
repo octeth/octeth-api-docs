@@ -18,8 +18,8 @@ users in the user groups their account may access, and controls for actions they
 permission for are hidden. Octeth checks the same permissions again on every request.
 :::
 
-With `UI_ENABLED=true`, the classic admin **Users** section forwards to these screens, see
-[Coming from the classic Users section](./#coming-from-the-classic-users-section).
+The classic admin **Users** section forwards to these screens, see
+[Coming from the classic Users and User Groups sections](./#coming-from-the-classic-users-and-user-groups-sections).
 
 ## The Users list
 

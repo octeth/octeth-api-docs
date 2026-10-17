@@ -80,27 +80,27 @@ This guarantees that a years-old installation is still upgraded by the newest, f
 
 Once confirmed, the upgrade runs through these steps automatically:
 
-1. **Refreshes the upgrade runner** — Before touching anything, the command replaces its own `cli/` scripts with the ones from the release you are installing and re-runs itself once. This means the upgrade is always performed by the newest upgrade logic, even if the copy installed on your server is several versions old. Your previous `cli/` is copied to `data/backups/cli.bak.[version].[timestamp]/` first, so the swap is fully reversible. You will see the pre-flight output twice — that is expected, and you are only asked to confirm once. The step is skipped automatically when your `cli/` already matches the release.
+1. **Refreshes the upgrade runner**: Before touching anything, the command replaces its own `cli/` scripts with the ones from the release you are installing and re-runs itself once. This means the upgrade is always performed by the newest upgrade logic, even if the copy installed on your server is several versions old. Your previous `cli/` is copied to `data/backups/cli.bak.[version].[timestamp]/` first, so the swap is fully reversible. You will see the pre-flight output twice. That is expected, and you are only asked to confirm once. The step is skipped automatically when your `cli/` already matches the release.
 
-2. **Stops backend services** — Pauses all background workers, supervisor processes, and cron jobs so no tasks run during the upgrade.
+2. **Stops backend services**: Pauses all background workers, supervisor processes, and cron jobs so no tasks run during the upgrade.
 
-3. **Creates a backup** — Saves all your environment files (`.oempro_*_env`), Docker Compose configuration, and a full MySQL database dump to `data/backups/upgrade_[timestamp]/`.
+3. **Creates a backup**: Saves all your environment files (`.oempro_*_env`), Docker Compose configuration, and a full MySQL database dump to `data/backups/upgrade_[timestamp]/`.
 
-4. **Extracts and syncs release files** — Unpacks the zip file and syncs new application files into your installation. Your configuration files, data directory, plugins, and Docker volumes are preserved.
+4. **Extracts and syncs release files**: Unpacks the zip file and syncs new application files into your installation. Your configuration files, data directory, plugins, and Docker volumes are preserved.
 
-5. **Merges environment files** — Compares your current environment files against the new version's defaults. Any new configuration keys introduced in the new version are added to your files with their default values. Your existing settings are never overwritten.
+5. **Merges environment files**: Compares your current environment files against the new version's defaults. Any new configuration keys introduced in the new version are added to your files with their default values. Your existing settings are never overwritten.
 
 6. **Updates the Octeth image tag**: Moves every `image: octeth/oempro:<tag>` line in your `docker-compose.yml` (and `docker-compose.mta.yml` if you have one) to the tag the release's own `docker-compose.yml` carries, and pulls that image. The tag only changes in a release that rebuilds the image, so most upgrades leave it as it is and pull nothing. Comments, other images and the rest of your file are not changed.
 
 7. **Rebuilds local images and restarts containers**: Rebuilds the container images that Octeth builds on your server rather than downloading (the new user interface, HAProxy, the link proxy, RabbitMQ, Redis, Mailpit and the inbound SMTP server), so their startup scripts match the release. The build runs while the old containers are still serving. Containers are then brought down and back up with the new images and code. If a rebuild fails, the upgrade continues on the existing images and tells you how to retry (see [Image Rebuild Fails](#image-rebuild-fails)).
 
-8. **Installs dependencies** — Waits for Composer to install PHP dependencies in both the app and system containers.
+8. **Installs dependencies**: Waits for Composer to install PHP dependencies in the app, system and new user interface containers. A timeout in any of them fails the upgrade, which then rolls back.
 
-9. **Runs database migrations** — Applies database schema changes for both the legacy (PHP 5.6) and Laravel (PHP 8.1) codebases.
+9. **Runs database migrations**: Applies database schema changes for the legacy (PHP 5.6) and Laravel (PHP 8.1) codebases and for the new user interface's own database, which it creates first when it is missing. A failed migration in any of them fails the upgrade, which then rolls back.
 
-10. **Builds JavaScript assets** — Compiles the Journey Builder and Website Event Tracker from source.
+10. **Builds JavaScript assets**: Compiles the Journey Builder and Website Event Tracker from source, and builds the new user interface's stylesheets and scripts when the release package does not carry them. A failed Journey Builder or Event Tracker build only warns. A failed build of the new user interface's assets fails the upgrade, which then rolls back, because every page of the interface would otherwise fail to render.
 
-11. **Starts backend services and runs a health check** — Restarts all background workers and verifies the system is operational.
+11. **Starts backend services and runs a health check**: Restarts all background workers and verifies the system is operational.
 
 When finished, you'll see a summary:
 
@@ -299,7 +299,7 @@ The other five `.oempro_*_env` files do not stop Octeth. An unparseable one is l
 
 ### The upgrade asks before turning on new settings
 
-When the upgrade adds a setting that your `.oempro_env` does not have yet, it writes the value from the shipped example. Seven of those settings switch something on: `ADMIN_API_ENFORCE_PRIVILEGES`, `ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD`, `SYSTEM_HEALTH_CHECK_AUTH_REQUIRED`, `ADMIN_API_ENFORCE_ALLOWED_IP`, `SYSTEM_INTERNAL_SIGNATURE_REQUIRED` and `UI_ENABLED` (new in v5.9.6), and `USER_UPDATE_REQUIRE_CURRENT_PASSWORD` (new in v6.0.0). Each is added as `true`, while its code default is `false`. An installation upgrading straight from a version older than v5.9.6 gets all seven.
+When the upgrade adds a setting that your `.oempro_env` does not have yet, it writes the value from the shipped example. Six of those settings switch something on: `ADMIN_API_ENFORCE_PRIVILEGES`, `ADMIN_UPDATE_REQUIRE_CURRENT_PASSWORD`, `SYSTEM_HEALTH_CHECK_AUTH_REQUIRED`, `ADMIN_API_ENFORCE_ALLOWED_IP` and `SYSTEM_INTERNAL_SIGNATURE_REQUIRED` (new in v5.9.6), and `USER_UPDATE_REQUIRE_CURRENT_PASSWORD` (new in v6.0.0). Each is added as `true`, while its code default is `false`. An installation upgrading straight from a version older than v5.9.6 gets all six. `UI_ENABLED` used to be on this list. It is removed in v6.0.2, see [The new user interface is always on](#the-new-user-interface-is-always-on).
 
 From v6.0.1, the upgrade lists any of these it adds in a separate warning block, with the value it writes, what changes and how to keep it off. `--dry-run` shows the same block before anything is written.
 
@@ -361,11 +361,29 @@ If you edited `docker-compose.yml`:
 
 A failed upgrade restores your original `docker-compose.yml` from the backup it takes in step 3. With `--skip-backup` there is no such copy, so the old tag in the upgrade log is what to change the lines back to.
 
+### The new user interface is always on
+
+From v6.0.2 the new user interface cannot be turned off (issue #3494). Since user and user group management moved into it, an installation with the interface off could not manage accounts at all. The `UI_ENABLED` setting is removed.
+
+If your `.oempro_env` has a `UI_ENABLED` line, `true` or `false`, the upgrade continues and prints one line during the environment merge (step 5):
+
+```text
+UI_ENABLED is no longer used and was removed from .oempro_env: the new user interface is always on, and oempro_ui and haproxy are recreated by this upgrade.
+```
+
+It deletes the line, and step 7 then recreates every container, `oempro_ui` and `haproxy` included, so the reverse proxy starts sending `/user/`, `/ui/` and `/livewire-` to the interface. A `--dry-run` run with the v6.0.2 runner lists the line under the environment merge preview. A failed upgrade that rolls back restores your original `.oempro_env`, line included.
+
+**If your installation had `UI_ENABLED=false`:**
+
+- After the upgrade, `/user/`, `/ui/` and `/livewire-` are served by the new interface and are reachable from the internet, like every other path on your app domain. The classic areas stay at `/app/user/` and `/app/admin/`.
+- The AI assistant connector at `/mcp`, `/oauth/` and `/.well-known/oauth-` is on too. To keep it off, add `MCP_ENABLED=false` to `.oempro_env` before upgrading. The reverse proxy then answers 404 for those three paths. See [the configuration page](/v6.0.2/getting-started/octeth-configuration).
+- The interface now runs fully booted (PHP 8.4, Apache, Laravel and its scheduler), so it uses more memory than the idle container did. Check the server against [Server Requirements](/v6.0.2/getting-started/server-requirements) before upgrading.
+
+**The interface's setup steps now fail the upgrade.** The upgrade always waits for the interface's Composer install (step 8), creates its database when it is missing and runs its migrations (step 9), and builds its assets when the package lacks them (step 10). A timeout, a failed migration or a failed build stops the upgrade with the error and rolls it back, like any other failed step. Before v6.0.2 these only warned. Read `docker logs oempro_ui` for the cause. Once it is fixed, run the upgrade again, or finish by hand with `/opt/octeth/cli/octeth.sh ui:db-setup` (database and migrations) and `/opt/octeth/cli/octeth.sh ui:build` (assets).
+
 ### The legacy admin Users section is removed
 
 User accounts are managed in the new interface's staff screens. The old `/app/admin/users/...` links redirect there, and a form posted to one of them is refused without changing anything. The payment history tab and the invoice editor are not carried over.
-
-This needs `UI_ENABLED=true`. When it is not, the upgrade prints a warning before you confirm, in a dry run and in the final summary, and finishes normally. To manage users afterwards, set `UI_ENABLED=true` in `.oempro_env` and run `./cli/octeth.sh docker:up`.
 
 Plugins that added fields, tabs or actions to the old user page must use `Admin.User.PluginFields` and `Admin.User.PluginActions` instead. See [API Behavior Changes](/v6.0.2/api-reference/behavior-changes).
 
@@ -373,7 +391,7 @@ Plugins that added fields, tabs or actions to the old user page must use `Admin.
 
 User groups are managed in the new interface at `/user/staff/user-groups`, and old `/app/admin/usergroups/` links forward there. A form posted to one of the old URLs is refused without changing anything.
 
-If `UI_ENABLED` is not `true` on your installation, the admin area can no longer list, create or edit user groups, and the upgrade warns about it before you confirm and again in the summary (the same warning as for the Users section). Set `UI_ENABLED=true` in `.oempro_env` and run `./cli/octeth.sh docker:up` to manage them. The `usergroup.*` API commands are unchanged.
+The `usergroup.*` API commands are unchanged.
 
 Plugins that registered `UserGroup.Update.FieldValidator` or `FormItem.AddTo.Admin.UserGroupLimitsForm` no longer have them called. See [API Behavior Changes](/v6.0.2/api-reference/behavior-changes).
 
@@ -480,6 +498,7 @@ Setting `OCTETH_UPGRADE_SELF_UPDATED=1` in the environment makes the upgrade com
    ```bash
    docker logs oempro_app
    docker logs oempro_system
+   docker logs oempro_ui
    ```
 2. Verify the containers have internet access for downloading packages
 3. Re-run the upgrade with `--debug` to see detailed output
@@ -495,6 +514,19 @@ Setting `OCTETH_UPGRADE_SELF_UPDATED=1` in the environment makes the upgrade com
    docker exec oempro_mysql mysqladmin ping -uoempro -p
    ```
 3. If needed, restore from the backup and contact support with the error details
+
+### New User Interface Migration or Build Fails
+
+**Problem:** The upgrade stops with `New user interface migrations failed` or `Could not build the new user interface's assets`, then rolls back
+
+From v6.0.2 the new user interface is always on, so these steps fail the upgrade instead of warning.
+
+1. Read the interface container's log:
+   ```bash
+   docker logs oempro_ui 2>&1 | tail -50
+   ```
+2. A migration that cannot reach its database usually means the `oempro_ui` database was never created. Check that `MYSQL_ROOT_PASSWORD` is set in `.oempro_mysql_env`, because the upgrade uses it to create the database.
+3. Fix the cause, then run the upgrade again. To finish by hand instead, run `/opt/octeth/cli/octeth.sh ui:db-setup` for the database and migrations, and `/opt/octeth/cli/octeth.sh ui:build` for the assets.
 
 ### Health Check Fails After Upgrade
 

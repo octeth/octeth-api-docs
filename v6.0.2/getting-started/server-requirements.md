@@ -36,7 +36,7 @@ Octeth installs and manages all required services via Docker containers.
 For testing or small deployments (up to 10,000 subscribers):
 
 - **CPU**: 2 vCPUs
-- **RAM**: 4 GB
+- **RAM**: 4 GB, of which the new user interface uses about 1 GB
 - **Storage**: 50 GB SSD
 - **Network**: 1 Gbps connection
 
@@ -61,6 +61,14 @@ For large deployments (100,000 - 1,000,000+ subscribers):
 - **RAM**: 16-32 GB
 - **Storage**: 160-320 GB SSD
 - **Network**: 1 Gbps+ connection
+
+### Memory for the New User Interface
+
+From v6.0.2 the new user interface is always on, so every installation runs its container, `oempro_ui`, fully booted: PHP 8.4, Apache, the Laravel application and its scheduler. Plan about 1 GB of memory for it on top of the rest of Octeth. It uses more under heavy use, because each concurrent request adds an Apache worker of about 80 MB.
+
+The figures in this guide already include it. On the 4 GB minimum, the full stack leaves little headroom, so add swap or move to the recommended 8 GB before putting real traffic on the server.
+
+An installation upgraded from a version that had the interface turned off (`UI_ENABLED=false`) starts using this memory after the upgrade. Check the server first. To cap the container, set `OEMPRO_UI_MEM_LIMIT` in `.oempro_env` (default `0`, unlimited). A limit that is too low makes the interface fail under load, so leave it unlimited unless you need to protect other services, see [the configuration page](/v6.0.2/getting-started/octeth-configuration).
 
 ## Resource Scaling Guide
 

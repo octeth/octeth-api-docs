@@ -215,7 +215,7 @@ Agents that do not use MCP, such as scheduled scripts or bots that call HTTP API
 
 Neither file contains anything from any account. An agent that calls the API directly authenticates with an agent key you create under **API & webhooks** > **Connected AI assistants**, and is bound by the same permissions, limits and confirmation step as a connector.
 
-Your Octeth administrator can turn both files off with `MCP_DISCOVERY_ENABLED=false`, for example when the app domain serves its own `llms.txt`, and can point `llms.txt` at their own help page with `MCP_DISCOVERY_HELP_URL`.
+Your Octeth administrator can turn both files off with `MCP_DISCOVERY_ENABLED=false`, for example when the app domain serves its own `llms.txt`, and can point `llms.txt` at their own help page with `MCP_DISCOVERY_HELP_URL`. The administrator can also turn the connector itself off with `MCP_ENABLED=false`. The connector address then answers "not found", `llms.txt` no longer lists it, and agent keys keep working against the HTTP API.
 
 ## For Octeth operators: setup tools
 

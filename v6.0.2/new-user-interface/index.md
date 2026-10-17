@@ -5,16 +5,14 @@ customers a redesigned dashboard, campaign builder, list workspace, journey view
 transactional email screens, and it gives your team a staff area with customer search,
 impersonation and an optional subscription billing system.
 
-This section explains how to turn it on, how to brand it as your own, how to configure
-the billing system, and where every setting lives.
+This section explains how to get started with it, how to brand it as your own, how to
+configure the billing system, and where every setting lives.
 
 ::: info
-The new interface is on for a fresh install, and an upgrade from a version older than v5.9.6
-switches it on too, because the upgrade adds `UI_ENABLED=true` to `.oempro_env`. To keep it
-off, add `UI_ENABLED=false` before upgrading, or set it afterwards and recreate the containers.
-Turning it on changes nothing
-about how your emails are sent, stored or tracked. It is a different way to look at the
-same Octeth account.
+The new interface is always on, on a fresh install and after every upgrade. From v6.0.2 there
+is no setting to turn it off, because user and user group management happen only here. It
+changes nothing about how your emails are sent, stored or tracked. It is a different way to
+look at the same Octeth account.
 :::
 
 ## What it is, in one paragraph
@@ -25,7 +23,7 @@ its own. When someone opens a campaign report in the new interface, that report 
 from Octeth live. This is why it can run next to the classic interface without the two
 disagreeing.
 
-## What changes when you turn it on
+## What it changes
 
 | | Before | After |
 |---|---|---|
@@ -54,73 +52,53 @@ signs in twice, once in each. This is a known gap, not a misconfiguration.
 
 ## Prerequisites
 
-- Octeth v5.9.6 or later, installed and running.
+- Octeth v5.9.6 or later, installed and running. From v6.0.2 the interface is always on.
 - Shell access to the server, so you can edit `.oempro_env` and run `./cli/octeth.sh`.
-- A few minutes of downtime is not required. Turning the interface on does not restart the
-  sending engine.
+- Enough memory for the interface's container, see
+  [Server Requirements](../getting-started/server-requirements).
 
-## Turning it on
+## Getting started
 
-### Step 1: Create its database
+The installer and every upgrade set the interface up for you: they create its own database,
+run its migrations and build its stylesheets and scripts. There is nothing to switch on.
 
-The new interface keeps its own MySQL database on the same server. Create it once:
+The interface's container installs its dependencies on its first start, which takes a few
+minutes. The `oempro_ui` container reports `healthy` once the interface is serving. If it
+reports `unhealthy` instead, see
+[The interface container is unhealthy](./troubleshooting#the-interface-container-is-unhealthy).
 
-```bash
-./cli/octeth.sh ui:db-setup
-```
-
-If you run `ui:db-setup` after setting `UI_ENABLED=true` while the interface's dependencies
-are not installed yet (for example because it last started with the flag off), the command
-restarts the interface's container first and waits for it to install them. It exits with an
-error, and names the fix, whenever the interface's migrations did not run.
+[[SCREENSHOT: A terminal showing ./cli/octeth.sh docker:status with the oempro_ui container listed as healthy]]
 
 ::: danger
-The interface must never share Octeth's own database. Its automated tests rebuild whatever
-database they are pointed at from scratch, so a shared database can be wiped completely.
-The container refuses to start if `UI_MYSQL_DATABASE` is set to the same value as
-`MYSQL_DATABASE`, and you should leave that safeguard alone.
+The interface keeps its own MySQL database on the same server, named by `UI_MYSQL_DATABASE`.
+It must never share Octeth's own database. Its automated tests rebuild whatever database they
+are pointed at from scratch, so a shared database can be wiped completely. The container
+refuses to start if `UI_MYSQL_DATABASE` is set to the same value as `MYSQL_DATABASE`, and you
+should leave that safeguard alone.
 :::
 
-### Step 2: Build its assets
+### If you installed from a source checkout
 
-The stylesheets and scripts are built at release time and shipped inside the release
-package. If you installed from a source checkout instead, build them yourself:
+The stylesheets and scripts are built at release time and shipped inside the release package,
+and the installer builds them on a fresh install. If you run Octeth from a source checkout and
+every page of the interface returns a blank error page, build them yourself:
 
 ```bash
 ./cli/octeth.sh ui:build
 ```
 
-::: tip
-If every page of the new interface returns a blank error page, this is almost always the
-reason. Run the build command and reload.
-:::
-
-### Step 3: Switch it on
-
-Open `.oempro_env` and set:
-
-```ini
-UI_ENABLED=true
-```
-
-### Step 4: Recreate the containers
+To create the interface's database and run its migrations by hand, for example after a failed
+upgrade, run:
 
 ```bash
-./cli/octeth.sh docker:up
+./cli/octeth.sh ui:db-setup
 ```
 
-`docker:up` recreates both containers that read `UI_ENABLED`: the reverse proxy, and the
-interface itself, which decides when it starts whether to serve pages. You do not need to
-restart anything by hand.
+When the interface's dependencies are not installed yet, `ui:db-setup` restarts the interface's
+container first and waits for it to install them. It exits with an error, and names the fix,
+whenever the interface's migrations did not run.
 
-The first start with the interface on installs its dependencies, which takes a few
-minutes. The `oempro_ui` container reports `healthy` once the interface is serving. If it
-reports `unhealthy` instead, see
-[The interface container is unhealthy](./troubleshooting#the-interface-container-is-unhealthy).
-
-[[SCREENSHOT: A terminal showing ./cli/octeth.sh docker:up completing, with the oempro_ui container listed as healthy]]
-
-### Step 5: Sign in
+### Signing in
 
 Open `https://your-octeth-domain/user/` in a browser. You should see the new sign-in page.
 
@@ -170,8 +148,8 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/user-groups` | The staff User groups list, create and edit screens, see [Managing User Groups in the Staff Area](./staff-user-groups) |
 | `/user/staff/billing/...` | The staff billing screens, when billing is enabled |
 | `/ui/` | Images, stylesheets, the health check, and inbound payment webhooks |
-| `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants) |
-| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users** and **User Groups** sections, which forward to `/user/staff/customers` and `/user/staff/user-groups` while `UI_ENABLED=true` |
+| `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants). `MCP_ENABLED=false` turns these off |
+| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users** and **User Groups** sections, which forward to `/user/staff/customers` and `/user/staff/user-groups` |
 
 ::: info
 These path names are settings, not fixed values. See the
@@ -282,7 +260,7 @@ The same API commands are available to scripts: `admin.user.emailgateway.apikeys
 
 ### Coming from the classic Users and User Groups sections
 
-The classic admin **Users** and **User Groups** sections are removed. Their old links still work: with `UI_ENABLED=true`, every page of the classic admin **Users** section opens its counterpart
+The classic admin **Users** and **User Groups** sections are removed. Their old links still work: every page of the classic admin **Users** section opens its counterpart
 here: the list (with its group, status, reputation, category, online, sender domain and limit
 filters carried over), **Create user**, a user's page, its **Edit** form, and its **Limits** and
 **Sender domains & keys** tabs. Switching to a user, sending a message, and enabling, disabling
@@ -292,8 +270,6 @@ The two interfaces have separate sign-ins, so the first time you follow one of t
 may be asked to sign in to the new interface.
 
 Links to the classic **User Groups** section open the **User groups** list, **Create user group** or a group's edit page here. A form posted to one of the old addresses is refused and changes nothing.
-
-With `UI_ENABLED=false` there is no way to manage users or user groups: the old addresses show a page saying these sections need the new interface turned on.
 
 ## What to do next
 
@@ -307,16 +283,3 @@ With `UI_ENABLED=false` there is no way to manage users or user groups: the old 
    outbound email, the drag-and-drop email builder and the demonstration mode.
 5. **[Troubleshooting](./troubleshooting)** covers the handful of problems that come up
    most often.
-
-## Turning it off again
-
-Set `UI_ENABLED=false` in `.oempro_env` and run `./cli/octeth.sh docker:up`. The `/user/`
-and `/ui/` paths go back to the classic application, and nothing is lost. Your customers'
-data was never stored in the new interface in the first place. The classic admin **Users** and
-**User Groups** addresses then show a page saying user and user group management needs the new
-interface, so turn it back on before you need to manage accounts.
-
-::: tip
-Turning the interface off does not delete its database. If you turn it back on later, any
-billing configuration you set up is still there.
-:::

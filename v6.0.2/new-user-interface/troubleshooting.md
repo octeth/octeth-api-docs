@@ -8,11 +8,13 @@ turns out to be the cause.
 
 `/user/` shows the classic application's "not found" page, or the classic sign-in page.
 
-1. **Check the setting is actually `true`.**
+1. **Check the container is running.**
 
    ```bash
-   grep '^UI_ENABLED' .oempro_env
+   docker ps --filter name=oempro_ui
    ```
+
+   If it is listed as `unhealthy`, see the next section.
 
 2. **Recreate the containers.**
 
@@ -20,40 +22,35 @@ turns out to be the cause.
    ./cli/octeth.sh docker:up
    ```
 
-   `docker:up` recreates the reverse proxy and the interface whenever `UI_ENABLED` changes.
-   If the interface still answers "not found" afterwards, `docker ps --filter name=oempro_ui`
-   shows it as `unhealthy`; see the next section.
+   `docker:up` recreates the reverse proxy and the interface. A reverse proxy that last started
+   before an upgrade to v6.0.2 may still be sending `/user/` to the classic application, and
+   recreating it fixes that.
 
-3. **Check the container is running.**
-
-   ```bash
-   docker ps --filter name=oempro_ui
-   ```
+3. **Check for your own proxy rules.** If you run your own reverse proxy, load balancer or CDN
+   in front of Octeth with path-based rules, forward `/user/`, `/ui/` and `/livewire-` to
+   Octeth unchanged.
 
 ## The interface container is unhealthy
 
-With `UI_ENABLED=true`, the `oempro_ui` container reports `healthy` only when the
-interface answers its health page. `unhealthy` means it is running but serving "not found"
-for every page. `./cli/octeth.sh health:check` reports the same problem under
-`NewUserInterface`.
+The `oempro_ui` container reports `healthy` only when the interface answers its health page
+with a success. `unhealthy` means it is running but not serving the interface, usually
+answering "not found" for every page. `./cli/octeth.sh health:check` reports the same problem
+under `NewUserInterface`.
 
 1. **Read why it is not serving.**
 
    ```bash
-   docker logs oempro_ui 2>&1 | grep -E "UI_ENABLED is not true|ERROR" | head -20
+   docker logs oempro_ui 2>&1 | grep -E "ERROR" | head -20
    ```
 
-2. **`UI_ENABLED is not true`** means the container started before the flag was set.
-   Run `./cli/octeth.sh docker:up`, or `docker restart oempro_ui`.
-
-3. **An `ERROR` about `ui/.env`** means a value in `.oempro_env` cannot be read by the
+2. **An `ERROR` about `ui/.env`** means a value in `.oempro_env` cannot be read by the
    interface. The log names the setting without printing its value. Fix it, then:
 
    ```bash
    docker restart oempro_ui
    ```
 
-The first start with the interface on installs its dependencies, so the container can
+The interface's first start installs its dependencies, so the container can
 take a few minutes to become healthy. That is expected.
 
 ## Every page shows a server error

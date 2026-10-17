@@ -582,7 +582,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
         1. Leave this key `false` and list Cloudflare's IPv4 ranges in `TRUSTED_PROXIES` (IPv4 CIDRs only, which covers an origin Cloudflare reaches over IPv4). The address is then taken from the `X-Forwarded-For` chain, where only a trusted hop can add an entry. This is the safer choice when the origin is not firewalled.
         2. Set this key `true` and firewall ports 80 and 443 to [Cloudflare's published IP ranges](https://www.cloudflare.com/ips/). Cloudflare only overwrites the header on traffic that passes through it, so without the firewall a client that connects to your server's IP directly can send its own `CF-Connecting-IP`.
-    - **The new user interface** (`UI_ENABLED=true`) applies the same `INTERNAL_PROXY_NETWORKS` and `TRUSTED_PROXIES` trust set, plus loopback, and from v6.0.1 the same `TRUST_CLOUDFLARE_CONNECTING_IP` rule, to its own login activity, staff audit log and the unsubscription IP it sends to Octeth. Before v6.0.1 it trusted only the bundled HAProxy, so every one of those records held `127.0.0.1`, and rows written before the upgrade keep that value. The same list also decides whether the interface believes the forwarded HTTPS scheme, so if you changed the compose subnet, set `INTERNAL_PROXY_NETWORKS` to match or the interface can fall into a redirect loop. A changed value reaches the interface when the `oempro_ui` container restarts.
+    - **The new user interface** applies the same `INTERNAL_PROXY_NETWORKS` and `TRUSTED_PROXIES` trust set, plus loopback, and from v6.0.1 the same `TRUST_CLOUDFLARE_CONNECTING_IP` rule, to its own login activity, staff audit log and the unsubscription IP it sends to Octeth. Before v6.0.1 it trusted only the bundled HAProxy, so every one of those records held `127.0.0.1`, and rows written before the upgrade keep that value. The same list also decides whether the interface believes the forwarded HTTPS scheme, so if you changed the compose subnet, set `INTERNAL_PROXY_NETWORKS` to match or the interface can fall into a redirect loop. A changed value reaches the interface when the `oempro_ui` container restarts.
 
     A direct client (untrusted immediate peer) can never influence `REMOTE_ADDR`, so the admin IP allow-list can no longer be bypassed with a forged `X-Forwarded-For`. Loopback-originated requests (the internal health-check/cron probes) are exempt from the allow-list, so enabling it no longer breaks `system.health.check`. Note: audit/login rows written by an earlier version while behind a proxy may still contain a chain string in their IP column; the fix stops that going forward but does not rewrite historical rows.
 
@@ -906,23 +906,24 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 49. **New User Interface**
 
     ::: tip
-    This section is the exhaustive parameter list. For step-by-step guides on turning the
-    interface on, branding it, and configuring its billing system, see
+    This section is the exhaustive parameter list. For step-by-step guides on signing in to the
+    interface, branding it, and configuring its billing system, see
     [The New User Interface](../new-user-interface/).
     :::
 
-    The Laravel application at `ui/`, served from its own `oempro_ui` container. Every key below
+    The Laravel application at `ui/`, served from its own `oempro_ui` container. It is always on
+    from v6.0.2: there is no switch to turn it off (issue #3494). Every key below
     is read by that container's entrypoint, which renders them into `ui/.env` on each start.
     Changing any of them therefore needs the container recreated, not merely restarted:
     `./cli/octeth.sh docker:up`.
 
     ```bash
-    UI_ENABLED=true                      # Master switch (code default false; fresh installs and upgrades get true). Must be the literal lowercase true
     UI_APP_KEY=                          # Laravel app key; leave EMPTY on a fresh install and the container generates one
     UI_LOG_LEVEL=error                   # debug, info, notice, warning, error, critical, alert, emergency
     UI_MYSQL_DATABASE=oempro_ui          # Its OWN database. MUST NOT equal MYSQL_DATABASE
     UI_DEBUG_CONSOLE_ENABLED=false       # Who may open the API debug console (default: false)
     MCP_REDIRECT_DOMAINS=                # Hosts a connected AI assistant may redirect to; empty = any https host
+    MCP_ENABLED=true                     # The AI assistant connector at /mcp, /oauth/ and /.well-known/oauth- (default: true)
     MCP_DISCOVERY_ENABLED=true           # Serve /llms.txt and /agents/openapi.json for AI agents (default: true)
     MCP_DISCOVERY_HELP_URL=              # Help page /llms.txt links to; empty = Octeth's documentation
     ```
@@ -974,8 +975,23 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     and nothing is sent to the refused host. Like the other keys here, a change takes effect when
     the interface's container next starts. Introduced in v6.0.2 (issue #3372).
 
-    `MCP_DISCOVERY_ENABLED` publishes two files for AI agents at the root of the app domain while
-    `UI_ENABLED` is `true`: `/llms.txt`, which points an agent to the connector URL, the OpenAPI
+    `MCP_ENABLED` turns the built-in AI assistant connector on or off: the MCP endpoint at `/mcp`
+    and its sign-in and discovery paths under `/oauth/` and `/.well-known/oauth-`, at the root of
+    the app domain. Customers add `https://<app domain>/mcp` to Claude, ChatGPT or another MCP
+    client and approve it on the **Connect an AI assistant** screen. Set it to `false` (or `0`,
+    `no`, `off`, in any case) to turn the connector off. The reverse proxy then answers 404 for
+    those three paths, and the interface answers 404 for them too, while the rest of the interface
+    keeps working. `/llms.txt` leaves out its connector section, and the setup readiness report
+    shows the connector check as missing. Agent keys created on the **Connected AI assistants**
+    page keep working against the HTTP API. An absent key means on. Recreate the HAProxy and
+    interface containers after changing it (`./cli/octeth.sh docker:up`, or
+    `./cli/octeth.sh env:apply MCP_ENABLED=false --yes`, which runs
+    `docker compose up -d --force-recreate oempro_ui haproxy` for you). The code default and the
+    shipped example are both `true`, so an upgrade that adds the key leaves the connector on.
+    Introduced in v6.0.2 (issue #3494).
+
+    `MCP_DISCOVERY_ENABLED` publishes two files for AI agents at the root of the app domain:
+    `/llms.txt`, which points an agent to the connector URL, the OpenAPI
     document and the help article, and `/agents/openapi.json`, an OpenAPI 3.1 description of every
     API command an AI agent key may call, with the scope each needs and the agent error codes
     100010 to 100016. The document is generated from Octeth's agent allow-list
@@ -994,26 +1010,22 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     it to your own help page when you sell the service under your own brand. Restart the
     interface's container after changing it.
 
-    `UI_ENABLED` must be the **literal lowercase `true`**. `1`, `yes`, `on` and `TRUE` are all read
-    as off, by the container entrypoint, by the reverse proxy, by the command line tool and, since
-    v6.0.0, by Octeth itself. They are not synonyms here, and a value read as off leaves the
-    interface answering 404 for every path with the proxy not routing to it. Octeth reads this key
-    because the admin API IP allow-list exemption depends on it: set it to `false` while leaving the
-    container running and that exemption is withdrawn, which is intended (issue #2913).
+    **The interface is always on (issue #3494).** `UI_ENABLED` is removed: the reverse proxy
+    routes `/user/`, `/ui/` and `/livewire-` to the interface on every install, and the container
+    always serves it. Octeth no longer reads the key, and an upgrade deletes a leftover
+    `UI_ENABLED` line from `.oempro_env`, whatever its value, with a one-line notice. The legacy
+    areas stay reachable at `/app/user/` and `/app/admin/`. The two use **separate logins**: there
+    is no single sign-on between them yet. The interface's calls to the admin API are exempt from
+    the admin API IP allow-list by the address of its own container (issue #2913).
 
-    With `UI_ENABLED=false` the container still starts and reports healthy but serves 404 for
-    every path, and the reverse proxy is not given its routing rules, so `/user/` and `/ui/` fall
-    through to the legacy application exactly as before. The legacy areas stay reachable at
-    `/app/user/` and `/app/admin/` either way. The two use **separate logins**: there is no single
-    sign-on between them yet.
-
-    **User and user group management need `UI_ENABLED=true`.** The legacy admin Users section
+    **User and user group management live in the interface.** The legacy admin Users section
     (`/app/admin/users/`, issue #3450) and User Groups section (`/app/admin/usergroups/`, issue
-    #3485) are removed. Their URLs redirect to the new interface's staff screens while
-    `UI_ENABLED` is `true`. With it off they show a page saying the section is managed in the new
-    interface, so the admin area has no way to list, create, edit or impersonate user accounts, or
-    to list, create or edit user groups. The API is unaffected. The upgrade warns when the key is
-    not `true`.
+    #3485) are removed. Their URLs redirect to the new interface's staff screens. The API is
+    unaffected.
+
+    The interface runs fully on every install (PHP 8.4, Apache, Laravel and its scheduler cron),
+    so plan its memory, see [Server Requirements](./server-requirements). The only part that can
+    be switched off is the AI assistant connector, with `MCP_ENABLED`.
 
     `UI_APP_KEY` must not be changed once set. Changing it invalidates every session, makes
     anything the interface has encrypted unreadable, and moves Livewire's endpoint paths, which
@@ -1983,7 +1995,7 @@ It prints who reads the key, what to run after changing it, whether it is a secr
 | `proxy` (HAProxy, Caddy) | `docker compose up -d --force-recreate haproxy link_proxy` |
 | `cli` (`./cli/octeth.sh` only) | Nothing. The next command reads it. |
 
-A key read by several of them needs each restart. `UI_ENABLED` is the exception: it needs `docker compose up -d --force-recreate oempro_ui haproxy`.
+A key read by several of them needs each restart. `MCP_ENABLED` and `MCP_DISCOVERY_ENABLED` are the exception: they need `docker compose up -d --force-recreate oempro_ui haproxy`.
 
 ### Editing Environment Files
 
@@ -2024,7 +2036,7 @@ Change `.oempro_env` with these three commands rather than by editing the file. 
 
 Input: `KEY=VALUE` arguments, `--file FILE` or `--stdin` (one `KEY=VALUE` per line) and `--unset KEY`. A key marked secret in the registry (passwords, salts, `LICENSE_KEY`, `ADMIN_API_KEY` and the like) is accepted only from `--file` or `--stdin`, never as an argument, so it never lands in shell history, and its value is never printed or logged. A key the registry does not know is refused, which catches typos.
 
-`env:apply` and `env:rollback` stop and ask for `--yes` when a campaign is sending (or Octeth cannot tell), or when the change force-recreates containers (for example `UI_ENABLED`, or a resource limit read by Docker Compose), because recreating containers drops sessions and pauses sending for a moment.
+`env:apply` and `env:rollback` stop and ask for `--yes` when a campaign is sending (or Octeth cannot tell), or when the change force-recreates containers (for example `MCP_ENABLED`, or a resource limit read by Docker Compose), because recreating containers drops sessions and pauses sending for a moment.
 
 Example, rotating a secret and changing the log level:
 

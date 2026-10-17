@@ -17,17 +17,18 @@ upgrade time. Only `.oempro_env` survives both.
 ```
 
 ::: warning
-Use `docker:up`, not a plain restart, whenever you change `UI_ENABLED`. That one setting is
-read by the reverse proxy as well as by the interface, and a plain restart updates only one
-of them. For every other setting on this page, restarting just the interface container is
-enough.
+Use `docker:up`, not a plain restart, whenever you change `MCP_ENABLED` or
+`MCP_DISCOVERY_ENABLED`. Those two settings are read by the reverse proxy as well as by the
+interface, and a plain restart updates only one of them. For every other setting on this page,
+restarting just the interface container is enough.
 :::
 
-## Turning it on
+## General
+
+The interface is always on. From v6.0.2 there is no `UI_ENABLED` setting, and an upgrade deletes a leftover `UI_ENABLED` line from `.oempro_env`.
 
 | Setting | Default | What it does |
 |---|---|---|
-| `UI_ENABLED` | `true` on a fresh install and on an upgrade that adds it (code default `false`) | The master switch. When off, the container still runs and reports healthy but serves nothing, and `/user/` and `/ui/` fall through to the classic application. An upgrade from a version older than v5.9.6 adds this key set to `true`. To keep the interface off, add `UI_ENABLED=false` to `.oempro_env` before upgrading, or set it afterwards and recreate the containers. |
 | `UI_LOG_LEVEL` | `error` | How much the interface writes to its log. One of `debug`, `info`, `notice`, `warning`, `error`, `critical`, `alert`, `emergency`. |
 | `UI_DEBUG_CONSOLE_ENABLED` | `false` | Lets staff open the API debug console on a production install. The console writes backend responses into the page, so turn it on only while investigating a problem, and turn it off afterwards. See the [configuration page](/v6.0.2/getting-started/octeth-configuration) for details. |
 
@@ -293,13 +294,13 @@ Restart the interface container after a change. For the full rules, including th
 
 ## AI assistant connector
 
-The interface includes a connector that lets your customers connect Claude, ChatGPT and other AI assistants to their account, see [Connect Claude or ChatGPT](./ai-assistants). It has no setting of its own. It works when:
+The interface includes a connector that lets your customers connect Claude, ChatGPT and other AI assistants to their account, see [Connect Claude or ChatGPT](./ai-assistants). It works when:
 
-- `UI_ENABLED` is `true`. The connector runs inside the interface container.
+- `MCP_ENABLED` is not `false`. It is `true` by default, and an absent setting means on.
 - The app domain is reachable from the internet over `https://` with a valid certificate. Claude and ChatGPT connect from their own servers, so a domain that resolves only on a private network, or serves plain `http://`, fails with an error such as "Couldn't discover OAuth settings".
 - The customer's plan includes API access, and `BRAND_FEATURE_API` is not set to `false`. The connector follows the same rules as the **API & webhooks** page.
 
-The connector URL is `https://<app domain>/mcp`. Its paths sit at the root of the app domain, not under `/user/`, because assistants look for the sign-in details there. The bundled HAProxy sends these paths to the interface container when `UI_ENABLED` is `true`:
+The connector URL is `https://<app domain>/mcp`. Its paths sit at the root of the app domain, not under `/user/`, because assistants look for the sign-in details there. The bundled HAProxy sends these paths to the interface container:
 
 | Path | What it serves |
 |---|---|
@@ -311,6 +312,14 @@ The connector URL is `https://<app domain>/mcp`. Its paths sit at the root of th
 ::: warning
 If you run your own reverse proxy, load balancer or CDN in front of Octeth with path-based rules, forward all four paths to Octeth unchanged. A proxy that drops or rewrites any of them breaks the connector. Path rules for `/.well-known/acme-challenge/` are unaffected.
 :::
+
+### Turning the connector off
+
+| Setting | Default | What it does |
+|---|---|---|
+| `MCP_ENABLED` | `true` | The AI assistant connector. Set to `false` (or `0`, `no`, `off`, in any case) to turn it off: HAProxy answers 404 for `/mcp`, `/oauth/` and `/.well-known/oauth-`, the interface answers 404 for the same routes, and `/llms.txt` leaves out its connector section. The rest of the interface keeps working, and agent keys keep working against the HTTP API. |
+
+Recreate the containers after changing it, `./cli/octeth.sh docker:up`, because the reverse proxy reads it too. Connected assistants stop working while it is off and work again when it is turned back on, without connecting again.
 
 ### Signing keys
 
