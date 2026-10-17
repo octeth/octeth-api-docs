@@ -40,6 +40,11 @@ There is no opt-in flag, because the commands had no working data source left.
 - The `Delete.UserGroup` and `UserGroup.Delete.Post` plugin hooks fired by `usergroup.delete` now run after the group's users have moved to their new group. Before, they ran while the users still pointed at the deleted group. A listener that read the group's users at that point now finds none (octeth/oempro#3482).
 - New opt-in parameter `TargetUserGroupID` on `usergroup.delete`: the users of the deleted groups move to that group, refused groups are reported (`ErrorCode 7` with `RefusedUserGroups`) instead of skipped, and every group new signups use (`USER_SIGNUP_GROUPID` and `USER_SIGNUP_GROUPIDS`) is protected. Requests without it are unchanged apart from the two bullets above (octeth/oempro#3482).
 
+### User Groups (plugin hooks)
+
+- The `UserGroup.Create.Post` and `UserGroup.Update.Post` plugin actions now fire from the API: `UserGroup.Create.Post` after a successful `usergroup.create` and `usergroup.duplicate`, `UserGroup.Update.Post` after a `usergroup.patch` or `usergroup.options.patch` that writes at least one column. Before, only the legacy admin User Groups screens fired them, so they stop depending on that section, which the new interface replaces (octeth/oempro#3481, epic #3486). The first argument is unchanged in kind: the new group for `Create.Post`, the group as stored before the write for `Update.Post`. **The second argument is now the API request parameters, whose keys are lowercased and from which credentials (`adminapikey`, `apikey`, `sessionid`, `username`, `password`, `disable2fa`, `disable2fatoken`, `sendmethodsmtppassword`) are removed** (`groupname`, `sendmethodsmtphost`, `addpermissions`), not the legacy form's posted fields (`GroupName`, `SendMethodSMTPHost`, `Permissions`). A plugin that reads the CamelCase posted keys from the second argument gets nothing and must read the lowercase keys instead. The legacy create screen calls `usergroup.create`, so it now fires `Create.Post` once, from the API, with the API parameters. The legacy edit screen writes directly and still fires `Update.Post` with its posted fields until it is retired. No bundled plugin listens to either action.
+- The `UserGroup.Update.FieldValidator` filter is not called by the API or by the new interface's user group screens. Only the legacy edit screen calls it, and it is dropped when that screen is retired (epic #3486, D10). A plugin that adds validation rules to the user group edit form through it has no replacement hook.
+
 ### Admin area
 
 #### The legacy Users section is removed
@@ -185,6 +190,12 @@ The upgrade migration resolves any plan that already has more than one default: 
 #### `usergroups.get` is scoped for limited admin accounts
 
 `usergroups.get` returns only the allowed groups for an admin account limited to specific user groups. Before, it returned every group on the install. The master Admin API key and admin accounts without a group limit are unaffected (octeth/oempro#3444).
+
+#### New user group fields, opt-in parameters and editor command
+
+- `usergroup.get` and `usergroups.get` return the AI agent policy (`AgentAccess`, `AgentMaxSendsPerDay`, `AgentMaxRecipientsPerSend`, `AgentConfirmAbove`) and the sender screening policy (`ScreeningSignupThreshold`, `ScreeningSignupMode`, `ScreeningImportThreshold`, `ScreeningImportMode`, `ScreeningContentThreshold`, `ScreeningContentMode`) of each group. They were written by `usergroup.create` and `usergroup.patch` but never returned. Every other field is unchanged (octeth/oempro#3481).
+- New opt-in parameters, each inert when left out: `IncludeSMTPUsername` on `usergroup.get` returns the group's SMTP username (never the password, and not available to admin agent keys); `SMTPPasswordRetention` on `usergroup.patch` stops a stored SMTP password from following a changed host or send method; `TestSMTPConnection` on `usergroup.patch` sends a live test email before writing an SMTP configuration (`ErrorCode 25` on failure, nothing written), and never sends the stored password to a host other than the stored one; `AddPermissions` and `RemovePermissions` on `usergroup.patch` change only the named permissions (`ErrorCode 37` when combined with `Permissions`). A request without them behaves as in v6.0.1, apart from the new fields in the bullet above (octeth/oempro#3481).
+- New command `admin.usergroup.editor.get` (privilege `UserGroups`) returns the choice lists of a user group editor: subscription plans, the core and plugin permission catalog, DNS template names, delivery server ids and names, default rate limits and the default theme id (octeth/oempro#3481).
 
 ### SMS rate limits
 

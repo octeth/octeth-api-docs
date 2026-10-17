@@ -1677,6 +1677,7 @@ curl -X GET https://example.com/api/v1/users.status \
 - Authentication required: Admin API Key
 - v1 REST alias: `POST /api/v1/usergroup.create`. Legacy access via `/api.php` is also supported
 - Sub-admins limited to some user groups (changed in v6.0.2): a restricted sub-admin cannot create or duplicate a user group, because the new group would be outside its allowed list. The call answers `ErrorCode 5003` and no group is created. The master admin API key and admins without user group limits are unaffected.
+- A successful call fires the `UserGroup.Create.Post` plugin action with the new group and the API request parameters (lowercased keys, credentials removed). Added in v6.0.2.
 :::
 
 **Request Body Parameters:**
@@ -1969,6 +1970,10 @@ The only safe way to change a single value through `usergroup.update` is to read
 | SendMethodSMTPAuth | String | No | `true` or `false` |
 | SendMethodSMTPUsername | String | No | SMTP username |
 | SendMethodSMTPPassword | String | No | SMTP password. **Omit it and the stored password is left completely untouched** |
+| SMTPPasswordRetention | Boolean | No | `true` applies the password retention rule of the admin edit screen when the request carries `SendMethod`, `SendMethodSMTPHost` or `SendMethodSMTPPassword`: a non-blank `SendMethodSMTPPassword` replaces the stored password; a blank or missing one keeps it only while the group stays on `SMTP` with the stored host (compared case-insensitively), and otherwise clears it, so a stored password never follows a changed host or send method. Without it the password is written only when sent, as before. Added in v6.0.2 |
+| TestSMTPConnection | Boolean | No | `true` sends a live test email to the calling admin's email address before anything is written, when the group's send method after this patch is `SMTP`. Host, port, security, authentication, username, password and timeout are taken from the request and fall back to the stored values, except the password: the test uses the password the patch will store (the sent `SendMethodSMTPPassword`, or the result of `SMTPPasswordRetention`), and when the patch leaves the stored password in place it is used only while the test goes to the stored SMTP host, whatever `SMTPPasswordRetention` says. A stored password is never sent to another host; with `SendMethodSMTPAuth` `true` and no usable password the test is refused (`ErrorCode 25`) before any connection. A failure answers `ErrorCode 25` with the mailer's reason in `EmailSettingsErrorMessage`, and nothing is written. Ignored for any other send method. Added in v6.0.2 |
+| AddPermissions | Array \| String | No | Permissions to add to the stored list, as an array of strings or a comma-separated string. Added in v6.0.2 |
+| RemovePermissions | Array \| String | No | Permissions to remove from the stored list. The result is the stored list minus these plus `AddPermissions`, order kept, duplicates dropped, so a permission the request does not name (for example a disabled plugin's `Plugin.<Code>`) is kept. A permission in both lists is kept. Cannot be combined with `Permissions` (`ErrorCode 37`). A delta that changes nothing writes nothing. Added in v6.0.2 |
 | Options | Object \| String | No | Group options as an object, or a JSON string that decodes to an object. `/api.php` lowercases nested keys, and `EmailGatewayApplyHeaderFooter` is stored under that canonical spelling; every other key is stored as sent. |
 | DefaultRateLimits | Object \| String | No | Rate-limit buckets. Merged over the canonical defaults, so a partial payload cannot drop a bucket |
 | CustomEmailHeaders | String | No | Custom email headers |
@@ -1997,8 +2002,12 @@ Parameter names are matched case-insensitively, as everywhere on `/api.php`.
 An empty string is a supplied value: sending `"XMailer": ""` clears the field. A field sent as `null` is treated as absent and is never written, because these columns are `NOT NULL`. Integer fields reject an empty string rather than storing it (see error code 32).
 :::
 
-::: warning Send-method settings are not connectivity-tested
-`usergroup.update` sends a live test email whenever `SendMethod` is not `System`. `usergroup.patch` validates the **format** of every send-method field it is given, so no value MySQL would silently coerce to an empty string or a zero can be stored, but does not perform that live test, because a partial payload does not describe a complete send configuration. Use `usergroup.update`, the admin interface, or `settings.emailsendingtest` when you want the connection verified.
+::: warning Send-method settings are connectivity-tested only on request
+`usergroup.update` sends a live test email whenever `SendMethod` is not `System`. `usergroup.patch` validates the format of every send-method field it is given, and sends the test email only when `TestSMTPConnection` is `true` and the group sends through `SMTP` after the patch (new in v6.0.2). Other send methods are never tested by `usergroup.patch`; use `usergroup.update`, the admin interface, or `settings.emailsendingtest` for them.
+:::
+
+::: tip Plugin hook (v6.0.2)
+A patch that writes at least one column fires the `UserGroup.Update.Post` plugin action with two arguments: the group as stored before the write, and the API request parameters with lowercased keys, without credentials (`AdminAPIKey`, `APIKey`, `SessionID`, `Username`, `Password`, `Disable2FA`, `Disable2FAToken`, `SendMethodSMTPPassword` are removed). A no-op patch fires nothing.
 :::
 
 **Response Fields:**
@@ -2016,6 +2025,23 @@ curl -X POST https://example.com/api.php \
     "UserGroupID": 3,
     "LimitEmailSendPerPeriod": 250000,
     "LimitSubscribers": 50000
+  }'
+```
+
+```bash [Example Request (SMTP change with test)]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "usergroup.patch",
+    "AdminAPIKey": "your-admin-api-key",
+    "UserGroupID": 3,
+    "SendMethod": "SMTP",
+    "SendMethodSMTPHost": "smtp.example.com",
+    "SendMethodSMTPPort": 587,
+    "SMTPPasswordRetention": true,
+    "TestSMTPConnection": true,
+    "AddPermissions": ["Media.Upload"],
+    "RemovePermissions": ["Lists.Get"]
   }'
 ```
 
@@ -2053,12 +2079,15 @@ curl -X POST https://example.com/api.php \
 22: Invalid send method
 23: Invalid SendMethodSMTPSecure: must be 'ssl', 'tls' or ''
 24: Invalid SendMethodSMTPAuth: must be 'true' or 'false'
+25: TestSMTPConnection: the test email could not be sent; the reason is in
+    EmailSettingsErrorMessage. Nothing is written (added in v6.0.2)
 26: Invalid Enabled/Disabled value; the offending field is returned in ErrorField
 27: Invalid TrialGroup value: must be 'Yes' or 'No' (or the 'Enabled'/'Disabled' aliases)
 28: Invalid Options payload: must be an object, or a JSON string decoding to one
 29: Invalid DefaultRateLimits payload: must be an object, or a JSON string decoding to one
-30: Invalid Permissions payload: must be a comma-separated string, or an array whose
-    every element is a string
+30: Invalid Permissions, AddPermissions or RemovePermissions payload: must be a
+    comma-separated string, or an array whose every element is a string. The offending
+    field is returned in ErrorField
 31: Non-scalar value supplied for a scalar field; the offending field is returned in
     ErrorField
 32: Invalid integer value; the offending field is returned in ErrorField. The value must
@@ -2071,6 +2100,7 @@ curl -X POST https://example.com/api.php \
 34: Another user group is already the default for this subscription plan (see
     ConflictingUserGroupID). Also returned when a concurrent request made another
     group the plan's default first (changed in v6.0.2)
+37: AddPermissions or RemovePermissions sent together with Permissions (added in v6.0.2)
 5003: User group is outside the user groups this admin account may access
 ```
 
@@ -2091,6 +2121,7 @@ curl -X POST https://example.com/api.php \
 - v1 REST alias: `POST /api/v1/usergroup.options.patch`. Legacy access via `/api.php` is also supported
 - **Merge semantics.** Only the keys present in `Options` are written into the group's stored Options JSON. Every other key, including keys written by plugins, is preserved verbatim. The whole-blob `Options` parameter of `usergroup.update` / `usergroup.patch` is unchanged and still replaces the entire JSON.
 - **An unreadable stored blob is refused, not overwritten.** If the group's stored `Options` column is not empty and does not decode to a JSON array or object, the command answers `ErrorCode 8` and writes nothing, rather than merging into an empty set and thereby discarding whatever was stored. An empty column, and the literal `null` that `usergroup.create` writes when it is given no `Options` at all, both mean "no options yet" and patch normally.
+- A call that writes at least one option fires the `UserGroup.Update.Post` plugin action with the group as stored before the write and the API request parameters (lowercased keys, credentials removed). Added in v6.0.2.
 - Sub-admins limited to some user groups (changed in v6.0.2): a restricted sub-admin can only name a group in its allowed list. Any other `UserGroupID`, including one that does not exist, answers `ErrorCode 5003` and nothing is read or written. The master admin API key and admins without user group limits are unaffected.
 :::
 
@@ -2194,11 +2225,16 @@ curl -X POST https://example.com/api.php \
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | API key for authentication            |
 | UserGroupID | Integer | Yes | User group ID to retrieve |
+| IncludeSMTPUsername | Boolean | No | `true` adds `SendMethodSMTPUsername` to the `UserGroup` object. Any other value, or leaving it out, returns the group without it, as before. The SMTP password is never returned; `HasSendMethodSMTPPassword` reports whether one is stored. An admin agent key (`oak_`) cannot pass this parameter. Added in v6.0.2 |
 
 ::: warning Credentials are not returned (changed in v6.0.1)
 `usergroup.get` no longer returns `SendMethodSMTPUsername` or `SendMethodSMTPPassword`. The group carries `HasSendMethodSMTPPassword` instead, which is `true` when a password is stored. Credential keys nested inside `Options` and `ThemeInformation` (for example `Password`, `APIKey`, `SendMethodSMTPPassword` or `smtp_password`) are removed at any depth, matched case-insensitively. When `Options` holds such a key, it is returned re-encoded without it, so its bytes can differ from the stored value. An `Options` value with no such key is returned byte for byte as stored.
 
 The group fields are an allow-list: every other existing field is returned as before, and a column added to the user groups table in a later release is not returned until it is added to the response deliberately. To change the stored credentials, use `usergroup.update`, which keeps them when they are omitted.
+:::
+
+::: tip New fields (v6.0.2)
+The `UserGroup` object now also carries the AI agent policy (`AgentAccess`, `AgentMaxSendsPerDay`, `AgentMaxRecipientsPerSend`, `AgentConfirmAbove`) and the sender screening policy (`ScreeningSignupThreshold`, `ScreeningSignupMode`, `ScreeningImportThreshold`, `ScreeningImportMode`, `ScreeningContentThreshold`, `ScreeningContentMode`) that `usergroup.create` and `usergroup.patch` write. Every other field is unchanged. `usergroups.get` returns the same ten fields for each group, and never the SMTP username.
 :::
 
 ::: code-group
@@ -2226,6 +2262,23 @@ curl -X POST https://example.com/api.php \
     "SendMethodSMTPHost": "smtp.example.com",
     "SendMethodSMTPPort": "587",
     "HasSendMethodSMTPPassword": true
+  }
+}
+```
+
+```json [Success Response (IncludeSMTPUsername)]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserGroup": {
+    "UserGroupID": 5,
+    "GroupName": "Premium Users",
+    "SendMethod": "SMTP",
+    "SendMethodSMTPHost": "smtp.example.com",
+    "HasSendMethodSMTPPassword": true,
+    "AgentAccess": "read",
+    "ScreeningSignupMode": "flag",
+    "SendMethodSMTPUsername": "relay-user"
   }
 }
 ```
@@ -2382,6 +2435,7 @@ curl -X POST https://example.com/api.php \
 - Authentication required: Admin API Key
 - v1 REST alias: `POST /api/v1/usergroup.duplicate`. Legacy access via `/api.php` is also supported
 - Sub-admins limited to some user groups (changed in v6.0.2): a restricted sub-admin cannot create or duplicate a user group, because the new group would be outside its allowed list. The call answers `ErrorCode 5003` and no group is created. The master admin API key and admins without user group limits are unaffected.
+- A successful call fires the `UserGroup.Create.Post` plugin action with the new group and the API request parameters (lowercased keys, credentials removed). Added in v6.0.2.
 :::
 
 ::: tip Copy name (v5.9.6)
@@ -2546,6 +2600,79 @@ curl -X POST https://example.com/api.php \
 | GroupName | String | Display name of the user group |
 | HasSendMethodSMTPPassword | Boolean | `true` when the group stores an SMTP password. The password itself and `SendMethodSMTPUsername` are not returned (v6.0.1) |
 | DeliveryServerAssignments | Object | Delivery server assignments per channel type. Contains three keys: `Marketing`, `Transactional`, and `AutoResponder`. Each contains `DeliveryServerID` (0 if not assigned) and `DeliveryServerName` (empty string if not assigned) |
+
+Each group carries the ten `Agent*` and `Screening*` fields described under [Get User Group](#get-user-group) (added in v6.0.2). The SMTP username is never returned here.
+
+## Get User Group Editor Lists
+
+<Badge type="info" text="GET" /> `/api/v1/admin.usergroup.editor.get`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session, privilege `UserGroups`
+- Returns the choice lists a user group create or edit screen needs, so a staff member with only the `UserGroups` privilege can fill one without the `DeliveryServers` or `Settings` privileges
+- Not available to admin agent keys
+- Nothing returned belongs to a single user group, so an admin limited to some user groups gets the same lists. Delivery servers are listed by id and name only, never by host or credentials
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.usergroup.editor.get` |
+| AdminAPIKey | String | No | Admin API key, or use an admin `SessionID` |
+
+**Response Fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| SubscriptionPlans | Object | Plan value to label, from plugins answering the `UI.User.Group.SubscriptionPlans` filter (the WooCommerce plugin is the bundled one). An empty object when no plugin answers. With `ResponseFormat=XML` the same pairs are returned as child elements |
+| Permissions | Array | The core user group permissions, each `{Key, Section, Label}`, in screen order. `Section` and `Label` are in the install language |
+| PluginPermissions | Array | One `{Key, Code, Name}` per enabled plugin, where `Key` is `Plugin.<Code>`, the permission that grants the group the plugin |
+| DNSTemplates | Object | `{EmailGateway: [names], EmailCampaign: [names]}`, the DNS template names `usergroup.options.patch` accepts |
+| DeliveryServers | Array | `{DeliveryServerID, Name}` for every delivery server, sorted by name |
+| DefaultRateLimits | Object | The default `DefaultRateLimits` document, for a "load defaults" action |
+| DefaultThemeID | Integer | The theme a new group should get (`RelThemeID` on `usergroup.create`) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.usergroup.editor.get",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "SubscriptionPlans": {"gold": "Gold plan"},
+  "Permissions": [
+    {"Key": "User.Update", "Section": "User information", "Label": "Update account information"}
+  ],
+  "PluginPermissions": [
+    {"Key": "Plugin.woocommerce", "Code": "woocommerce", "Name": "WooCommerce"}
+  ],
+  "DNSTemplates": {"EmailGateway": ["default"], "EmailCampaign": ["default"]},
+  "DeliveryServers": [{"DeliveryServerID": 2, "Name": "Primary relay"}],
+  "DefaultRateLimits": {
+    "EmailGateway": {"Minute": -1, "Hour": -1, "Day": -1, "Week": -1, "Month": -1, "Year": -1},
+    "SMS": {"Minute": -1, "Hour": -1, "Day": -1, "Week": -1, "Month": -1, "Year": -1}
+  },
+  "DefaultThemeID": 1
+}
+```
+
+```txt [Error Codes]
+0: Success
+99999: The admin account does not hold the UserGroups privilege
+```
+
+:::
 
 ## Add Credits
 
