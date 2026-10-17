@@ -1087,6 +1087,7 @@ Health classes:
 | Domain | String | No | Part of the domain name |
 | RecordsFrom | Integer | No | Offset (default 0) |
 | RecordsPerRequest | Integer | No | Page size (default 25, maximum 500) |
+| SummaryOnly | Boolean | No | `true` returns only `Success`, `ErrorCode` and `Summary` (the domain count per health class), without running the paged report. The other parameters are ignored in this mode and not validated. Added in v6.0.2 |
 
 ::: code-group
 
@@ -1136,6 +1137,14 @@ curl -X POST https://example.com/api.php \
     }
   ],
   "TotalDomains": 1,
+  "Summary": {"healthy": 120, "failing": 3, "demoted": 1, "awaiting_approval": 4, "never_checked": 2, "other": 6, "Total": 136}
+}
+```
+
+```json [Success Response (SummaryOnly=true)]
+{
+  "Success": true,
+  "ErrorCode": 0,
   "Summary": {"healthy": 120, "failing": 3, "demoted": 1, "awaiting_approval": 4, "never_checked": 2, "other": 6, "Total": 136}
 }
 ```

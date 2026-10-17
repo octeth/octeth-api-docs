@@ -23,6 +23,8 @@ Returns the readiness checks in dependency order: `license`, `delivery_server`, 
 
 The report reads stored state only and never contacts an external host. The SPF, DKIM and DMARC results are the ones the last delivery server verification stored. A check that cannot be measured (for example the reverse DNS of the sending IPs, which Octeth does not know) is `unknown`, never `ok`.
 
+Send `Cached=true` to get the copy of the report that the admin overview reuses for up to 60 seconds instead of a fresh evaluation. A cached response has the same keys plus `FromCache`, and its `CheckedAt` is the time that report was evaluated, not the time of the request. Without `Cached` every call evaluates the report again, as before.
+
 **Request Body Parameters:**
 
 | Parameter   | Type   | Required | Description                         |
@@ -30,6 +32,7 @@ The report reads stored state only and never contacts an external host. The SPF,
 | Command     | String | Yes      | API command: `admin.setup.status`   |
 | SessionID   | String | No       | Session ID obtained from login      |
 | AdminAPIKey | String | No       | Admin API key for authentication    |
+| Cached      | Boolean | No      | `true` returns the report cached for up to 60 seconds, with `FromCache`. Added in v6.0.2 |
 
 Check statuses. Possible values: `ok`, `missing`, `failing`, `warning`, `unknown`.
 
@@ -72,6 +75,30 @@ curl -X POST https://example.com/api/v1/admin.setup.status \
     }
   ],
   "CheckedAt": "2026-10-15 12:00:00"
+}
+```
+
+```json [Success Response (Cached=true)]
+{
+  "Success": true,
+  "Ready": false,
+  "NextStep": {
+    "Key": "delivery_server_test",
+    "Title": "Delivery server test connection",
+    "NextAction": "Test a delivery server (test_delivery_server sends one message to your own admin address)."
+  },
+  "Checks": [
+    {
+      "Key": "license",
+      "Title": "License",
+      "Status": "ok",
+      "Required": true,
+      "Evidence": "A valid license key is installed.",
+      "NextAction": ""
+    }
+  ],
+  "CheckedAt": "2026-10-15 11:59:30",
+  "FromCache": true
 }
 ```
 

@@ -1145,12 +1145,14 @@ With `Format=csv` the response carries `CSV` (the file contents as a string) and
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (sub-admins need the `Dashboard` privilege)
 - Rate limit: 100 requests per 60 seconds
-- Read-only; no parameters besides the command and the key
+- Read-only. `Days` is optional
 :::
 
 Returns the aggregates the admin Dashboard shows: the total number of user accounts and three top-10 leaderboards, accounts by campaign count (each with its list count), by bounce records and by feedback-loop (spam complaint) reports. Leaderboards are sorted by their count descending; accounts that no longer exist are not listed.
 
 Two dashboard blocks are deliberately not part of this command because they already have one: campaigns pending approval come from `admin.campaigns.search` with `CampaignStatus=Pending Approval`, and online users from `users.get` with `RelUserGroupID=Online`. The two charts have their own commands, `admin.delivery.history` and `admin.delivery.forecast`.
+
+**Windowed leaderboards.** Send `Days` (7, 30 or 90) to count only the last `Days` days: campaigns by the time they were created, bounces by the time they were recorded, spam complaints by the time they were received. `TotalLists` and `TotalUsers` stay current counts. The windowed response adds `Days`, `StartDate` (start of the window), `GeneratedAt` (when the figures were computed) and `FromCache`. Windowed results are cached for 300 seconds per window and per administrator reach: administrators with the same user group limits share an entry, and an administrator limited to some user groups never receives a result computed for another reach. Without `Days` the response is the all-time one, computed on every call, exactly as before.
 
 **Request Body Parameters:**
 
@@ -1158,6 +1160,7 @@ Two dashboard blocks are deliberately not part of this command because they alre
 |---|---|---|---|
 | Command | String | Yes | API command: `admin.overview.get` |
 | AdminAPIKey | String | Yes | Admin API key |
+| Days | Integer | No | `7`, `30` or `90`. Counts the leaderboards over that many days and caches the result for 300 seconds. Any other value is refused with error code 1. An empty value is treated as absent. Added in v6.0.2 |
 
 ::: code-group
 
@@ -1186,6 +1189,26 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Success Response (Days=30)]
+{
+  "Success": true,
+  "TotalUsers": 113,
+  "TopUsersLimit": 10,
+  "Scoped": false,
+  "TopUsersByCampaigns": [
+    { "UserID": 21, "FirstName": "Acme", "LastName": "Newsletters", "EmailAddress": "ops@acme.example", "TotalCampaigns": 12, "TotalLists": 5 }
+  ],
+  "TopUsersByBounces": [
+    { "UserID": 21, "FirstName": "Acme", "LastName": "Newsletters", "EmailAddress": "ops@acme.example", "TotalBounces": 9 }
+  ],
+  "TopUsersByComplaints": [],
+  "Days": 30,
+  "StartDate": "2026-09-17 10:00:00",
+  "GeneratedAt": "2026-10-17 10:00:00",
+  "FromCache": false
+}
+```
+
 ```json [Error Response]
 {
   "Success": false,
@@ -1194,6 +1217,7 @@ curl -X POST https://example.com/api.php \
 ```
 
 ```txt [Error Codes]
+1: Days must be 7, 30 or 90
 99998: Authentication failed
 99999: Not enough privileges (sub-admin without Dashboard)
 ```
@@ -5443,7 +5467,7 @@ An admin agent key is limited in four ways, all enforced in `api.php`, so a dire
 | `admin.user.sendactivity.get` | admin:read | UserID, From, To |
 | `admin.user.senderdomains.get` | admin:read | UserID |
 | `admin.delivery.metrics` | admin:read | Period, Limit |
-| `admin.overview.get` | admin:read | none |
+| `admin.overview.get` | admin:read | Days (7, 30 or 90 only) |
 | `admin.campaigns.stuck` | admin:read | OrderField, OrderType, RecordsFrom, RecordsPerRequest (refused to an admin limited to some user groups) |
 | `admin.agentkey.revokeself` | admin:read | none (the key revokes itself) |
 | `user.update` | admin:act | UserID, ReputationLevel (Untrusted only), AccountStatus (Disabled only), RateLimits (may only lower limits) |

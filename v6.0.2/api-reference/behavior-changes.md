@@ -324,6 +324,12 @@ No configuration change is needed.
 - Each list probe now runs with a MySQL `MAX_EXECUTION_TIME` limit (5 seconds for an address search, 10 seconds for a domain search), and the whole search stops after 25 seconds.
 - New opt-in parameter `SearchDomain` finds every subscriber on a domain, capped at 500, with `TotalMatches`, a `Matches` array per list and `Truncated`. Requests without it are unchanged apart from the two fields above. Two new error codes: `3` for an invalid `SearchDomain` and `4` when both `EmailAddress` and `SearchDomain` are sent.
 
+### Admin dashboard data
+
+- `admin.overview.get` accepts an optional `Days` of 7, 30 or 90 that windows the three leaderboards and caches the result for 300 seconds. Without `Days` the response is unchanged. A request that already sent a `Days` parameter with any other value, which the command used to ignore, is now refused with error code 1. An empty `Days` is still treated as absent (octeth/oempro#3501).
+- `admin.setup.status` accepts an optional `Cached=true` that returns the report cached for up to 60 seconds with `FromCache`. Without it the response is unchanged (octeth/oempro#3501).
+- `admin.senderdomains.health.get` accepts an optional `SummaryOnly=true` that returns only the health counts. Without it the response is unchanged (octeth/oempro#3501).
+
 ## Additions that need operator attention
 
 ### AI assistant connector
@@ -382,6 +388,10 @@ v6.0.2 screens three points with fixed rules (issue #3392): every new account, a
 - AI agent keys can use the email gateway (octeth/oempro#3320). `EmailGateway.SendEmail` accepts an agent key with the `send` scope whose user group has `EmailGateway.ManageDomain`, resolves the sender domain from the From address and runs the send checks first, so the agent never holds a sender key and no sender key is created for it. Agent keys can also list, add and verify sending domains, read events, list suppressions, and manage and test event webhooks. Removing a suppressed address needs the `send` scope and always asks for confirmation. `EmailGateway.GetWebhooks` leaves out `SigningKey` and masks webhook URLs for an agent key, and `IncludeDiagnostics` returns no resolved DNS values to one. Sender keys, SMTP credentials and signing key rotation stay unavailable to agent keys.
 - New opt-in parameters: `IncludeSendingState` on `user.current`, `IncludeDiagnostics` on `emailgateway.verifydomain`, `ExactMessageID` on `emailgateway.getevents` and `IdempotencyKey` on `emailgateway.sendemail` (new error codes 41 to 44). Responses without them are unchanged. New command `emailgateway.testwebhook` posts a signed sample event to a webhook.
 
+### New index on oempro_stats_bounce
+
+The upgrade adds the index `idx_bouncedate_owner (BounceDate, RelOwnerUserID)` to `oempro_stats_bounce` for the windowed dashboard leaderboards. It is built online (`ALGORITHM=INPLACE, LOCK=NONE`), so sending and reporting keep running, but on an install with tens of millions of bounce records the build takes several minutes and the upgrade waits for it (octeth/oempro#3501).
+
 ## Upgrade checklist
 
 - If you added `192.168.99.100` to an admin or user IP allow-list as a workaround for every visitor showing that address, replace it with your real public addresses after upgrading, because visitors now resolve to their own address.
@@ -407,3 +417,4 @@ v6.0.2 screens three points with fixed rules (issue #3392): every new account, a
 ---
 
 Previous releases: [v6.0.1](/v6.0.1/api-reference/behavior-changes), [v6.0.0](/v6.0.0/api-reference/behavior-changes)
+- On an install with tens of millions of bounce records, allow several extra minutes for the upgrade while it builds the new `idx_bouncedate_owner` index on `oempro_stats_bounce` online. Sending and reporting keep running during the build.
