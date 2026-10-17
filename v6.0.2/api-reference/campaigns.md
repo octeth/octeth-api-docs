@@ -16,7 +16,7 @@ Manage email marketing campaigns through programmatic API access. Create, update
 - v1 REST alias: `POST /api/v1/campaign.approve`. Legacy access via `/api.php` is also supported
 :::
 
-Approves a campaign that is waiting for administrator approval by setting its `CampaignStatus` to `Ready`, so the delivery engine can pick it up. This is the API equivalent of the approve action on the admin campaign screens. The campaign is looked up by `CampaignID` alone, so an administrator may approve a campaign in any account.
+Approves a campaign that is waiting for administrator approval (`CampaignStatus` `Pending Approval`) by setting its `CampaignStatus` to `Ready`, so the delivery engine can pick it up. This is the API equivalent of the approve action on the admin campaign screens. A campaign in any other status is refused with `ErrorCode 5` and left unchanged. An administrator without user group limits may approve a campaign in any account. A sub-admin limited to some user groups may only approve campaigns of accounts in those groups, and gets `ErrorCode 5003` for any other campaign and for a campaign that does not exist, so the answer does not reveal whether the campaign exists. `CampaignID` must be a plain positive integer, and any other form is answered with `ErrorCode 2`. Changed in v6.0.2.
 
 Since v6.0.2 the approval records the version it approves (see What an Approval Covers below) and removes `Options.ScreeningHold`. Content screening runs again when the send starts, but a send whose campaign is still the approved version is not screened or held again. Any change made after the approval is screened anew. See [Sender Screening](/v6.0.2/api-reference/admin#sender-screening).
 
@@ -56,12 +56,22 @@ curl -X POST https://example.com/api/v1/campaign.approve \
 }
 ```
 
+```json [Not Pending Approval]
+{
+  "Success": false,
+  "ErrorCode": 5,
+  "ErrorText": "Only a campaign that is pending approval can be approved. This campaign is Sent."
+}
+```
+
 ```txt [Error Codes]
 0: Success
 1: Missing required parameter (CampaignID)
-2: Campaign not found
+2: Campaign not found, or CampaignID is not a plain positive integer (for example 1.234e3, 5.0 or a value with spaces)
 3: The campaign could not be read to record the approval (retry)
-4: The campaign changed after the administrator opened it for review (ExpectedFingerprint does not match), review it again
+4: The campaign changed after the administrator opened it for review (ExpectedFingerprint does not match, or the owner changed it while it was being approved), review it again
+5: The campaign is not Pending Approval (also when it was approved by someone else, paused, cancelled or moved back to Draft while it was being approved), nothing was changed
+5003: The campaign was not found or belongs to an account outside the user groups this sub-admin may access
 ```
 
 :::
