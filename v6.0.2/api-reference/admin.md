@@ -680,8 +680,11 @@ Searches and filters campaigns across all accounts with admin privileges. This e
 | IncludeVelocity         | Boolean | No       | Include current sending velocity metrics for each campaign (default: false)                     |
 | HasFailed               | Boolean | No       | Only campaigns with `TotalFailed` > 0 (the report's "Failed Recipients" tab combines this with `CampaignStatus=Sent`). Default false |
 | SearchQuery             | String  | No       | Advanced search DSL, translated on the server and AND-ed with the other filters (see the shared filters under "Composite Campaign Statuses Used by the Admin Campaign Report" below). The generated SQL is never returned. Failure to translate is `ErrorCode 5` |
+| ApprovalContext         | Boolean | No       | Add what a reviewer of campaigns pending approval needs to each row: `FromName`, `FromEmail` and `Subject` of the campaign's email (null when the campaign has no email of its owner), `ApprovalFingerprint` (the value `campaign.approve` and `admin.campaign.reject` expect as `ExpectedFingerprint`, null when it cannot be computed or the campaign changed while the row was being read, in which case reload) and `ScreeningHold` (`{"Reason": "...", "HeldAt": "YYYY-MM-DD HH:MM:SS"}` when content screening held the campaign, otherwise null). Each row costs a fingerprint, so with this flag `RecordsPerRequest` is capped at 25: 0, absent or a larger value returns 25 rows. Default false, and without it the response is unchanged. Added in v6.0.2 |
 
 > This command browses every account (`FilterByUserID` empty = all) and does not take the `UserID` parameter of the admin-reach commands. Restricted sub-admins only see the accounts of their allowed user groups. Owner decoration (`UserFirstName`, `UserLastName`, `UserEmailAddress`, `UserCompany`) is attached to every row.
+
+> To list campaigns waiting for approval with their review context, send `CampaignStatus=Pending Approval` and `ApprovalContext=true`, and page with `RecordsFrom`.
 
 ::: code-group
 
@@ -4308,6 +4311,179 @@ curl -X POST https://example.com/api/v1/admin.campaign.retryfailed \
 
 :::
 
+## Reject a Campaign
+
+<Badge type="info" text="POST" /> `/api/v1/admin.campaign.reject`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privilege: `Reports`, and `User.Edit` when `Message` is sent
+- Rate limit: 100 requests per 60 seconds
+- Not available to AI assistant (agent) keys: the operator rejects campaigns in the admin area
+- Added in v6.0.2
+:::
+
+Sends a campaign that is waiting for approval (`CampaignStatus` `Pending Approval`) back to its owner as a `Draft`. Any approval recorded on the campaign is removed and its content screening hold is cleared, so the campaign is reviewed again when its owner schedules it. The owner can optionally be told why by email, with the same mailer as `admin.user.message.send`.
+
+`ExpectedFingerprint` is the `ApprovalFingerprint` of the version you reviewed (from `admin.campaigns.search` with `ApprovalContext=true`, or from `admin.campaign.preview`). When the campaign changed since, nothing is rejected (`ErrorCode 4`). Only a `Pending Approval` campaign is rejected, and the status is checked in the write itself, so a campaign approved, paused or withdrawn by someone else at the same moment is refused with `ErrorCode 5`. An approve and a reject of the same campaign can never both succeed.
+
+A sub-admin limited to some user groups may only reject campaigns of accounts in those groups, and gets `ErrorCode 5003` for any other campaign and for a campaign that does not exist. `CampaignID` must be a plain positive integer, and any other form (for example `1.234e3`, `5.0` or a value with spaces) is answered with `ErrorCode 2`.
+
+A message that cannot be delivered does not undo the rejection: the response has `MessageSent: false` and the reason in `MessageError`.
+
+**Request Body Parameters:**
+
+| Parameter           | Type    | Required | Description |
+|---------------------|---------|----------|-------------|
+| Command             | String  | Yes      | API command: `admin.campaign.reject` |
+| AdminAPIKey         | String  | Yes      | Admin API key |
+| CampaignID          | Integer | Yes      | The campaign to reject. Must be `Pending Approval` |
+| ExpectedFingerprint | String  | Yes      | `ApprovalFingerprint` of the version you reviewed |
+| Message             | String  | No       | Plain text to the campaign owner, at most 5000 characters. HTML is shown as text, line breaks are kept. Needs the `User.Edit` privilege |
+| Subject             | String  | No       | Subject of that email, at most 255 characters. Default `Your campaign was not approved: <campaign name>` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.campaign.reject \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.campaign.reject",
+    "AdminAPIKey": "your-admin-api-key",
+    "CampaignID": 123,
+    "ExpectedFingerprint": "3f1c...e9",
+    "Message": "Please remove the shortened links and schedule the campaign again."
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "CampaignID": 123,
+  "CampaignStatus": "Draft",
+  "MessageSent": true
+}
+```
+
+```json [Message Not Delivered]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "CampaignID": 123,
+  "CampaignStatus": "Draft",
+  "MessageSent": false,
+  "MessageError": "Message could not be sent: the mail transport gave no reason. Check the system email settings."
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "The campaign changed after you opened it for review. Review it again before rejecting it."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing required parameter (CampaignID)
+2: Campaign not found, or CampaignID is not a plain positive integer
+3: Missing required parameter (ExpectedFingerprint)
+4: The campaign changed after it was reviewed (ExpectedFingerprint does not match), review it again
+5: The campaign is not Pending Approval (also when it was approved, paused, cancelled or moved back to Draft while it was being rejected), nothing was changed
+6: The campaign could not be read or written to record the rejection (retry)
+7: Message is longer than 5000 characters
+8: Subject is longer than 255 characters
+9: Sending a message to the campaign owner needs the User.Edit privilege
+5003: The campaign was not found or belongs to an account outside the user groups this sub-admin may access
+```
+
+:::
+
+## Preview a Campaign for Review
+
+<Badge type="info" text="POST" /> `/api/v1/admin.campaign.preview`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privilege: `Reports`
+- Rate limit: 100 requests per 60 seconds
+- Added in v6.0.2
+:::
+
+Returns the email of a campaign as it is stored, for an administrator reviewing it, together with the `ApprovalFingerprint` to send back to `campaign.approve` or `admin.campaign.reject`, so you approve or reject exactly the version you read. Merge tags are not rendered, no subscriber data is read, and remote content (`FetchURL`) is never fetched: the URL is returned for you to see.
+
+A sub-admin limited to some user groups may only preview campaigns of accounts in those groups, and gets `ErrorCode 5003` for any other campaign and for a campaign that does not exist. `EmailID` must be one of the campaign's emails (`EmailIDs` in the response: the campaign email, its A/B variations and split test emails). `CampaignID` and `EmailID` must be plain positive integers, and any other value is answered like a missing campaign (`ErrorCode 2`).
+
+`HTMLContent` is the customer's HTML and must be treated as untrusted. Render it only inside a sandboxed iframe (`<iframe sandbox srcdoc="...">` with no `allow-scripts` and no `allow-same-origin`), never inline in your page, and show every other field as plain text.
+
+**Request Body Parameters:**
+
+| Parameter   | Type    | Required | Description |
+|-------------|---------|----------|-------------|
+| Command     | String  | Yes      | API command: `admin.campaign.preview` |
+| AdminAPIKey | String  | Yes      | Admin API key |
+| CampaignID  | Integer | Yes      | The campaign to preview, in any status |
+| EmailID     | Integer | No       | One of the campaign's `EmailIDs`. Default the campaign's email |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.campaign.preview \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.campaign.preview",
+    "AdminAPIKey": "your-admin-api-key",
+    "CampaignID": 123
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "CampaignID": 123,
+  "CampaignName": "October newsletter",
+  "CampaignStatus": "Pending Approval",
+  "OwnerUserID": 45,
+  "EmailID": 678,
+  "EmailIDs": [678, 679],
+  "Subject": "Our October picks",
+  "PreHeaderText": "",
+  "FromName": "Example Shop",
+  "FromEmail": "news@example.com",
+  "ReplyToName": "",
+  "ReplyToEmail": "",
+  "ContentType": "HTML",
+  "HTMLContent": "<p>Hello %Subscriber:FirstName%</p>",
+  "PlainContent": "",
+  "FetchURL": "",
+  "FetchPlainURL": "",
+  "ApprovalFingerprint": "3f1c...e9"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Campaign or email not found"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing required parameter (CampaignID)
+2: Campaign or email not found, EmailID is not one of the campaign's emails, or an id is not a plain positive integer
+3: The campaign could not be read, or its owner kept changing it while it was being read (retry)
+5003: The campaign was not found or belongs to an account outside the user groups this sub-admin may access
+```
+
+:::
+
+`ApprovalFingerprint` always describes the content in the same response: it is read before and after the content, and the read is repeated when the owner changed the campaign in between. It is null when the campaign could not be read to compute it.
+
 ## Get Database Table Statistics
 
 <Badge type="info" text="GET" /> `/api/v1/admin.database.stats`
@@ -5486,7 +5662,7 @@ An admin agent key is limited in four ways, all enforced in `api.php`, so a dire
 | `usergroup.options.patch` | admin:act | UserGroupID, Options (the three `TargetDeliveryServerID_*` keys only) |
 | `settings.update` | admin:act | the bounce and FBL mailbox parameters only |
 
-- **Restrictive actions only.** On customer accounts, an assistant can only lower what an account can do: lower its rate limits, move it to Untrusted so its campaigns wait for approval, or suspend it. Anything that raises trust or reaches the customer is done by the operator in the admin area: approving a campaign (`campaign.approve`), setting ReputationLevel to Trusted, re-enabling an account (AccountStatus Enabled) and messaging a user (`admin.user.message.send`). Each is refused (100010 or 100016) with an `ErrorText` that says so. This keeps instructions hidden in customer data (a campaign name, a subject) from loosening an account or contacting anyone.
+- **Restrictive actions only.** On customer accounts, an assistant can only lower what an account can do: lower its rate limits, move it to Untrusted so its campaigns wait for approval, or suspend it. Anything that raises trust or reaches the customer is done by the operator in the admin area: approving or rejecting a campaign (`campaign.approve`, `admin.campaign.reject`), setting ReputationLevel to Trusted, re-enabling an account (AccountStatus Enabled) and messaging a user (`admin.user.message.send`). Each is refused (100010 or 100016) with an `ErrorText` that says so. This keeps instructions hidden in customer data (a campaign name, a subject) from loosening an account or contacting anyone.
 - **Scopes.** `admin:read` is always granted. `admin:act` only when the staff member ticked it on the consent screen.
 - **The admin's own limits.** The key acts as the admin who approved it: that admin's privileges always apply, and a target user or campaign outside the admin's user groups is refused. An admin limited to some user groups with none assigned reaches nobody: every command except `admin.agentkey.revokeself` is refused, and `admin.risk.digest` returns no users.
 - **Confirmation.** Every `admin:act` command first answers 100012 with a `Preview` (the values before, and the values requested) and a `ConfirmToken`. The identical request repeated with `ConfirmToken` within ten minutes runs the change. A token works once, for one key, one command and the exact parameters. Every confirmed action is recorded before it runs and completed with the values after, see `admin.agentactions.get`, so an action whose request died midway still shows up (with `Completed` false).
