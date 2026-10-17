@@ -280,9 +280,9 @@ The same API commands are available to scripts: `admin.user.emailgateway.apikeys
 [Email Gateway](../api-reference/emailgateway#list-a-user-s-email-gateway-api-keys-admin) and
 [Admin](../api-reference/admin#end-a-user-session-admin) API reference.
 
-### Coming from the classic Users section
+### Coming from the classic Users and User Groups sections
 
-With `UI_ENABLED=true`, every page of the classic admin **Users** section opens its counterpart
+The classic admin **Users** and **User Groups** sections are removed. Their old links still work: with `UI_ENABLED=true`, every page of the classic admin **Users** section opens its counterpart
 here: the list (with its group, status, reputation, category, online, sender domain and limit
 filters carried over), **Create user**, a user's page, its **Edit** form, and its **Limits** and
 **Sender domains & keys** tabs. Switching to a user, sending a message, and enabling, disabling
@@ -291,8 +291,9 @@ and deleting an account now happen on the user's page here.
 The two interfaces have separate sign-ins, so the first time you follow one of these links you
 may be asked to sign in to the new interface.
 
-With `UI_ENABLED=false` the classic Users section works as before. It will be removed in a later
-release, which will need the new interface turned on.
+Links to the classic **User Groups** section open the **User groups** list, **Create user group** or a group's edit page here. A form posted to one of the old addresses is refused and changes nothing.
+
+With `UI_ENABLED=false` there is no way to manage users or user groups: the old addresses show a page saying these sections need the new interface turned on.
 
 ## What to do next
 
@@ -311,8 +312,9 @@ release, which will need the new interface turned on.
 
 Set `UI_ENABLED=false` in `.oempro_env` and run `./cli/octeth.sh docker:up`. The `/user/`
 and `/ui/` paths go back to the classic application, and nothing is lost. Your customers'
-data was never stored in the new interface in the first place. The classic admin **Users**
-section also stops forwarding and works as before.
+data was never stored in the new interface in the first place. The classic admin **Users** and
+**User Groups** addresses then show a page saying user and user group management needs the new
+interface, so turn it back on before you need to manage accounts.
 
 ::: tip
 Turning the interface off does not delete its database. If you turn it back on later, any
