@@ -6193,41 +6193,9 @@ You have a mobile app and want users to access Octeth's features without creatin
 
 ## Preferences
 
-The Preferences page controls global settings that affect how your Octeth system behaves. These settings apply across your entire installation and impact both the administrator and user areas.
+Most install-wide preferences are in the new interface: open the staff area, click **Settings**, then **Preferences**. See [Staff Preferences](/v6.0.2/new-user-interface/staff-preferences) for the default language, user password reset, send rate alerts, the limit utilization webhook, the failed webhook handler and the List freshness thresholds.
 
-To access Preferences: Navigate to **Settings** > **Preferences** in the administrator area.
-
-[[SCREENSHOT: The Preferences page showing all configuration sections]]
-
-### General Settings
-
-These settings control basic system behavior and security features.
-
-**Default Language**
-
-Select the language that will be used throughout Octeth's public-facing sections, including login screens and operation confirmation pages. This language will be the default for all new users and public interfaces.
-
-[[SCREENSHOT: Default Language dropdown showing available language options]]
-
-::: tip
-If you're running a multilingual operation, individual users can still choose their preferred language in their account settings. This setting only controls the default.
-:::
-
-**User Password Reset**
-
-Control whether users can reset their passwords through the self-service password reset feature.
-
-- **Password reset feature is enabled**: Users can click "Forgot Password?" on the login screen and receive password reset instructions via email
-- **Password reset feature is disabled**: The password reset option is hidden, and users must contact administrators to reset their passwords
-
-[[SCREENSHOT: Password reset setting dropdown showing enabled and disabled options]]
-
-::: tip When to disable password reset
-You might want to disable this feature if:
-- You manage a small team where password resets can be handled directly
-- Your organization has specific security policies requiring manual password resets
-- You use Single Sign-On (SSO) for authentication
-:::
+The classic admin page, **Settings** > **User area preferences** (`/app/admin/preferences/`), keeps the three settings only the classic user area uses.
 
 **Forbidden Emails**
 
@@ -6244,15 +6212,13 @@ admin@yourdomain.com
 support@*
 ```
 
-[[SCREENSHOT: Forbidden Emails textarea showing example entries]]
-
 ::: warning
-Blocking major email providers (like `*@gmail.com`) prevents users from sending emails from free email accounts, which can help maintain your sender reputation. However, be careful not to block legitimate business domains your users might need.
+The list is checked only by the email editor of the classic user area.
 :::
 
 **User Area Footer**
 
-Customize the footer text that appears at the bottom of every page in the user area. You can include HTML markup for formatting and links.
+Customize the footer text that appears at the bottom of every page in the classic user area. You can include HTML markup for formatting and links.
 
 Example:
 ```html
@@ -6261,169 +6227,18 @@ Example:
 <a href="https://yourdomain.com/terms">Terms of Service</a>
 ```
 
-[[SCREENSHOT: User Area Footer textarea showing example HTML content]]
-
-::: tip White-labeling
-Use this field to add your company branding, legal links, support contact information, or any other content you want users to see on every page.
-:::
-
 **Default Custom Fields**
 
 Define custom fields that will be automatically created whenever a user creates a new subscriber list. These fields will be added to every new list as text-based custom fields.
 
-Enter one field name per line. Common examples:
+Enter one field name per line, for example:
 ```
 First Name
 Last Name
 Company
-Phone Number
-City
-Country
 ```
 
-[[SCREENSHOT: Default Custom Fields textarea showing example field names]]
-
-::: info
-This is especially useful if you want to standardize data collection across all lists in your system. Users can still add additional custom fields to their lists as needed.
-:::
-
-### Send Rate Notification Settings
-
-Configure notifications when users exceed their sending rate limits.
-
-**Slack Webhook**
-
-Enter a Slack webhook URL to receive notifications when a user exceeds their configured send rate limit. When a user hits their limit, Octeth will send a message to your specified Slack channel with details about which user exceeded their limit.
-
-Leave this field empty to disable Slack notifications.
-
-[[SCREENSHOT: Slack Webhook field with example webhook URL]]
-
-::: tip Getting a Slack webhook URL
-1. Go to your Slack workspace settings
-2. Navigate to Apps & Integrations
-3. Search for "Incoming Webhooks"
-4. Create a new webhook and select the channel where you want notifications
-5. Copy the webhook URL and paste it here
-:::
-
-**Notification Interval**
-
-Specify how often (in seconds) Octeth should send rate limit notifications to Slack for the same user. This prevents notification spam if a user continuously attempts to send while over their limit.
-
-For example, setting this to `3600` means you'll receive a notification at most once per hour for each user who exceeds their rate limit.
-
-[[SCREENSHOT: Notification Interval field showing value in seconds]]
-
-::: info
-Send rate limits can be configured in the user group settings or individually for each user account. See the User Group Settings section for more details on setting up rate limits.
-:::
-
-### Webhook Settings
-
-Control how Octeth handles webhooks that repeatedly fail to execute successfully.
-
-**Enable Failed Webhook Handler**
-
-When enabled, Octeth monitors webhook execution failures and automatically takes action when webhooks fail too many times.
-
-[[SCREENSHOT: Failed webhook handler checkbox enabled]]
-
-When this feature is enabled, you can configure:
-
-**Fail Threshold**
-
-The number of consecutive failed attempts before Octeth considers a webhook as problematic. For example, if you set this to `3`, Octeth will take action after the webhook fails 3 times in a row.
-
-**Suspend Duration**
-
-How long (in seconds) to disable the failed webhook. During this suspension period, Octeth will not attempt to execute the webhook, giving you time to investigate and fix any issues. For example, `3600` suspends the webhook for 1 hour.
-
-**Webhook URL**
-
-An optional URL that Octeth will call when it disables a webhook due to repeated failures. This can be used to send notifications to your monitoring system or logging service.
-
-[[SCREENSHOT: Failed webhook handler settings showing all three configuration fields]]
-
-::: tip Recommended settings
-- **Fail Threshold**: `3` - Three failures indicates a real problem, not just temporary issues
-- **Suspend Duration**: `3600` (1 hour) - Gives you time to investigate without overwhelming your systems
-- **Webhook URL**: Your monitoring system's webhook endpoint
-:::
-
-### Limit Utilization Notifications
-
-Receive notifications when users' resource utilization status changes, allowing you to proactively manage capacity and respond to usage patterns.
-
-**Enable Limit Utilization Webhook Notifications**
-
-When enabled, Octeth will send webhook notifications whenever a user's limit utilization status changes between different states (OK, Warning, and Exceeded).
-
-[[SCREENSHOT: Limit utilization webhook checkbox enabled]]
-
-**Webhook URL**
-
-The URL that will receive POST requests containing status change notifications. Octeth sends a JSON payload with details about the user, which limit changed, and the transition that occurred.
-
-[[SCREENSHOT: Webhook URL field with example URL]]
-
-**Notify on Transitions**
-
-Select which status transitions should trigger webhook notifications. You can monitor different types of changes:
-
-- **OK → Warning**: User's limit usage is approaching the warning threshold (typically 80% of their limit)
-- **Warning → Exceeded**: User has exceeded their limit after being in warning state
-- **OK → Exceeded**: User suddenly exceeded their limit without hitting the warning threshold first
-- **Exceeded → Warning**: User's usage has dropped back below the limit but is still in the warning zone
-- **Warning → OK**: User's usage has returned to normal levels from the warning state
-- **Exceeded → OK**: User's usage has fully recovered from an exceeded state back to normal
-
-[[SCREENSHOT: Transition checkboxes showing all six transition types]]
-
-::: tip Recommended transition monitoring
-For proactive capacity management, enable these transitions:
-- **OK → Warning** (anticipate capacity issues)
-- **Warning → Exceeded** (immediate attention needed)
-- **OK → Exceeded** (sudden spikes that need investigation)
-
-For recovery tracking, optionally enable:
-- **Exceeded → OK** (confirm issue resolution)
-:::
-
-::: info Webhook payload format
-When a transition occurs, Octeth sends a POST request with this JSON structure:
-```json
-{
-  "user_id": 123,
-  "username": "john@example.com",
-  "limit_type": "subscribers",
-  "previous_status": "OK",
-  "current_status": "Warning",
-  "current_value": 8500,
-  "limit_value": 10000,
-  "utilization_percentage": 85,
-  "timestamp": "2024-01-15T14:30:00Z"
-}
-```
-:::
-
-::: warning Important requirement
-When this feature is enabled, you must:
-1. Provide a valid webhook URL
-2. Select at least one transition type to monitor
-
-The system will not save your settings if either requirement is missing.
-:::
-
-### Saving Your Changes
-
-After configuring your preferences, click the **Update Preferences** button at the bottom of the page to save your changes. Your new settings will take effect immediately.
-
-[[SCREENSHOT: Update Preferences button at bottom of form]]
-
-::: tip
-Changes to security settings (like password reset options) take effect immediately for new login attempts. Users who are already logged in will not be affected until they log out and log back in.
-:::
+Click **Update Preferences** to save. The three settings are saved together, and a refused save changes none of them.
 
 ## Rebranding
 

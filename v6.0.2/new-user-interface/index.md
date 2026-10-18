@@ -135,6 +135,7 @@ The staff dashboard, billing screens, Webhooks, User groups, Sub-admins, Subscri
 | Reports: Sender domain health | User.Edit. A sub-administrator limited to some user groups sees and re-checks only the domains of accounts in those groups, see [The Staff Sender Domain Health Report](./staff-sender-domain-health) |
 | SMS: Campaigns | SMS and Settings. A sub-administrator limited to some user groups sees, pauses and cancels only the campaigns of accounts in those groups, see [The Staff SMS Campaigns Screen](./staff-sms-campaigns) |
 | SMS: Inbound | SMS and Settings. A sub-administrator limited to some user groups sees only the messages of accounts in those groups and no unattributed reply, see [The Staff Inbound SMS Screen](./staff-sms-inbound) |
+| Settings: Preferences | Settings, see [Staff Preferences](./staff-preferences) |
 | Settings: Default opt-in email | Settings, see [The Default Opt-in Email](./staff-optin-email) |
 | Settings: S2S postback | Settings, see [The Staff S2S Postback Screen](./staff-s2s-postback) |
 | Settings: SSO | Settings.SSO, see [Managing SSO Sources in the Staff Area](./staff-sso) |
@@ -171,6 +172,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/reports/sender-domains` | The DNS health of every sender domain, with per-record results and an on-demand re-check, see [The Staff Sender Domain Health Report](./staff-sender-domain-health) |
 | `/user/staff/sms/campaigns` | Every account's bulk SMS campaigns, with Pause and Cancel, see [The Staff SMS Campaigns Screen](./staff-sms-campaigns) |
 | `/user/staff/sms/inbound` | Every reply and opt-out received on the SMS gateways, including unattributed replies, see [The Staff Inbound SMS Screen](./staff-sms-inbound) |
+| `/user/staff/settings/preferences` | The default language, password reset, limit notifications, the failed webhook handler and the List freshness thresholds, see [Staff Preferences](./staff-preferences) |
 | `/user/staff/settings/optin-email` | The confirmation email double opt-in subscribers receive when their list has none of its own, see [The Default Opt-in Email](./staff-optin-email) |
 | `/user/staff/settings/s2s-postback` | The conversion addresses and the S2S parameter names, see [The Staff S2S Postback Screen](./staff-s2s-postback) |
 | `/user/staff/settings/sso` | The SSO sources list, create and edit screens, with masked keys, key rotation and sign-in statistics, see [Managing SSO Sources in the Staff Area](./staff-sso) |
@@ -181,7 +183,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/billing/...` | The staff billing screens, when billing is enabled |
 | `/ui/` | Images, stylesheets, the health check, and inbound payment webhooks |
 | `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants). `MCP_ENABLED=false` turns these off |
-| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Sub Admin Accounts**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About**, **Log Observer**, **Campaign Report**, **List Freshness**, **Sender Domain Health**, **SMS Campaigns**, **Inbound SMS**, **Default Opt-in Email**, **S2S Postback** and **Single Sign On** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/sub-admins`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system`, `/user/staff/logs`, `/user/staff/reports/campaigns`, `/user/staff/reports/list-freshness`, `/user/staff/reports/sender-domains`, `/user/staff/sms/campaigns`, `/user/staff/sms/inbound`, `/user/staff/settings/optin-email`, `/user/staff/settings/s2s-postback` and `/user/staff/settings/sso` |
+| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Sub Admin Accounts**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About**, **Log Observer**, **Campaign Report**, **List Freshness**, **Sender Domain Health**, **SMS Campaigns**, **Inbound SMS**, **Default Opt-in Email**, **S2S Postback** and **Single Sign On** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/sub-admins`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system`, `/user/staff/logs`, `/user/staff/reports/campaigns`, `/user/staff/reports/list-freshness`, `/user/staff/reports/sender-domains`, `/user/staff/sms/campaigns`, `/user/staff/sms/inbound`, `/user/staff/settings/optin-email`, `/user/staff/settings/s2s-postback` and `/user/staff/settings/sso`. The admin **Preferences** page keeps only the user area's own settings and links to `/user/staff/settings/preferences` for the rest |
 
 ::: info
 These path names are settings, not fixed values. See the

@@ -342,7 +342,7 @@ A POST to any of these URLs is refused with a short page that links to the new s
 
 - **Status tiles filter the table.** Click a tile to show only the users in that status, and click it again to show everyone. The user's page filters its lists the same way.
 - **No "Login as" link.** The user's name opens their freshness page, and the person icon opens the staff user page, where switching to the user already lives. The icon shows only to administrators with the `Users` and `User.Browse` permissions.
-- **The thresholds are still edited on the classic Preferences page.** The screen states the thresholds in use and links there.
+- **The thresholds are edited in the new interface.** The screen states the thresholds in use and, for administrators with the `Settings` privilege, links to the List freshness section of [Preferences](/v6.0.2/new-user-interface/staff-preferences#list-freshness) (octeth/oempro#3537).
 - **Opening a user's page is recorded in the staff audit log** (`reports.list_freshness.view`), as a subscriber search is.
 
 #### The legacy admin Sender Domain Health report is removed
@@ -419,6 +419,33 @@ The classic admin header's **Reports > Inbound SMS** item opens the new screen.
 - **Fewer, denser columns.** The sender and recipient share a **From / To** column, and the unsubscribe result sits under the opt-out in one **Opt-out** column, so the table fits a desktop window.
 
 There is no opt-in flag: the page is removed, and its URLs answer as above.
+
+#### The legacy admin Preferences page is trimmed
+
+Most of the legacy admin **Preferences** page (`/app/admin/preferences/`), an item of the classic **Settings** sidebar, moved to the [Preferences](/v6.0.2/new-user-interface/staff-preferences) screen of the new interface's staff area (`/<UI_STAFF_PREFIX>/staff/settings/preferences`), under the new **Settings** group of the staff sidebar (octeth/oempro#3537). The screen needs the `Settings` privilege, as the page did.
+
+| Setting | Where it is now |
+|---|---|
+| Default language, user password reset | Preferences, **General** section |
+| Send rate Slack webhook and notification interval, limit utilization webhook | Preferences, **Notifications** section (`?section=notifications`) |
+| Failed webhook handler | Preferences, **Customer webhooks** section (`?section=customer-webhooks`) |
+| List freshness thresholds | Preferences, **List freshness** section (`?section=list-freshness`) |
+| Forbidden From addresses, user area footer, default custom fields of a new list | Still on the classic page, now titled **User area preferences** |
+| Run the send engine cron from the user area, show the trigger send engine link | Removed. Nothing read either setting |
+
+**The page is not redirected.** `/app/admin/preferences/` still opens, shows only the three settings the classic user area uses, and links to the new screen. The classic **Settings** sidebar lists both: **Preferences** opens the new screen and **User area preferences** opens the classic page. The classic header's **Preferences** drop-menu gains a **Preferences** item that opens the new screen.
+
+**What changed on the way:**
+
+- **Each section saves on its own.** A save sends only that section's settings to `settings.update`. The classic page wrote several settings directly and then called `settings.update` for the rest, so a refused call could leave a partial save. The trimmed classic page now saves its three settings with one `settings.update` call, so a refused call saves none of them.
+- **Viewing the classic page no longer writes anything.** It used to create default rows for the failed-webhook handler, the limit utilization webhook and the list freshness thresholds the first time it was opened. Every reader of those settings already falls back to the same defaults.
+- **Two changes ask first.** Changing the default language, or turning password reset off, asks for a confirmation before saving.
+- **The notification fields are checked.** The Slack webhook URL must be a full `http` or `https` URL or empty, and the interval a whole number of seconds, 0 or more. `settings.update` itself still accepts any value for these two settings.
+- **The list freshness thresholds must increase.** The screen refuses Slowing down or Stale values that are not above the one before. The classic page raised such values silently.
+- **Webhook URLs are masked** on the screen, with a toggle to show them, because a webhook URL often carries its own access key.
+- **Every save is recorded in the staff audit log** with the section and the names of the settings it changed, never their values.
+
+There is no opt-in flag. `settings.get`, `settings.update` and `system.languages.get` are unchanged.
 
 #### The legacy admin Default Opt-in Email page is removed
 

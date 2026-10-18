@@ -23,7 +23,7 @@ Each list gets a status from the days since its last subscription or import. A u
 | **Dead** | Nothing for more than 90 days |
 | **No data** | No subscription or import has ever been recorded |
 
-The line under the status tiles states the thresholds in use. To change them, open the **Preferences** page of the classic admin area: the line links there.
+The line under the status tiles states the thresholds in use. To change them, open the List freshness section of [Staff Preferences](./staff-preferences#list-freshness). The line links there when you have the Settings permission.
 
 ## The report
 
