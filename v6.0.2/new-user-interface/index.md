@@ -119,7 +119,7 @@ permissions reach the staff area within about a minute, and switching to a user 
 checks the current permissions. A switch to a user that is already running is not ended by
 a permission change.
 
-The staff dashboard, billing screens, Webhooks, User groups, Sub-admins, Subscriber search, Reports, Your profile, System, Security and Logs follow the administrator permissions too:
+The staff dashboard, billing screens, Webhooks, User groups, Sub-admins, Subscriber search, Reports, SMS, Your profile, System, Security and Logs follow the administrator permissions too:
 
 | Staff screen | Permission it needs |
 |---|---|
@@ -133,6 +133,7 @@ The staff dashboard, billing screens, Webhooks, User groups, Sub-admins, Subscri
 | Reports: Campaigns | Reports. A sub-administrator limited to some user groups sees only the campaigns of accounts in those groups, see [The Staff Campaign Report](./staff-campaign-report) |
 | Reports: List freshness | Reports. A sub-administrator limited to some user groups sees only the users of those groups, see [The List Freshness Report](./staff-list-freshness) |
 | Reports: Sender domain health | User.Edit. A sub-administrator limited to some user groups sees and re-checks only the domains of accounts in those groups, see [The Staff Sender Domain Health Report](./staff-sender-domain-health) |
+| SMS: Campaigns | SMS and Settings. A sub-administrator limited to some user groups sees, pauses and cancels only the campaigns of accounts in those groups, see [The Staff SMS Campaigns Screen](./staff-sms-campaigns) |
 | Your profile | Account. Its System emails section also needs Settings, and its Two-factor authentication section needs Security, see [Your Staff Profile](./staff-profile) |
 | System | System, see [The Staff System Screen](./staff-system) |
 | Security | Security, see [The Staff Security Screen](./staff-security) |
@@ -164,6 +165,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/reports/campaigns` | Campaigns across every account by status, with a chart, a CSV export and recovery for stuck or failed sends, see [The Staff Campaign Report](./staff-campaign-report) |
 | `/user/staff/reports/list-freshness` | The List freshness report and each user's page, see [The List Freshness Report](./staff-list-freshness) |
 | `/user/staff/reports/sender-domains` | The DNS health of every sender domain, with per-record results and an on-demand re-check, see [The Staff Sender Domain Health Report](./staff-sender-domain-health) |
+| `/user/staff/sms/campaigns` | Every account's bulk SMS campaigns, with Pause and Cancel, see [The Staff SMS Campaigns Screen](./staff-sms-campaigns) |
 | `/user/staff/profile` | Your own administrator profile, see [Your Staff Profile](./staff-profile) |
 | `/user/staff/system` | The installed version, the license and the system health check, see [The Staff System Screen](./staff-system) |
 | `/user/staff/security` | The admin area IP allow-list and the remembered sign-ins, see [The Staff Security Screen](./staff-security) |
@@ -171,7 +173,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/billing/...` | The staff billing screens, when billing is enabled |
 | `/ui/` | Images, stylesheets, the health check, and inbound payment webhooks |
 | `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants). `MCP_ENABLED=false` turns these off |
-| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Sub Admin Accounts**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About**, **Log Observer**, **Campaign Report**, **List Freshness** and **Sender Domain Health** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/sub-admins`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system`, `/user/staff/logs`, `/user/staff/reports/campaigns`, `/user/staff/reports/list-freshness` and `/user/staff/reports/sender-domains` |
+| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Sub Admin Accounts**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About**, **Log Observer**, **Campaign Report**, **List Freshness**, **Sender Domain Health** and **SMS Campaigns** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/sub-admins`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system`, `/user/staff/logs`, `/user/staff/reports/campaigns`, `/user/staff/reports/list-freshness`, `/user/staff/reports/sender-domains` and `/user/staff/sms/campaigns` |
 
 ::: info
 These path names are settings, not fixed values. See the

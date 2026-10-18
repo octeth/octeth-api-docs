@@ -258,9 +258,9 @@ Each value is either stored on this page or taken from `.oempro_env`. Clear a fi
 
 ### Cross-account views
 
-Two read-mostly pages under **Reports** in the admin area cover every account:
+Two pages cover every account:
 
-- **SMS Campaigns** lists all campaigns. Filter by user ID or username, status and gateway. **Pause** stops a queueing or sending campaign, and **Cancel** stops one for good. Administrators cannot resume a campaign.
+- **Campaigns**, under **SMS** in the staff area of the new interface, lists all campaigns. Filter by user ID or username, status and gateway. **Pause** stops a queueing or sending campaign, and **Cancel** stops one for good. Administrators cannot resume a campaign. See [The Staff SMS Campaigns Screen](./staff-sms-campaigns).
 - **Inbound SMS** lists every received message. Filter by sender number, status, opt-outs (including opt-outs whose unsubscribe failed), gateway and date. It shows the gateway, sender, recipient, message, matched account and campaign, and the opt-out result.
 
 ## Troubleshooting

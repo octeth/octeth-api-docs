@@ -1090,6 +1090,242 @@ curl -X POST https://example.com/api/v1/smscampaign.cancel \
 
 :::
 
+## Administrator commands
+
+These three commands back the staff **SMS > Campaigns** screen of the new interface. They list and stop campaigns across every account. Each needs both the `SMS` and the `Settings` privilege, which it checks even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic admin SMS Campaigns page did. A sub-administrator limited to some user groups sees, pauses and cancels only the campaigns of accounts in those groups. Resuming a paused campaign stays with the account owner (`smscampaign.resume`).
+
+### List Campaigns Across Accounts
+
+<Badge type="info" text="GET" /> `/api/v1/admin.sms.campaigns.get`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session (privileges `SMS` and `Settings`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Lists every account's bulk SMS campaigns, newest first, one page at a time. `RateLimitHold` explains why a `Sending` campaign is not releasing messages when the reason is the account's SMS rate limit. It is read for the returned page only. `CanPause` and `CanCancel` say whether `admin.sms.campaign.pause` and `admin.sms.campaign.cancel` would apply to the status the row was read in. The message text is never returned.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.sms.campaigns.get` |
+| SessionID | String | No | Admin session ID obtained from login |
+| AdminAPIKey | String | No | Admin API key for authentication |
+| Page | Integer | No | 1-based page. Default `1` |
+| RecordsPerPage | Integer | No | 1 to 100. Default `50`; any other value is `50` |
+| FilterUser | String | No | A user ID, or the start of a username |
+| FilterStatus | String | No | `Draft`, `Scheduled`, `Queueing`, `Sending`, `Paused`, `Cancelling`, `Sent`, `Cancelled` or `Failed`. Any other value is ignored |
+| FilterGateway | Integer | No | A gateway ID |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'Command=admin.sms.campaigns.get' \
+  -d 'ResponseFormat=JSON' \
+  -d 'AdminAPIKey=your-admin-api-key' \
+  -d 'FilterStatus=Sending'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Campaigns": [
+    {
+      "SMSCampaignID": 812,
+      "UserID": 42,
+      "Username": "acme",
+      "CampaignName": "Spring sale",
+      "GatewayName": "Twilio",
+      "Status": "Sending",
+      "StatusReason": "",
+      "TotalAudience": 12000,
+      "TotalSent": 4100,
+      "TotalDelivered": 3900,
+      "TotalSendFailed": 12,
+      "ActualCost": "41.0000",
+      "CostCurrency": "USD",
+      "StartedAt": "2026-10-18 09:12:00",
+      "RateLimitHold": "Waiting: SMS rate limit for this account reached (hour = 5000)",
+      "CanPause": true,
+      "CanCancel": true
+    }
+  ],
+  "TotalCampaigns": 1,
+  "Page": 1,
+  "RecordsPerPage": 50,
+  "Gateways": [
+    {"GatewayID": 3, "GatewayName": "Twilio"}
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: The campaigns could not be read (see the error log)
+99998: Authentication failure or expired session
+99999: The administrator does not have both the SMS and the Settings privilege
+429: Rate limit exceeded
+```
+
+:::
+
+`Username` and `GatewayName` are `null` when the account or the gateway was deleted. `StartedAt` is server time (UTC), or `null` before the campaign starts. `ActualCost` is `null` until the campaign is costed. `Gateways` lists every gateway, for a filter.
+
+### Pause a Campaign as an Administrator
+
+<Badge type="info" text="POST" /> `/api/v1/admin.sms.campaign.pause`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session (privileges `SMS` and `Settings`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off)
+- Rate limit: 30 requests per 60 seconds
+- Not available in demo mode
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Pauses a `Queueing` or `Sending` campaign of any account. The campaign keeps its progress, and `StatusReason` records where it was paused from (`paused_queueing` or `paused_sending`) so the owner's resume returns it there. Messages already handed to the gateway cannot be recalled. A campaign that is already `Paused` is answered with success and `Changed` set to `false`.
+
+The change applies only while the campaign is still in the status this request read. If it moved on in between, for example it finished, nothing changes and the answer is error `4`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.sms.campaign.pause` |
+| SessionID | String | No | Admin session ID obtained from login |
+| AdminAPIKey | String | No | Admin API key for authentication |
+| SMSCampaignID | Integer | Yes | The campaign to pause |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'Command=admin.sms.campaign.pause' \
+  -d 'ResponseFormat=JSON' \
+  -d 'AdminAPIKey=your-admin-api-key' \
+  -d 'SMSCampaignID=812'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "SMSCampaignID": 812,
+  "UserID": 42,
+  "PreviousStatus": "Sending",
+  "Status": "Paused",
+  "Changed": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Only a queueing or sending campaign can be paused. That one is Sent."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: SMSCampaignID is missing or not a positive integer
+2: The campaign does not exist, or belongs to an account outside the administrator's user groups
+3: The campaign is not queueing or sending, so it cannot be paused
+4: The campaign changed status before it could be paused; nothing was changed
+99998: Authentication failure or expired session
+99999: The administrator does not have both the SMS and the Settings privilege
+429: Rate limit exceeded
+```
+
+:::
+
+### Cancel a Campaign as an Administrator
+
+<Badge type="info" text="POST" /> `/api/v1/admin.sms.campaign.cancel`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session (privileges `SMS` and `Settings`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off)
+- Rate limit: 30 requests per 60 seconds
+- Not available in demo mode
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Cancels a campaign of any account that has not finished. A `Draft` has nothing in flight, so it moves straight to `Cancelled`. Any other unfinished campaign moves to `Cancelling`, and the release worker cancels its queued messages in batches and then marks it `Cancelled`, so the command returns before the campaign is fully stopped. `StatusReason` becomes `cancelled_by_admin`. A campaign that is already `Cancelling` is answered with success and `Changed` set to `false`. A cancelled campaign cannot be resumed.
+
+The change applies only while the campaign is still in the status this request read. If it moved on in between, nothing changes and the answer is error `4`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.sms.campaign.cancel` |
+| SessionID | String | No | Admin session ID obtained from login |
+| AdminAPIKey | String | No | Admin API key for authentication |
+| SMSCampaignID | Integer | Yes | The campaign to cancel |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'Command=admin.sms.campaign.cancel' \
+  -d 'ResponseFormat=JSON' \
+  -d 'AdminAPIKey=your-admin-api-key' \
+  -d 'SMSCampaignID=812'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "SMSCampaignID": 812,
+  "UserID": 42,
+  "PreviousStatus": "Sending",
+  "Status": "Cancelling",
+  "Changed": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "That campaign has already finished. It is Sent."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: SMSCampaignID is missing or not a positive integer
+2: The campaign does not exist, or belongs to an account outside the administrator's user groups
+3: The campaign has already finished (Sent, Cancelled or Failed)
+4: The campaign changed status before it could be cancelled; nothing was changed
+99998: Authentication failure or expired session
+99999: The administrator does not have both the SMS and the Settings privilege
+429: Rate limit exceeded
+```
+
+:::
+
 ## Cost estimation
 
 ::: tip Why the estimate is a job rather than an answer

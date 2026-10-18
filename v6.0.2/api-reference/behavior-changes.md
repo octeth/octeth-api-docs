@@ -359,6 +359,32 @@ The classic **Reports > Sender Domain Health** menu item opens the new screen, a
 
 There is no opt-in flag: the page is removed, and its URL answers as above.
 
+#### The legacy admin SMS Campaigns page is removed
+
+The legacy admin **SMS Campaigns** page (`/app/admin/smscampaigns/`), an item of the classic **Reports** menu, is removed. It is the **Campaigns** screen of the new **SMS** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/sms/campaigns`) (octeth/oempro#3533). It needs the `SMS` and `Settings` privileges, as the page did.
+
+**The old URLs keep working.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/smscampaigns/?<filters>` | 302 to `/<staff>/staff/sms/campaigns?<filters>` |
+| `/app/admin/smscampaigns/index/<page>?<filters>` | 302 to the same screen with `page=<page>` added |
+| `/app/admin/smscampaigns/pause/`, `/cancel/` and anything else under it | 302 to `/<staff>/staff/sms/campaigns` |
+
+The filters `FilterUser`, `FilterStatus` and `FilterGateway` keep their names and are carried over. A POST to any of these URLs, including the old **Pause** and **Cancel** forms, is refused: no campaign changes, and the answer is a short page that links to the new screen.
+
+The classic **Reports > SMS Campaigns** menu item opens the new screen.
+
+**What changed on the way:**
+
+- **A sub-administrator limited to some user groups now sees, pauses and cancels only the campaigns of accounts in those groups.** The classic page listed and changed every account's campaigns whatever the limit.
+- **Pause and Cancel ask for confirmation** in a dialog that names the campaign and the account, and every change writes a staff audit row.
+- **Pressing Pause on a paused campaign, or Cancel on one that is already cancelling, changes nothing and says so,** instead of reporting that the campaign changed status.
+- **Cancelling a draft records when it was cancelled** (`CompletedAt`), as the account owner's own cancel does.
+- **Filters apply as you choose them** and stay in the address, so a filtered view can be bookmarked.
+
+There is no opt-in flag: the page is removed, and its URL answers as above.
+
 #### The legacy admin overview points to the new dashboard
 
 The legacy admin overview (`/app/admin/overview/`) is still where the legacy admin login lands, but it no longer shows the reports. It shows a "The dashboard moved" card with a link to the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) of the new interface (`/<UI_STAFF_PREFIX>/staff/dashboard`), the setup checklist (admins with the Settings privilege and no user group limit) and the quick links (admins with `Admin.Dashboard.Links`).
@@ -632,6 +658,13 @@ Two new admin commands, both needing the `SubAdmins` privilege, which each one c
 One new admin command, additive and needing the `Reports` privilege, which it checks even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (octeth/oempro#3528):
 
 - `admin.campaigns.report` lists one page of a Campaign Report bucket (`Status`, default `Sent`) under the report's shared filters, sorted by `OrderField` and `OrderType` (Draft and Scheduled keep their own order), 10 to 100 rows per page (`RecordsPerRequest`, default 25). Each row carries the campaign, its owner, its rates, its average throughput, its health verdicts and, for stuck campaigns, the stuck reason. It returns an allow-listed projection, never campaign content or options. Error codes are the report's shared ones. Rate limit 100 requests per 60 seconds.
+
+### SMS campaign administrator commands
+
+Three new admin commands, additive, each needing both the `SMS` and the `Settings` privilege, which it checks even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, and each scoped to the user groups of a limited sub-admin (octeth/oempro#3533):
+
+- `admin.sms.campaigns.get` lists every account's bulk SMS campaigns, newest first, 1 to 100 rows per page (`RecordsPerPage`, default 50), filtered by `FilterUser` (a user ID or the start of a username), `FilterStatus` and `FilterGateway`. Each row carries the counts, the cost, the start time, the account rate-limit hold of a sending campaign (`RateLimitHold`) and whether pause and cancel apply (`CanPause`, `CanCancel`). It never returns the message text. Error `1` means the campaigns could not be read. Rate limit 100 requests per 60 seconds.
+- `admin.sms.campaign.pause` takes `SMSCampaignID` and pauses a queueing or sending campaign. `admin.sms.campaign.cancel` takes `SMSCampaignID` and cancels an unfinished one (a draft at once, anything else through `Cancelling`). Both return `PreviousStatus`, `Status` and `Changed`, change the campaign only while it is still in the status they read, and are refused in demo mode. Error codes: `1` missing or invalid id, `2` not found or outside the administrator's user groups, `3` not pausable or already finished, `4` the status changed first. Rate limit 30 requests per 60 seconds each.
 
 ### AI assistant connector
 

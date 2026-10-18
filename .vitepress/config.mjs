@@ -1117,6 +1117,7 @@ export default defineConfig({
                         {text: 'The Staff Campaign Report', link: '/v6.0.2/new-user-interface/staff-campaign-report'},
                         {text: 'The List Freshness Report', link: '/v6.0.2/new-user-interface/staff-list-freshness'},
                         {text: 'The Staff Sender Domain Health Report', link: '/v6.0.2/new-user-interface/staff-sender-domain-health'},
+                        {text: 'The Staff SMS Campaigns Screen', link: '/v6.0.2/new-user-interface/staff-sms-campaigns'},
                         {text: 'Your Staff Profile', link: '/v6.0.2/new-user-interface/staff-profile'},
                         {text: 'The Staff System Screen', link: '/v6.0.2/new-user-interface/staff-system'},
                         {text: 'The Staff Security Screen', link: '/v6.0.2/new-user-interface/staff-security'},
