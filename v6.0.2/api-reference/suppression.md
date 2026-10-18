@@ -440,7 +440,8 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: User API Key or Admin API Key
 - Under a **User API Key** the addresses are written to the caller's own list (`RelOwnerUserID` = caller), or to one of the caller's lists when `ListID` is given.
-- Under an **Admin API Key** the addresses are written **system-wide** (`RelOwnerUserID = 0`, `RelListID = 0`): they suppress delivery for every account on the install. This is the API form of the admin Suppression screen's "Add email addresses" box. Pass `SuppressionSource=Administrator` to match what the screen writes (the default is `User`). `ListID` is not supported under admin auth and fails with `ErrorCode: 4`.
+- Under an **Admin API Key** the addresses are written **system-wide** (`RelOwnerUserID = 0`, `RelListID = 0`): they suppress delivery for every account on the install. This is the API form of the staff **Deliverability > Email suppression** screen's **Add addresses** box. Pass `SuppressionSource=Administrator` to match what the screen writes (the default is `User`). `ListID` is not supported under admin auth and fails with `ErrorCode: 4`.
+- Under an **Admin API Key** the `Suppression` privilege is required, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Email Suppression List screen did (answers `99999` without it). A User API Key call is not affected.
 - The credential you present selects the path: a user key writes to the caller's own list, an admin key writes system-wide. Send `Access=user` or `Access=admin` only when you want to choose explicitly, for example an admin key acting as a user.
 - v1 REST alias: `POST /api/v1/suppression.import`. Legacy access via `/api.php` is also supported
 :::
@@ -459,6 +460,7 @@ curl -X POST https://example.com/api.php \
 | SuppressionSource | String | No | Override the source recorded for imported rows. Must be one of the `SuppressionSource` ENUM values. Defaults to `User`. |
 | Reason | String | No | Override the reason recorded for imported rows. Capped at 250 characters. Defaults to `Suppression List Import`. |
 | ListID | Integer | No | Write imported rows scoped to a single subscriber list. When omitted or `0`, imports go to the user-wide global suppression list (`RelListID = 0`, today's default behavior). When non-zero, the list must be owned by the authenticated user; otherwise the call fails with `ErrorCode: 4` and no rows are written. Applies to both `EmailAddresses` and `EmailAddressesBulk` paths. Not supported under admin auth (fails with `ErrorCode: 4`). |
+| ReturnDetailedCounts | Boolean | No | `true` adds `TotalAlreadySuppressed`, `TotalWhitelisted` and `TotalWriteFailed` to the response. Default `false`: the response is unchanged. **New in v6.0.2** |
 
 \* **Note:** Either `EmailAddresses` or `EmailAddressesBulk` must be provided. Both can be provided simultaneously.
 
@@ -468,6 +470,7 @@ The response returns three fields: `TotalImported`, `TotalFailed` and `FailedEma
 
 - `TotalImported` counts **only rows actually persisted** to the suppression list.
 - `TotalFailed` counts **only malformed email addresses**, inputs that fail `FILTER_VALIDATE_EMAIL`. It does not mean "everything that was not imported". Each such address is also echoed back in `FailedEmailAddresses`.
+- With `ReturnDetailedCounts=true`, three more counters split what is neither imported nor malformed: `TotalAlreadySuppressed` (the address is already on the target suppression list), `TotalWhitelisted` (skipped because the account whitelists it, user auth only) and `TotalWriteFailed` (the insert failed, so the address is **not** suppressed and can still be sent to). Blank lines count in none of them.
 
 ::: warning Counters may not add up to the number of addresses you submitted
 `TotalImported + TotalFailed` can be **less than** the number of addresses in your request. Four kinds of input increment neither counter:
@@ -475,9 +478,11 @@ The response returns three fields: `TotalImported`, `TotalFailed` and `FailedEma
 1. **Blank lines** in `EmailAddressesBulk` (a trailing newline, or blank lines between addresses) are skipped before any counting.
 2. **Duplicates**: an address already present in the target suppression list is skipped without being inserted.
 3. **Whitelisted** addresses: skipped without being inserted.
-4. **A failed database insert**: a genuine write failure is silently not counted. This is a known caveat: such an address is neither reported in `TotalImported` nor in `TotalFailed` / `FailedEmailAddresses`.
+4. **A failed database insert**: a genuine write failure is silently not counted. Such an address is in neither `TotalImported` nor `TotalFailed`. With `ReturnDetailedCounts=true` it is counted in `TotalWriteFailed`.
 
 If your integration reconciles the response against the number of addresses you sent (for example asserting `TotalImported + TotalFailed == count(addresses)`), that check needs updating. Treat `TotalImported` as "newly suppressed", `TotalFailed` as "rejected as malformed", and the remainder as "already suppressed, whitelisted, blank, or not written".
+
+Send `ReturnDetailedCounts=true` to get the duplicates, whitelisted addresses and failed writes as separate counts instead of a remainder.
 :::
 
 ::: code-group
@@ -527,6 +532,19 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Success Response (ReturnDetailedCounts=true)]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "TotalImported": 2,
+  "TotalFailed": 1,
+  "FailedEmailAddresses": ["not-an-email"],
+  "TotalAlreadySuppressed": 1,
+  "TotalWhitelisted": 0,
+  "TotalWriteFailed": 0
+}
+```
+
 ```json [Error Response]
 {
   "Success": false,
@@ -540,6 +558,7 @@ curl -X POST https://example.com/api.php \
 2: Missing EmailAddressesBulk parameter or invalid EmailAddresses format (both parameters are missing or EmailAddresses JSON is invalid)
 3: Invalid SuppressionSource value
 4: Invalid ListID: list does not exist or is not owned by the authenticated user (user auth), or ListID was supplied under admin auth
+99999: Not enough privileges (admin authentication only: the admin account does not hold Suppression)
 ```
 
 :::
@@ -550,10 +569,11 @@ curl -X POST https://example.com/api.php \
 
 <Badge type="tip" text="New in v5.9.6" />
 
-Pages through the **system-wide** suppression rows (`RelListID = 0` and `RelOwnerUserID = 0`), the rows the admin Suppression screen writes and `suppression.import` creates under admin auth. These rows suppress delivery for every account on the install and are not reachable from any user-auth command.
+Pages through the **system-wide** suppression rows (`RelListID = 0` and `RelOwnerUserID = 0`), the rows the staff Deliverability > Email suppression screen adds and `suppression.import` creates under admin auth. These rows suppress delivery for every account on the install and are not reachable from any user-auth command.
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (privilege `Suppression`)
+- Authentication required: Admin API Key
+- Required privilege: `Suppression`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Email Suppression List screen did (answers `99999` without it)
 - Same filters and response shape as `suppression.browse`, including `SuppressedEmails: false` when nothing matches
 - v1 REST alias: `GET /api/v1/global.suppression.browse`. Legacy access via `/api.php` is also supported
 :::
@@ -612,6 +632,7 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 1: Invalid SuppressionSource value
+99999: Not enough privileges (the admin account does not hold Suppression)
 ```
 
 :::
@@ -622,12 +643,13 @@ curl -X POST https://example.com/api.php \
 
 <Badge type="tip" text="New in v5.9.6" />
 
-Looks an email address up across **every account and every scope tier** and returns each matching row with its scope, the API form of the admin Suppression screen's search box. Use it to answer "why is this address not receiving mail from anyone on this install".
+Looks an email address up across **every account and every scope tier** and returns each matching row with its scope, the API form of the staff Deliverability > Email suppression screen's search box. Use it to answer "why is this address not receiving mail from anyone on this install".
 
 A restricted sub-admin (one with `AccessAllowedUserGroupIDs` set) only sees rows owned by accounts inside its allowed user groups; system-wide rows are always returned.
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (privilege `Suppression`)
+- Authentication required: Admin API Key
+- Required privilege: `Suppression`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Email Suppression List screen did (answers `99999` without it)
 - `EmailAddress` is matched exactly unless it contains `*`, which acts as a wildcard. A literal `%` or `_` in the value is matched literally.
 - v1 REST alias: `POST /api/v1/global.suppression.search`. Legacy access via `/api.php` is also supported
 :::
@@ -702,6 +724,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: EmailAddress is missing
 2: Lookup failed (see server log)
+99999: Not enough privileges (the admin account does not hold Suppression)
 ```
 
 :::
@@ -712,10 +735,11 @@ curl -X POST https://example.com/api.php \
 
 <Badge type="tip" text="New in v5.9.6" />
 
-Install-wide counts by `SuppressionSource` over every account and every scope tier, the figures the admin Suppression screen shows as source ratios. Same response shape as `suppression.stats`.
+Install-wide counts by `SuppressionSource` over every account and every scope tier, the counts the staff Deliverability > Email suppression screen shows by source. Same response shape as `suppression.stats`.
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (privilege `Suppression`)
+- Authentication required: Admin API Key
+- Required privilege: `Suppression`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Email Suppression List screen did (answers `99999` without it)
 - v1 REST alias: `GET /api/v1/global.suppression.stats`. Legacy access via `/api.php` is also supported
 :::
 
@@ -754,6 +778,7 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
+99999: Not enough privileges (the admin account does not hold Suppression)
 ```
 
 :::
@@ -770,7 +795,9 @@ Deletes email suppression rows as an admin, the counterpart of `suppression.impo
 - **By address**: `EmailAddress` plus an explicit `Scope=SystemWide`. Deletes the system-wide row of that address. `Scope` is mandatory so a caller can never delete a tenant's row by accident; only `SystemWide` is accepted here (per-account rows belong to that account's `suppression.delete`).
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (privilege `Suppression`)
+- Authentication required: Admin API Key
+- Required privilege: `Suppression`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Email Suppression List screen did (answers `99999` without it)
+- The privilege check runs before the demo-mode refusal
 - Not available when `DEMO_MODE_ENABLED` is on
 - v1 REST alias: `POST /api/v1/global.suppression.delete`. Legacy access via `/api.php` is also supported
 :::
@@ -846,6 +873,7 @@ curl -X POST https://example.com/api.php \
 3: Scope=SystemWide missing when deleting by EmailAddress
 4: No valid SuppressionID supplied
 5: Single SuppressionID not found or outside the user groups this admin account may access
+99999: Not enough privileges (the admin account does not hold Suppression)
 ```
 
 :::
@@ -861,7 +889,8 @@ Lists every email suppression pattern. Patterns have no owner: they are **system
 `PatternType` is one of `REGEXP` (suppress when the address matches), `NOT REGEXP` (suppress when it does not match) or `STRPOS` (suppress when the address contains the pattern). `REGEXP` / `NOT REGEXP` patterns may be plain wildcards (`sales@*`, `*@competitor.com`) or full regular expressions (`^(support|help)@.*$`).
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (privilege `Suppression`)
+- Authentication required: Admin API Key
+- Required privilege: `Suppression`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Email Suppression List screen did (answers `99999` without it)
 - v1 REST alias: `GET /api/v1/suppression.patterns.get`. Legacy access via `/api.php` is also supported
 :::
 
@@ -907,6 +936,7 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
+99999: Not enough privileges (the admin account does not hold Suppression)
 ```
 
 :::
@@ -920,7 +950,9 @@ curl -X POST https://example.com/api.php \
 Creates a system-wide email suppression pattern. A `REGEXP` / `NOT REGEXP` pattern must compile; one that does not is refused rather than stored, because a stored broken pattern would make every later send-time check fail silently. The send-time pattern cache is cleared on success.
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (privilege `Suppression`)
+- Authentication required: Admin API Key
+- Required privilege: `Suppression`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Email Suppression List screen did (answers `99999` without it)
+- The privilege check runs before the demo-mode refusal
 - Not available when `DEMO_MODE_ENABLED` is on
 - v1 REST alias: `POST /api/v1/suppression.pattern.add`. Legacy access via `/api.php` is also supported
 :::
@@ -972,6 +1004,7 @@ curl -X POST https://example.com/api.php \
 3: PatternType is not one of REGEXP, NOT REGEXP, STRPOS
 4: Pattern is empty or does not compile as a regular expression
 5: Pattern could not be stored (see server log)
+99999: Not enough privileges (the admin account does not hold Suppression)
 ```
 
 :::
@@ -985,7 +1018,9 @@ curl -X POST https://example.com/api.php \
 Deletes one system-wide email suppression pattern. The send-time pattern cache is cleared on success.
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (privilege `Suppression`)
+- Authentication required: Admin API Key
+- Required privilege: `Suppression`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Email Suppression List screen did (answers `99999` without it)
+- The privilege check runs before the demo-mode refusal
 - Not available when `DEMO_MODE_ENABLED` is on
 - v1 REST alias: `POST /api/v1/suppression.pattern.delete`. Legacy access via `/api.php` is also supported
 :::
@@ -1030,6 +1065,7 @@ curl -X POST https://example.com/api.php \
 1: PatternID is missing
 2: Invalid PatternID
 3: Pattern not found
+99999: Not enough privileges (the admin account does not hold Suppression)
 ```
 
 :::

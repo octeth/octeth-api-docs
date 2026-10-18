@@ -147,6 +147,16 @@ The check runs first, so it also applies to `admin.senderdomains.health.get` wit
 
 **Who needs to act:** an integration that calls a plugin command with the key or session of a sub-admin who does not hold `Settings`. Grant that account `Settings`, or use a key that has it.
 
+### Email suppression (privilege check)
+
+#### `Suppression` is checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+
+`global.suppression.browse`, `global.suppression.search`, `global.suppression.stats`, `global.suppression.delete`, `suppression.patterns.get`, `suppression.pattern.add` and `suppression.pattern.delete` relied on the registry's `Suppression` tag, which is enforced only when `ADMIN_API_ENFORCE_PRIVILEGES` is on, so with it off any sub-admin session could unblock an address for every account or add a pattern that blocks thousands. Each handler now checks `Suppression` itself and answers `99999` (`Not enough privileges`) without it, as the newer staff commands do (#3521, #3522, #3525) (octeth/oempro#3559). `suppression.import` does the same under admin authentication only, where it writes system-wide rows. The classic Email Suppression List screen always required `Suppression`, so the API now matches what the screen allowed. In `global.suppression.delete`, `suppression.pattern.add` and `suppression.pattern.delete` the check runs before the demo-mode refusal.
+
+**Not affected:** the master admin, the master `ADMIN_API_KEY`, every administrator without `Options.AccessLimited`, or holding `Suppression`, and every `suppression.import` call made with a user key or session.
+
+**Who needs to act:** an integration that calls one of these commands with the key or session of a sub-admin who does not hold `Suppression`. Grant that account `Suppression`, or use a key that has it.
+
 ### Admin area
 
 #### The legacy Users section is removed
@@ -643,6 +653,30 @@ The old enable and disable links changed a plugin's state on a plain GET, so a b
 - **Audited.** Every enable and disable writes a staff audit row naming the plugin.
 - **No browse link.** The legacy page linked to the plugin catalogue on octeth.com. The new screen has no install, upload or update check.
 
+#### The legacy admin Email Suppression List is removed
+
+The legacy admin **Email Suppression List** page (`/app/admin/suppression/`), an item of the classic **Preferences** menu, is removed. System-wide suppressions, the search across every account and the suppression patterns are managed on the [Email suppression](/v6.0.2/new-user-interface/staff-email-suppression) screen of the new **Deliverability** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/deliverability/suppression`), which needs the `Suppression` privilege, as the page did (octeth/oempro#3559). The classic menu item now shows only to administrators holding `Suppression`; before, it showed to those holding `Settings` and then refused the ones without `Suppression`.
+
+**The old URL keeps working.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/suppression/`, anything under it | 302 to `/<staff>/staff/deliverability/suppression` |
+| `/app/admin/suppression/?EmailAddress=<term>` | 302 to the same screen searching for `<term>`, with a `%` in it turned into `*` |
+
+A POST to these URLs, including the old search, add, delete and pattern forms, is refused: nothing is added or deleted, and the answer is a short page that links to the new screen.
+
+**What changed on the way:**
+
+- **The list is paged.** The legacy page showed only search results, at most 1,000 and no paging. The new screen lists the system-wide suppressions page by page, filtered by source, and a search pages through every match.
+- **Search is exact by default.** The legacy search box was a raw `LIKE` pattern, so `%` and `_` in it matched anything. The new search matches the exact address, case-insensitive, and takes `*` as the only wildcard, for example `*@example.com`. A search covers every account and scope within the administrator's user groups, as before, and shows the scope and the account of each row.
+- **Delete works on selected rows** as well as one at a time, asks first, says that removing a system-wide row unblocks the address for every account, and reports the rows it could not remove.
+- **Adding reports what happened:** how many addresses were added, how many were already suppressed system-wide and how many were not valid. The legacy page counted only the added ones and logged rejected addresses.
+- **The counts show all five sources** over every account and scope: Administrator, User, Hard Bounced, SPAM complaint and Unsubscribe.
+- **Pattern changes reach running workers after a restart.** Sending workers read the patterns when they start, which was already true; the Patterns tab now says so.
+- **Audited.** Every add and delete, of addresses or patterns, writes a staff audit row with counts and the pattern type, never an address or a pattern.
+- **No addresses in the interface's logs.** Search terms, addresses and patterns are masked in the new interface's API call log and debug console.
+
 #### The legacy admin overview points to the new dashboard
 
 The legacy admin overview (`/app/admin/overview/`) is still where the legacy admin login lands, but it no longer shows the reports. It shows a "The dashboard moved" card with a link to the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) of the new interface (`/<UI_STAFF_PREFIX>/staff/dashboard`), the setup checklist (admins with the Settings privilege and no user group limit) and the quick links (admins with `Admin.Dashboard.Links`).
@@ -895,6 +929,16 @@ A read-only command that lists what still sends through a delivery server: user 
 #### `admin.plugins.get` can report compatibility
 
 A new optional parameter `IncludeCompatibility=true` adds `Compatible` to every plugin: whether this install's version meets the plugin's `MinOemproVersion`, by the comparison the classic Plugins page used. Without the parameter the response is byte-identical to before (octeth/oempro#3553). `admin.plugin.enable` still does not check the version.
+
+### Email suppression import
+
+#### `suppression.import` can return explicit duplicate and failed-write counts
+
+A new opt-in `ReturnDetailedCounts=true` parameter adds `TotalAlreadySuppressed`, `TotalWhitelisted` and `TotalWriteFailed` to the `suppression.import` response, so an integration no longer has to treat "submitted minus imported minus malformed" as already suppressed, which counted an address whose insert failed as suppressed although it can still be sent to (octeth/oempro#3559). Without the parameter the response is unchanged. The staff Email suppression screen sends it and shows unsaved addresses as a warning.
+
+`SuppressionList::Add()`, which every suppression writer calls, now returns `0` when its insert fails instead of whatever the connection's last insert id was, so a failed write can no longer be counted in `TotalImported`.
+
+**Who needs to act:** nobody. Send `ReturnDetailedCounts=true` if you reconcile the counters against what you submitted.
 
 ## Additions that need operator attention
 

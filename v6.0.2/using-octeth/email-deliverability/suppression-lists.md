@@ -134,17 +134,18 @@ For more details about unsubscription behavior and list-specific opt-out setting
 
 ### Manual Addition: Administrator Interface
 
-Administrators can add email addresses to the system-level suppression list through the admin panel.
+Administrators add email addresses to the system-level suppression list on the staff **Email suppression** screen of the new interface.
 
-1. Log in to the **Admin Area**.
-2. Navigate to **Suppression** in the main menu.
-3. Select the **Add** tab.
-4. Enter one or more email addresses in the text area, one address per line.
-5. Click the **Add** button.
+1. In the staff sidebar, click **Deliverability**, then **Email suppression**.
+2. Click **Add addresses**.
+3. Paste one or more email addresses, one per line, or separated by commas or spaces.
+4. Click **Add to suppression list**.
 
-[[SCREENSHOT: The Admin Area Suppression page showing the Add tab with a text area for entering email addresses]]
+[[SCREENSHOT: The staff Email suppression screen with the Add email addresses dialog open]]
 
 All addresses added through the admin interface are created as system-level suppressions with the source recorded as **Administrator**.
+
+The message after it says how many addresses were added, how many were already suppressed and how many were not valid. See [The Staff Email Suppression Screen](/v6.0.2/new-user-interface/staff-email-suppression).
 
 ### Manual Addition: User Interface
 
@@ -196,51 +197,38 @@ In the pattern field, you can use `*` as a wildcard character. Octeth automatica
 
 ### Managing Smart Suppression Patterns
 
-Smart Suppression patterns are managed by administrators through the admin panel.
+Smart Suppression patterns are managed by administrators on the **Patterns** tab of the staff **Email suppression** screen (**Deliverability > Email suppression**).
 
 **To add a pattern:**
 
-1. Log in to the **Admin Area**.
-2. Navigate to **Suppression** in the main menu.
-3. Select the **Smart Suppression** tab.
-4. Enter a **Description** — a clear label explaining what the pattern blocks (e.g., "Block all sales@ addresses").
-5. Enter the **Pattern** — the pattern expression to match against email addresses.
-6. Select the **Pattern Type** — choose REGEXP, NOT REGEXP, or STRPOS.
-7. Click the **Add Pattern** button.
+1. Click **Add pattern**.
+2. Enter a **Description**: a clear label explaining what the pattern blocks (for example "Block all sales@ addresses").
+3. Choose the **Type**: **Matches** (REGEXP), **Does not match** (NOT REGEXP) or **Contains** (STRPOS).
+4. Enter the **Pattern**.
+5. Click **Add pattern**.
 
-[[SCREENSHOT: The Admin Area Suppression page showing the Smart Suppression tab with the pattern form and active patterns table]]
+[[SCREENSHOT: The Patterns tab of the staff Email suppression screen]]
 
-**To remove a pattern:**
-
-1. Navigate to the **Smart Suppression** tab.
-2. Find the pattern in the **Active Suppression Patterns** table.
-3. Click the **×** button next to the pattern you want to remove.
-4. Confirm the deletion when prompted.
+**To remove a pattern:** click the trash icon of its row, then confirm.
 
 ::: warning
-Smart Suppression patterns apply globally to all users and all lists on the system. When you add a pattern, it immediately affects all future email deliveries. Removing a pattern takes effect immediately as well.
+Smart Suppression patterns apply to all users and all lists on the system. Sending workers read the patterns when they start, so a running worker applies an added or removed pattern only after it restarts.
 :::
 
 ## Searching and Viewing Suppressed Addresses
 
 ### Administrator View
 
-Administrators can search the system-level suppression list through the admin panel.
+Administrators search every account's suppressions on the staff **Email suppression** screen (**Deliverability > Email suppression**). Type the address in the search box. The search matches the exact address; use `*` as a wildcard, for example `*@example.com`.
 
-1. Log in to the **Admin Area**.
-2. Navigate to **Suppression** in the main menu.
-3. Select the **Search** tab.
-4. Enter an email address (or part of one) in the search field.
-5. Click **Search**.
+The results show each matching entry with the email address, its scope (system, account or list), the account it belongs to, the suppression source and the reason. Without a search, the screen lists the system-wide suppressions page by page, filtered by source.
 
-The results show each matching entry with the email address, the associated user and list IDs, the suppression source (Administrator, User, Hard Bounced, or SPAM complaint), and a delete button.
+[[SCREENSHOT: The staff Email suppression screen showing search results with the Scope and Account columns]]
 
-[[SCREENSHOT: The Admin Area Suppression page showing the Search tab with search results displaying email address, user-list ID, source, and delete button]]
+The tiles at the top of the screen show:
 
-The left sidebar on the admin suppression page also shows:
-
-- **Total suppressed email addresses** — The total count across all scopes
-- **Breakdown by source** — The percentage of suppressions from each source (Administrator, User, Hard Bounced, SPAM complaint)
+- **All suppressions**: the total count across all accounts and scopes
+- **One tile per source**: Administrator, User, Hard Bounced, SPAM complaint and Unsubscribe, each with its share of the total
 
 ### User View
 
@@ -274,10 +262,9 @@ Use the `%` character as a wildcard when searching. For example, searching for `
 
 Administrators can remove individual entries from the suppression list:
 
-1. Navigate to **Suppression** > **Search** tab in the **Admin Area**.
-2. Search for the email address.
-3. Click the **X** button next to the entry you want to remove.
-4. Confirm the deletion when prompted.
+1. Open **Deliverability > Email suppression** in the staff sidebar and search for the email address.
+2. Click the trash icon of the entry, or tick several entries and click **Remove**.
+3. Confirm. Removing a system-wide entry unblocks the address for every account.
 
 ### User Removal
 
@@ -515,9 +502,9 @@ curl -X POST "https://octeth.example.com/api.php" \
 
 If a subscriber shows an active subscription status but is not receiving emails, the email address may be on a suppression list.
 
-1. **Check the admin suppression list** — Log in to the **Admin Area**, navigate to **Suppression** > **Search** tab, and search for the email address.
+1. **Check every suppression list**: in the staff sidebar, open **Deliverability > Email suppression** and search for the email address. The search covers system-wide, account and list suppressions.
 2. **Check the user suppression list** — Log in to the **User Dashboard**, navigate to **Suppression List**, and search for the address.
-3. **Check Smart Suppression patterns** — Review the **Smart Suppression** tab to see if any active patterns match the address.
+3. **Check Smart Suppression patterns**: review the **Patterns** tab of the same screen to see whether a pattern matches the address.
 4. **Check the segment filter** — If you are using segments, verify that the segment does not include a suppression status filter that excludes the subscriber.
 
 ### A Removed Address Keeps Getting Re-Suppressed
@@ -526,7 +513,7 @@ If you remove an address from the suppression list but it gets added back:
 
 1. **Check for ongoing bounces** — The address may still be bouncing. If the underlying delivery problem is not resolved, the bounce processor will re-add the address after each failed attempt.
 2. **Check for new complaints** — The recipient may continue to file spam complaints. Each new complaint triggers a new suppression entry.
-3. **Check Smart Suppression patterns** — A pattern may be matching the address. Even if the exact address is removed from the suppression list, a matching pattern will still block delivery.
+3. **Check Smart Suppression patterns**: review the **Patterns** tab of the same screen to see whether a pattern matches the address.
 
 ### Users Cannot Delete Certain Suppressed Addresses
 

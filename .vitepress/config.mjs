@@ -1127,6 +1127,7 @@ export default defineConfig({
                         {text: 'Managing SSO Sources in the Staff Area', link: '/v6.0.2/new-user-interface/staff-sso'},
                         {text: 'Staff Integrations', link: '/v6.0.2/new-user-interface/staff-integrations'},
                         {text: 'The Staff Plugins Screen', link: '/v6.0.2/new-user-interface/staff-plugins'},
+                        {text: 'The Staff Email Suppression Screen', link: '/v6.0.2/new-user-interface/staff-email-suppression'},
                         {text: 'Your Staff Profile', link: '/v6.0.2/new-user-interface/staff-profile'},
                         {text: 'The Staff System Screen', link: '/v6.0.2/new-user-interface/staff-system'},
                         {text: 'The Staff Security Screen', link: '/v6.0.2/new-user-interface/staff-security'},
