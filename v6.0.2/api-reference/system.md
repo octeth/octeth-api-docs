@@ -626,7 +626,7 @@ curl -X GET "https://example.com/api/v1/admin.system.check?AdminAPIKey=your-admi
 <Badge type="tip" text="New in v5.9.6" />
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (privilege `System`)
+- Authentication required: Admin API Key or admin session (privilege `System`)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -635,17 +635,21 @@ Returns the version and runtime facts the About section of the staff System scre
 
 `PHPSettings` reports an empty ini value as the string `"false"`, exactly as the About page renders it.
 
+<Badge type="tip" text="New in v6.0.2" /> Pass `IncludeComponents` to add `Components`: the version of every runtime component, as a list of `Name`, `Role` and `Version`, always in this order: MySQL, ClickHouse, RabbitMQ, Redis, PHP for the app, API and workers, and PHP for the system backend and the send engine. Each lookup has a two-second timeout. A component that cannot be reached, or that answers with something that is not a version, keeps its row with `Version` set to `""`, and the command still succeeds. Without the parameter the response is unchanged.
+
 **Request Body Parameters:**
 
-| Parameter   | Type   | Required | Description                          |
-|-------------|--------|----------|--------------------------------------|
-| Command     | String | Yes      | API command: `admin.system.info`     |
-| AdminAPIKey | String | Yes      | Admin API key                        |
+| Parameter         | Type    | Required | Description                          |
+|-------------------|---------|----------|--------------------------------------|
+| Command           | String  | Yes      | API command: `admin.system.info`     |
+| SessionID         | String  | No       | Admin session ID obtained from login |
+| AdminAPIKey       | String  | No       | Admin API key                        |
+| IncludeComponents | Boolean | No       | Adds the `Components` list. Possible values that turn it on: `true`, `1`, `yes`, `on` (case-insensitive). Any other value, or leaving it out, returns the response without `Components` |
 
 ::: code-group
 
 ```bash [Example Request]
-curl -X GET "https://example.com/api/v1/admin.system.info?AdminAPIKey=your-admin-api-key"
+curl -X GET "https://example.com/api/v1/admin.system.info?AdminAPIKey=your-admin-api-key&IncludeComponents=true"
 ```
 
 ```json [Success Response]
@@ -653,7 +657,7 @@ curl -X GET "https://example.com/api/v1/admin.system.info?AdminAPIKey=your-admin
   "Success": true,
   "ErrorCode": 0,
   "ErrorText": "",
-  "ProductVersion": "6.0.0",
+  "ProductVersion": "6.0.2",
   "PHPVersion": "5.6.40",
   "PHPSettings": {
     "memory_limit": "512M",
@@ -663,7 +667,15 @@ curl -X GET "https://example.com/api/v1/admin.system.info?AdminAPIKey=your-admin
     "register_globals": "false",
     "magic_quotes_runtime": "false"
   },
-  "MySQLVersion": "8.0.41"
+  "MySQLVersion": "8.0.41",
+  "Components": [
+    { "Name": "MySQL", "Role": "Database", "Version": "8.0.41" },
+    { "Name": "ClickHouse", "Role": "Events and reports", "Version": "22.8.21.38" },
+    { "Name": "RabbitMQ", "Role": "Message queue", "Version": "3.8.8" },
+    { "Name": "Redis", "Role": "Cache and sessions", "Version": "6.0.8" },
+    { "Name": "PHP", "Role": "App, API and workers", "Version": "5.6.40" },
+    { "Name": "PHP", "Role": "System backend and send engine", "Version": "8.1.34" }
+  ]
 }
 ```
 
@@ -681,6 +693,7 @@ curl -X GET "https://example.com/api/v1/admin.system.info?AdminAPIKey=your-admin
 ```
 
 :::
+
 ## Get the License State
 
 <Badge type="info" text="GET" /> `/api/v1/admin.license.get`

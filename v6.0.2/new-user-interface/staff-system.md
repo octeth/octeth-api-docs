@@ -14,7 +14,7 @@ The screen has three sections in a menu on the left.
 
 ## About
 
-- **Version**: the product, the installed version, and the PHP and MySQL versions.
+- **Version**: the product and the installed version, and the version of every component the install runs on: MySQL, ClickHouse, RabbitMQ, Redis, and each PHP version with what it runs (the app, API and workers; the system backend and send engine; the new interface). A component that cannot be reached shows Unavailable.
 - **License**: whether the license is valid and which limits apply. Click **Open License** for the details.
 - **Copyright**: the copyright line and, when one is set, a link to the license terms.
 
