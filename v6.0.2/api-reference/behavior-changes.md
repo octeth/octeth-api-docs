@@ -50,6 +50,29 @@ There is no opt-in flag, because the commands had no working data source left.
 
 - `admin.subscriber.search` now limits an administrator by the same rule as every other staff screen and admin command: only when `AccessLimited` is on is the search held to `AccessAllowedUserGroupIDs`. Before, it read `AccessAllowedUserGroupIDs` alone, so an administrator with `AccessLimited` off but group ids left over from an earlier limit was still restricted to those groups. That administrator now sees every list. An administrator with `AccessLimited` on, the master Admin API Key and administrators without group ids get the same lists as before. There is no opt-in flag, because the old rule disagreed with what the administrator's settings say (octeth/oempro#3496).
 
+### Sub-admin accounts (escalation guard)
+
+#### A sub-admin can no longer grant access it does not hold
+
+Until this release a sub-administrator holding `SubAdmins` could create an account with every privilege, add privileges to their own account, or set a new password on a more privileged sub-admin and sign in as them (octeth/oempro#3525). The `admin.subadmin.*` commands now refuse that for any caller whose account has `Options.AccessLimited`:
+
+| Code | Refused when | Commands |
+|---|---|---|
+| `5101` | The target is the caller's own account. Its name, email and password are changed with `admin.update` (Your profile) | `.update`, `.delete`, `.apikey.regenerate`, `.apikey.revoke`, `.2fa.reset`, `.signins.revoke` |
+| `5102` | The target holds a privilege the caller lacks, or reaches a user group the caller cannot reach (every group included) | the same six |
+| `5103` | `Permissions.AccessOptions` names a privilege the caller does not hold | `.create`, `.update` |
+| `5104` | The caller is limited to some user groups and `Permissions.AccessAllowedUserGroupIDs` is empty (every group) or names a group outside its own | `.create`, `.update` |
+
+`admin.subadmin.delete` checks every listed id first and deletes nothing when one is refused; the refusal names it in `RefusedAdminID`. Before, a restricted caller's own id was skipped and reported in `SkippedAdminIDs`.
+
+**Not affected:** the master admin, the master `ADMIN_API_KEY`, and every administrator without `Options.AccessLimited`. Their responses are unchanged. `admin.subadmins.get` and `admin.subadmin.get` stay readable to any `SubAdmins` holder.
+
+**Who needs to act:** an integration that uses a sub-admin's own API key holding `SubAdmins` to create or edit accounts with wider access. Use the master key for that, or give the integration's account the privileges and user groups it hands out.
+
+#### `SubAdmins` is checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+
+The `admin.subadmin.*` commands relied on the registry's privilege tag, which is enforced only when `ADMIN_API_ENFORCE_PRIVILEGES` is on, so with it off any sub-admin session could call them. Each handler now checks `SubAdmins` itself and answers `99999` without it, as the newer staff commands do (#3521, #3522). The legacy Sub Admin Accounts screen always required `SubAdmins`, so the API now matches what the screen allowed.
+
 ### Admin area
 
 #### The legacy Users section is removed
@@ -212,6 +235,27 @@ A POST to it, including the old `x_tail` and `x_truncate` calls, is refused: not
 The classic **Settings** sidebar's **Logs** item (formerly **Log Observer**) opens the new screen. The top-right **Settings** link no longer considers the Log Observer as a landing page, which changes nothing in practice, because every section before it needs `Settings` too.
 
 There is no opt-in flag: the page is removed, and its URL answers as above. The four new commands are listed under "Additions" below.
+
+#### The legacy admin Sub Admin Accounts section is removed
+
+The legacy admin **Sub Admin Accounts** section (`/app/admin/subadmins/`), an item of the classic **Settings** sidebar, is removed. Sub-admin accounts are managed on the new [Sub-admins screen](/v6.0.2/new-user-interface/staff-sub-admins) of the new interface's staff area (`/<UI_STAFF_PREFIX>/staff/sub-admins`), which needs the `SubAdmins` privilege, as the section did (octeth/oempro#3525).
+
+**The old URLs keep working.** The section is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/subadmins/`, anything under it not listed below | 302 to `/<staff>/staff/sub-admins` |
+| `/app/admin/subadmins/create/` | 302 to `/<staff>/staff/sub-admins/new` |
+| `/app/admin/subadmins/edit/<id>` | 302 to `/<staff>/staff/sub-admins/<id>/edit` |
+
+A POST to any of these URLs, including the old create, edit, bulk delete and API key forms, is refused: nothing is saved, and the answer is a short page that links to the new screen.
+
+**What changed on the way:**
+
+- **No JSON editor.** Privileges are checkboxes grouped by area, each with a one-line description, and user groups are a list of checkboxes where none ticked means every group.
+- **The API key is shown once.** The legacy edit page printed the stored key on every visit. The new screen shows a key only right after it is issued or rotated, and "Issued" afterwards.
+- **New per-account actions.** Reset two-factor authentication for a sub-admin who lost their authenticator, and sign a sub-admin out of every remembered browser without revoking every administrator's.
+- **A deleted user group stays visible.** A stored group id that no longer exists is listed as "Deleted group #N" and kept on save unless you untick it, so saving never widens an account to every group.
 
 #### The legacy admin overview points to the new dashboard
 
@@ -467,6 +511,13 @@ Four new admin commands, all additive and all needing the `Settings` privilege, 
 - `admin.log.tail` takes `File` and `Lines` (1 to 1000, default 100) and returns the last lines as text, reading at most 1 MB from the end of the file. Rate limit 100 requests per 60 seconds.
 - `admin.log.read` takes `File`, `Offset` and `Length` (at most 1 MB) and returns that chunk base64-encoded with `Offset`, `Length`, `Size` and `EOF`, so a file of any size downloads chunk by chunk. Rate limit 2000 requests per 60 seconds.
 - `admin.log.truncate` takes `File` and empties it. It is logged with the administrator's ID and refused in demo mode. Rate limit 10 requests per 300 seconds.
+
+### Sub-admins screen commands
+
+Two new admin commands, both needing the `SubAdmins` privilege, which each one checks even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, and both applying the escalation guard above (`5101`, `5102`) (octeth/oempro#3525):
+
+- `admin.subadmin.2fa.reset` takes `AdminID` and turns that sub-admin's two-factor authentication off (secret, recovery key and enabled flag cleared). Error codes: `1` missing or invalid id, `2` not found, `3` not an access-limited sub-admin, `4` not saved. Refused in demo mode.
+- `admin.subadmin.signins.revoke` takes `AdminID` and revokes that sub-admin's remembered sign-ins of the classic admin area, returning `Revoked`. Open sessions stay open until they end. Error codes as above, `4` meaning the tokens could not be revoked. Refused in demo mode.
 
 ### AI assistant connector
 

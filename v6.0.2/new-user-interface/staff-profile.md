@@ -70,8 +70,8 @@ What this section shows depends on your administrator account.
 
 - **The main administrator** (the first administrator account of the install, which the master Admin API Key signs in as) sees the master Admin API Key, masked. Click **Reveal** to show it and **Copy** to copy it, then **Hide** to mask it again. Each reveal is recorded in the staff audit log. The key itself is not. The key is the `ADMIN_API_KEY` value in the install's `.oempro_env` file, so it is changed there, on the server.
 - **Other administrators without permission limits** see no key. The master Admin API Key is the `ADMIN_API_KEY` value in the install's `.oempro_env` file, which only the server operator can read.
-- **Sub-administrators with permission limits** see whether an API key of their own is issued. That key is issued, rotated and revoked under **Sub Admin Accounts** in the classic admin area, it is shown only once, when it is issued, and it carries only the sub-administrator's own permissions and user groups.
+- **Sub-administrators with permission limits** see whether an API key of their own is issued. That key is issued, rotated and revoked on the [Sub-admins screen](./staff-sub-admins) by an administrator with wider access than theirs, it is shown only once, when it is issued, and it carries only the sub-administrator's own permissions and user groups. Sub-administrators who hold the SubAdmins permission get an **Open Sub-admins** link here.
 
 ::: tip
-The master key acts as the main administrator with every permission. Keep it out of shared documents and chat. If you are not the main administrator and need it, ask the person who runs the server, or issue a key of your own under **Sub Admin Accounts**.
+The master key acts as the main administrator with every permission. Keep it out of shared documents and chat. If you are not the main administrator and need it, ask the person who runs the server, or ask an administrator with wider access to issue a key of your own on the Sub-admins screen.
 :::

@@ -3694,12 +3694,11 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
-- Required privilege: `SubAdmins`
+- Required privilege: `SubAdmins`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy Sub Admin Accounts screen did
 - v1 REST alias: `GET /api/v1/admin.subadmins.get`. Legacy access via `/api.php` is also supported
 :::
 
-Lists every administrator account other than the master admin (AdminID 1). Each row carries only
-`AdminID`, `Name`, `Username`, `EmailAddress`, `2FA_Enabled`, `Options` and `APIKeyIssued`.
+Lists every administrator account other than the master admin (AdminID 1). Each row carries only `AdminID`, `Name`, `Username`, `EmailAddress`, `2FA_Enabled`, `Options` and `APIKeyIssued`. Any administrator holding `SubAdmins` sees every row, including accounts with wider access than their own: the escalation guard applies to the writes only.
 
 **Request Body Parameters:**
 
@@ -3754,7 +3753,7 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
-99999: Not enough privileges
+99999: Not enough privileges (the caller lacks SubAdmins)
 ```
 
 :::
@@ -3765,12 +3764,11 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
-- Required privilege: `SubAdmins`
+- Required privilege: `SubAdmins`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
 - v1 REST alias: `GET /api/v1/admin.subadmin.get`. Legacy access via `/api.php` is also supported
 :::
 
-Returns one sub-admin account with the same projection as `admin.subadmins.get`. AdminID 1 is refused:
-the master admin is not a sub-admin and is read through `admin.get` by its own credentials.
+Returns one sub-admin account with the same projection as `admin.subadmins.get`. AdminID 1 is refused: the master admin is not a sub-admin and is read through `admin.get` by its own credentials.
 
 **Request Body Parameters:**
 
@@ -3827,6 +3825,7 @@ curl -X POST https://example.com/api.php \
 1: AdminID is required
 2: AdminID does not refer to a sub-admin account (AdminID 1 or not a positive integer)
 3: Sub-admin account not found
+99999: Not enough privileges (the caller lacks SubAdmins)
 ```
 
 :::
@@ -3837,17 +3836,13 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
-- Required privilege: `SubAdmins`
+- Required privilege: `SubAdmins`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
 - v1 REST alias: `POST /api/v1/admin.subadmin.create`. Legacy access via `/api.php` is also supported
 :::
 
-Creates an access-limited sub-admin. The same validation the admin Sub Admin Accounts screen applies runs
-here: email and username must be unique across all administrators, `Username` may contain letters,
-digits, underscores and dashes, and `Permissions` must be an object with two lists,
-`AccessAllowedUserGroupIDs` (positive integers; empty means every user group) and `AccessOptions` (values
-from `admin.privileges.get`). `Permissions` may be sent as a JSON object in a JSON body or as a JSON
-string in a form-encoded body. On a validation failure `ErrorCode` is the list of every failed rule.
-Disabled in demo mode.
+Creates an access-limited sub-admin. The same validation the staff Sub-admins screen applies runs here: email and username must be unique across all administrators, `Username` may contain letters, digits, underscores and dashes, and `Permissions` must be an object with two lists, `AccessAllowedUserGroupIDs` (positive integers; empty means every user group) and `AccessOptions` (values from `admin.privileges.get`). `Permissions` may be sent as a JSON object in a JSON body or as a JSON string in a form-encoded body. On a validation failure `ErrorCode` is the list of every failed rule. Disabled in demo mode.
+
+A caller with `Options.AccessLimited` cannot grant more than it holds: every value of `AccessOptions` must be one of its own privileges (`5103`), and a caller limited to some user groups must list at least one group, each of them one of its own (`5104`). The master admin and every admin without `Options.AccessLimited` can grant anything.
 
 **Request Body Parameters:**
 
@@ -3903,8 +3898,8 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": [8, 13],
-  "ErrorText": "This email address is in use by another administrator. Permissions contain a privilege that does not exist."
+  "ErrorCode": 5103,
+  "ErrorText": "You cannot grant a privilege you do not hold yourself."
 }
 ```
 
@@ -3924,6 +3919,9 @@ curl -X POST https://example.com/api.php \
 12: AccessOptions is missing or not a list
 13: AccessOptions contains a privilege that does not exist
 20: The sub-admin account could not be created
+5103: A restricted caller asked for a privilege it does not hold
+5104: A caller limited to some user groups asked for every group (an empty list) or a group outside its own
+99999: Not enough privileges (the caller lacks SubAdmins)
 NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 ```
 
@@ -3935,15 +3933,13 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
-- Required privilege: `SubAdmins`
+- Required privilege: `SubAdmins`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
 - v1 REST alias: `POST /api/v1/admin.subadmin.update`. Legacy access via `/api.php` is also supported
 :::
 
-Updates the supplied fields of an access-limited sub-admin; omitted fields are left unchanged. The
-validation rules and error codes 1 to 13 are those of `admin.subadmin.create`, applied to the fields
-present. Only accounts whose `Options.AccessLimited` is true can be edited, so the master admin is refused.
-The account's two-factor authentication is never touched by this command (the admin screen used to clear
-it on every save; that was a defect and is fixed). Disabled in demo mode.
+Updates the supplied fields of an access-limited sub-admin; omitted fields are left unchanged. The validation rules and error codes 1 to 13 are those of `admin.subadmin.create`, applied to the fields present. Only accounts whose `Options.AccessLimited` is true can be edited, so the master admin is refused. The account's two-factor authentication is never touched by this command. A new password, or a new username, signs the sub-admin out of every open session and remembered browser. Disabled in demo mode.
+
+A caller with `Options.AccessLimited` cannot update its own account (`5101`, its name, email and password are changed with `admin.update`), cannot update an account holding a privilege or user group it lacks (`5102`), which covers setting that account's password, and cannot grant more than it holds (`5103`, `5104`, as for `admin.subadmin.create`).
 
 **Request Body Parameters:**
 
@@ -3997,8 +3993,8 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": 22,
-  "ErrorText": "This admin account cannot be edited."
+  "ErrorCode": 5102,
+  "ErrorText": "This sub-admin holds privileges or user groups outside your own, so you cannot change it."
 }
 ```
 
@@ -4010,6 +4006,11 @@ curl -X POST https://example.com/api.php \
 22: This admin account cannot be edited (not AccessLimited, e.g. the master admin)
 23: Nothing to update (pass at least one of Name, EmailAddress, Username, Password, Permissions)
 24: The sub-admin account could not be updated (nothing changed, retry)
+5101: A restricted caller targeted its own account
+5102: A restricted caller targeted an account holding privileges or user groups outside its own
+5103: A restricted caller asked for a privilege it does not hold
+5104: A caller limited to some user groups asked for every group (an empty list) or a group outside its own
+99999: Not enough privileges (the caller lacks SubAdmins)
 NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 ```
 
@@ -4021,13 +4022,13 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
-- Required privilege: `SubAdmins`
+- Required privilege: `SubAdmins`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
 - v1 REST alias: `POST /api/v1/admin.subadmin.delete`. Legacy access via `/api.php` is also supported
 :::
 
-Deletes one or more sub-admin accounts. Ids that do not exist, accounts that are not access-limited (the
-master admin) and the calling admin's own account are skipped and reported in `SkippedAdminIDs`, so the
-call is idempotent and can never remove the master admin or the caller. Disabled in demo mode.
+Deletes one or more sub-admin accounts. Ids that do not exist, accounts that are not access-limited (the master admin) and the calling admin's own account are skipped and reported in `SkippedAdminIDs`, so the call is idempotent and can never remove the master admin or the caller. Disabled in demo mode.
+
+A caller with `Options.AccessLimited` is refused before anything is deleted when the list holds its own account (`5101`) or an account holding a privilege or user group it lacks (`5102`). `RefusedAdminID` names the first refused id. An unrestricted caller's own id is still skipped, as before.
 
 **Request Body Parameters:**
 
@@ -4063,14 +4064,18 @@ curl -X POST https://example.com/api.php \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": 1,
-  "ErrorText": "AdminIDs is required: a comma-separated list of sub-admin ids."
+  "ErrorCode": 5102,
+  "ErrorText": "This sub-admin holds privileges or user groups outside your own, so you cannot change it.",
+  "RefusedAdminID": 3
 }
 ```
 
 ```txt [Error Codes]
 0: Success
 1: AdminIDs is required
+5101: A restricted caller listed its own account (nothing was deleted)
+5102: A restricted caller listed an account holding privileges or user groups outside its own (nothing was deleted)
+99999: Not enough privileges (the caller lacks SubAdmins)
 NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 ```
 
@@ -4082,16 +4087,13 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
-- Required privilege: `SubAdmins`
+- Required privilege: `SubAdmins`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
 - v1 REST alias: `POST /api/v1/admin.subadmin.apikey.regenerate`. Legacy access via `/api.php` is also supported
 :::
 
-Issues a per-sub-admin API key, or rotates the existing one. The key is returned exactly once, in this
-response; no other command ever returns it (`admin.get`, `admin.subadmin.get` and `admin.subadmins.get`
-only report `APIKeyIssued`). The previous key stops authenticating immediately. The key is accepted on the
-`AdminAPIKey` parameter and, when `ADMIN_API_ENFORCE_PRIVILEGES` is on, is limited to the account's
-`AccessOptions`. Only access-limited accounts can hold a key; the master admin uses `ADMIN_API_KEY`.
-Disabled in demo mode.
+Issues a per-sub-admin API key, or rotates the existing one. The key is returned exactly once, in this response; no other command ever returns it (`admin.get`, `admin.subadmin.get` and `admin.subadmins.get` only report `APIKeyIssued`). The previous key stops authenticating immediately. The key is accepted on the `AdminAPIKey` parameter and, when `ADMIN_API_ENFORCE_PRIVILEGES` is on, is limited to the account's `AccessOptions`. Only access-limited accounts can hold a key; the master admin uses `ADMIN_API_KEY`. Disabled in demo mode.
+
+A caller with `Options.AccessLimited` cannot issue a key for its own account (`5101`) or for an account holding a privilege or user group it lacks (`5102`).
 
 **Request Body Parameters:**
 
@@ -4139,6 +4141,9 @@ curl -X POST https://example.com/api.php \
 3: Not an AccessLimited sub-admin account
 4: The API key could not be generated (no cryptographically strong random source)
 5: The API key change could not be saved (run the pending database migrations)
+5101: A restricted caller targeted its own account
+5102: A restricted caller targeted an account holding privileges or user groups outside its own
+99999: Not enough privileges (the caller lacks SubAdmins)
 NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 ```
 
@@ -4150,12 +4155,13 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
-- Required privilege: `SubAdmins`
+- Required privilege: `SubAdmins`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
 - v1 REST alias: `POST /api/v1/admin.subadmin.apikey.revoke`. Legacy access via `/api.php` is also supported
 :::
 
-Removes the per-sub-admin API key so it stops authenticating immediately. Revoking an account that has
-no key succeeds. Disabled in demo mode.
+Removes the per-sub-admin API key so it stops authenticating immediately. Revoking an account that has no key succeeds. Disabled in demo mode.
+
+A caller with `Options.AccessLimited` cannot revoke the key of its own account (`5101`) or of an account holding a privilege or user group it lacks (`5102`).
 
 **Request Body Parameters:**
 
@@ -4202,6 +4208,147 @@ curl -X POST https://example.com/api.php \
 2: Sub-admin account not found
 3: Not an AccessLimited sub-admin account
 4: The API key change could not be saved
+5101: A restricted caller targeted its own account
+5102: A restricted caller targeted an account holding privileges or user groups outside its own
+99999: Not enough privileges (the caller lacks SubAdmins)
+NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+```
+
+:::
+
+## Reset a Sub-Admin's Two-Factor Authentication
+
+<Badge type="info" text="POST" /> `/api/v1/admin.subadmin.2fa.reset`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `SubAdmins`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- v1 REST alias: `POST /api/v1/admin.subadmin.2fa.reset`. Legacy access via `/api.php` is also supported
+:::
+
+Turns two-factor authentication off for a sub-admin who lost their authenticator: the secret, the recovery key and the enabled flag are cleared, the same change `admin.2fa.disable` makes to the caller's own account. The sub-admin then signs in with their password alone and can turn two-factor authentication on again in Your profile. Resetting an account without two-factor authentication succeeds. Only access-limited accounts can be reset here; the master admin turns its own off with `admin.2fa.disable`. Disabled in demo mode.
+
+A caller with `Options.AccessLimited` cannot reset its own account (`5101`) or an account holding a privilege or user group it lacks (`5102`).
+
+**Request Body Parameters:**
+
+| Parameter   | Type    | Required | Description                                   |
+|-------------|---------|----------|-----------------------------------------------|
+| Command     | String  | Yes      | API command: `admin.subadmin.2fa.reset`       |
+| SessionID   | String  | No       | Session ID obtained from `admin.login`        |
+| AdminAPIKey | String  | No       | Admin API key (master or per-sub-admin)       |
+| AdminID     | Integer | Yes      | Sub-admin id                                  |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.subadmin.2fa.reset",
+    "AdminAPIKey": "your-admin-api-key",
+    "AdminID": 2
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "AdminID": 2,
+  "2FA_Enabled": "No"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 5101,
+  "ErrorText": "An admin account limited to some privileges cannot change its own sub-admin account. Edit your name, email and password in Your profile."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: AdminID is required (or not a positive whole number)
+2: Sub-admin account not found
+3: Not an AccessLimited sub-admin account
+4: Two-factor authentication could not be reset
+5101: A restricted caller targeted its own account
+5102: A restricted caller targeted an account holding privileges or user groups outside its own
+99999: Not enough privileges (the caller lacks SubAdmins)
+NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+```
+
+:::
+
+## Sign a Sub-Admin Out of Remembered Browsers
+
+<Badge type="info" text="POST" /> `/api/v1/admin.subadmin.signins.revoke`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `SubAdmins`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- v1 REST alias: `POST /api/v1/admin.subadmin.signins.revoke`. Legacy access via `/api.php` is also supported
+:::
+
+Revokes every remember-me token of one sub-admin, for a lost device or a departing teammate: each browser where they ticked **Remember me** on the classic admin sign-in page signs in with the form next time. Other administrators' tokens are untouched (`admin.remembertokens.revokeall` revokes everyone's). A session that is already open stays open until it ends; set a new password with `admin.subadmin.update` to end it as well. `Revoked` is the number of tokens removed, `0` when there were none. Disabled in demo mode.
+
+A caller with `Options.AccessLimited` cannot revoke its own account's tokens here (`5101`) or those of an account holding a privilege or user group it lacks (`5102`).
+
+**Request Body Parameters:**
+
+| Parameter   | Type    | Required | Description                                   |
+|-------------|---------|----------|-----------------------------------------------|
+| Command     | String  | Yes      | API command: `admin.subadmin.signins.revoke`  |
+| SessionID   | String  | No       | Session ID obtained from `admin.login`        |
+| AdminAPIKey | String  | No       | Admin API key (master or per-sub-admin)       |
+| AdminID     | Integer | Yes      | Sub-admin id                                  |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.subadmin.signins.revoke",
+    "AdminAPIKey": "your-admin-api-key",
+    "AdminID": 2
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "AdminID": 2,
+  "Revoked": 2
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Remembered sign-ins can only be revoked here for AccessLimited sub-admin accounts."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: AdminID is required (or not a positive whole number)
+2: Sub-admin account not found
+3: Not an AccessLimited sub-admin account
+4: The remembered sign-ins could not be revoked
+5101: A restricted caller targeted its own account
+5102: A restricted caller targeted an account holding privileges or user groups outside its own
+99999: Not enough privileges (the caller lacks SubAdmins)
 NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 ```
 

@@ -119,7 +119,7 @@ permissions reach the staff area within about a minute, and switching to a user 
 checks the current permissions. A switch to a user that is already running is not ended by
 a permission change.
 
-The staff dashboard, billing screens, Webhooks, User groups, Subscriber search, Your profile, System, Security and Logs follow the administrator permissions too:
+The staff dashboard, billing screens, Webhooks, User groups, Sub-admins, Subscriber search, Your profile, System, Security and Logs follow the administrator permissions too:
 
 | Staff screen | Permission it needs |
 |---|---|
@@ -128,6 +128,7 @@ The staff dashboard, billing screens, Webhooks, User groups, Subscriber search, 
 | Billing: Discounts, Catalog, Health, Settings | Settings |
 | Webhooks | Settings |
 | User groups | UserGroups. A sub-administrator limited to some user groups sees only those groups and cannot create, duplicate or delete one, see [Managing User Groups in the Staff Area](./staff-user-groups) |
+| Sub-admins | SubAdmins. A sub-administrator can grant only the permissions and user groups they hold, and cannot change their own account or a wider one, see [Managing Sub-admins in the Staff Area](./staff-sub-admins) |
 | Subscriber search | Search. A sub-administrator limited to some user groups finds subscribers only on the lists of accounts in those groups, see [Searching Subscribers in the Staff Area](./staff-subscriber-search) |
 | Your profile | Account. Its System emails section also needs Settings, and its Two-factor authentication section needs Security, see [Your Staff Profile](./staff-profile) |
 | System | System, see [The Staff System Screen](./staff-system) |
@@ -155,6 +156,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/dashboard` | The staff dashboard and landing page, see [The Staff Dashboard](./staff-dashboard) |
 | `/user/staff/customers` | The staff Users list, create and edit screens, visible to Octeth administrators only, see [Managing Users in the Staff Area](./staff-users) |
 | `/user/staff/user-groups` | The staff User groups list, create and edit screens, see [Managing User Groups in the Staff Area](./staff-user-groups) |
+| `/user/staff/sub-admins` | The staff Sub-admins list, create and edit screens, see [Managing Sub-admins in the Staff Area](./staff-sub-admins) |
 | `/user/staff/subscriber-search` | The staff Subscriber search, see [Searching Subscribers in the Staff Area](./staff-subscriber-search) |
 | `/user/staff/profile` | Your own administrator profile, see [Your Staff Profile](./staff-profile) |
 | `/user/staff/system` | The installed version, the license and the system health check, see [The Staff System Screen](./staff-system) |
@@ -163,7 +165,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/billing/...` | The staff billing screens, when billing is enabled |
 | `/ui/` | Images, stylesheets, the health check, and inbound payment webhooks |
 | `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants). `MCP_ENABLED=false` turns these off |
-| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About** and **Log Observer** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system` and `/user/staff/logs` |
+| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Sub Admin Accounts**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About** and **Log Observer** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/sub-admins`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system` and `/user/staff/logs` |
 
 ::: info
 These path names are settings, not fixed values. See the
