@@ -1058,7 +1058,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
-- Required privilege: `User.Edit`
+- Required privilege: `User.Edit`, checked by the command itself even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (since v6.0.2)
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
@@ -1088,6 +1088,7 @@ Health classes:
 | RecordsFrom | Integer | No | Offset (default 0) |
 | RecordsPerRequest | Integer | No | Page size (default 25, maximum 500) |
 | SummaryOnly | Boolean | No | `true` returns only `Success`, `ErrorCode` and `Summary` (the domain count per health class), without running the paged report. The other parameters are ignored in this mode and not validated. Added in v6.0.2 |
+| IncludeTrackingFallback | Boolean | No | `true` adds `TrackingFallbackHost` to every row of `Domains`: the host that Email Gateway and journey mail from that domain uses for tracking and unsubscribe links because the domain's own tracking host is not set up, or `null`. Only `Enabled` domains can have one. Ignored with `SummaryOnly`. Without it the rows are unchanged. Added in v6.0.2 |
 
 ::: code-group
 
@@ -1149,6 +1150,39 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Success Response (IncludeTrackingFallback=true)]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Filters": {"Status": "Enabled", "Health": null, "UserID": null, "Domain": null},
+  "RecordsFrom": 0,
+  "RecordsPerRequest": 50,
+  "Domains": [
+    {
+      "DomainID": 12,
+      "SenderDomain": "news.example.com",
+      "UserID": 42,
+      "Username": "acme",
+      "EmailAddress": "owner@example.com",
+      "Status": "Enabled",
+      "PendingReason": null,
+      "Health": "healthy",
+      "HealthLabel": "Healthy",
+      "StatusCheckFailCounter": 0,
+      "LastFailedCheckDate": null,
+      "LastVerifiedAt": "2026-10-17 04:10:02",
+      "CreatedAt": "2026-09-01 09:00:00",
+      "LastCheckPassed": true,
+      "FailingRecords": 0,
+      "LastDNSCheck": {"checked_at": "2026-10-17 04:10:02", "source": "scheduled", "records": []},
+      "TrackingFallbackHost": "track.mail.example.net"
+    }
+  ],
+  "TotalDomains": 1,
+  "Summary": {"healthy": 120, "failing": 3, "demoted": 1, "awaiting_approval": 4, "never_checked": 2, "other": 6, "Total": 136}
+}
+```
+
 ```json [Error Response]
 {
   "Success": false,
@@ -1157,15 +1191,26 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Error Response (no privilege)]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
 ```txt [Error Codes]
 1: Status is not a report status
 2: Health is not a health class
 3: UserID is not a positive integer
+99999: The administrator lacks the User.Edit privilege (also with SummaryOnly)
 ```
 
 :::
 
 `LastDNSCheck` is null until a domain is checked. `source` is `scheduled` (daily check), `manual` (the owner verified the domain) or `admin` (`admin.senderdomain.recheck`). `resolved` is null when the DNS server gave no answer. `PendingReason` is null unless the status is `Approval Pending`.
+
+Since v6.0.2 the command checks `User.Edit` itself, so an administrator without it is refused with `99999` even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, in both modes. The classic Sender Domain Health page always required `User.Edit`, and the staff Sender domain health report of the new interface calls this command with the administrator's own session.
 
 ## Re-check a Sender Domain (Admin) <Badge type="tip" text="New in v6.0.1" />
 
@@ -1173,7 +1218,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
-- Required privilege: `User.Edit`
+- Required privilege: `User.Edit`, checked by the command itself even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (since v6.0.2)
 - Rate limit: 60 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -1185,6 +1230,8 @@ A forced check only records the result:
 - It never adds a strike and never changes the domain's status. A demoted domain whose check passes stays `Approval Pending` until an administrator approves it on the user's Sender Domains tab (or with `admin.senderdomain.status.update`).
 - A passing check of an `Enabled` domain clears its strike counter, as a passing daily check does.
 - It runs even when the domain was already checked today.
+
+Since v6.0.2 the command checks `User.Edit` itself and answers `99999` without it, even when `ADMIN_API_ENFORCE_PRIVILEGES` is off. The privilege is checked before the domain is looked up, so a refused call reveals nothing about the domain.
 
 A restricted sub-admin may only re-check domains owned by users in the groups they may access. Any other domain is reported as not found.
 
@@ -1230,6 +1277,7 @@ curl -X POST https://example.com/api.php \
 2: Sender domain not found
 3: The domain's status is not checked (Disabled)
 4: The DNS check could not be queued
+99999: The administrator lacks the User.Edit privilege
 ```
 
 :::

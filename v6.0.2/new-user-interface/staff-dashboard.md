@@ -80,7 +80,7 @@ Active, Top bounces and Top complaints count the last 7, 30 or 90 days (30 by de
 
 ## Sender domains
 
-A coloured bar shows how the sender domains split across health classes: healthy, failing, demoted by DNS drift, awaiting approval, never checked and other. Under it, each class with its count and share. Click a class to open the classic Sender Domain Health report filtered to it, in a new tab.
+A coloured bar shows how the sender domains split across health classes: healthy, failing, demoted by DNS drift, awaiting approval, never checked and other. Under it, each class with its count and share. Click a class to open the [Sender domain health report](./staff-sender-domain-health) filtered to it.
 
 ## Setup
 

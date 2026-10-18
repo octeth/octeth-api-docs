@@ -83,6 +83,18 @@ The `admin.subadmin.*` commands relied on the registry's privilege tag, which is
 
 **Who needs to act:** an integration that reads the report with a sub-admin's key or session lacking `Reports`. Grant that account `Reports`, or use the master key.
 
+### Sender domain health (privilege check)
+
+#### `User.Edit` is checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+
+`admin.senderdomains.health.get` and `admin.senderdomain.recheck` relied on the registry's `User.Edit` tag, which is enforced only when `ADMIN_API_ENFORCE_PRIVILEGES` is on, so with it off any sub-admin session could read every account's sender domains and owners and queue DNS checks. Each handler now checks `User.Edit` itself and answers `99999` (`Not enough privileges`) without it, as the newer staff commands do (#3521, #3522, #3525) (octeth/oempro#3527). The classic Sender Domain Health page always required `User.Edit`, so the API now matches what the page allowed.
+
+The check runs first, so it also applies to `admin.senderdomains.health.get` with `SummaryOnly=true`. The staff dashboard already hides its **Sender domains** section from administrators without `User.Edit`, so it is unaffected.
+
+**Not affected:** the master admin, the master `ADMIN_API_KEY`, and every administrator without `Options.AccessLimited`, or holding `User.Edit`.
+
+**Who needs to act:** an integration that calls either command with the key or session of a sub-admin who does not hold `User.Edit`. Grant that account `User.Edit`, or use a key that has it.
+
 ### Admin area
 
 #### The legacy Users section is removed
@@ -287,6 +299,30 @@ A POST to any of these URLs is refused with a short page that links to the new s
 - **No "Login as" link.** The user's name opens their freshness page, and the person icon opens the staff user page, where switching to the user already lives. The icon shows only to administrators with the `Users` and `User.Browse` permissions.
 - **The thresholds are still edited on the classic Preferences page.** The screen states the thresholds in use and links there.
 - **Opening a user's page is recorded in the staff audit log** (`reports.list_freshness.view`), as a subscriber search is.
+
+#### The legacy admin Sender Domain Health report is removed
+
+The legacy admin **Sender Domain Health** report (`/app/admin/senderdomainhealth/`), an item of the classic **Reports** menu, is removed. The report is the [Sender domain health](/v6.0.2/new-user-interface/staff-sender-domain-health) screen of the new interface's staff area (`/<UI_STAFF_PREFIX>/staff/reports/sender-domains`), under the new **Reports** group of the staff sidebar (octeth/oempro#3527). It needs the `User.Edit` privilege, as the page did, and a sub-admin limited to some user groups still sees and re-checks only the domains of accounts in those groups.
+
+**The old URLs keep working.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/senderdomainhealth/?<filters>` | 302 to `/<staff>/staff/reports/sender-domains?<filters>` |
+| `/app/admin/senderdomainhealth/index/<page>?<filters>` | 302 to the same screen with `page=<page>` added |
+| `/app/admin/senderdomainhealth/recheck/` and anything else under it | 302 to `/<staff>/staff/reports/sender-domains` |
+
+The filters `health`, `status`, `userid` and `domain` keep their names and are carried over when their value is valid; an invalid value is dropped. A POST to any of these URLs, including the old **Re-check now** form, is refused: no DNS check is queued, and the answer is a short page that links to the new screen.
+
+The classic **Reports > Sender Domain Health** menu item opens the new screen, and the staff dashboard's **Sender domains** section links each health class to it in place instead of to the classic report in a new tab.
+
+**What changed on the way:**
+
+- **Filters apply as you choose them** and stay in the address, so a filtered view can be bookmarked.
+- **Re-check now reports in place.** Success, the rate limit (60 re-checks a minute per administrator) and "not checked in this status" are shown as a message on the screen, the button is disabled while a re-check runs, and the same domain is not queued twice within a minute. Every re-check writes a staff audit row.
+- **Refresh** reads the list again, instead of reloading the page.
+
+There is no opt-in flag: the page is removed, and its URL answers as above.
 
 #### The legacy admin overview points to the new dashboard
 
@@ -508,6 +544,12 @@ No configuration change is needed.
 - `admin.overview.get` accepts an optional `Days` of 7, 30 or 90 that windows the three leaderboards and caches the result for 300 seconds. Without `Days` the response is unchanged. A request that already sent a `Days` parameter with any other value, which the command used to ignore, is now refused with error code 1. An empty `Days` is still treated as absent (octeth/oempro#3501).
 - `admin.setup.status` accepts an optional `Cached=true` that returns the report cached for up to 60 seconds with `FromCache`. Without it the response is unchanged (octeth/oempro#3501).
 - `admin.senderdomains.health.get` accepts an optional `SummaryOnly=true` that returns only the health counts. Without it the response is unchanged (octeth/oempro#3501).
+
+### Sender domain health
+
+#### `admin.senderdomains.health.get` can return the tracking fallback host
+
+A new optional parameter `IncludeTrackingFallback=true` adds `TrackingFallbackHost` to every row of `Domains`: the host that Email Gateway and journey mail from that domain uses for tracking and unsubscribe links because the domain's own tracking host is not set up (octeth/oempro#3308), or `null`. It costs one extra query per page and one per user group on the page. Without the parameter the response is byte-identical to before (octeth/oempro#3527).
 
 ## Additions that need operator attention
 

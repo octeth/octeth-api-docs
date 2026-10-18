@@ -398,7 +398,7 @@ To approve a domain:
 
 On the same tab, **Suspend** stops a domain and **Block** puts a domain on hold. **Enable** returns a suspended or blocked domain to **Enabled**. Owners cannot move a domain out of **Suspended** or **Blocked** themselves.
 
-To see every domain that is waiting, open **Reports** > **Sender Domain Health** and filter by the **Blocked** status. See [Sender Domain Health](/v6.0.2/using-octeth/administration/sender-domain-health).
+To see every domain that is waiting, open **Reports** > **Sender domain health** in the staff area of the new interface and choose the **Blocked** status. See [The Staff Sender Domain Health Report](/v6.0.2/new-user-interface/staff-sender-domain-health).
 
 ### Selecting the DNS Template
 
