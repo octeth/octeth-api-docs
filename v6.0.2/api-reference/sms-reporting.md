@@ -1016,6 +1016,143 @@ curl -X GET https://example.com/api/v1/sms.replies.summary.get \
 
 :::
 
+## Browse Inbound SMS (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.sms.inbound.get`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session
+- Required privileges: `SMS` and `Settings`, checked by the command itself even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+- Added in v6.0.2
+:::
+
+One page of every reply and opt-out received on the install's SMS gateways, newest first (`ReceivedAt`, then `InboundID`). It is the list behind the staff **SMS > Inbound** screen, which replaced the classic admin **Reports > Inbound SMS** page, and it includes the replies that could not be attributed to an account.
+
+A sub-admin limited to some user groups sees only the messages attributed to accounts in those groups. An unattributed message belongs to no account, so only administrators without a user group limit see it. `UserGroupScoped` says which applies to the caller.
+
+Phone numbers and message bodies are personal data. The command returns them and logs neither. Each row is an allow-listed projection: the raw gateway payload and the list and subscriber IDs are never returned.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.sms.inbound.get` |
+| AdminAPIKey | String | No | Admin API key. Or authenticate with an admin `SessionID` |
+| Page | Integer | No | Page number, default 1. A value that is not a positive whole number is page 1 |
+| RecordsPerPage | Integer | No | Page size, 10 to 100, default 50. A value outside the range is brought into it |
+| Status | String | No | Processing status: `pending`, `processed`, `unattributed` or `failed` |
+| Number | String | No | The start of the sending number. Everything but digits is dropped, so `+1 (555)` matches numbers starting `1555` |
+| OptOut | String | No | `yes` for opt-outs, `no` for the other messages, `failed` for opt-outs whose unsubscribe failed |
+| GatewayID | Integer | No | The receiving gateway |
+| DateFrom | String | No | Received on or after this date, `YYYY-MM-DD` in UTC |
+| DateTo | String | No | Received on or before this date, `YYYY-MM-DD` in UTC, the whole day included |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.sms.inbound.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.sms.inbound.get",
+    "AdminAPIKey": "your-admin-api-key",
+    "OptOut": "failed",
+    "DateFrom": "2026-10-01",
+    "DateTo": "2026-10-18",
+    "RecordsPerPage": 50
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalMessages": 1,
+  "Page": 1,
+  "RecordsPerPage": 50,
+  "TotalPages": 1,
+  "UserGroupScoped": false,
+  "Filters": {
+    "Status": "",
+    "Number": "",
+    "OptOut": "failed",
+    "GatewayID": "",
+    "DateFrom": "2026-10-01",
+    "DateTo": "2026-10-18"
+  },
+  "Messages": [
+    {
+      "InboundID": 981,
+      "ReceivedAt": "2026-10-17 09:12:44",
+      "GatewayID": 2,
+      "GatewayName": "Primary",
+      "FromNumber": "15551234567",
+      "ToNumber": "18005550100",
+      "MessageText": "stop texting me",
+      "ProcessingStatus": "processed",
+      "ProcessingError": "",
+      "UserID": 42,
+      "Username": "acme",
+      "UserEmailAddress": "ops@acme.example",
+      "SMSCampaignID": 7,
+      "CampaignName": "October promo",
+      "IsOptOut": true,
+      "OptOutScope": "user",
+      "UnsubscribeStatus": "failed",
+      "ProcessedAt": "2026-10-17 09:12:45"
+    }
+  ],
+  "Gateways": [
+    {"GatewayID": 2, "GatewayName": "Primary"},
+    {"GatewayID": 3, "GatewayName": "Backup"}
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Status is not pending, processed, unattributed or failed
+2: OptOut is not yes, no or failed
+3: GatewayID is not a positive whole number
+4: DateFrom is not a valid YYYY-MM-DD date
+5: DateTo is not a valid YYYY-MM-DD date
+6: DateFrom is after DateTo
+7: The messages could not be read (see the error log)
+99999: Not enough privileges (sub-admin without SMS or Settings)
+```
+
+:::
+
+**Response fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| TotalMessages | Integer | Messages matching the filters and the caller's user group scope |
+| Page, RecordsPerPage, TotalPages | Integer | The page returned, its size, and the number of pages (at least 1). A page past the end returns an empty `Messages` |
+| UserGroupScoped | Boolean | `true` when the caller is limited to user groups, so unattributed messages are left out |
+| Filters | Object | The filters applied, as sent |
+| Messages | Array | The page, described below |
+| Gateways | Array | Every SMS gateway (`GatewayID`, `GatewayName`), for a gateway filter. Empty when the gateways could not be read |
+
+Message fields:
+
+- `ReceivedAt` and `ProcessedAt` are `Y-m-d H:i:s` in UTC. `ProcessedAt` is `null` until the message is processed.
+- `GatewayName` is `null` when the gateway no longer exists.
+- `ProcessingStatus` is `pending` (not processed yet), `processed`, `unattributed` (no message matched it, so no account owns it) or `failed`, with the reason in `ProcessingError`.
+- `UserID`, `Username`, `UserEmailAddress`, `SMSCampaignID` and `CampaignName` are `null` when the message is not attributed to an account or a campaign.
+- `IsOptOut` is `true` for an opt-out. `OptOutScope` is `user` (the account's contact) or `gateway` (every account on the gateway), and `none` for other messages.
+- `UnsubscribeStatus` is `none`, `pending`, `done` or `failed`. A `failed` opt-out is suppressed, but the contact still counts as subscribed until the unsubscribe succeeds.
+
 ## Get a Subscriber's SMS History
 
 <Badge type="info" text="GET" /> `/api/v1/subscriber.sms.events`

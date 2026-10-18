@@ -385,6 +385,31 @@ The classic **Reports > SMS Campaigns** menu item opens the new screen.
 
 There is no opt-in flag: the page is removed, and its URL answers as above.
 
+#### The legacy admin Inbound SMS page is removed
+
+The legacy admin **Inbound SMS** page (`/app/admin/smsinbound/`), an item of the classic **Reports** menu, is removed. It is the [Inbound](/v6.0.2/new-user-interface/staff-sms-inbound) screen of the **SMS** group of the staff sidebar, next to **Campaigns** (`/<UI_STAFF_PREFIX>/staff/sms/inbound`) (octeth/oempro#3534). It needs the `SMS` and `Settings` privileges, as the page did.
+
+**The old URLs keep working.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/smsinbound/?<filters>` | 302 to `/<staff>/staff/sms/inbound?<filters>` |
+| `/app/admin/smsinbound/index/<page>?<filters>` | 302 to the same screen with `page=<page>` added |
+
+The filters are carried over under the screen's names when their value is valid, and an invalid value is dropped: `FilterStatus` becomes `status`, `FilterNumber` becomes `number` (digits only), `FilterOptOut` becomes `optout`, `FilterGateway` becomes `gateway`, and `FilterDateFrom` and `FilterDateTo` become `range=custom` with `from` and `to` (a date and time keeps its date). A POST to any of these URLs is refused: nothing runs, and the answer is a short page that links to the new screen.
+
+The classic admin header's **Reports > Inbound SMS** item opens the new screen.
+
+**What changed on the way:**
+
+- **User group limits apply.** The legacy page showed every message to any administrator with `SMS` and `Settings`. A sub-admin limited to some user groups now sees only the messages attributed to accounts in those groups, and no unattributed message, because an unattributed message belongs to no account. The screen says so above the list.
+- **Filters apply as you choose them** and stay in the address, so a filtered view can be bookmarked. The opt-out filter gained **Not opt-outs**, and the date filter offers presets (last 7, 30 or 90 days, last 12 months) next to a custom range, which may set only one end as the legacy page allowed.
+- **Long messages are clamped, not cut.** The legacy page cut a message at 120 characters. The new screen shows two lines and expands the whole message on click.
+- **The account links to the staff account page**, and the campaign column shows the campaign's name next to its ID.
+- **Fewer, denser columns.** The sender and recipient share a **From / To** column, and the unsubscribe result sits under the opt-out in one **Opt-out** column, so the table fits a desktop window.
+
+There is no opt-in flag: the page is removed, and its URLs answer as above.
+
 #### The legacy admin overview points to the new dashboard
 
 The legacy admin overview (`/app/admin/overview/`) is still where the legacy admin login lands, but it no longer shows the reports. It shows a "The dashboard moved" card with a link to the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) of the new interface (`/<UI_STAFF_PREFIX>/staff/dashboard`), the setup checklist (admins with the Settings privilege and no user group limit) and the quick links (admins with `Admin.Dashboard.Links`).
@@ -666,6 +691,12 @@ Three new admin commands, additive, each needing both the `SMS` and the `Setting
 - `admin.sms.campaigns.get` lists every account's bulk SMS campaigns, newest first, 1 to 100 rows per page (`RecordsPerPage`, default 50), filtered by `FilterUser` (a user ID or the start of a username), `FilterStatus` and `FilterGateway`. Each row carries the counts, the cost, the start time, the account rate-limit hold of a sending campaign (`RateLimitHold`) and whether pause and cancel apply (`CanPause`, `CanCancel`). It never returns the message text. Error `1` means the campaigns could not be read. Rate limit 100 requests per 60 seconds.
 - `admin.sms.campaign.pause` takes `SMSCampaignID` and pauses a queueing or sending campaign. `admin.sms.campaign.cancel` takes `SMSCampaignID` and cancels an unfinished one (a draft at once, anything else through `Cancelling`). Both return `PreviousStatus`, `Status` and `Changed`, change the campaign only while it is still in the status they read, and are refused in demo mode. Error codes: `1` missing or invalid id, `2` not found or outside the administrator's user groups, `3` not pausable or already finished, `4` the status changed first. Rate limit 30 requests per 60 seconds each.
 
+### Inbound SMS command
+
+One new admin command, additive and needing the `SMS` and `Settings` privileges, which it checks even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy Inbound SMS page did (octeth/oempro#3534). No existing command changes.
+
+- `admin.sms.inbound.get` lists one page of the received SMS messages, newest first, 10 to 100 per page (`RecordsPerPage`, default 50, with `Page`), filtered by `Status`, `Number`, `OptOut` (`yes`, `no` or `failed`), `GatewayID`, `DateFrom` and `DateTo`. It returns `TotalMessages`, the rows and the gateway list. A sub-admin limited to some user groups gets only the messages of accounts in those groups and no unattributed message (`UserGroupScoped` is `true`). It returns phone numbers and message bodies, which are personal data, so grant `SMS` and `Settings` with that in mind. Error codes: `1` to `6` an invalid filter, `7` the messages could not be read. Rate limit 100 requests per 60 seconds.
+
 ### AI assistant connector
 
 #### New root-level paths `/mcp`, `/oauth/` and `/.well-known/oauth-*` are served by the new user interface
@@ -753,6 +784,7 @@ The upgrade adds the index `idx_bouncedate_owner (BounceDate, RelOwnerUserID)` t
 - Octeth does not revoke the OAuth grant you gave it in your Google account. Revoke it there, under your Google account's third-party access settings, and delete the OAuth client in Google Cloud if nothing else uses it.
 - If an administrator has `AccessLimited` off but still carries `AccessAllowedUserGroupIDs`, `admin.subscriber.search` now shows them every list. Turn `AccessLimited` on for that administrator if the limit was intended.
 - Update bookmarks to the classic Subscriber Email Search: `/app/admin/subscribersearch/` redirects to the staff Subscriber search.
+- If a sub-admin limited to some user groups used the classic Inbound SMS page to watch unattributed replies, give that work to an administrator without a user group limit: the staff Inbound screen shows a limited sub-admin only the messages of its groups' accounts.
 
 ---
 

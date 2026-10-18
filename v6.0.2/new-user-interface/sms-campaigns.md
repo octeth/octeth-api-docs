@@ -261,7 +261,7 @@ Each value is either stored on this page or taken from `.oempro_env`. Clear a fi
 Two pages cover every account:
 
 - **Campaigns**, under **SMS** in the staff area of the new interface, lists all campaigns. Filter by user ID or username, status and gateway. **Pause** stops a queueing or sending campaign, and **Cancel** stops one for good. Administrators cannot resume a campaign. See [The Staff SMS Campaigns Screen](./staff-sms-campaigns).
-- **Inbound SMS** lists every received message. Filter by sender number, status, opt-outs (including opt-outs whose unsubscribe failed), gateway and date. It shows the gateway, sender, recipient, message, matched account and campaign, and the opt-out result.
+- **Inbound**, also under **SMS** in the staff area, lists every received message, including the replies that could not be matched to any account. Filter by sender number, status, opt-outs (including opt-outs whose unsubscribe failed), gateway and date. It shows the gateway, sender, recipient, message, matched account and campaign, and the opt-out result. A sub-administrator limited to some user groups sees only the messages of those groups' accounts. See [The Staff Inbound SMS Screen](./staff-sms-inbound).
 
 ## Troubleshooting
 
