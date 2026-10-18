@@ -3568,6 +3568,142 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 :::
 
+## Get the Stripo Integration State
+
+<Badge type="info" text="GET" /> `/api/v1/admin.integrations.stripo.get`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Settings`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy Integrations page did
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the state of the Stripo email builder integration without its secrets, as the staff Settings > Integrations screen shows it: the stored plugin ID, whether a secret key is stored, and which users have a project API key for the template gallery of the legacy email builder. No secret key or project key is returned. `settings.get` redacts the same two values, and `settings.update` writes them.
+
+`Connected` is `true` when the plugin ID and the secret key are both stored, which is when both email builders offer Stripo. `KeyUserIDs` lists, in ascending order, the users whose entry in the stored key list is a non-empty key under a positive user ID; any other entry can never match a user and is not counted. `KeyListReadable` is `false` when a stored list is not a JSON object of user ID and key (for example a list truncated by MySQL, or a JSON array), and the template gallery then shows nothing to anyone.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                     |
+|-------------|--------|----------|-------------------------------------------------|
+| Command     | String | Yes      | API command: `admin.integrations.stripo.get`    |
+| SessionID   | String | No       | Session ID obtained from `admin.login`          |
+| AdminAPIKey | String | No       | Admin API key (master or per-sub-admin)         |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.integrations.stripo.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.integrations.stripo.get",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "PluginId": "d0b1c2e3-plugin-id",
+  "SecretKeyStored": true,
+  "Connected": true,
+  "KeyListStored": true,
+  "KeyListReadable": true,
+  "KeyUserCount": 2,
+  "KeyUserIDs": [12, 31]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99999: The administrator does not hold the Settings privilege
+```
+
+:::
+
+## Check a Stripo Connection
+
+<Badge type="info" text="POST" /> `/api/v1/admin.integrations.stripo.test`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Settings`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- Rate limit: 5 requests per 60 seconds, because each call reaches Stripo
+- Disabled in demo mode
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Checks a Stripo plugin ID and secret key with Stripo, without saving them. It runs the same handshake `settings.update` runs before it saves a changed pair (error 17 there). A parameter you leave out or send empty is taken from the stored settings, so you can check the stored pair without sending the secret key, or check a new plugin ID against the stored secret key. Nothing is written, and the Stripo token is not returned. Octeth waits at most 15 seconds for Stripo.
+
+`Connected` is `true` when Stripo issued a token for the pair. `Reachable` is `false` when Stripo did not answer at all, which usually means the server has no outbound access to `plugins.stripo.email`.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description |
+|-------------|--------|----------|-------------|
+| Command     | String | Yes      | API command: `admin.integrations.stripo.test` |
+| SessionID   | String | No       | Session ID obtained from `admin.login` |
+| AdminAPIKey | String | No       | Admin API key (master or per-sub-admin) |
+| PluginId    | String | No       | A plugin ID to check instead of the stored one |
+| SecretKey   | String | No       | A secret key to check instead of the stored one |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.integrations.stripo.test \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.integrations.stripo.test",
+    "AdminAPIKey": "your-admin-api-key",
+    "PluginId": "d0b1c2e3-plugin-id"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Connected": true,
+  "Reachable": true,
+  "UsedStoredPluginId": false,
+  "UsedStoredSecretKey": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Enter a plugin ID and a secret key, or store them first."
+}
+```
+
+```txt [Error Codes]
+0: Success (read Connected and Reachable for the result)
+1: No complete pair: a value is neither in the request nor stored
+429: Too many requests (the rate limit above)
+99999: The administrator does not hold the Settings privilege
+NOT AVAILABLE IN DEMO MODE.
+```
+
+:::
+
 ## List Remembered Admin Sign-Ins
 
 <Badge type="info" text="GET" /> `/api/v1/admin.remembertokens.get`

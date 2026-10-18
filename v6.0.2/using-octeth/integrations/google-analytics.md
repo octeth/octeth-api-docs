@@ -50,26 +50,29 @@ Before enabling Google Analytics tracking on individual campaigns, configure the
 
 This is an administrator-level setting.
 
-1. Log in as an administrator.
-2. Navigate to **Settings** in the top menu.
-3. Click the **Integrations** tab.
-4. Select the **Google Analytics** section.
+1. Sign in to the new interface as an administrator with the Settings permission.
+2. In the staff sidebar, click **Settings**, then **Integrations**.
+3. The **Google Analytics** section opens first.
 
-[[SCREENSHOT: The Admin Settings Integrations page showing the Google Analytics tab with Source Keyword and Medium Keyword fields]]
+[[SCREENSHOT: The staff Settings > Integrations screen, Google Analytics section, showing the Source and Medium fields]]
 
 You will see two fields:
 
 | Field | Description | Default Value |
 |---|---|---|
-| **Source Keyword** | The value used for the `utm_source` parameter. This identifies Octeth as the traffic source in your Google Analytics reports. | `Octeth` |
-| **Medium Keyword** | The value used for the `utm_medium` parameter. This identifies email as the marketing channel. | `Email` |
+| **Source (utm_source)** | The value used for the `utm_source` parameter. This identifies Octeth as the traffic source in your Google Analytics reports. | `Octeth` |
+| **Medium (utm_medium)** | The value used for the `utm_medium` parameter. This identifies email as the marketing channel. | `Email` |
 
-5. Enter or update the **Source Keyword** value. For example, keep the default `Octeth` or change it to match your organization's naming convention (such as your company name).
-6. Enter or update the **Medium Keyword** value. The standard practice is to use `Email` for email campaigns.
-7. Click **Save** to apply your changes.
+4. Enter or update the **Source (utm_source)** value. For example, keep the default `Octeth` or change it to match your organization's naming convention (such as your company name).
+5. Enter or update the **Medium (utm_medium)** value. The standard practice is to use `Email` for email campaigns.
+6. Click **Save Google Analytics settings**.
 
 ::: info
 These values are applied globally. Every campaign with Google Analytics tracking enabled uses the same source and medium values. If you need different source or medium values for specific emails, use the email-level UTM tracking available through the API.
+:::
+
+::: warning
+A change also applies to the links of campaigns already sent. Emails made in the new interface use their own UTM options and do not use these values.
 :::
 
 ## Enabling Google Analytics on a Campaign
@@ -114,8 +117,8 @@ When Google Analytics tracking is enabled on a campaign and a subscriber clicks 
 
 | UTM Parameter | Value | Source |
 |---|---|---|
-| `utm_source` | The **Source Keyword** from admin settings | Admin > Settings > Integrations > Google Analytics |
-| `utm_medium` | The **Medium Keyword** from admin settings | Admin > Settings > Integrations > Google Analytics |
+| `utm_source` | The **Source (utm_source)** from admin settings | Staff area: Settings > Integrations > Google Analytics |
+| `utm_medium` | The **Medium (utm_medium)** from admin settings | Staff area: Settings > Integrations > Google Analytics |
 | `utm_campaign` | The **campaign name** | The name you gave the campaign |
 | `utm_content` | `Subscriber#` followed by the subscriber's ID number | Automatically generated (e.g., `Subscriber#1042`) |
 | `utm_term` | The **link title** or text | Extracted from the link in the email content |
@@ -175,7 +178,7 @@ Send a test email to yourself before launching the campaign. Click the links and
 1. **Verify Google Analytics is enabled on the campaign.** Open the campaign settings and confirm the **Enable Google Analytics integration** checkbox is checked.
 2. **Check the Domains field.** Make sure the domain of your link is listed in the Domains field, or that `*` is entered to track all domains.
 3. **Confirm link tracking is enabled.** Open the email in the email builder and verify that link tracking is turned on. UTM parameters require link tracking to function.
-4. **Check the admin settings.** Navigate to **Admin** > **Settings** > **Integrations** > **Google Analytics** and verify that the Source Keyword and Medium Keyword fields are not empty.
+4. **Check the admin settings.** In the staff area of the new interface, open **Settings** > **Integrations** > **Google Analytics** and verify that the Source and Medium fields are not empty.
 
 ### Google Analytics Is Not Showing Email Campaign Traffic
 

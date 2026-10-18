@@ -139,6 +139,7 @@ The staff dashboard, billing screens, Webhooks, User groups, Sub-admins, Subscri
 | Settings: Default opt-in email | Settings, see [The Default Opt-in Email](./staff-optin-email) |
 | Settings: S2S postback | Settings, see [The Staff S2S Postback Screen](./staff-s2s-postback) |
 | Settings: SSO | Settings.SSO, see [Managing SSO Sources in the Staff Area](./staff-sso) |
+| Settings: Integrations | Settings, see [Staff Integrations](./staff-integrations) |
 | Settings: Plugins | Settings, see [The Staff Plugins Screen](./staff-plugins) |
 | Your profile | Account. Its System emails section also needs Settings, and its Two-factor authentication section needs Security, see [Your Staff Profile](./staff-profile) |
 | System | System, see [The Staff System Screen](./staff-system) |
@@ -177,6 +178,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/settings/optin-email` | The confirmation email double opt-in subscribers receive when their list has none of its own, see [The Default Opt-in Email](./staff-optin-email) |
 | `/user/staff/settings/s2s-postback` | The conversion addresses and the S2S parameter names, see [The Staff S2S Postback Screen](./staff-s2s-postback) |
 | `/user/staff/settings/sso` | The SSO sources list, create and edit screens, with masked keys, key rotation and sign-in statistics, see [Managing SSO Sources in the Staff Area](./staff-sso) |
+| `/user/staff/settings/integrations` | The Google Analytics source and medium, and the Stripo email builder with its write-only secret key, project key list, connection check and Disconnect, see [Staff Integrations](./staff-integrations) |
 | `/user/staff/settings/plugins` | The installed plugins, enabled and disabled with a confirmation, see [The Staff Plugins Screen](./staff-plugins) |
 | `/user/staff/profile` | Your own administrator profile, see [Your Staff Profile](./staff-profile) |
 | `/user/staff/system` | The installed version, the license and the system health check, see [The Staff System Screen](./staff-system) |
@@ -185,7 +187,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/billing/...` | The staff billing screens, when billing is enabled |
 | `/ui/` | Images, stylesheets, the health check, and inbound payment webhooks |
 | `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants). `MCP_ENABLED=false` turns these off |
-| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Sub Admin Accounts**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About**, **Log Observer**, **Campaign Report**, **List Freshness**, **Sender Domain Health**, **SMS Campaigns**, **Inbound SMS**, **Default Opt-in Email**, **S2S Postback**, **Single Sign On** and **Plugins** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/sub-admins`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system`, `/user/staff/logs`, `/user/staff/reports/campaigns`, `/user/staff/reports/list-freshness`, `/user/staff/reports/sender-domains`, `/user/staff/sms/campaigns`, `/user/staff/sms/inbound`, `/user/staff/settings/optin-email`, `/user/staff/settings/s2s-postback`, `/user/staff/settings/sso` and `/user/staff/settings/plugins`. The admin **Preferences** page keeps only the user area's own settings and links to `/user/staff/settings/preferences` for the rest |
+| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Sub Admin Accounts**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About**, **Log Observer**, **Campaign Report**, **List Freshness**, **Sender Domain Health**, **SMS Campaigns**, **Inbound SMS**, **Default Opt-in Email**, **S2S Postback**, **Single Sign On** and **Plugins** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/sub-admins`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system`, `/user/staff/logs`, `/user/staff/reports/campaigns`, `/user/staff/reports/list-freshness`, `/user/staff/reports/sender-domains`, `/user/staff/sms/campaigns`, `/user/staff/sms/inbound`, `/user/staff/settings/optin-email`, `/user/staff/settings/s2s-postback`, `/user/staff/settings/sso` and `/user/staff/settings/plugins`. The admin **Preferences** page keeps only the user area's own settings and links to `/user/staff/settings/preferences` for the rest, and the admin **Integrations** page keeps only Unlayer and the plugin tabs and links to `/user/staff/settings/integrations` for Google Analytics and Stripo |
 
 ::: info
 These path names are settings, not fixed values. See the

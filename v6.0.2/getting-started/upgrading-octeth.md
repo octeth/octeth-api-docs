@@ -273,9 +273,9 @@ The `data/` directories are unchanged in this release and stay at `0777`.
 
 ### The drag-and-drop builder in the new interface uses the integration settings
 
-The new user interface no longer reads `UI_STRIPO_PLUGIN_ID` and `UI_STRIPO_SECRET_KEY` from `.oempro_env`. It uses the Stripo Plugin ID and Secret Key saved in **Admin > Settings > Integrations**, the same credentials the legacy interface uses. See [Stripo.email](/v6.0.2/getting-started/octeth-configuration#stripo-email).
+The new user interface no longer reads `UI_STRIPO_PLUGIN_ID` and `UI_STRIPO_SECRET_KEY` from `.oempro_env`. It uses the Stripo Plugin ID and Secret Key saved in the staff **Settings > Integrations** screen, the same credentials the legacy interface uses. See [Stripo.email](/v6.0.2/getting-started/octeth-configuration#stripo-email).
 
-**Action required** only if you set `UI_STRIPO_PLUGIN_ID` and `UI_STRIPO_SECRET_KEY` in v6.0.0 and left the Integrations settings empty: enter the same Plugin ID and Secret Key in Admin > Settings > Integrations. Until you do, the new interface shows the drag-and-drop builder as not configured. Custom HTML and Plain text keep working.
+**Action required** only if you set `UI_STRIPO_PLUGIN_ID` and `UI_STRIPO_SECRET_KEY` in v6.0.0 and left the Integrations settings empty: enter the same Plugin ID and Secret Key in the staff **Settings > Integrations** screen. Until you do, the new interface shows the drag-and-drop builder as not configured. Custom HTML and Plain text keep working.
 
 The leftover `UI_STRIPO_*` lines in an upgraded `.oempro_env` are ignored and can be deleted. `STRIPO_EMAIL_ID_SALT` is no longer used either.
 

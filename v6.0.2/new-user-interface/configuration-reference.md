@@ -235,7 +235,7 @@ The sender name is your `UI_BRAND_NAME`, so there is no separate setting for it.
 ## Drag-and-drop email builder
 
 The drag-and-drop builder has no setting of its own. It uses the Stripo Plugin ID and Secret
-Key saved in **Admin > Settings > Integrations**, the same credentials the legacy interface
+Key saved in the staff **Settings > Integrations** screen, the same credentials the legacy interface
 uses. See [Stripo.email](/v6.0.2/getting-started/octeth-configuration#stripo-email). A change to
 those settings reaches the interface within a minute, with no restart. The Secret Key never
 leaves Octeth: the interface asks Octeth for an editor token instead.
@@ -247,9 +247,9 @@ servers.
 
 Changed in v6.0.1: `UI_STRIPO_PLUGIN_ID` and `UI_STRIPO_SECRET_KEY` were removed. An upgraded
 `.oempro_env` that still carries them is ignored. If you set them in v6.0.0, enter the same
-values in Admin > Settings > Integrations.
+values in the staff **Settings > Integrations** screen.
 
-[[SCREENSHOT: The campaign content screen showing the design options, with the drag-and-drop option greyed out because no Stripo Plugin ID is saved in the integration settings]]
+[[SCREENSHOT: The campaign content screen showing the design options, with the drag-and-drop option greyed out because Stripo is not connected in Settings > Integrations]]
 
 ## Demonstration mode
 

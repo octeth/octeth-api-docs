@@ -36,31 +36,32 @@ For detailed instructions on obtaining your Stripo plugin credentials and unders
 
 ## Configuring the Stripo Integration
 
-The Stripo integration is configured in the administrator settings. You must be logged in as an administrator to access these settings.
+The Stripo integration is configured in the staff area of the new interface. You need an administrator account with the Settings permission.
 
 ### Step 1: Open Integration Settings
 
-1. Log in to Octeth as an administrator.
-2. Navigate to **Settings** from the admin menu.
-3. Click the **Integration** tab.
-4. Click the **Stripo.email** tab within the integration settings.
+1. Sign in to the new interface as an administrator.
+2. In the staff sidebar, click **Settings**, then **Integrations**.
+3. Click **Stripo** in the side menu.
 
-[[SCREENSHOT: The admin Settings page with the Integration tab selected, showing the Stripo.email sub-tab with the Plugin ID, Secret Key, and API Key fields]]
+See [Staff Integrations](/v6.0.2/new-user-interface/staff-integrations) for the whole screen.
+
+[[SCREENSHOT: The staff Settings > Integrations screen, Stripo section, showing the Plugin ID and Replace secret key fields, the Connected pill and the Template gallery keys card]]
 
 ### Step 2: Enter Plugin Credentials
 
 1. Enter your **Plugin ID** in the **Plugin ID** field.
-2. Enter your **Secret Key** in the **Secret Key** field.
+2. Enter your **Secret Key** in the **Secret key** field. When a key is already stored, the field is named **Replace secret key**: leave it blank to keep the stored key.
 
-These two credentials are required to enable the Stripo editor. When both fields are filled in, the Stripo editor option becomes available to all users in your Octeth installation.
+These two credentials are required to enable the Stripo editor. When both are stored, the Stripo editor option becomes available to all users in your Octeth installation, in both the classic and the new interface. The stored secret key is never shown again.
 
 ::: tip
-To disable the Stripo integration, clear both the **Plugin ID** and **Secret Key** fields and save the settings. The Stripo editor option will no longer appear for any user.
+To disable the Stripo integration, click **Disconnect Stripo** and confirm. It clears the Plugin ID and Secret Key, and the Stripo editor option no longer appears for any user. The template gallery keys stay.
 :::
 
 ### Step 3: Configure Per-User API Keys (Optional)
 
-The **Stripo API Key** field allows you to map individual Octeth user accounts to their own Stripo API keys. This is required if you want users to access the **Template Gallery** feature, which lets them browse and load pre-designed templates from your Stripo project.
+The **Replace the key list** field of the **Template gallery keys** card allows you to map individual Octeth user accounts to their own Stripo API keys. This is required if you want users to access the **Template Gallery** feature, which lets them browse and load pre-designed templates from your Stripo project.
 
 The API keys are entered as a JSON object where each key is an Octeth **User ID** and each value is the corresponding **Stripo API key**.
 
@@ -74,7 +75,7 @@ The API keys are entered as a JSON object where each key is an Octeth **User ID*
 }
 ```
 
-The field uses a code editor with JSON syntax highlighting to help you format the configuration correctly.
+The stored keys are never shown. The card shows how many users have a key and their User IDs. A filled list replaces the whole stored list, so include every user who should keep a key, and leave the field blank to keep the stored list.
 
 ::: info
 If you do not configure an API key for a user, they can still use the Stripo editor to design emails. However, the template gallery will not be available to them — they will only be able to work with the default blank template or paste in their own HTML.
@@ -84,21 +85,10 @@ If you do not configure an API key for a user, they can still use the Stripo edi
 
 To find the User ID for a specific user account:
 
-1. Navigate to **Users** from the admin menu.
-2. Click on the user's name to open their profile.
-3. Look at the URL in your browser's address bar. The URL follows the pattern:
+1. In the staff sidebar of the new interface, click **Users**.
+2. Open the account. Its User ID is the number at the end of the address, `/user/staff/customers/{UserID}`. For example, if the address ends in `/staff/customers/5`, the User ID is `5`.
 
-   ```
-   /admin/users/edit/{UserID}/Edit
-   ```
-
-   The number after `/edit/` is the User ID. For example, if the URL is `/admin/users/edit/5/Edit`, the User ID is `5`.
-
-[[SCREENSHOT: The admin Users edit page with the browser address bar highlighted, showing the User ID in the URL path]]
-
-::: tip
-You can also find User IDs in the user list. Navigate to **Users**, and use the sort options to sort by **User ID**. The User ID for each account is visible in the list.
-:::
+[[SCREENSHOT: A user's page in the staff area with the browser address bar highlighted, showing the User ID at the end of the path]]
 
 #### Example Configuration
 
@@ -130,10 +120,12 @@ If all users should share the same Stripo project and API key, enter the same AP
 
 ### Step 4: Save Settings
 
-Click **Save Settings** at the bottom of the page. Octeth validates your Plugin ID and Secret Key by attempting to authenticate with Stripo's servers. If the credentials are valid, the settings are saved. If the credentials are invalid, an error message appears asking you to check your Plugin ID and Secret Key.
+Click **Save Stripo settings**. When the Plugin ID or the Secret Key changed, Octeth validates the pair by authenticating with Stripo's servers. If the credentials are valid, the settings are saved. If they are invalid, nothing is saved and the screen says Stripo rejected them.
+
+To check the credentials without saving, click **Check connection**. It uses what you entered, and the stored value for a field you left blank.
 
 ::: warning
-If you see the message "Stripo.email integration credentials are not correct", verify that you have copied the Plugin ID and Secret Key exactly as they appear in your Stripo account. Make sure there are no extra spaces before or after the values.
+If Stripo rejects the credentials, verify that you have copied the Plugin ID and Secret Key exactly as they appear in your Stripo account. Make sure there are no extra spaces before or after the values.
 :::
 
 ## Verifying the Integration
@@ -156,7 +148,7 @@ After saving the settings, verify that the Stripo editor is available to your us
 If the editor opens successfully, the integration is working. If you configured an API key for this user, you can also verify the template gallery by clicking **Template Picker** in the editor toolbar.
 
 ::: tip
-If the Stripo editor option does not appear on the flow selection page, double-check that both the **Plugin ID** and **Secret Key** are filled in and saved in the admin integration settings.
+If the Stripo editor option does not appear on the flow selection page, double-check that both the **Plugin ID** and **Secret Key** are filled in and saved in the staff Settings > Integrations screen (the pill there says **Connected**).
 :::
 
 ## Where Users Can Access the Stripo Editor
@@ -217,13 +209,13 @@ This ensures that emails are both editable in the Stripo editor and ready for de
 
 If users do not see the **Drag-n-drop email builder (Stripo)** option when creating an email:
 
-1. Verify that both the **Plugin ID** and **Secret Key** are filled in under **Settings** > **Integration** > **Stripo.email**.
-2. Click **Save Settings** to re-validate the credentials.
+1. Open **Settings** > **Integrations** > **Stripo** in the staff area and check that the pill says **Connected**.
+2. Click **Check connection** to check the credentials with Stripo.
 3. If the credentials were recently changed, ask the user to log out and log back in, or refresh their browser.
 
-### "Stripo.email integration credentials are not correct" Error
+### Stripo Rejects the Plugin ID and Secret Key
 
-This error appears when saving the integration settings if Octeth cannot authenticate with Stripo's servers using the provided Plugin ID and Secret Key.
+Saving or **Check connection** says Stripo rejected the plugin ID and secret key when Octeth cannot authenticate with Stripo's servers using them. When **Check connection** says Stripo could not be reached, the server has no outbound access to `plugins.stripo.email`.
 
 1. Log in to your Stripo.email account and navigate to the **Plugins** section.
 2. Verify that the Plugin ID and Secret Key match exactly.
@@ -234,8 +226,8 @@ This error appears when saving the integration settings if Octeth cannot authent
 
 If a user can open the Stripo editor but the template gallery shows no templates:
 
-1. Confirm that an API key is configured for the user's User ID in the **Stripo API Key** field.
-2. Verify the JSON format is correct — each User ID should be a string key with its API key as the value.
+1. Confirm that the user's ID is listed under **User IDs** on the **Template gallery keys** card.
+2. If the card says the stored list cannot be read, paste a corrected list. Each User ID must be a string key with its API key as the value.
 3. Check that the Stripo API key is valid and associated with a project that contains templates.
 4. Ensure the Octeth server has outbound internet access to reach `my.stripo.email`.
 

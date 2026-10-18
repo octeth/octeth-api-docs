@@ -1256,7 +1256,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     `UI_BILLING_TAX_CALCULATOR` is read only when `BRAND_FEATURE_BILLING=true`, and is written to the interface's configuration only when set. Introduced in v6.0.1 (issue #2852).
 
     The new interface's drag-and-drop email builder uses the Stripo Plugin ID and Secret Key saved
-    in **Admin > Settings > Integrations**, the same settings the legacy interface uses (see
+    in the staff **Settings > Integrations** screen, the same settings the legacy interface uses (see
     [Stripo.email](#stripo-email)). It has no configuration key of its own. A change to those
     settings reaches the new interface within a minute, with no restart. The builder loads its
     JavaScript from `plugins.stripo.email` and stores assets on Stripo's CDN, so an install with no
@@ -6708,7 +6708,7 @@ Configuration errors can prevent users from uploading files or cause existing fi
 
 Octeth can integrate with popular third-party services to enhance your email marketing campaigns. The integrations settings allow you to connect external tools for campaign tracking, professional email design, and analytics.
 
-To access integrations settings, navigate to **Administrator Dashboard** → **Settings** → **Integrations**.
+Google Analytics and Stripo.email are set on the staff **Settings > Integrations** screen of the new interface, see [Staff Integrations](/v6.0.2/new-user-interface/staff-integrations). Unlayer and the settings plugins add stay on the classic admin page, **Settings > Integrations (legacy builders and plugins)** (`/app/admin/integration/`).
 
 ### Google Analytics
 
@@ -6816,7 +6816,7 @@ For simple installations or single-user environments, you can leave this field e
 
 **Disabling Stripo.email Integration**
 
-To disable Stripo.email, clear both the **Plugin ID** and **Secret Key** fields and save. The Stripo email builder option will no longer appear to users.
+To disable Stripo.email, click **Disconnect Stripo** on the staff **Settings > Integrations** screen and confirm. It clears the Plugin ID and Secret Key, and the Stripo email builder option no longer appears to users. The per-user API keys stay. The stored Secret Key and API keys are write-only there: a blank field keeps the stored value, and a filled API key list replaces the whole list.
 
 ### Unlayer
 
@@ -6862,7 +6862,7 @@ To disable Unlayer, clear both the **Project ID** and **API Key** fields and sav
 After configuring your integrations:
 
 1. Review all settings to ensure credentials are entered correctly
-2. Click **Save Settings** at the bottom of the page
+2. Click the section's save button: **Save Google Analytics settings** or **Save Stripo settings** on the staff screen, **Save Settings** on the classic page for Unlayer
 3. Test each integration to verify it's working:
    - **Google Analytics:** Send a test campaign and check if tracking parameters appear in links
    - **Stripo/Unlayer:** Try creating a new email campaign and verify the email builder loads correctly

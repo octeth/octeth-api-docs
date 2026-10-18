@@ -851,7 +851,7 @@ curl -X POST https://example.com/api.php \
 ::: tip API Usage Notes
 - Authentication required: User API Key or user session
 - Legacy endpoint access via `/api.php` is also supported
-- Returns no Stripo credential. The Plugin ID and Secret Key stay in Octeth's settings (Admin > Settings > Integrations).
+- Returns no Stripo credential. The Plugin ID and Secret Key stay in Octeth's settings (the staff **Settings > Integrations** screen).
 :::
 
 Tells a client whether the Stripo drag-and-drop builder is available on this installation, and which Stripo `emailId` its editor must send for the authenticated user. The `emailId` scopes the user's uploaded images on Stripo's CDN and is the same value the legacy builder sends, so both interfaces show the same image library. When `STRIPO_BASE_USERID` is set to a user ID, every user receives that user's `emailId` and shares one library.
@@ -914,7 +914,7 @@ curl -X POST https://example.com/api.php \
 - Authentication required: User API Key or user session
 - Legacy endpoint access via `/api.php` is also supported
 - Rate limit: 120 requests per 60 seconds
-- Octeth performs the Stripo plugin handshake with the credentials saved in Admin > Settings > Integrations and returns only the editor token. The Secret Key is never returned.
+- Octeth performs the Stripo plugin handshake with the credentials saved in the staff **Settings > Integrations** screen and returns only the editor token. The Secret Key is never returned.
 :::
 
 Returns a short-lived token for the Stripo embedded editor, for use in the editor's `getAuthToken` callback. This is the API form of the legacy user area's Stripo auth action.

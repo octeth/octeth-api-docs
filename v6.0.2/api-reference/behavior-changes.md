@@ -457,6 +457,32 @@ Most of the legacy admin **Preferences** page (`/app/admin/preferences/`), an it
 
 There is no opt-in flag. `settings.get`, `settings.update` and `system.languages.get` are unchanged.
 
+#### The legacy admin Integrations page is trimmed
+
+Google Analytics and Stripo moved from the legacy admin **Integrations** page (`/app/admin/integration/`), an item of the classic **Settings** sidebar, to the [Integrations](/v6.0.2/new-user-interface/staff-integrations) screen of the new interface's staff area (`/<UI_STAFF_PREFIX>/staff/settings/integrations`), under the **Settings** group of the staff sidebar (octeth/oempro#3552). The screen needs the `Settings` privilege, as the page did.
+
+| Setting | Where it is now |
+|---|---|
+| Google Analytics source and medium | Integrations, **Google Analytics** section |
+| Stripo plugin ID, secret key and the per-user project API keys | Integrations, **Stripo** section (`?section=stripo`) |
+| Unlayer project ID and API key | Still on the classic page |
+| Settings plugins add as tabs (TCPAProtect, IP Monitor, Cleanify) | Still on the classic page |
+
+**The page is not redirected.** `/app/admin/integration/` still opens, shows the Unlayer tab and the plugin tabs, and links to the new screen. The classic **Settings** sidebar lists both: **Integrations** opens the new screen and **Integrations (legacy builders and plugins)** opens the classic page. Plugin links to `/app/admin/integration#form-tabs/tab-<plugin>` keep working.
+
+**What changed on the way:**
+
+- **A save on the classic page no longer touches the moved settings.** It used to post all five Google Analytics and Stripo values with every save, so an empty field wiped a stored value. It now saves only the Unlayer pair, through one `settings.update` call, and then lets the plugins save their tabs as before.
+- **The Stripo secrets are write-only.** The classic page printed the secret key and every project API key into the page. The new screen shows only that a secret key is stored and how many users have a project key, with their user IDs. A blank field keeps the stored value, and a filled key list replaces the whole list.
+- **Turning Stripo off is its own action.** **Disconnect Stripo** asks first, then clears the plugin ID and the secret key. The project key list stays.
+- **Check connection.** The new screen checks the entered or stored plugin ID and secret key with Stripo without saving them, through the new `admin.integrations.stripo.test`.
+- **Two new admin commands, privilege checked in the handler.** `admin.integrations.stripo.get` and `admin.integrations.stripo.test` need `Settings` and answer `99999` (`Not enough privileges`) without it, even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the newer staff commands do. See [the Admin API](/v6.0.2/api-reference/admin#get-the-stripo-integration-state). No existing command changes.
+- **`settings.update` with only option keys no longer runs an empty `oempro_config` update.** A call that named only option keys (for example only the Stripo settings) made MySQL reject an `UPDATE` with nothing to set and log the error. The options were written either way and the response is unchanged.
+
+**Who needs to act:** nobody. An administrator who used the classic page for Google Analytics or Stripo finds those settings in the staff area.
+
+There is no opt-in flag: the moved fields are gone from the classic page.
+
 #### The legacy admin Default Opt-in Email page is removed
 
 The legacy admin **Default Opt-in Email** page (`/app/admin/defaultoptinemail/`), an item of the classic **Settings** sidebar, is removed. The default opt-in email is edited on the [Default opt-in email](/v6.0.2/new-user-interface/staff-optin-email) screen of the **Settings** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/optin-email`) (octeth/oempro#3538).
