@@ -130,6 +130,7 @@ The staff dashboard, billing screens, Webhooks, User groups, Sub-admins, Subscri
 | User groups | UserGroups. A sub-administrator limited to some user groups sees only those groups and cannot create, duplicate or delete one, see [Managing User Groups in the Staff Area](./staff-user-groups) |
 | Sub-admins | SubAdmins. A sub-administrator can grant only the permissions and user groups they hold, and cannot change their own account or a wider one, see [Managing Sub-admins in the Staff Area](./staff-sub-admins) |
 | Subscriber search | Search. A sub-administrator limited to some user groups finds subscribers only on the lists of accounts in those groups, see [Searching Subscribers in the Staff Area](./staff-subscriber-search) |
+| Reports: Campaigns | Reports. A sub-administrator limited to some user groups sees only the campaigns of accounts in those groups, see [The Staff Campaign Report](./staff-campaign-report) |
 | Reports: List freshness | Reports. A sub-administrator limited to some user groups sees only the users of those groups, see [The List Freshness Report](./staff-list-freshness) |
 | Reports: Sender domain health | User.Edit. A sub-administrator limited to some user groups sees and re-checks only the domains of accounts in those groups, see [The Staff Sender Domain Health Report](./staff-sender-domain-health) |
 | Your profile | Account. Its System emails section also needs Settings, and its Two-factor authentication section needs Security, see [Your Staff Profile](./staff-profile) |
@@ -160,6 +161,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/user-groups` | The staff User groups list, create and edit screens, see [Managing User Groups in the Staff Area](./staff-user-groups) |
 | `/user/staff/sub-admins` | The staff Sub-admins list, create and edit screens, see [Managing Sub-admins in the Staff Area](./staff-sub-admins) |
 | `/user/staff/subscriber-search` | The staff Subscriber search, see [Searching Subscribers in the Staff Area](./staff-subscriber-search) |
+| `/user/staff/reports/campaigns` | Campaigns across every account by status, with a chart, a CSV export and recovery for stuck or failed sends, see [The Staff Campaign Report](./staff-campaign-report) |
 | `/user/staff/reports/list-freshness` | The List freshness report and each user's page, see [The List Freshness Report](./staff-list-freshness) |
 | `/user/staff/reports/sender-domains` | The DNS health of every sender domain, with per-record results and an on-demand re-check, see [The Staff Sender Domain Health Report](./staff-sender-domain-health) |
 | `/user/staff/profile` | Your own administrator profile, see [Your Staff Profile](./staff-profile) |
@@ -169,7 +171,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/billing/...` | The staff billing screens, when billing is enabled |
 | `/ui/` | Images, stylesheets, the health check, and inbound payment webhooks |
 | `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants). `MCP_ENABLED=false` turns these off |
-| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Sub Admin Accounts**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About**, **Log Observer**, **List Freshness** and **Sender Domain Health** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/sub-admins`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system`, `/user/staff/logs`, `/user/staff/reports/list-freshness` and `/user/staff/reports/sender-domains` |
+| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Sub Admin Accounts**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About**, **Log Observer**, **Campaign Report**, **List Freshness** and **Sender Domain Health** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/sub-admins`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system`, `/user/staff/logs`, `/user/staff/reports/campaigns`, `/user/staff/reports/list-freshness` and `/user/staff/reports/sender-domains` |
 
 ::: info
 These path names are settings, not fixed values. See the

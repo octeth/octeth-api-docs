@@ -648,6 +648,7 @@ curl -X POST https://example.com/api/v1/admin.campaigns.overview \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
+- Sub-admins need the `Reports` privilege, checked in the handler since v6.0.2
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -773,15 +774,16 @@ curl -X POST https://example.com/api/v1/admin.campaigns.search \
 ```txt [Error Codes]
 0: Success
 5: SearchQuery could not be translated
+99999: Not enough privileges (sub-admin without Reports)
 ```
 
 :::
 
 ## Composite Campaign Statuses Used by the Admin Campaign Report
 
-The admin Campaign Report does not use raw `CampaignStatus` values. Every command in this group (`admin.campaigns.stuck`, `admin.campaigns.statuscounts`, `admin.campaigns.timeseries`, `admin.campaigns.export`) takes `Status` from the table below, `admin.campaigns.statuscounts` returns one counter per row, and each row's date range applies to its own date column. This is the mapping the admin Campaign Report screen uses: `campaigns.get` documents `SendProcessFinishedOn` for Sent, which the report does NOT use.
+The admin Campaign Report does not use raw `CampaignStatus` values. Every command in this group (`admin.campaigns.report`, `admin.campaigns.stuck`, `admin.campaigns.statuscounts`, `admin.campaigns.timeseries`, `admin.campaigns.export`) takes `Status` from the table below, `admin.campaigns.statuscounts` returns one counter per row, and each row's date range applies to its own date column. This is the mapping the staff Campaign Report screen uses: `campaigns.get` documents `SendProcessFinishedOn` for Sent, which the report does NOT use.
 
-All four commands require the Admin API key and the `Reports` sub-admin privilege (the privilege the admin Campaign Report screen checks). Restricted sub-admins (`Options.AccessLimited` with `AccessAllowedUserGroupIDs`) only see campaigns owned by accounts in their allowed user groups.
+All of them require the Admin API key and the `Reports` sub-admin privilege. Since v6.0.2 `admin.campaigns.report`, `admin.campaigns.statuscounts`, `admin.campaigns.timeseries` and `admin.campaigns.export` check `Reports` in the handler, so a sub-admin without it gets `ErrorCode 99999` even when `ADMIN_API_ENFORCE_PRIVILEGES` is off. Restricted sub-admins (`Options.AccessLimited` with `AccessAllowedUserGroupIDs`) only see campaigns owned by accounts in their allowed user groups.
 
 | Status (bucket) | Definition | Date column for DateFrom / DateTo |
 |---|---|---|
@@ -809,7 +811,133 @@ Every command in this group accepts these, with identical semantics to `admin.ca
 | SearchKeyword | String | No | Campaign name OR email subject `LIKE` match |
 | SearchQuery | String | No | Advanced search DSL (`name:"Weekly" recipient_count>1000`, keys: `name`, `type`, `sent_at`, `created_at`, `recipient_count`, `total_recipients`, `open_rate`, `click_rate`, `conversion_rate`, `unsubscribe_rate`, `hardbounce_rate`, ...). Translated on the server and AND-ed with the other filters. The generated SQL is never returned |
 
-Shared error codes: `1` invalid DateFrom, `2` invalid DateTo, `3` unknown Status, `4` invalid FilterByUserID, `5` SearchQuery could not be translated, `7` DateFrom after DateTo.
+Shared error codes: `1` invalid DateFrom, `2` invalid DateTo, `3` unknown Status, `4` invalid FilterByUserID, `5` SearchQuery could not be translated, `7` DateFrom after DateTo, `99999` the sub-admin lacks `Reports` (every command except `admin.campaigns.stuck`).
+
+## List a Campaign Report Bucket
+
+<Badge type="info" text="POST" /> `/api/v1/admin.campaigns.report`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege, checked in the handler)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+- Added in v6.0.2
+:::
+
+One page of a report bucket: the table of the staff Campaign Report screen. The rows are the bucket's campaigns under the shared filters, with the owner, the rates, the average throughput and the health the screen shows per row. Rows of the `Stuck` bucket carry their `StuckReason`. Use this command rather than `admin.campaigns.search` to list a bucket: `admin.campaigns.search` filters raw `CampaignStatus` values and has no `Outbox`, `HasFailed` or `Stuck` bucket.
+
+Each row is an allow-listed projection. Campaign content, `Options` and internal columns are never returned.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.campaigns.report` |
+| AdminAPIKey | String | Yes | Admin API key |
+| Status | String | No | A bucket from the table above. Default `Sent` |
+| FilterByUserID | Integer | No | See shared filters |
+| DateFrom | String | No | See shared filters |
+| DateTo | String | No | See shared filters |
+| SearchKeyword | String | No | See shared filters |
+| SearchQuery | String | No | See shared filters |
+| OrderField | String | No | `Started`, `Finished`, `Recipients`, `Delivered`, `Failed`, `CreateDateTime` or `SendDate`. Default is the bucket's own order. `Draft` (newest first) and `Scheduled` (soonest first) always keep their own order |
+| OrderType | String | No | `ASC` or `DESC` (default) |
+| RecordsFrom | Integer | No | Offset, default 0 |
+| RecordsPerRequest | Integer | No | Page size, 10 to 100, default 25. A value outside the range is brought into it |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.campaigns.report \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.campaigns.report",
+    "AdminAPIKey": "your-admin-api-key",
+    "Status": "HasFailed",
+    "DateFrom": "2026-10-01",
+    "DateTo": "2026-10-18",
+    "OrderField": "Failed",
+    "RecordsPerRequest": 25
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Status": "HasFailed",
+  "TotalCampaigns": 1,
+  "RecordsFrom": 0,
+  "RecordsPerRequest": 25,
+  "OrderField": "TotalFailed",
+  "OrderType": "DESC",
+  "Campaigns": [
+    {
+      "CampaignID": 7746,
+      "CampaignName": "Fall collection launch",
+      "CampaignStatus": "Sent",
+      "ScheduleType": "Immediate",
+      "OwnerUserID": 20,
+      "OwnerName": "Acme Inc",
+      "OwnerEmailAddress": "ops@acme.example",
+      "CreateDateTime": "2026-10-10 08:00:00",
+      "LastActivityDateTime": "2026-10-13 06:21:40",
+      "SendProcessStartedOn": "2026-10-13 06:00:01",
+      "SendProcessFinishedOn": "2026-10-13 06:21:40",
+      "SendDate": null,
+      "SendTime": "",
+      "SendTimeZone": "",
+      "TotalRecipients": 38900,
+      "TotalSent": 37620,
+      "TotalDelivered": 37210,
+      "TotalFailed": 1280,
+      "UniqueOpens": 9050,
+      "UniqueClicks": 1320,
+      "TotalUnsubscriptions": 64,
+      "TotalHardBounces": 410,
+      "Rates": { "Open": 24.06, "Click": 3.51, "CTOR": 14.59, "Optout": 0.17, "Bounce": 1.05, "Progress": 96.71 },
+      "Throughput": { "DurationSeconds": 1299, "EmailsPerSecond": 28.96 },
+      "Health": {
+        "OpenRate": "good", "ClickRate": "good", "BounceRate": "good", "UnsubscribeRate": "good",
+        "HardBounceRatePercent": 1.1, "UnsubscribeRatePercent": 0.2, "EngagementScore": 6.8
+      },
+      "StuckReason": null,
+      "CanRetryFailed": true
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: DateFrom is not a valid Y-m-d date
+2: DateTo is not a valid Y-m-d date
+3: Status is unknown
+4: FilterByUserID is not a whole number (0 or empty = all accounts)
+5: SearchQuery could not be translated
+7: DateFrom is after DateTo
+99999: Not enough privileges (sub-admin without Reports)
+```
+
+:::
+
+Row fields:
+
+- `OwnerName` is the owner's company, else first and last name, else `Unknown`.
+- Dates are `Y-m-d H:i:s` (`SendDate` is `Y-m-d`) or `null` when empty. `SendTime` and `SendTimeZone` are the scheduled time and the time zone it is in.
+- `Rates` are percentages with two decimals, or `null` when the denominator is zero: `Open` and `Click` over sent, `CTOR` clicks over opens, `Optout` unsubscriptions over sent, `Bounce` hard bounces over sent plus failed, `Progress` sent over recipients.
+- `Throughput` is the average sending rate since the send started, or `null` for a campaign that has not started.
+- `Health` holds one verdict per metric (`good`, `average`, `poor`, or `na` for the open rate of a plain-text campaign) under the `CAMPAIGN_HEALTH_*` thresholds, the hard bounce and unsubscribe rates, and the 0 to 10 engagement score.
+- `CanRetryFailed` is `true` for a `Sent` or `Failed` campaign with failed recipients, the campaigns `admin.campaign.retryfailed` accepts.
 
 ## List Stuck Campaigns
 
@@ -904,7 +1032,7 @@ Each row carries every `oempro_campaigns` column plus the owner decoration and t
 <Badge type="info" text="POST" /> `/api/v1/admin.campaigns.statuscounts`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege, checked in the handler since v6.0.2)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -968,6 +1096,7 @@ curl -X POST https://example.com/api/v1/admin.campaigns.statuscounts \
 4: FilterByUserID is not a whole number (0 or empty = all accounts)
 5: SearchQuery could not be translated
 7: DateFrom is after DateTo
+99999: Not enough privileges (sub-admin without Reports)
 ```
 
 :::
@@ -977,7 +1106,7 @@ curl -X POST https://example.com/api/v1/admin.campaigns.statuscounts \
 <Badge type="info" text="POST" /> `/api/v1/admin.campaigns.timeseries`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege, checked in the handler since v6.0.2)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -1047,6 +1176,7 @@ curl -X POST https://example.com/api/v1/admin.campaigns.timeseries \
 5: SearchQuery could not be translated
 7: DateFrom is after DateTo
 8: The time series query failed
+99999: Not enough privileges (sub-admin without Reports)
 ```
 
 :::
@@ -1056,12 +1186,12 @@ curl -X POST https://example.com/api/v1/admin.campaigns.timeseries \
 <Badge type="info" text="POST" /> `/api/v1/admin.campaigns.export`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Authentication required: Admin API Key (sub-admins need the `Reports` privilege, checked in the handler since v6.0.2)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-The 19-column row set of the admin Campaign Report's CSV download, with the derived rates and the average throughput already computed, under the same filters as the other report commands. Rows are JSON objects by default; `Format=csv` returns one CSV string (header row included, no BOM) whose free-text cells are formula-protected (`Core::SanitizeCSVRow`, see `CSV_EXPORT_FORMULA_PROTECTION`). The result is capped at `CAMPAIGN_EXPORT_MAX_ROWS` (default 10000): when the filtered set is larger, the first `MaxRows` rows in sort order are returned and `Truncated` is `true`. Narrow the filters or page with `admin.campaigns.search` for larger sets.
+The 19-column row set of the admin Campaign Report's CSV download, with the derived rates and the average throughput already computed, under the same filters as the other report commands. Rows are JSON objects by default; `Format=csv` returns one CSV string (header row included, no BOM) whose free-text cells are formula-protected (`Core::SanitizeCSVRow`, see `CSV_EXPORT_FORMULA_PROTECTION`). The result is capped at `CAMPAIGN_EXPORT_MAX_ROWS` (default 10000): when the filtered set is larger, the first `MaxRows` rows in sort order are returned and `Truncated` is `true`. Narrow the filters, or page through the bucket with `admin.campaigns.report`, for larger sets.
 
 Columns: `CampaignID`, `CampaignName`, `UserID`, `UserName` (company, else first and last name, else `Unknown`), `Status` (raw `CampaignStatus`), `Started`, `Finished` (`Y-m-d H:i:s` or `N/A`), `Recipients`, `Sent`, `Delivered`, `Failed`, `OpenRate` (UniqueOpens / Sent), `ClickRate` (UniqueClicks / Sent), `CTOR` (UniqueClicks / UniqueOpens), `OptoutRate` (Unsubscriptions / Sent), `BounceRate` (HardBounces / (Sent + Failed)), `Progress` (Sent / Recipients), `Duration` (seconds), `Speed` (emails per second). Rates are strings with two decimals and a `%` sign, or `N/A` when the denominator is zero (`Progress` is `0%`). `Duration` and `Speed` are empty for statuses without a send window (`Campaigns::CalculateThroughput`).
 
@@ -1135,6 +1265,7 @@ curl -X POST https://example.com/api/v1/admin.campaigns.export \
 5: SearchQuery could not be translated
 6: Format is not json or csv
 7: DateFrom is after DateTo
+99999: Not enough privileges (sub-admin without Reports)
 ```
 
 :::
@@ -4572,6 +4703,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
+- Required privilege: `Reports`, checked in the handler since v6.0.2
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -4632,6 +4764,7 @@ curl -X POST https://example.com/api/v1/admin.campaign.unstuck \
 4: Campaign is not stuck. The campaign appears to be processing normally.
 5: Database error during unstuck operation
 11: Access denied to this campaign (restricted sub-admin, issue #2856)
+99999: Not enough privileges (sub-admin without Reports)
 ```
 
 :::
@@ -4642,6 +4775,7 @@ curl -X POST https://example.com/api/v1/admin.campaign.unstuck \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
+- Required privilege: `Reports`, checked in the handler since v6.0.2
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -4703,6 +4837,7 @@ curl -X POST https://example.com/api/v1/admin.campaign.markfailed \
 4: Campaign is not stuck. Only stuck campaigns can be marked as failed.
 5: Database error during mark as failed operation
 11: Access denied to this campaign (restricted sub-admin, issue #2856)
+99999: Not enough privileges (sub-admin without Reports)
 ```
 
 :::
@@ -4713,7 +4848,7 @@ curl -X POST https://example.com/api/v1/admin.campaign.markfailed \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Required privilege: `Reports`
+- Required privilege: `Reports`, checked in the handler since v6.0.2
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -4794,6 +4929,7 @@ curl -X POST https://example.com/api/v1/admin.campaign.retryfailed \
 6: Database error during retry operation, or the retry was committed but the campaign
    could not be dispatched to the delivery queue. The ErrorText distinguishes the two.
 11: Access denied to this campaign (restricted sub-admin, issue #2856)
+99999: Not enough privileges (sub-admin without Reports)
 ```
 
 :::

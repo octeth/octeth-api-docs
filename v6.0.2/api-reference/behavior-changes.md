@@ -73,6 +73,16 @@ Until this release a sub-administrator holding `SubAdmins` could create an accou
 
 The `admin.subadmin.*` commands relied on the registry's privilege tag, which is enforced only when `ADMIN_API_ENFORCE_PRIVILEGES` is on, so with it off any sub-admin session could call them. Each handler now checks `SubAdmins` itself and answers `99999` without it, as the newer staff commands do (#3521, #3522). The legacy Sub Admin Accounts screen always required `SubAdmins`, so the API now matches what the screen allowed.
 
+### Campaign report commands (privilege check)
+
+#### `Reports` is checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+
+`admin.campaigns.search`, `admin.campaigns.statuscounts`, `admin.campaigns.timeseries`, `admin.campaigns.export`, `admin.campaign.unstuck`, `admin.campaign.markfailed` and `admin.campaign.retryfailed` relied on the registry's `Reports` tag, which is enforced only when `ADMIN_API_ENFORCE_PRIVILEGES` is on, so with it off any sub-admin session could call them (octeth/oempro#3528). Each handler now checks `Reports` itself and answers `ErrorCode 99999` ("Not enough privileges") without it, as the newer staff commands do (#3521, #3522, #3525). The legacy Campaign Report screen always required `Reports`, so the API now matches what the screen allowed.
+
+**Not affected:** the master admin, the master `ADMIN_API_KEY`, and every administrator without `Options.AccessLimited`. Their responses are unchanged, and so are the responses of a sub-admin who holds `Reports`.
+
+**Who needs to act:** an integration that calls these commands with the session or API key of a sub-admin without `Reports`. Give that account `Reports`, or use the master key.
+
 ### List freshness (privilege check)
 
 #### `Reports` is checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
@@ -278,6 +288,31 @@ A POST to any of these URLs, including the old create, edit, bulk delete and API
 - **The API key is shown once.** The legacy edit page printed the stored key on every visit. The new screen shows a key only right after it is issued or rotated, and "Issued" afterwards.
 - **New per-account actions.** Reset two-factor authentication for a sub-admin who lost their authenticator, and sign a sub-admin out of every remembered browser without revoking every administrator's.
 - **A deleted user group stays visible.** A stored group id that no longer exists is listed as "Deleted group #N" and kept on save unless you untick it, so saving never widens an account to every group.
+
+#### The legacy admin Campaign Report is removed
+
+The legacy admin **Campaign Report** (`/app/admin/campaignreport/`), an item of the classic **Reports** menu, is removed. The report is the **Campaigns** screen in the **Reports** group of the new interface's staff area (`/<UI_STAFF_PREFIX>/staff/reports/campaigns`), see [The Staff Campaign Report](/v6.0.2/new-user-interface/staff-campaign-report) (octeth/oempro#3528). It needs the `Reports` privilege, as the page did, and a sub-admin limited to some user groups sees only those groups' campaigns.
+
+**The old URLs keep working.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/campaignreport/` | 302 to `/<staff>/staff/reports/campaigns` |
+| `/app/admin/campaignreport/browse/<page>/<rows>/ByStatus/<bucket>/<sort>/<direction>` | 302 to the screen with the bucket, page, page size (10, 25, 50 or 100) and sort (Started, Recipients or Failed) carried over |
+| `/app/admin/campaignreport/chartdata/...`, `/app/admin/campaignreport/exportcsv/` | 410 Gone, with a link to the screen |
+
+A POST to any of these URLs, including the old `unstuck`, `markfailed` and `retryfailed` AJAX calls and the CSV export form, is refused: nothing runs, and the answer is a short page that links to the new screen.
+
+The classic admin header's **Reports > Campaign Report** item opens the new screen.
+
+**What changed on the way:**
+
+- **A search the server cannot read is an error.** The legacy page listed every campaign when the advanced search could not be translated. The new screen shows the error under the search box and lists nothing until the search is fixed.
+- **The account filter searches.** The legacy page loaded up to 10,000 accounts into a drop-down. The new filter searches accounts by name, company or email address.
+- **The CSV export is capped.** The legacy download had no row limit. The new one is built by `admin.campaigns.export` and holds at most `CAMPAIGN_EXPORT_MAX_ROWS` rows (default 10000).
+- **Recovery actions are confirmed and audited.** Unstuck, Mark failed and Retry failed recipients each ask first, and each one is recorded in the staff audit log.
+
+There is no opt-in flag: the page is removed, and its URLs answer as above.
 
 #### The legacy admin List Freshness report is removed
 
@@ -591,6 +626,12 @@ Two new admin commands, both needing the `SubAdmins` privilege, which each one c
 
 - `admin.subadmin.2fa.reset` takes `AdminID` and turns that sub-admin's two-factor authentication off (secret, recovery key and enabled flag cleared). Error codes: `1` missing or invalid id, `2` not found, `3` not an access-limited sub-admin, `4` not saved. Refused in demo mode.
 - `admin.subadmin.signins.revoke` takes `AdminID` and revokes that sub-admin's remembered sign-ins of the classic admin area, returning `Revoked`. Open sessions stay open until they end. Error codes as above, `4` meaning the tokens could not be revoked. Refused in demo mode.
+
+### Campaign report command
+
+One new admin command, additive and needing the `Reports` privilege, which it checks even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (octeth/oempro#3528):
+
+- `admin.campaigns.report` lists one page of a Campaign Report bucket (`Status`, default `Sent`) under the report's shared filters, sorted by `OrderField` and `OrderType` (Draft and Scheduled keep their own order), 10 to 100 rows per page (`RecordsPerRequest`, default 25). Each row carries the campaign, its owner, its rates, its average throughput, its health verdicts and, for stuck campaigns, the stuck reason. It returns an allow-listed projection, never campaign content or options. Error codes are the report's shared ones. Rate limit 100 requests per 60 seconds.
 
 ### AI assistant connector
 
