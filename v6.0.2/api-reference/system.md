@@ -979,3 +979,285 @@ curl -X GET "https://example.com/api/v1/admin.system.health?AdminAPIKey=your-adm
 
 :::
 
+## List Log Files
+
+<Badge type="info" text="GET" /> `/api/v1/admin.logs.get`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session (privilege `Settings`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy Log Observer did)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Lists the log files of the install that changed within the last `Days` days, newest first: the regular files directly inside `data/logs` (Source `app`) and `system/storage/logs` (Source `system`). `Path` is the value the other log commands take as `File`. `Size` is in bytes and `Modified` is a Unix time. `Type` is the file name without its date and its `.log`, `.csv` or `.jsonl` extension.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.logs.get` |
+| SessionID | String | No | Admin session ID obtained from login |
+| AdminAPIKey | String | No | Admin API key for authentication |
+| Days | Integer | No | How far back to look, 1 to 3650. Default `30`; any other value is `30` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'Command=admin.logs.get' \
+  -d 'ResponseFormat=JSON' \
+  -d 'AdminAPIKey=your-admin-api-key' \
+  -d 'Days=7'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Days": 7,
+  "Files": [
+    {
+      "Name": "errors-2026-10-18.log",
+      "Path": "data/logs/errors-2026-10-18.log",
+      "Source": "app",
+      "SourceLabel": "Application Logs",
+      "Type": "errors",
+      "Size": 48213,
+      "Modified": 1760792400
+    },
+    {
+      "Name": "laravel.log",
+      "Path": "system/storage/logs/laravel.log",
+      "Source": "system",
+      "SourceLabel": "System Logs",
+      "Type": "laravel",
+      "Size": 1873402,
+      "Modified": 1760788800
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99998: Authentication failure or expired session
+99999: The administrator does not have the Settings privilege
+429: Rate limit exceeded
+```
+
+:::
+
+## Read the Last Lines of a Log File
+
+<Badge type="info" text="GET" /> `/api/v1/admin.log.tail`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session (privilege `Settings`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the last `Lines` lines of one log file. The file must be a regular file directly inside `data/logs` or `system/storage/logs`. A path outside them, a `../` path, a symlink that leads outside them, a directory or a missing file is refused with error `2`, and the refusal is logged with the administrator's ID.
+
+At most 1 MB is read back from the end of the file. When that limit is reached before the requested number of lines, `Clipped` is `true` and the first line of `Content` is partial. Bytes that are not valid UTF-8 are replaced with U+FFFD.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.log.tail` |
+| SessionID | String | No | Admin session ID obtained from login |
+| AdminAPIKey | String | No | Admin API key for authentication |
+| File | String | Yes | The `Path` of a file from `admin.logs.get`, for example `data/logs/errors-2026-10-18.log` |
+| Lines | Integer | No | 1 to 1000. Default `100`; a larger value is `1000` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'Command=admin.log.tail' \
+  -d 'ResponseFormat=JSON' \
+  -d 'AdminAPIKey=your-admin-api-key' \
+  -d 'File=data/logs/errors-2026-10-18.log' \
+  -d 'Lines=500'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "File": "data/logs/errors-2026-10-18.log",
+  "Name": "errors-2026-10-18.log",
+  "Lines": 500,
+  "Content": "[2026-10-18 13:58:02] octeth.INFO: Campaign 4127 queued for delivery\n[2026-10-18 14:01:33] octeth.INFO: Campaign 4127 completed",
+  "Clipped": false,
+  "Size": 48213,
+  "Modified": 1760792400
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "This is not a log file that can be opened."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: File is missing or empty
+2: The path was refused: outside the log directories, not a regular file, or not found
+3: The file could not be read
+99999: The administrator does not have the Settings privilege
+```
+
+:::
+
+## Read a Chunk of a Log File
+
+<Badge type="info" text="GET" /> `/api/v1/admin.log.read`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session (privilege `Settings`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off)
+- Rate limit: 2000 requests per 60 seconds, so a large file can be downloaded chunk by chunk
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns up to 1 MB of one log file, base64-encoded, starting at `Offset`. To download a whole file, call it from offset `0` and add `Length` to the offset after each call until `EOF` is `true`. The path rules are those of `admin.log.tail`.
+
+`Length` is the number of bytes in `Content` after decoding. `Size` is the size of the file when the chunk was read, and `EOF` is `true` when `Offset + Length` reached it. An offset at or past the end of the file returns an empty `Content` and `EOF` `true`. A log file can grow while you read it: stop at the `Size` of the first chunk for a consistent copy.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.log.read` |
+| SessionID | String | No | Admin session ID obtained from login |
+| AdminAPIKey | String | No | Admin API key for authentication |
+| File | String | Yes | The `Path` of a file from `admin.logs.get` |
+| Offset | Integer | No | The byte to start at. Default `0` |
+| Length | Integer | No | The most bytes to return, 1 to 1048576. Default `1048576`; a larger value is `1048576` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'Command=admin.log.read' \
+  -d 'ResponseFormat=JSON' \
+  -d 'AdminAPIKey=your-admin-api-key' \
+  -d 'File=system/storage/logs/laravel.log' \
+  -d 'Offset=0'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "File": "system/storage/logs/laravel.log",
+  "Name": "laravel.log",
+  "Content": "WzIwMjYtMTAtMThdIGxvY2FsLklORk86IC4uLgo=",
+  "Offset": 0,
+  "Length": 28,
+  "Size": 28,
+  "EOF": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "offset and length must be whole numbers."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: File is missing or empty
+2: The path was refused: outside the log directories, not a regular file, or not found
+3: The file could not be read
+4: Offset or Length is not a whole number
+99999: The administrator does not have the Settings privilege
+```
+
+:::
+
+## Empty a Log File
+
+<Badge type="info" text="POST" /> `/api/v1/admin.log.truncate`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session (privilege `Settings`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off)
+- Rate limit: 10 requests per 300 seconds
+- Refused in demo mode
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Empties one log file. The content cannot be recovered, so download the file first with `admin.log.read` if you may need it. The path rules are those of `admin.log.tail`. Every truncate is logged with the administrator's ID, the file and its size before.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.log.truncate` |
+| SessionID | String | No | Admin session ID obtained from login |
+| AdminAPIKey | String | No | Admin API key for authentication |
+| File | String | Yes | The `Path` of a file from `admin.logs.get` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.log.truncate \
+  -d 'AdminAPIKey=your-admin-api-key' \
+  -d 'File=data/logs/errors-2026-10-18.log'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "File": "data/logs/errors-2026-10-18.log",
+  "Name": "errors-2026-10-18.log",
+  "SizeBefore": 48213
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": "NOT AVAILABLE IN DEMO MODE."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: File is missing or empty
+2: The path was refused: outside the log directories, not a regular file, or not found
+3: The file could not be emptied
+NOT AVAILABLE IN DEMO MODE.: Demo mode is on
+99999: The administrator does not have the Settings privilege
+```
+
+:::
+

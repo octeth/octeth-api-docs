@@ -197,6 +197,22 @@ A POST to any of these URLs, including the old save, disable and revoke forms, i
 
 There is no opt-in flag: the page is removed, and its URLs answer as above. `settings.update`, `settings.get` and the `admin.2fa.*` commands are unchanged, and the five new commands are listed under "Additions" below.
 
+#### The legacy admin Log Observer is removed
+
+The legacy admin **Log Observer** (`/app/admin/logobserver/`), an item of the classic **Settings** sidebar, is removed. Listing, reading, downloading and emptying log files is on the **Logs** screen of the new interface's staff area (`/<UI_STAFF_PREFIX>/staff/logs`) (octeth/oempro#3522). The screen needs the `Settings` privilege, as the page did.
+
+**The old URL keeps working.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/logobserver/`, anything under it | 302 to `/<staff>/staff/logs` |
+
+A POST to it, including the old `x_tail` and `x_truncate` calls, is refused: nothing is read or emptied, and the answer is a short page that links to the new screen. The old `x_list_files` and `x_download` GET actions redirect to the screen and no longer return a file list or a file.
+
+The classic **Settings** sidebar's **Logs** item (formerly **Log Observer**) opens the new screen. The top-right **Settings** link no longer considers the Log Observer as a landing page, which changes nothing in practice, because every section before it needs `Settings` too.
+
+There is no opt-in flag: the page is removed, and its URL answers as above. The four new commands are listed under "Additions" below.
+
 #### The legacy admin overview points to the new dashboard
 
 The legacy admin overview (`/app/admin/overview/`) is still where the legacy admin login lands, but it no longer shows the reports. It shows a "The dashboard moved" card with a link to the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) of the new interface (`/<UI_STAFF_PREFIX>/staff/dashboard`), the setup checklist (admins with the Settings privilege and no user group limit) and the quick links (admins with `Admin.Dashboard.Links`).
@@ -442,6 +458,15 @@ Five new admin commands, all additive and all needing the `Security` privilege, 
 - `admin.remembertokens.revokeall` revokes every remembered sign-in, the caller's included. Refused in demo mode. Rate limit 10 requests per 300 seconds.
 
 The upgrade adds a `UserAgent` column to `oempro_admin_remember_tokens` (a small table, an instant change).
+
+### Log file commands
+
+Four new admin commands, all additive and all needing the `Settings` privilege, which each one checks even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (octeth/oempro#3522). No existing command changes. They reach only the regular files directly inside `data/logs` and `system/storage/logs`: a path outside them, a `../` path or a symlink that leads outside them is refused with error `2` and logged with the administrator's ID. Log files can hold request parameters and personal data, so grant `Settings` with that in mind.
+
+- `admin.logs.get` takes `Days` (1 to 3650, default 30) and lists the files that changed in that period, newest first, with name, path, source, type, size and modification time. Rate limit 100 requests per 60 seconds.
+- `admin.log.tail` takes `File` and `Lines` (1 to 1000, default 100) and returns the last lines as text, reading at most 1 MB from the end of the file. Rate limit 100 requests per 60 seconds.
+- `admin.log.read` takes `File`, `Offset` and `Length` (at most 1 MB) and returns that chunk base64-encoded with `Offset`, `Length`, `Size` and `EOF`, so a file of any size downloads chunk by chunk. Rate limit 2000 requests per 60 seconds.
+- `admin.log.truncate` takes `File` and empties it. It is logged with the administrator's ID and refused in demo mode. Rate limit 10 requests per 300 seconds.
 
 ### AI assistant connector
 
