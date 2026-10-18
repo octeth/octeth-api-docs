@@ -119,6 +119,26 @@ A POST to any of these URLs, including the old results endpoint `/app/admin/subs
 
 There is no opt-in flag: the section is removed, and its URLs answer as above. `admin.subscriber.search` stays available.
 
+#### The legacy admin Account page is removed
+
+The legacy admin **Account** page (`/app/admin/account/`, the first item of the classic **Settings** sidebar) is removed. An administrator's own name, email address, username and password, and the system sender and alert recipient, are edited on **Your profile** in the new interface's staff area (`/<UI_STAFF_PREFIX>/staff/profile`), opened from the user menu at the bottom of the left menu (octeth/oempro#3514).
+
+**The old URL keeps working.** `/app/admin/account/` is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/account/`, anything under it | 302 to `/<staff>/staff/profile` |
+
+A POST to it, including the old profile form, is refused: nothing is saved, and the answer is a short page that links to the new screen. The new screen needs the `Account` privilege, and its System emails section the `Settings` privilege, as before.
+
+The classic **Settings** sidebar's **Account** item now opens the new screen. The **System Settings** item of the classic **Preferences** menu now opens the first settings section the administrator's privileges allow (Sub Admin Accounts, Security, and so on, in sidebar order), and About when none of them is allowed. It used to open the Account page.
+
+**A username or password change signs you out of the new interface.** Saving either on Your profile ends the administrator's session, and the sign-in page asks for a sign-in with the new details. A name or email address change keeps the session.
+
+**The master Admin API Key is no longer shown anywhere in the interface.** The legacy page's API tab showed `ADMIN_API_KEY` to every administrator with the `Account` privilege, restricted sub-administrators included, and that key acts as the unrestricted master administrator. The API access section of Your profile shows no key. An unrestricted administrator is told that the key is `ADMIN_API_KEY` in `.oempro_env`, which only the server operator can read. A restricted sub-administrator sees whether a key of their own is issued, and those keys are issued under Sub Admin Accounts, carrying only that sub-administrator's privileges and user groups. An integration that copied the master key from the Account page keeps working: the key itself is unchanged.
+
+There is no opt-in flag: the page is removed, and its URL answers as above. `admin.get`, `admin.update`, `settings.get` and `settings.update` are unchanged.
+
 #### The legacy admin overview points to the new dashboard
 
 The legacy admin overview (`/app/admin/overview/`) is still where the legacy admin login lands, but it no longer shows the reports. It shows a "The dashboard moved" card with a link to the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) of the new interface (`/<UI_STAFF_PREFIX>/staff/dashboard`), the setup checklist (admins with the Settings privilege and no user group limit) and the quick links (admins with `Admin.Dashboard.Links`).
