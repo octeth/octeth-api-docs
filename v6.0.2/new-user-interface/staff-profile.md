@@ -25,8 +25,8 @@ You sign in with your username. Saving a new username signs you out of the staff
 
 ## Password
 
-1. Enter your **Current password**.
-2. Enter a **New password**, or click **Generate** to fill in a random one. Click **Show** to see it, and copy a generated password before you save.
+1. Enter your **Current password**. The eye icon at the right of the field shows what you typed.
+2. Enter a **New password**, or click **Generate** to fill in a random one. Click the eye icon at the right of the field to see the password, and copy a generated password before you save.
 3. Click **Change password**.
 
 Saving signs you out of the staff area. Sign in again with the new password. When the current password is wrong, the field says so and nothing is changed.
@@ -42,11 +42,12 @@ Click **Save system emails**. Other settings are not changed.
 
 ## API access
 
-This section never shows an API key.
+What this section shows depends on your administrator account.
 
-- **Administrators without permission limits** use the master Admin API Key. It is the `ADMIN_API_KEY` value in the install's `.oempro_env` file, which only the server operator can read.
+- **The main administrator** (the first administrator account of the install, which the master Admin API Key signs in as) sees the master Admin API Key, masked. Click **Reveal** to show it and **Copy** to copy it, then **Hide** to mask it again. Each reveal is recorded in the staff audit log. The key itself is not. The key is the `ADMIN_API_KEY` value in the install's `.oempro_env` file, so it is changed there, on the server.
+- **Other administrators without permission limits** see no key. The master Admin API Key is the `ADMIN_API_KEY` value in the install's `.oempro_env` file, which only the server operator can read.
 - **Sub-administrators with permission limits** see whether an API key of their own is issued. That key is issued, rotated and revoked under **Sub Admin Accounts** in the classic admin area, it is shown only once, when it is issued, and it carries only the sub-administrator's own permissions and user groups.
 
 ::: tip
-If you need the master key and cannot read `.oempro_env`, ask the person who runs the server. The interface no longer displays it.
+The master key acts as the main administrator with every permission. Keep it out of shared documents and chat. If you are not the main administrator and need it, ask the person who runs the server, or issue a key of your own under **Sub Admin Accounts**.
 :::
