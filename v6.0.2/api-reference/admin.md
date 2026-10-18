@@ -3293,6 +3293,344 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 :::
 
+## Get the Admin Access Rules
+
+<Badge type="info" text="GET" /> `/api/v1/admin.security.settings.get`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Security`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy Security page did
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the install-wide admin access rules the staff Security screen shows: the admin area IP allow-list, whether the same list applies to user sign-ins, and whether admin API calls are measured against it. `CallerIP` is the address of this request as the admin login resolves it (after the trusted-proxy resolution), and `CallerAllowed` says whether the stored list admits it. An empty `AdminAllowedIPs` means every address may sign in, unless `AdminAllowedIPsStoredBlank` is `true`: the stored list then holds only blank lines, which the admin sign-in enforces as a list with no address on it (only the server itself gets in). `CallerAllowed` is measured the way the sign-in measures it, so it is `false` in that state. Saving an empty `AdminAllowedIPs` with `admin.security.settings.update` clears it.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                    |
+|-------------|--------|----------|------------------------------------------------|
+| Command     | String | Yes      | API command: `admin.security.settings.get`     |
+| SessionID   | String | No       | Session ID obtained from `admin.login`         |
+| AdminAPIKey | String | No       | Admin API key (master or per-sub-admin)        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.security.settings.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.security.settings.get",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "AdminAllowedIPs": ["203.0.113.7", "198.51.100.0/24"],
+  "AdminAllowedIPsStoredBlank": false,
+  "PreventUserLoginFromAlienIPs": false,
+  "AdminAPIEnforceAllowedIP": true,
+  "CallerIP": "203.0.113.7",
+  "CallerAllowed": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99999: The administrator does not hold the Security privilege
+```
+
+:::
+
+## Save the Admin Access Rules
+
+<Badge type="info" text="POST" /> `/api/v1/admin.security.settings.update`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Security`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- Rate limit: 20 requests per 300 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Saves the admin area IP allow-list, the user sign-in rule, or both. Only the parameters sent are saved, and at least one must be sent. This is the same column and option `settings.update` writes, but it needs `Security` rather than `Settings`, the privilege the legacy Security page checked. Disabled in demo mode.
+
+The list holds one entry per line: an IP address (exact match) or an IPv4 CIDR range. Blank lines and surrounding spaces are ignored and exact duplicates dropped. An empty value removes the list, including a stored list of only blank lines.
+
+Lockout guard: a non-empty list that does not admit the calling address is refused with error 4 and the address in `CallerIP`, unless `ConfirmLockout` is `true`. Loopback is always admitted, as at the admin login.
+
+**Request Body Parameters:**
+
+| Parameter                    | Type    | Required | Description |
+|------------------------------|---------|----------|-------------|
+| Command                      | String  | Yes      | API command: `admin.security.settings.update` |
+| SessionID                    | String  | No       | Session ID obtained from `admin.login` |
+| AdminAPIKey                  | String  | No       | Admin API key (master or per-sub-admin) |
+| AdminAllowedIPs              | String  | No       | The allow-list, one IP address or IPv4 CIDR range per line. At most 1000 entries |
+| PreventUserLoginFromAlienIPs | Boolean | No       | Apply the list to user sign-ins too. Possible values: `true`, `false` |
+| ConfirmLockout               | Boolean | No       | Save a list that does not admit the calling address. Possible values: `true`, `false` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.security.settings.update \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.security.settings.update",
+    "AdminAPIKey": "your-admin-api-key",
+    "AdminAllowedIPs": "203.0.113.7\n198.51.100.0/24",
+    "PreventUserLoginFromAlienIPs": false
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "AdminAllowedIPs": ["203.0.113.7", "198.51.100.0/24"],
+  "AdminAllowedIPsStoredBlank": false,
+  "PreventUserLoginFromAlienIPs": false,
+  "AdminAPIEnforceAllowedIP": true,
+  "CallerIP": "203.0.113.7",
+  "CallerAllowed": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "The list does not include your address, so the admin area would refuse you. Add your address, or send ConfirmLockout=true to save it anyway.",
+  "CallerIP": "192.0.2.44"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: AdminAllowedIPs holds an entry that is not an IP address or an IPv4 CIDR range (InvalidEntries lists up to 20), or is not a string
+2: PreventUserLoginFromAlienIPs is not true or false
+3: Neither AdminAllowedIPs nor PreventUserLoginFromAlienIPs was sent
+4: The list does not admit the calling address (CallerIP). Nothing was saved
+5: The list holds more than 1000 entries or more than 65535 bytes
+99999: The administrator does not hold the Security privilege
+NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+```
+
+:::
+
+## List Remembered Admin Sign-Ins
+
+<Badge type="info" text="GET" /> `/api/v1/admin.remembertokens.get`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Security`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Lists every administrator's outstanding "remember me" sign-in of the legacy admin area, newest first. Only metadata is returned: never the token or its hash. Dates are UTC. `LastUsedAt` is empty for a sign-in not used since it was issued, and `UserAgent` is empty for one issued before v6.0.2.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                |
+|-------------|--------|----------|--------------------------------------------|
+| Command     | String | Yes      | API command: `admin.remembertokens.get`    |
+| SessionID   | String | No       | Session ID obtained from `admin.login`     |
+| AdminAPIKey | String | No       | Admin API key (master or per-sub-admin)    |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.remembertokens.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.remembertokens.get",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Tokens": [
+    {
+      "TokenID": 12,
+      "AdminID": 1,
+      "Username": "admin",
+      "Name": "Admin",
+      "CreatedAt": "2026-10-18 09:12:00",
+      "LastUsedAt": "2026-10-18 10:00:00",
+      "ExpiresAt": "2026-11-01 09:12:00",
+      "UserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) Safari/605.1.15"
+    }
+  ],
+  "TotalTokens": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "The remembered sign-ins could not be listed."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: The remembered sign-ins could not be listed. Some may still exist
+99999: The administrator does not hold the Security privilege
+```
+
+:::
+
+## Revoke a Remembered Admin Sign-In
+
+<Badge type="info" text="POST" /> `/api/v1/admin.remembertoken.revoke`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Security`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- Rate limit: 30 requests per 300 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Revokes one remembered sign-in of any administrator. That browser signs in with the form next time. A session already open there is not ended: change that administrator's password to end it. Disabled in demo mode.
+
+**Request Body Parameters:**
+
+| Parameter   | Type    | Required | Description                                        |
+|-------------|---------|----------|----------------------------------------------------|
+| Command     | String  | Yes      | API command: `admin.remembertoken.revoke`          |
+| SessionID   | String  | No       | Session ID obtained from `admin.login`             |
+| AdminAPIKey | String  | No       | Admin API key (master or per-sub-admin)            |
+| TokenID     | Integer | Yes      | The `TokenID` from `admin.remembertokens.get`      |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.remembertoken.revoke \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.remembertoken.revoke",
+    "AdminAPIKey": "your-admin-api-key",
+    "TokenID": 12
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Revoked": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "That remembered sign-in no longer exists. It may have expired or been revoked already."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: TokenID is required
+2: TokenID is not a positive whole number
+3: No such remembered sign-in. It may have expired or been revoked already
+4: The remembered sign-in could not be revoked
+99999: The administrator does not hold the Security privilege
+NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+```
+
+:::
+
+## Revoke All Remembered Admin Sign-Ins
+
+<Badge type="info" text="POST" /> `/api/v1/admin.remembertokens.revokeall`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication is done by Admin API Key or admin SessionID
+- Required privilege: `Security`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- Rate limit: 10 requests per 300 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Revokes every administrator's remembered sign-ins, the caller's own included. Sessions already open are not ended. Disabled in demo mode.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                   |
+|-------------|--------|----------|-----------------------------------------------|
+| Command     | String | Yes      | API command: `admin.remembertokens.revokeall` |
+| SessionID   | String | No       | Session ID obtained from `admin.login`        |
+| AdminAPIKey | String | No       | Admin API key (master or per-sub-admin)       |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.remembertokens.revokeall \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.remembertokens.revokeall",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Revoked": 3
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "The remembered sign-ins could not be revoked."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: The remembered sign-ins could not be revoked
+99999: The administrator does not hold the Security privilege
+NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
+```
+
+:::
+
 ## Get Admin Privileges
 
 <Badge type="info" text="GET" /> `/api/v1/admin.privileges.get`

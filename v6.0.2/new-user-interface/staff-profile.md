@@ -1,10 +1,11 @@
 # Your Staff Profile
 
-**Your profile** is where an administrator changes their own name, email address, username and password, and, with the Settings permission, the sender of the emails the install sends on its own. It replaces the classic admin **Account** page.
+**Your profile** is where an administrator changes their own name, email address, username and password, turns their own two-factor authentication on or off with the Security permission, and, with the Settings permission, sets the sender of the emails the install sends on its own. It replaces the classic admin **Account** page and the two-factor part of the classic **Security** page.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
 | Your profile | `/user/staff/profile` | Account |
+| Your profile, Two-factor authentication section | `/user/staff/profile?section=two-factor` | Account and Security |
 | Your profile, System emails section | `/user/staff/profile?section=system-emails` | Account and Settings |
 
 Open it from the user menu: click your name at the bottom of the left menu, then **Your profile**. The classic admin **Settings > Account** link opens the same screen.
@@ -13,7 +14,7 @@ Open it from the user menu: click your name at the bottom of the left menu, then
 The screen acts as the administrator who is signed in, and every save is recorded in the staff audit log with the names of the fields that changed. The values themselves are not recorded.
 :::
 
-The screen has four sections in a menu on the left. Each section has its own **Save** button and saves only its own fields.
+The screen has up to five sections in a menu on the left. Each section has its own button and saves only its own fields.
 
 ## Profile
 
@@ -30,6 +31,29 @@ You sign in with your username. Saving a new username signs you out of the staff
 3. Click **Change password**.
 
 Saving signs you out of the staff area. Sign in again with the new password. When the current password is wrong, the field says so and nothing is changed.
+
+## Two-factor authentication
+
+Shown only to administrators with the Security permission. With two-factor authentication on, signing in to the admin area asks for a code from an authenticator app on your phone as well as your password. It applies to the new interface and to the classic admin area.
+
+### Turn it on
+
+1. Click **Set up two-factor authentication**.
+2. Scan the QR code with an authenticator app such as 1Password, Authy or Google Authenticator. To enter the key by hand instead, copy the setup key under the QR code.
+3. Copy the **recovery key** and keep it somewhere safe. It is shown only now.
+4. Enter the six-digit code the app shows and click **Turn on**.
+
+When the code is not accepted, check that the time on your phone is right and enter the newest code. **Cancel** leaves two-factor authentication off.
+
+Turning it on revokes your remembered sign-ins of the classic admin area.
+
+### Turn it off
+
+Enter your **Current password** and click **Turn off two-factor authentication**. When the password is wrong, the field says so and two-factor authentication stays on.
+
+::: tip
+Lost your phone? Open the two-factor reset page of the classic admin area (`/app/admin/reset2fa/`, also linked from the sign-in code prompt) and enter your recovery key. It turns two-factor authentication off, and you can set it up again here.
+:::
 
 ## System emails
 

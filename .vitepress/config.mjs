@@ -1115,6 +1115,7 @@ export default defineConfig({
                         {text: 'Searching Subscribers in the Staff Area', link: '/v6.0.2/new-user-interface/staff-subscriber-search'},
                         {text: 'Your Staff Profile', link: '/v6.0.2/new-user-interface/staff-profile'},
                         {text: 'The Staff System Screen', link: '/v6.0.2/new-user-interface/staff-system'},
+                        {text: 'The Staff Security Screen', link: '/v6.0.2/new-user-interface/staff-security'},
                         {text: 'Branding', link: '/v6.0.2/new-user-interface/branding'},
                         {text: 'Setting Up Billing', link: '/v6.0.2/new-user-interface/billing-setup'},
                         {text: 'Payment Gateways', link: '/v6.0.2/new-user-interface/payment-gateways'},

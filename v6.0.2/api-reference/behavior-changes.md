@@ -168,6 +168,35 @@ There is no opt-in flag: the pages are removed, and their URLs answer as above. 
 
 The classic admin license notice and the user and subscriber limit notices now say "in the License section of the System screen" instead of "on the Settings > License page", and so do the installer and upgrade messages.
 
+#### The legacy admin Security page is removed
+
+The legacy admin **Security** page (`/app/admin/security/`), an item of the classic **Settings** sidebar, is removed and its settings are split across two screens of the new interface's staff area (octeth/oempro#3521):
+
+- **Your own two-factor authentication** is the **Two-factor authentication** section of [Your profile](/v6.0.2/new-user-interface/staff-profile) (`/<UI_STAFF_PREFIX>/staff/profile?section=two-factor`). It is shown to administrators with the `Security` privilege, which the 2FA commands require.
+- **The admin area IP allow-list, the rule that applies it to user sign-ins and the remembered sign-ins** of the classic admin area are the new [Security screen](/v6.0.2/new-user-interface/staff-security) (`/<UI_STAFF_PREFIX>/staff/security`), with the sections Access and Remembered sign-ins. It needs the `Security` privilege, as the page did.
+
+**The old URLs keep working.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/security/`, anything under it | 302 to `/<staff>/staff/security` |
+| `/app/admin/security/cancel2fa/` | 302 to `/<staff>/staff/profile?section=two-factor` |
+| `/app/admin/security/revoketoken/`, `/app/admin/security/revokealltokens/` | 302 to `/<staff>/staff/security?section=remembered` |
+
+A POST to any of these URLs, including the old save, disable and revoke forms, is refused: nothing is saved, and the answer is a short page that links to the new screen. After a recovery-key reset at `/app/admin/reset2fa/` the browser now lands on the two-factor section of Your profile.
+
+**What changed on the way:**
+
+- **The QR code is drawn by the install.** The legacy page loaded the QR code image from an outside chart service, so the two-factor secret left the install in an image URL. Your profile draws it on the server, and the secret is never sent anywhere else.
+- **The recovery key is shown once,** during setup. The legacy page showed it again whenever 2FA was on. A lost recovery key is replaced by turning 2FA off with your password and setting it up again.
+- **The allow-list is validated.** Each line must be an IP address or an IPv4 CIDR range. The legacy page stored any text, so a typo could lock every administrator out without saying so.
+- **A list that would lock you out asks first.** When the new list does not include your own address, measured the way the admin sign-in measures it, the screen names the address and saves only after you confirm.
+- **The Security privilege is enough.** The legacy page saved the allow-list through `settings.update`, which needs `Settings`, so a sub-administrator holding only `Security` was refused over the API when `ADMIN_API_ENFORCE_PRIVILEGES` is on. The new screen uses `admin.security.settings.update`, which needs `Security`.
+- **A list of only blank lines is reported.** The admin sign-in treats a stored value of only blank lines as a list with no address on it and refuses everyone except the server itself. The Access section says so, and saving the empty list clears it.
+- **Remembered sign-ins show the browser.** Each remembered sign-in now records the browser it was issued to. Ones issued before the upgrade show "Not recorded".
+
+There is no opt-in flag: the page is removed, and its URLs answer as above. `settings.update`, `settings.get` and the `admin.2fa.*` commands are unchanged, and the five new commands are listed under "Additions" below.
+
 #### The legacy admin overview points to the new dashboard
 
 The legacy admin overview (`/app/admin/overview/`) is still where the legacy admin login lands, but it no longer shows the reports. It shows a "The dashboard moved" card with a link to the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) of the new interface (`/<UI_STAFF_PREFIX>/staff/dashboard`), the setup checklist (admins with the Settings privilege and no user group limit) and the quick links (admins with `Admin.Dashboard.Links`).
@@ -401,6 +430,18 @@ Four new admin commands, all additive and all needing the `System` privilege, wh
 - `admin.system.health` runs the same checks as `system.health.check` on an admin session and answers HTTP 200 with `Healthy`, `Checks` and `Timings`, whatever the checks found. Rate limit 10 requests per 300 seconds.
 
 `system.health.check` keeps its credentials (master key, per-sub-admin key or `SYSTEM_HEALTH_CHECK_TOKEN`), its HTTP 503 on a failed check, its failure log and its response, unchanged.
+
+### Security screen commands
+
+Five new admin commands, all additive and all needing the `Security` privilege, which each one checks even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (octeth/oempro#3521). No existing command changes.
+
+- `admin.security.settings.get` returns the admin area IP allow-list (`AdminAllowedIPs`, a list), `AdminAllowedIPsStoredBlank` (the stored value holds only blank lines, which the admin sign-in enforces as "nobody but the server itself"), `PreventUserLoginFromAlienIPs`, `AdminAPIEnforceAllowedIP`, the caller's address as the admin sign-in sees it (`CallerIP`) and whether the list admits it (`CallerAllowed`).
+- `admin.security.settings.update` takes `AdminAllowedIPs` (one IP address or IPv4 CIDR range per line), `PreventUserLoginFromAlienIPs` or both. It writes the same column and option `settings.update` writes. A list that does not admit the caller is refused with error `4` unless `ConfirmLockout` is `true`. Error codes: `1` an invalid entry (`InvalidEntries`), `2` a non-boolean flag, `3` nothing sent, `4` lockout, `5` too many entries. Refused in demo mode. Rate limit 20 requests per 300 seconds.
+- `admin.remembertokens.get` lists every administrator's remembered sign-ins of the classic admin area: the owner, created, last used and expiry dates (UTC) and the browser. Never the token or its hash.
+- `admin.remembertoken.revoke` takes `TokenID` and revokes one. Error codes: `1` missing, `2` not a positive whole number, `3` gone already, `4` not revoked. Refused in demo mode. Rate limit 30 requests per 300 seconds.
+- `admin.remembertokens.revokeall` revokes every remembered sign-in, the caller's included. Refused in demo mode. Rate limit 10 requests per 300 seconds.
+
+The upgrade adds a `UserAgent` column to `oempro_admin_remember_tokens` (a small table, an instant change).
 
 ### AI assistant connector
 
