@@ -12,6 +12,7 @@ Delivery server management endpoints for creating, updating, deleting, retrievin
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
+- Required privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Delivery servers screen did (answers `99999` without it)
 - v1 REST alias: `POST /api/v1/deliveryserver.create`. Legacy access via `/api.php` is also supported
 :::
 
@@ -97,6 +98,7 @@ curl -X POST https://example.com/api.php \
 14: Invalid sendmethodsmtpauth value (must be: true, false)
 15: Invalid sendmethodsmtptimeout value (must be numeric)
 16: Invalid email address value for domainsettings_enforcedfrom
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
 :::
@@ -107,7 +109,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Required admin privilege: `DeliveryServers`
+- Required privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Delivery servers screen did (answers `99999` without it)
 - v1 REST alias: `POST /api/v1/deliveryserver.clone`. Legacy access via `/api.php` is also supported
 - Creates a new delivery server from an existing one. The new server gets the source's `ConnectionParams`, including the stored SMTP password, and its `Domains` settings, copied on the server. The password is never returned.
 - The verification results are reset to `false` and the last-checked time is cleared, as for a newly created server. Run [`deliveryserver.verify`](#verify-a-delivery-server) on the clone.
@@ -160,6 +162,7 @@ curl -X POST https://example.com/api.php \
 1: Missing deliveryserverid
 2: Delivery server not found
 3: Delivery server could not be created
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
 :::
@@ -252,6 +255,7 @@ Read the stored outcome back with `deliveryserver.get`: `VerificationResults` ho
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
+- Required privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Delivery servers screen did (answers `99999` without it)
 - v1 REST alias: `POST /api/v1/deliveryserver.update`. Legacy access via `/api.php` is also supported
 :::
 
@@ -271,6 +275,7 @@ Read the stored outcome back with `deliveryserver.get`: `VerificationResults` ho
 | SendMethodSMTPAuth | Boolean | Yes | Whether SMTP authentication is required: true or false |
 | SendMethodSMTPUsername | String | Conditional | SMTP username (required if SendMethodSMTPAuth is true) |
 | SendMethodSMTPPassword | String | No | SMTP password. **Changed in v6.0.1:** omit it to keep the stored password. A sent value, including an empty string, replaces it |
+| ClearPasswordOnHostChange | Boolean | No | <Badge type="tip" text="New in v6.0.2" /> With `true` (also `1`, `yes` or `Enabled`), an omitted `SendMethodSMTPPassword` keeps the stored password only while `SendMethodSMTPHost` matches the stored host, compared without case or surrounding spaces. A different host stores an empty password instead. Default `false`: an omitted password is always kept. A sent `SendMethodSMTPPassword` is written either way |
 | DomainSettings_LinkTracking | String | Yes | Domain for link tracking (e.g., "track.example.com") |
 | DomainSettings_OpenTracking | String | Yes | Domain for open tracking (e.g., "open.example.com") |
 | DomainSettings_MFrom | String | Yes | Mail From domain (e.g., "bounce.example.com") |
@@ -282,6 +287,10 @@ Read the stored outcome back with `deliveryserver.get`: `VerificationResults` ho
 
 ::: tip The stored SMTP password is kept when omitted (v6.0.1)
 `deliveryserver.update` replaces the server's `ConnectionParams` and `Domains` as a whole. `deliveryserver.get` and `deliveryservers.get` never return `smtp_password`, so an integration cannot read it back and resend it. When the request omits `SendMethodSMTPPassword`, the stored password is kept. Before v6.0.1 an omitted password was stored as empty, which broke the server's sending.
+:::
+
+::: tip Clear the password when the host changes (v6.0.2)
+A password belongs to one SMTP server. Send `ClearPasswordOnHostChange: true` with an update that may move a server to another host, and leave `SendMethodSMTPPassword` out unless you have the new server's password: Octeth then keeps the stored password for the same host and clears it for a different one, so it is never sent to a server it was not meant for. The classic edit page always worked this way, and the staff Delivery servers screen sends the flag on every save.
 :::
 
 ::: code-group
@@ -344,6 +353,7 @@ curl -X POST https://example.com/api.php \
 15: Invalid sendmethodsmtptimeout value (must be numeric)
 16: Invalid email address value for domainsettings_enforcedfrom
 17: Delivery server not found
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
 :::
@@ -354,6 +364,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
+- Required privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Delivery servers screen did (answers `99999` without it)
 - v1 REST alias: `POST /api/v1/deliveryservers.delete`. Legacy access via `/api.php` is also supported
 - Deleting a server resets every user group whose `TargetDeliveryServerID_Marketing`, `TargetDeliveryServerID_Transactional` or `TargetDeliveryServerID_AutoResponder` option pointed at it back to `0` (system default), after invalidating the Email Gateway per-user cache for those groups. `UserGroupsReset` in the response lists the user group ids that were updated.
 :::
@@ -397,6 +408,7 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 1: Missing deliveryserverid
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
 :::
@@ -537,7 +549,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Required admin privilege: `DeliveryServers`
+- Required privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Delivery servers screen did (answers `99999` without it)
 - v1 REST alias: `GET /api/v1/deliveryserver.get`. Legacy access via `/api.php` is also supported
 - `ConnectionParams.smtp_password` is never returned; `HasSMTPPassword` says whether one is stored. <Badge type="warning" text="Changed in v6.0.1" /> `ConnectionParams` carries only `smtp_host`, `smtp_port`, `smtp_secure`, `smtp_timeout`, `smtp_auth` and `smtp_username`, and only those the server has stored. Any other stored key is left out. Credential keys nested inside a returned value (such as `smtp_password`, `ConnectionParams`, `Password` or `APIKey`) are also removed, and the same removal applies to `Domains` and `VerificationResults`. Since v6.0.1, `deliveryserver.update` keeps the stored password when `SendMethodSMTPPassword` is omitted, so a client editing a server does not need to hold it.
 - Since v6.0.1, `deliveryservers.get` returns the same object for each server.
@@ -622,6 +634,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing DeliveryServerID
 2: Delivery server not found
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
 :::
@@ -632,7 +645,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Required admin privilege: `DeliveryServers`
+- Required privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Delivery servers screen did (answers `99999` without it)
 - Rate limited: 10 calls per 300 seconds. Every call sends a real test message through the server's SMTP credentials and performs six DNS lookups.
 - v1 REST alias: `POST /api/v1/deliveryserver.verify`. Legacy access via `/api.php` is also supported
 - Not available when `DEMO_MODE_ENABLED` is on (error 4).
@@ -707,7 +720,110 @@ curl -X POST https://example.com/api.php \
 1: Missing DeliveryServerID
 2: Delivery server not found
 3: Invalid To email address
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 4: Not available in demo mode
 ```
 
 :::
+
+## Get What Uses a Delivery Server <Badge type="tip" text="New in v6.0.2" />
+
+<Badge type="info" text="GET" /> `/api/v1/admin.deliveryserver.references.get`
+
+Lists everything that still sends through one delivery server, so a client can warn before it deletes the server or changes its connection. Read-only.
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
+- v1 REST alias: `GET /api/v1/admin.deliveryserver.references.get`. Legacy access via `/api.php` is also supported
+- Rate limit: 100 requests per 60 seconds
+- A sub-admin limited to some user groups sees by name only those groups and the users in them. Other groups and users are counted in `OtherUserGroups` and `OtherUsers`, never named
+- `deliveryservers.delete` resets only the user group assignments to the system default. Users, global segments, recipient domain routes and IP pools keep pointing at a deleted server, and their email falls back to the system default server without a warning. This command names all of them.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.deliveryserver.references.get` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| DeliveryServerID | Integer | Yes | ID of the delivery server |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.deliveryserver.references.get",
+    "SessionID": "admin-session-id",
+    "DeliveryServerID": 3
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "DeliveryServerID": 3,
+  "InUse": true,
+  "TotalReferences": 4,
+  "UserGroups": [
+    {"UserGroupID": 2, "GroupName": "Growth", "Channels": ["Marketing", "Transactional"]}
+  ],
+  "UsersInGroups": 41,
+  "AffectedUsers": 41,
+  "OtherUserGroups": 0,
+  "OtherUsers": 0,
+  "Users": [
+    {"UserID": 12, "Username": "acme"}
+  ],
+  "GlobalSegments": [
+    {"SegmentID": 5, "SegmentName": "Engaged"}
+  ],
+  "DeliveryRoutes": [
+    {"MXHost": "gmail-smtp-in.l.google.com"}
+  ],
+  "IPPools": [],
+  "IPAddresses": []
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Delivery server not found"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing DeliveryServerID
+2: Delivery server not found
+3: The references of this delivery server could not be read
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
+```
+
+:::
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| InUse | Boolean | Whether anything below references the server |
+| TotalReferences | Integer | The number of entries in `UserGroups`, `Users`, `GlobalSegments`, `DeliveryRoutes`, `IPPools` and `IPAddresses` together |
+| UserGroups | Array | User groups that send through the server, each with `UserGroupID`, `GroupName` and `Channels` (`Marketing`, `Transactional`, `AutoResponder`) |
+| UsersInGroups | Integer or null | The number of users in those user groups, or `null` when it could not be counted |
+| AffectedUsers | Integer or null | The distinct users that send through the server: members of those user groups or users with their own override, each counted once. `null` when it could not be counted |
+| OtherUserGroups | Integer | User groups that use the server but are outside the user groups a restricted sub-admin may manage. Counted in `TotalReferences`, never listed |
+| OtherUsers | Integer | Users with their own override whose user group is outside the ones a restricted sub-admin may manage. Counted in `TotalReferences`, never listed |
+| Users | Array | Users whose own delivery server override is this server, each with `UserID` and `Username` |
+| GlobalSegments | Array | Global segments whose user group settings name the server, each with `SegmentID` and `SegmentName` |
+| DeliveryRoutes | Array | Recipient domain routes (Delivery Routes) that send to an MX host through the server, each with `MXHost` |
+| IPPools | Array | IP pools of the IP pool plug-in whose default server this is, each with `PoolID` and `PoolName`. Empty when the plug-in is not installed |
+| IPAddresses | Array | IP addresses of the IP pool plug-in bound to the server, each with `IPID` and `IPAddress`. Empty when the plug-in is not installed |
+
+Error `3` means a query failed or a stored user group, user or segment holds settings that cannot be decoded. The command does not guess: treat the server as possibly in use.

@@ -115,6 +115,18 @@ The check runs first, so it also applies to `admin.senderdomains.health.get` wit
 
 **Who needs to act:** an integration that calls an SSO command with the key or session of a sub-admin who does not hold `Settings.SSO`. Grant that account `Settings.SSO`, or use a key that has it.
 
+### Delivery servers (privilege check)
+
+#### `DeliveryServers` is checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+
+`deliveryserver.create`, `deliveryserver.update`, `deliveryserver.clone`, `deliveryservers.delete`, `deliveryserver.get` and `deliveryserver.verify` relied on the registry's `DeliveryServers` tag, which is enforced only when `ADMIN_API_ENFORCE_PRIVILEGES` is on, so with it off any sub-admin session could add, repoint or delete the servers every user group sends through. Each handler now checks `DeliveryServers` itself and answers `99999` (`Not enough privileges`) without it, as the newer staff commands do (#3521, #3525, #3540) (octeth/oempro#3550). The classic Delivery servers screen always required `DeliveryServers`, so the API now matches what the screen allowed. In `deliveryserver.verify` the check runs before the demo-mode refusal.
+
+`deliveryservers.get` is unchanged: the classic Email delivery and Segments screens list the servers for admins who hold `Settings` or `Settings.Segments` but not `DeliveryServers`.
+
+**Not affected:** the master admin, the master `ADMIN_API_KEY`, and every administrator without `Options.AccessLimited`, or holding `DeliveryServers`.
+
+**Who needs to act:** an integration that calls one of these commands with the key or session of a sub-admin who does not hold `DeliveryServers`. Grant that account `DeliveryServers`, or use a key that has it.
+
 ### Plugins (privilege check)
 
 #### `Settings` is checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
@@ -552,6 +564,32 @@ A POST to any of these URLs, including the old create, edit and bulk delete form
 - **The statistics chart labels sign-ins and sign-ups correctly.** The legacy chart showed each one under the other's label. The new chart covers the last 7, 30 or 90 days, 30 by default.
 - **Expiry is shown in server time (UTC)**, and an empty expiry reads **Never**.
 
+#### The legacy admin Delivery servers pages are removed
+
+The legacy admin **Delivery Servers** list, create and edit pages (`/app/admin/deliveryservers/`), an item of the classic **Settings** sidebar, are removed. Delivery servers are managed on the [Delivery servers](/v6.0.2/new-user-interface/staff-delivery-servers) screen of the **Settings** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/delivery-servers`), which needs the `DeliveryServers` privilege, as the pages did (octeth/oempro#3550). The delivery server reports at `/app/admin/deliveryservers/report` are unchanged and stay in the classic admin.
+
+**The old URLs keep working.** The pages are now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/deliveryservers/`, anything under it not listed below | 302 to `/<staff>/staff/settings/delivery-servers` |
+| `/app/admin/deliveryservers/create/` | 302 to `/<staff>/staff/settings/delivery-servers/new` |
+| `/app/admin/deliveryservers/edit/<id>` | 302 to `/<staff>/staff/settings/delivery-servers/<id>/edit` |
+| `/app/admin/deliveryservers/x_load_verification/<id>`, `/app/admin/deliveryservers/x_dns_test/<id>` | 302 to `/<staff>/staff/settings/delivery-servers/<id>/edit?tab=verification`, without running a test |
+| `/app/admin/deliveryservers/report` and everything under it | unchanged |
+
+A POST to any of these URLs except the reports, including the old create, edit, clone and bulk delete forms, is refused: nothing is saved, and the answer is a short page that links to the new screen. The classic **Settings > Delivery Servers** sidebar link, and the server links on the delivery server reports and the Email delivery headers page, open the new screen.
+
+**What changed on the way:**
+
+- **A delete lists what still uses the server.** The legacy page deleted without a word. The new confirmation names the user groups (with their channels), the users with their own server, the global segments, the recipient domain routes and the IP pools that send through it, and says that only the user groups switch to the system default: the others keep pointing at the deleted server and fall back to the system default without a warning. You can still confirm.
+- **A connection change of a server in use asks first.** Saving a new host, port, encryption, authentication, username or password of a server that something sends through opens a confirmation that names how many user groups and users it affects.
+- **The password stays write-only.** The edit form says when a password is stored and replaces it only when you enter a new one. A changed host clears the stored password unless you enter the password for the new host, as the classic page did.
+- **Testing is a separate action.** The **Verification** tab (the legacy **Test** tab) shows the stored results and runs **Send test and check DNS** on request. Saving never tests. Octeth allows 10 tests in 5 minutes and says how long to wait.
+- **Clone is a row action** of the list, and opens the copy. User groups, delivery routes and email headers are not copied, as before.
+- **The sender rotation rules are checked as JSON** before they are saved.
+- **Any port from 1 to 65535** is accepted, as before.
+
 #### The legacy admin Plugins page is removed
 
 The legacy admin **Plugins** page (`/app/admin/plugins/`), an item of the classic **Settings** sidebar and of the admin drop-menu, is removed. Plugins are enabled and disabled on the [Plugins](/v6.0.2/new-user-interface/staff-plugins) screen of the **Settings** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/plugins`), which needs the `Settings` privilege, as the page did (octeth/oempro#3553). A plugin's own admin pages stay in the classic admin and are unchanged.
@@ -807,6 +845,18 @@ A new optional parameter `IncludeTrackingFallback=true` adds `TrackingFallbackHo
 `api.php` lowercases every request key, nested ones included, so `Options.CreateNewUserIfNotExists`, `Options.PerformLogin` and `Options.ReturnUserData` reached the two handlers as lowercase names they did not read, and a source created or updated through the API stored all three as `Disabled` whatever was sent. The handlers now read the three flags whatever the case of their names (octeth/oempro#3540). A flag is still `Enabled` only when its value is exactly `Enabled`.
 
 **Who needs to act:** nobody, unless you created or updated an SSO source through the API and worked around the stored options by hand. Check them with `sso.get`.
+
+### Delivery servers
+
+#### `deliveryserver.update` can clear the stored password when the host changes
+
+`deliveryserver.update` takes an optional `ClearPasswordOnHostChange` flag (octeth/oempro#3550). With it on, an omitted `SendMethodSMTPPassword` keeps the stored password only while `SendMethodSMTPHost` matches the stored host; a different host stores an empty password, so a password is never carried over to another server. Without the flag the command behaves exactly as before and always keeps the stored password. The staff Delivery servers screen sends it on every save.
+
+#### New command `admin.deliveryserver.references.get`
+
+A read-only command that lists what still sends through a delivery server: user groups per channel, users with their own server, global segments, recipient domain routes and IP pools (octeth/oempro#3550). See [Get What Uses a Delivery Server](./deliveryservers#get-what-uses-a-delivery-server).
+
+**Who needs to act:** nobody.
 
 ### Plugins
 
