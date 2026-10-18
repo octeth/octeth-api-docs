@@ -631,7 +631,7 @@ curl -X GET "https://example.com/api/v1/admin.system.check?AdminAPIKey=your-admi
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-Returns the version and runtime facts the admin About page shows: the Octeth product version, the PHP version, the PHP ini values the page lists, and the MySQL server version. Nothing else is included: no filesystem paths, no environment values and no `phpinfo()` output (the About page's PHP settings dump and the database export stay UI-only). For the configuration itself use `system.getsettings`.
+Returns the version and runtime facts the About section of the staff System screen shows (the admin About page before v6.0.2): the Octeth product version, the PHP version, the PHP ini values the page lists, and the MySQL server version. Nothing else is included: no filesystem paths, no environment values and no `phpinfo()` output (the About page's PHP settings dump and database export were removed in v6.0.2). For the configuration itself use `system.getsettings`.
 
 `PHPSettings` reports an empty ini value as the string `"false"`, exactly as the About page renders it.
 
@@ -681,3 +681,288 @@ curl -X GET "https://example.com/api/v1/admin.system.info?AdminAPIKey=your-admin
 ```
 
 :::
+## Get the License State
+
+<Badge type="info" text="GET" /> `/api/v1/admin.license.get`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session (privilege `System`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy pages did)
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the install's license state, as the License section of the staff System screen shows it: whether a valid license key is in effect and where it came from, the edition and the limits it sets, the facts of the license, the host a license key must name, and the state of a key pasted on the System screen. The license key and its token are never returned: `DisplayKey` is the masked short key.
+
+`MaxUsers` and `MaxSubscribers` are `-1` for unlimited. `ReasonCode` is empty when `Status` is `valid`, otherwise one of `missing`, `short_key`, `malformed`, `unknown_kid`, `bad_signature`, `unsupported_version`, `wrong_product`, `domain_mismatch` or `verifier_unavailable`, and `ReasonText` is the localized sentence for it. The license facts (`Licensee`, `Plan`, `LicensedDomain`, `IssuedAt`, `ServiceExpiresAt`, `UpdatesUntil`) are empty strings when no valid license is in effect. `PastedKeyValid` is `null` when no key is pasted.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                          |
+|-------------|--------|----------|--------------------------------------|
+| Command     | String | Yes      | API command: `admin.license.get`     |
+| SessionID   | String | No       | Admin session ID obtained from login |
+| AdminAPIKey | String | No       | Admin API key                        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/admin.license.get?AdminAPIKey=your-admin-api-key"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "License": {
+    "Status": "valid",
+    "Source": "license",
+    "TokenSource": "option",
+    "ReasonCode": "",
+    "ReasonText": "",
+    "Edition": "standard",
+    "MaxUsers": -1,
+    "MaxSubscribers": 500000,
+    "GraceDaysLeft": null,
+    "DisplayKey": "****8KDS",
+    "Licensee": "Example Inc.",
+    "Plan": "unlimited",
+    "LicensedDomain": "mail.example.com",
+    "IssuedAt": "2026-10-10T17:27:01Z",
+    "ServiceExpiresAt": "2027-10-10T00:00:00Z",
+    "UpdatesUntil": "2027-10-10",
+    "ExpectedHost": "mail.example.com",
+    "PastedKeyStored": true,
+    "PastedKeyValid": true,
+    "PastedKeyReasonCode": "",
+    "PastedKeyReasonText": ""
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999
+}
+```
+
+```txt [Error Codes]
+0: Success
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
+
+## Save a License Key
+
+<Badge type="info" text="POST" /> `/api/v1/admin.license.save`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session (privilege `System`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy pages did)
+- Rate limit: 10 requests per 300 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Verifies a license key against the host `APP_URL` names and, when it is valid, stores it. A stored key takes precedence over `LICENSE_KEY` in `.oempro_env` while it verifies, so this changes the edition and the limits of the whole install. The save pins the global webhook signing key first, then stores the key and reads it back from the database before reporting success.
+
+The key is never returned, logged or echoed back, not even in an error. A refused key is logged with its reason code only. Refused in demo mode.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                          |
+|-------------|--------|----------|--------------------------------------|
+| Command     | String | Yes      | API command: `admin.license.save`    |
+| SessionID   | String | No       | Admin session ID obtained from login |
+| AdminAPIKey | String | No       | Admin API key                        |
+| LicenseKey  | String | Yes      | The license key from your license page at my.octeth.com, with or without its `BEGIN` and `END` lines |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.license.save \
+  -d "AdminAPIKey=your-admin-api-key" \
+  --data-urlencode "LicenseKey@license.txt"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Message": "The license key was verified and saved.",
+  "License": {
+    "Status": "valid",
+    "Source": "license",
+    "TokenSource": "option",
+    "MaxUsers": -1,
+    "MaxSubscribers": 500000,
+    "PastedKeyStored": true,
+    "PastedKeyValid": true
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "The license key was refused: the license key signature does not match its contents.",
+  "ReasonCode": "bad_signature"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: LicenseKey is missing or empty
+2: The key was refused. ReasonCode names the reason (see Get the License State) and ErrorText is the localized message. Nothing is changed.
+3: The key verified but could not be saved. Nothing is changed.
+99998: Authentication failure
+99999: Not enough privileges
+429: Too many requests
+```
+
+:::
+
+The success response's `License` is the full object of `admin.license.get`, read after the save. It is shortened above.
+
+## Remove the Pasted License Key
+
+<Badge type="info" text="POST" /> `/api/v1/admin.license.remove`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session (privilege `System`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy pages did)
+- Rate limit: 10 requests per 300 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Removes the license key pasted on the System screen (or saved with `admin.license.save`), so `LICENSE_KEY` in `.oempro_env` decides the edition and the limits again. The removal pins the global webhook signing key first and is confirmed in the database before it is reported. Removing when no key is stored succeeds and changes nothing. Refused in demo mode.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                          |
+|-------------|--------|----------|--------------------------------------|
+| Command     | String | Yes      | API command: `admin.license.remove`  |
+| SessionID   | String | No       | Admin session ID obtained from login |
+| AdminAPIKey | String | No       | Admin API key                        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.license.remove \
+  -d "AdminAPIKey=your-admin-api-key"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Message": "The pasted license key was removed. LICENSE_KEY in .oempro_env decides from now on.",
+  "License": {
+    "Status": "valid",
+    "Source": "license",
+    "TokenSource": "env",
+    "PastedKeyStored": false,
+    "PastedKeyValid": null
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "The pasted license key could not be removed. Try again."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: The key could not be removed. The stored key stays in place.
+99998: Authentication failure
+99999: Not enough privileges
+429: Too many requests
+```
+
+:::
+
+## Run the System Health Check as an Administrator
+
+<Badge type="info" text="GET" /> `/api/v1/admin.system.health`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session (privilege `System`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy pages did)
+- Rate limit: 10 requests per 300 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Runs the same checks as [`system.health.check`](#check-system-health) for an administrator, so the staff System screen can run them on the administrator's own session. `Checks` and `Timings` carry the same keys as `system.health.check`, and `Timings` ends with `Total`, in milliseconds. A check value is `OK`, a text starting with `WARNING:` for a finding that does not fail the check, or the failure text.
+
+Unlike `system.health.check`, this command always answers HTTP 200 with the standard envelope: a failed check is reported in `Healthy` and `Checks`, not as HTTP 503. It writes no failure log. A run can take up to 30 seconds. `system.health.check` is unchanged, so monitors keep using it.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                          |
+|-------------|--------|----------|--------------------------------------|
+| Command     | String | Yes      | API command: `admin.system.health`   |
+| SessionID   | String | No       | Admin session ID obtained from login |
+| AdminAPIKey | String | No       | Admin API key                        |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/admin.system.health?AdminAPIKey=your-admin-api-key"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Healthy": false,
+  "Checks": {
+    "MySQL": "OK",
+    "ClickHouse": "OK",
+    "RabbitMQ": "OK",
+    "Redis": "Connection refused",
+    "ListUnsubscribeOneClick": "WARNING: APP_URL is not https ...",
+    "FilePermissions": "OK"
+  },
+  "Timings": {
+    "MySQL": 1.92,
+    "ClickHouse": 6.4,
+    "RabbitMQ": 11.8,
+    "Redis": 3001.2,
+    "ListUnsubscribeOneClick": 0.31,
+    "FilePermissions": 3.66,
+    "Total": 3025.29
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999
+}
+```
+
+```txt [Error Codes]
+0: Success
+99998: Authentication failure
+99999: Not enough privileges
+429: Too many requests
+```
+
+:::
+

@@ -119,7 +119,7 @@ permissions reach the staff area within about a minute, and switching to a user 
 checks the current permissions. A switch to a user that is already running is not ended by
 a permission change.
 
-The staff dashboard, billing screens, Webhooks, User groups, Subscriber search and Your profile follow the administrator permissions too:
+The staff dashboard, billing screens, Webhooks, User groups, Subscriber search, Your profile and System follow the administrator permissions too:
 
 | Staff screen | Permission it needs |
 |---|---|
@@ -130,6 +130,7 @@ The staff dashboard, billing screens, Webhooks, User groups, Subscriber search a
 | User groups | UserGroups. A sub-administrator limited to some user groups sees only those groups and cannot create, duplicate or delete one, see [Managing User Groups in the Staff Area](./staff-user-groups) |
 | Subscriber search | Search. A sub-administrator limited to some user groups finds subscribers only on the lists of accounts in those groups, see [Searching Subscribers in the Staff Area](./staff-subscriber-search) |
 | Your profile | Account. Its System emails section also needs Settings, see [Your Staff Profile](./staff-profile) |
+| System | System, see [The Staff System Screen](./staff-system) |
 | AI assistants | None. The keys it creates carry the administrator's own permissions |
 
 A screen the sub-administrator may not use is hidden from the menu and refuses a direct
@@ -154,10 +155,11 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/user-groups` | The staff User groups list, create and edit screens, see [Managing User Groups in the Staff Area](./staff-user-groups) |
 | `/user/staff/subscriber-search` | The staff Subscriber search, see [Searching Subscribers in the Staff Area](./staff-subscriber-search) |
 | `/user/staff/profile` | Your own administrator profile, see [Your Staff Profile](./staff-profile) |
+| `/user/staff/system` | The installed version, the license and the system health check, see [The Staff System Screen](./staff-system) |
 | `/user/staff/billing/...` | The staff billing screens, when billing is enabled |
 | `/ui/` | Images, stylesheets, the health check, and inbound payment webhooks |
 | `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants). `MCP_ENABLED=false` turns these off |
-| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Subscriber Email Search** and **Account** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/subscriber-search` and `/user/staff/profile` |
+| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Subscriber Email Search**, **Account**, **License** and **About** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/subscriber-search`, `/user/staff/profile` and `/user/staff/system` |
 
 ::: info
 These path names are settings, not fixed values. See the

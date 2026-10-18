@@ -139,6 +139,35 @@ The classic **Settings** sidebar's **Account** item now opens the new screen. Th
 
 There is no opt-in flag: the page is removed, and its URL answers as above. `admin.get`, `admin.update`, `settings.get` and `settings.update` are unchanged.
 
+#### The legacy admin About and License pages are removed
+
+The legacy admin **About** (`/app/admin/about/`) and **License** (`/app/admin/license/`) pages, the last two items of the classic **Settings** sidebar, are removed. The installed version, the PHP and MySQL versions, a license summary, the license state, the license key paste box and the system health check are on the **System** screen of the new interface's staff area (`/<UI_STAFF_PREFIX>/staff/system`), with the sections About, License and System health (octeth/oempro#3517). The screen needs the `System` privilege, as the two pages did.
+
+**The old URLs keep working.** Both pages are now redirect shims:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/about/`, anything under it | 302 to `/<staff>/staff/system` |
+| `/app/admin/about/x_health_check/` | 302 to `/<staff>/staff/system?section=health` |
+| `/app/admin/license/`, anything under it | 302 to `/<staff>/staff/system?section=license` |
+
+A POST to any of these URLs, including the old license save and remove forms, is refused: nothing is saved or run, and the answer is a short page that links to the new screen.
+
+**The hidden tools of the About page are removed, not moved.** The page carried actions that its tabs no longer showed but that still answered any administrator with `System`. They are gone:
+
+- `POST /app/admin/about/` with `Command=DatabaseExport` (a schema dump of every Octeth table) and `Command=DatabaseRepair`. Use `admin.database.check` and `admin.database.repair` for checks and repairs, and your own database tools for a dump.
+- `/app/admin/about/databaseHealthTestResults/` (the per-table check). Use `admin.database.check`.
+- `/app/admin/about/phpsettings/` (`phpinfo()`). `admin.system.info` returns the PHP version and the ini values the page listed.
+- `/app/admin/about/download/<path>` (a file under `data/`). Exports and logs have their own downloads.
+
+The "Sponsors and Supporters" block is not carried over. The PHP and MySQL versions are now shown to every administrator with `System`, without the old `?show=true`.
+
+The classic **Settings** sidebar's **License** and **About** items, and the link in the license notice above every classic admin page, now open the new screen. The top-right **Settings** link and the **System Settings** item of the classic **Preferences** menu open the first settings section the administrator's privileges allow, and the System screen when none of them is allowed. They used to fall back to the About page.
+
+There is no opt-in flag: the pages are removed, and their URLs answer as above. `admin.system.info` and `system.health.check` are unchanged, and the four new commands are listed under "Additions" below.
+
+The classic admin license notice and the user and subscriber limit notices now say "in the License section of the System screen" instead of "on the Settings > License page", and so do the installer and upgrade messages.
+
 #### The legacy admin overview points to the new dashboard
 
 The legacy admin overview (`/app/admin/overview/`) is still where the legacy admin login lands, but it no longer shows the reports. It shows a "The dashboard moved" card with a link to the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) of the new interface (`/<UI_STAFF_PREFIX>/staff/dashboard`), the setup checklist (admins with the Settings privilege and no user group limit) and the quick links (admins with `Admin.Dashboard.Links`).
@@ -361,6 +390,17 @@ No configuration change is needed.
 - `admin.senderdomains.health.get` accepts an optional `SummaryOnly=true` that returns only the health counts. Without it the response is unchanged (octeth/oempro#3501).
 
 ## Additions that need operator attention
+
+### System screen commands
+
+Four new admin commands, all additive and all needing the `System` privilege, which each one checks even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (octeth/oempro#3517). No existing command changes.
+
+- `admin.license.get` returns the license state: status, source, edition, limits, the masked display key, the license facts, the host a key must name, and the state of a pasted key. It never returns the key or its token.
+- `admin.license.save` takes `LicenseKey`, verifies it against the host `APP_URL` names and stores it, so it changes the limits of the whole install. Error codes: `1` no key, `2` refused (with `ReasonCode`), `3` verified but not saved. The key is never returned or logged. Refused in demo mode. Rate limit 10 requests per 300 seconds.
+- `admin.license.remove` removes the pasted key, so `LICENSE_KEY` decides again. Error code `1` when it could not be removed. Refused in demo mode. Rate limit 10 requests per 300 seconds.
+- `admin.system.health` runs the same checks as `system.health.check` on an admin session and answers HTTP 200 with `Healthy`, `Checks` and `Timings`, whatever the checks found. Rate limit 10 requests per 300 seconds.
+
+`system.health.check` keeps its credentials (master key, per-sub-admin key or `SYSTEM_HEALTH_CHECK_TOKEN`), its HTTP 503 on a failed check, its failure log and its response, unchanged.
 
 ### AI assistant connector
 
