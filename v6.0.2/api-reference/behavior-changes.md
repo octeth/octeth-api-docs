@@ -443,6 +443,29 @@ The classic **Settings** sidebar's **Default Opt-in Email** item opens the new s
 
 There is no opt-in flag: the page is removed, and its URL answers as above. `settings.get` and `settings.update` are unchanged.
 
+#### The legacy admin S2S postback page is removed
+
+The legacy admin **S2S Postback** page (`/app/admin/s2spostback/`), an item of the classic **Settings** sidebar, is removed. It is the [S2S postback](/v6.0.2/new-user-interface/staff-s2s-postback) screen of the new **Settings** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/s2s-postback`) (octeth/oempro#3539). It needs the `Settings` privilege, as the page did.
+
+**The old URL keeps working.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/s2spostback/`, anything under it | 302 to `/<staff>/staff/settings/s2s-postback` |
+
+A POST to it, including the old save form, is refused: nothing is written, and the answer is a short page that links to the new screen.
+
+The classic **Settings** sidebar's **S2S Postback** item opens the new screen. The top-right **Settings** link no longer considers the S2S postback page as a landing page, which changes nothing in practice, because **Email Delivery**, which comes before it, needs the same `Settings` privilege.
+
+**What changed on the way:**
+
+- **Only changed names are saved.** The legacy page wrote all four parameter names on every save. The new screen sends only the names that changed, so a save never rewrites a name nobody touched. A name stored empty (the conversion address then uses the default) is written with that default on the next save.
+- **Renaming the Track parameter asks first.** Click links carry the identifier as `ocrid` whatever this name is (octeth/oempro#3542), and campaigns already sent keep the old name in their links in any case, so a rename can stop conversions from matching. The field carries a warning, and a save that renames it asks for confirmation.
+- **Copy buttons.** The conversion address and the ClickBank address are shown read-only with a copy button, built from the interface's public base URL.
+- **Audited.** Every save writes a staff audit row naming the parameters changed, with their old and new names.
+
+There is no opt-in flag: the page is removed, and its URL answers as above.
+
 #### The legacy admin Single Sign On section is removed
 
 The legacy admin **Single Sign On** section (`/app/admin/sso/`), an item of the classic **Settings** sidebar, is removed. SSO sources are managed on the [SSO](/v6.0.2/new-user-interface/staff-sso) screen of the new **Settings** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/sso`), which needs the `Settings.SSO` privilege, as the section did (octeth/oempro#3540). The public sign-in address `/app/sso?code=&token=` is a different page and is unchanged.

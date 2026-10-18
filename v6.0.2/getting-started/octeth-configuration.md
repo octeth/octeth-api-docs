@@ -5531,7 +5531,7 @@ After configuring delivery routes, send test emails to addresses matching your r
 
 S2S Postback (Server-to-Server Postback) allows external services and platforms to send conversion data back to Octeth when someone who clicked a link in your email campaign completes a valuable action. This creates a complete picture of your email campaign performance beyond opens and clicks.
 
-To access these settings, navigate to **Preferences** → **System Settings** → **S2S Postback** in the administrator dashboard.
+To access these settings, sign in to the new interface as an administrator with the Settings permission and open **Settings > S2S postback** in the staff sidebar. See [The Staff S2S Postback Screen](/v6.0.2/new-user-interface/staff-s2s-postback).
 
 **What Are Conversions?**
 
@@ -5584,7 +5584,7 @@ Default value: `ocrid`
 Example: When someone clicks a link in your email, the URL becomes `https://yoursite.com/product?ocrid=abc123xyz`. Your system includes this `ocrid` value when sending the conversion notification back to Octeth.
 
 ::: warning Important
-If you change this parameter name, you must update your website, e-commerce platform, or any third-party services to use the new parameter name when sending conversion data. Otherwise, Octeth won't be able to match conversions to email campaigns.
+Click links carry the tracking identifier as `ocrid` whatever this name is set to, and the links of campaigns already sent keep the name they were sent with. If you change it, your website, e-commerce platform or third-party service must send the identifier back under the new name, or Octeth cannot match conversions to email campaigns. The screen asks you to confirm a rename.
 :::
 
 **Channel**
