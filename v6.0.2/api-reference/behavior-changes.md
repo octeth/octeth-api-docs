@@ -105,6 +105,16 @@ The check runs first, so it also applies to `admin.senderdomains.health.get` wit
 
 **Who needs to act:** an integration that calls either command with the key or session of a sub-admin who does not hold `User.Edit`. Grant that account `User.Edit`, or use a key that has it.
 
+### SSO sources (privilege check)
+
+#### `Settings.SSO` is checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+
+`ssosources.get`, `sso.get`, `sso.create`, `sso.update`, `sso.delete`, `sso.stats.get` and `sso.keys.regenerate` relied on the registry's `Settings.SSO` tag, which is enforced only when `ADMIN_API_ENFORCE_PRIVILEGES` is on, so with it off any sub-admin session could read the keys of every SSO source and sign anyone in. Each handler now checks `Settings.SSO` itself and answers `99999` (`Not enough privileges`) without it, as the newer staff commands do (#3521, #3522, #3525) (octeth/oempro#3540). The classic Single Sign On screen always required `Settings.SSO`, so the API now matches what the screen allowed. In `sso.keys.regenerate` the check runs before the demo-mode refusal.
+
+**Not affected:** the master admin, the master `ADMIN_API_KEY`, and every administrator without `Options.AccessLimited`, or holding `Settings.SSO`.
+
+**Who needs to act:** an integration that calls an SSO command with the key or session of a sub-admin who does not hold `Settings.SSO`. Grant that account `Settings.SSO`, or use a key that has it.
+
 ### Admin area
 
 #### The legacy Users section is removed
@@ -410,6 +420,29 @@ The classic admin header's **Reports > Inbound SMS** item opens the new screen.
 
 There is no opt-in flag: the page is removed, and its URLs answer as above.
 
+#### The legacy admin Single Sign On section is removed
+
+The legacy admin **Single Sign On** section (`/app/admin/sso/`), an item of the classic **Settings** sidebar, is removed. SSO sources are managed on the [SSO](/v6.0.2/new-user-interface/staff-sso) screen of the new **Settings** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/sso`), which needs the `Settings.SSO` privilege, as the section did (octeth/oempro#3540). The public sign-in address `/app/sso?code=&token=` is a different page and is unchanged.
+
+**The old URLs keep working.** The section is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/sso/`, anything under it not listed below | 302 to `/<staff>/staff/settings/sso` |
+| `/app/admin/sso/create/` | 302 to `/<staff>/staff/settings/sso/new` |
+| `/app/admin/sso/edit/<id>` | 302 to `/<staff>/staff/settings/sso/<id>/edit` |
+| `/app/admin/sso/x_statistics/<id>` | 302 to `/<staff>/staff/settings/sso/<id>/edit?tab=statistics` |
+
+A POST to any of these URLs, including the old create, edit and bulk delete forms, is refused: nothing is saved, and the answer is a short page that links to the new screen. The classic **Settings > Single Sign On** sidebar link opens the new screen.
+
+**What changed on the way:**
+
+- **The keys are masked.** The legacy edit page printed Key 1 and Key 2, and a PHP sample with both, on every visit. The new screen masks them. **Reveal** reads them for that page view only, and **Rotate keys** replaces both after a confirmation and shows the new ones once. Every reveal and rotation is recorded in the staff audit log, and the PHP sample shows placeholders until the keys are revealed.
+- **Keys can be rotated.** The legacy page offered no way to replace a source's keys short of deleting it.
+- **A code change asks first**, because the connected application sends the code in every sign-in link.
+- **The statistics chart labels sign-ins and sign-ups correctly.** The legacy chart showed each one under the other's label. The new chart covers the last 7, 30 or 90 days, 30 by default.
+- **Expiry is shown in server time (UTC)**, and an empty expiry reads **Never**.
+
 #### The legacy admin overview points to the new dashboard
 
 The legacy admin overview (`/app/admin/overview/`) is still where the legacy admin login lands, but it no longer shows the reports. It shows a "The dashboard moved" card with a link to the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) of the new interface (`/<UI_STAFF_PREFIX>/staff/dashboard`), the setup checklist (admins with the Settings privilege and no user group limit) and the quick links (admins with `Admin.Dashboard.Links`).
@@ -636,6 +669,14 @@ No configuration change is needed.
 #### `admin.senderdomains.health.get` can return the tracking fallback host
 
 A new optional parameter `IncludeTrackingFallback=true` adds `TrackingFallbackHost` to every row of `Domains`: the host that Email Gateway and journey mail from that domain uses for tracking and unsubscribe links because the domain's own tracking host is not set up (octeth/oempro#3308), or `null`. It costs one extra query per page and one per user group on the page. Without the parameter the response is byte-identical to before (octeth/oempro#3527).
+
+### SSO sources
+
+#### `sso.create` and `sso.update` honour the `Options` flags over HTTP
+
+`api.php` lowercases every request key, nested ones included, so `Options.CreateNewUserIfNotExists`, `Options.PerformLogin` and `Options.ReturnUserData` reached the two handlers as lowercase names they did not read, and a source created or updated through the API stored all three as `Disabled` whatever was sent. The handlers now read the three flags whatever the case of their names (octeth/oempro#3540). A flag is still `Enabled` only when its value is exactly `Enabled`.
+
+**Who needs to act:** nobody, unless you created or updated an SSO source through the API and worked around the stored options by hand. Check them with `sso.get`.
 
 ## Additions that need operator attention
 

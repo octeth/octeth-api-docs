@@ -12,8 +12,13 @@ Single Sign-On (SSO) source management endpoints for creating, reading, updating
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
+- Required privilege: `Settings.SSO`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Single Sign On screen did (answers `99999` without it)
 - v1 REST alias: `POST /api/v1/sso.create`. Legacy access via `/api.php` is also supported
 - `Key1` and `Key2` are returned since v5.9.6 (#2777) so the integration can be finished from the API. Existing fields and error codes are unchanged. Store both keys: they are the cipher and HMAC keys your application uses to sign SSO tokens. They can be re-read later with `sso.get` and replaced with `sso.keys.regenerate`.
+:::
+
+::: tip Fixed in v6.0.2 (#3540)
+`Options.CreateNewUserIfNotExists`, `Options.PerformLogin` and `Options.ReturnUserData` are honoured over HTTP. Until v6.0.2 the API lowercased their names before the handler read them, so a source created or updated through the API stored all three as `Disabled`. Check the options of a source you created or updated through the API with `sso.get`, and send them again if they are wrong.
 :::
 
 **Request Body Parameters:**
@@ -28,7 +33,7 @@ Single Sign-On (SSO) source management endpoints for creating, reading, updating
 | SourceDescription | String | No | Description of the SSO source         |
 | ExpiresAt | String | No       | Expiration date and time (format: YYYY-MM-DD HH:MM:SS) |
 | ValidForSeconds | Integer | Yes | Token validity duration in seconds (must be >= 1) |
-| Options   | Object | No       | SSO options configuration             |
+| Options   | Object | No       | SSO options configuration. Each flag is `Enabled` only when its value is exactly `Enabled`; a missing flag is saved as `Disabled`. The flag names are matched whatever their case. **Changed in v6.0.2:** over HTTP the flags used to be saved as `Disabled` whatever you sent, because the API lowercases request keys |
 | Options.CreateNewUserIfNotExists | String | No | Create new user if not exists (`Enabled` or `Disabled`) |
 | Options.PerformLogin | String | No | Perform automatic login (`Enabled` or `Disabled`) |
 | Options.ReturnUserData | String | No | Return user data in response (`Enabled` or `Disabled`). The returned JSON is the same user projection `user.login` returns in `UserInfo`, plus `_SessionID` and, for an impersonation token, `_Impersonate` and `_ImpersonateLeaveURL`. **Changed in v6.0.1:** it no longer includes the password hash, `AuthToken`, the two-factor secrets, `APIKey`, or the group's SMTP and delivery-server credentials inside `GroupInformation` |
@@ -82,6 +87,7 @@ curl -X POST https://example.com/api.php \
 6: sourcecode already exists
 7: Missing validforseconds
 8: Invalid validforseconds (must be numeric and >= 1)
+99999: Not enough privileges (the admin account does not hold Settings.SSO)
 ```
 
 :::
@@ -92,7 +98,12 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
+- Required privilege: `Settings.SSO`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Single Sign On screen did (answers `99999` without it)
 - v1 REST alias: `POST /api/v1/sso.update`. Legacy access via `/api.php` is also supported
+:::
+
+::: tip Fixed in v6.0.2 (#3540)
+`Options.CreateNewUserIfNotExists`, `Options.PerformLogin` and `Options.ReturnUserData` are honoured over HTTP. Until v6.0.2 the API lowercased their names before the handler read them, so a source created or updated through the API stored all three as `Disabled`. Check the options of a source you created or updated through the API with `sso.get`, and send them again if they are wrong.
 :::
 
 ::: warning Behavior change (v5.9.3, #2352)
@@ -112,7 +123,7 @@ curl -X POST https://example.com/api.php \
 | SourceDescription | String | No | Description of the SSO source         |
 | ExpiresAt | String | No       | Expiration date and time (format: YYYY-MM-DD HH:MM:SS) |
 | ValidForSeconds | Integer | Yes | Token validity duration in seconds (must be >= 1) |
-| Options   | Object | No       | SSO options configuration             |
+| Options   | Object | No       | SSO options configuration. Each flag is `Enabled` only when its value is exactly `Enabled`; a missing flag is saved as `Disabled`. The flag names are matched whatever their case. **Changed in v6.0.2:** over HTTP the flags used to be saved as `Disabled` whatever you sent, because the API lowercases request keys |
 | Options.CreateNewUserIfNotExists | String | No | Create new user if not exists (`Enabled` or `Disabled`) |
 | Options.PerformLogin | String | No | Perform automatic login (`Enabled` or `Disabled`) |
 | Options.ReturnUserData | String | No | Return user data in response (`Enabled` or `Disabled`). The returned JSON is the same user projection `user.login` returns in `UserInfo`, plus `_SessionID` and, for an impersonation token, `_Impersonate` and `_ImpersonateLeaveURL`. **Changed in v6.0.1:** it no longer includes the password hash, `AuthToken`, the two-factor secrets, `APIKey`, or the group's SMTP and delivery-server credentials inside `GroupInformation` |
@@ -166,6 +177,7 @@ curl -X POST https://example.com/api.php \
 8: Invalid validforseconds (must be numeric and >= 1)
 9: Missing sourceid
 10: Invalid sourceid
+99999: Not enough privileges (the admin account does not hold Settings.SSO)
 ```
 
 :::
@@ -176,6 +188,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
+- Required privilege: `Settings.SSO`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Single Sign On screen did (answers `99999` without it)
 - v1 REST alias: `POST /api/v1/sso.delete`. Legacy access via `/api.php` is also supported
 :::
 
@@ -217,6 +230,7 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 1: Missing sourceid
+99999: Not enough privileges (the admin account does not hold Settings.SSO)
 ```
 
 :::
@@ -227,7 +241,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Required privilege for sub-administrators: `Settings.SSO`
+- Required privilege: `Settings.SSO`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Single Sign On screen did (answers `99999` without it)
 - Returns the full source record including `Key1` and `Key2`. This is one of three places the key material is returned (with `sso.create` and `sso.keys.regenerate`); `ssosources.get` never includes it.
 - v1 REST alias: `GET /api/v1/sso.get`. Legacy access via `/api.php` is also supported
 :::
@@ -290,6 +304,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing sourceid
 2: Invalid sourceid (not numeric or no such source)
+99999: Not enough privileges (the admin account does not hold Settings.SSO)
 ```
 
 :::
@@ -300,7 +315,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Required privilege for sub-administrators: `Settings.SSO`
+- Required privilege: `Settings.SSO`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Single Sign On screen did (answers `99999` without it)
 - Ordered by `SourceName` ascending. `Key1` and `Key2` are never part of this listing; call `sso.get` for one source to read them.
 - v1 REST alias: `GET /api/v1/ssosources.get`. Legacy access via `/api.php` is also supported
 :::
@@ -360,6 +375,7 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
+99999: Not enough privileges (the admin account does not hold Settings.SSO)
 ```
 
 :::
@@ -370,8 +386,8 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Required privilege for sub-administrators: `Settings.SSO`
-- Returns one entry per calendar day for the last `Days` days ending today, newest first, with days that saw no activity zero-filled. This is the same window the admin SSO edit screen renders.
+- Required privilege: `Settings.SSO`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Single Sign On screen did (answers `99999` without it)
+- Returns one entry per calendar day for the last `Days` days ending today, newest first, with days that saw no activity zero-filled. This is the same window the staff Settings > SSO Statistics tab renders.
 - `Days` defaults to 30 and is clamped to the range 1 to 365. A non-numeric value falls back to 30.
 - v1 REST alias: `GET /api/v1/sso.stats.get`. Legacy access via `/api.php` is also supported
 :::
@@ -431,6 +447,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing sourceid
 2: Invalid sourceid (not numeric or no such source)
+99999: Not enough privileges (the admin account does not hold Settings.SSO)
 ```
 
 :::
@@ -441,7 +458,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Required privilege for sub-administrators: `Settings.SSO`
+- Required privilege: `Settings.SSO`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Single Sign On screen did (answers `99999` without it)
 - Mints a new `Key1` (32 bytes) and `Key2` (64 bytes) pair exactly as `sso.create` does, stores them, updates `UpdatedAt`, and returns both. Tokens signed with the previous keys stop validating immediately, so update the integrating application first or during a maintenance window.
 - Not available in demo mode.
 - v1 REST alias: `POST /api/v1/sso.keys.regenerate`. Legacy access via `/api.php` is also supported
@@ -492,6 +509,7 @@ curl -X POST https://example.com/api.php \
 1: Missing sourceid
 2: Invalid sourceid (not numeric or no such source)
 3: Key regeneration failed
+99999: Not enough privileges (the admin account does not hold Settings.SSO)
 NOT AVAILABLE IN DEMO MODE.: returned as ErrorCode when DEMO_MODE_ENABLED is on
 ```
 

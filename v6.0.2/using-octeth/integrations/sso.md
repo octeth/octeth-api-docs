@@ -62,73 +62,71 @@ An SSO source represents a connection between Octeth and one external system. Ea
 
 ### Step 1: Open the SSO Settings
 
-1. Log in to Octeth as an administrator.
-2. Navigate to **Settings** in the top menu.
-3. Click the **SSO** tab.
+1. Sign in to the new interface as an administrator with the Settings.SSO permission.
+2. In the staff sidebar, click **Settings**, then **SSO**.
 
-You will see a list of existing SSO sources (if any have been created). From here you can create new sources, edit existing ones, or delete sources you no longer need.
+You will see a list of existing SSO sources (if any have been created). From here you can create new sources, open existing ones, or delete sources you no longer need. See [Managing SSO Sources in the Staff Area](/v6.0.2/new-user-interface/staff-sso) for the whole screen.
 
-[[SCREENSHOT: The admin SSO settings page showing the list of SSO sources with the Create New SSO Source link highlighted]]
+[[SCREENSHOT: The staff Settings > SSO list showing two SSO sources and the Create SSO source button]]
 
 ### Step 2: Create a New Source
 
-1. Click **Create New SSO Source**.
+1. Click **Create SSO source**.
 2. Fill in the following fields:
 
 | Field | Required | Description |
 |---|---|---|
-| **Source Name** | Yes | A display name to help you identify this SSO source. For example, `My Website` or `WooCommerce Store`. |
-| **Source Code** | Yes | A unique identifier used in the SSO URL. Only letters (A-Z), numbers (0-9), dashes (`-`), and underscores (`_`) are allowed. No spaces. For example, `my-website` or `woocommerce_store`. |
+| **Name** | Yes | A display name to help you identify this SSO source. For example, `My Website` or `WooCommerce Store`. |
+| **Code** | Yes | A unique identifier used in the SSO URL. Only letters (A-Z), numbers (0-9), dashes (`-`), and underscores (`_`) are allowed. No spaces. For example, `my-website` or `woocommerce_store`. |
 | **Description** | No | An optional description for your own reference. |
-| **Expires At** | No | An optional expiration date for the entire SSO source. After this date, the source stops accepting SSO requests. Use the format `YYYY-MM-DD HH:MM:SS` (for example, `2027-12-31 23:59:59`). Leave blank for no expiration. |
-| **Valid For Seconds** | Yes | How long each token remains valid, in seconds. The default value is `5` seconds, which means a token must be used within 5 seconds of being generated. |
+| **Expires** | No | An optional expiration date and time for the entire SSO source, in server time (UTC). After this moment, the source stops accepting SSO requests. Leave it empty for no expiration. |
+| **Valid for (seconds)** | Yes | How long each token remains valid, in seconds. The default value is `5` seconds, which means a token must be used within 5 seconds of being generated. |
 
-[[SCREENSHOT: The Create New SSO Source form showing the Source Name, Source Code, Description, Expires At, and Valid For Seconds fields]]
+[[SCREENSHOT: The Create SSO source form showing the Source and Sign-in rules cards]]
 
 3. Configure the behavior options:
 
 | Option | Default | Description |
 |---|---|---|
-| **Create new user if not exists** | Enabled | When enabled, Octeth automatically creates a new user account if the user from the token does not already exist. When disabled, SSO only works for users who already have an Octeth account. |
-| **Perform login** | Enabled | When enabled, Octeth logs the user in and redirects them to the user dashboard. This is the typical SSO behavior. |
-| **Return user data** | Disabled | When enabled, Octeth returns the user's account information as a JSON response instead of redirecting them. This is useful when your external system needs to retrieve account data programmatically. |
+| **Create the user when no account matches** | Enabled | When enabled, Octeth automatically creates a new user account if the user from the token does not already exist. When disabled, SSO only works for users who already have an Octeth account. |
+| **Sign the user in** | Enabled | When enabled, Octeth logs the user in and redirects them to the user dashboard. This is the typical SSO behavior. |
+| **Return the user data** | Disabled | When enabled, Octeth returns the user's account information as a JSON response instead of redirecting them. This is useful when your external system needs to retrieve account data programmatically. |
 
 ::: tip
-For a typical SSO setup where users click a link and land inside Octeth, keep **Perform login** enabled and **Return user data** disabled. If you need to verify a user's identity from a backend service without redirecting them, enable **Return user data** instead.
+For a typical SSO setup where users click a link and land inside Octeth, keep **Sign the user in** enabled and **Return the user data** disabled. If you need to verify a user's identity from a backend service without redirecting them, enable **Return the user data** instead.
 :::
 
 ::: warning
-If both **Perform login** and **Return user data** are enabled, Octeth performs the login and redirect. The **Perform login** option takes priority.
+If both **Sign the user in** and **Return the user data** are enabled, Octeth performs the login and redirect. The **Sign the user in** option takes priority.
 :::
 
-4. Click **Create** to save the SSO source.
+4. Click **Create SSO source**.
 
-After creation, Octeth generates the two cryptographic keys for this source. You can view them on the **Access Credentials** tab of the SSO source.
+Octeth generates the two cryptographic keys for the source and opens it on the **Credentials** tab with both keys shown. Copy them now: they are hidden as soon as you leave the page or change anything on it, and can be revealed again later.
 
-## Retrieving the Access Credentials
+## Retrieving the Credentials
 
-After creating an SSO source, you need to retrieve the two cryptographic keys that your external system will use to encrypt and sign tokens.
+Your external system needs the two cryptographic keys of the source to encrypt and sign tokens.
 
-1. Navigate to **Settings** > **SSO**.
-2. Click on the SSO source name to open it.
-3. Click the **Access Credentials** tab.
-
-You will see two fields:
+1. In the staff sidebar, click **Settings**, then **SSO**.
+2. Click the SSO source to open it.
+3. Click the **Credentials** tab.
+4. Click **Reveal**.
 
 | Key | Purpose |
 |---|---|
-| **Key1 (Encryption Key)** | A Base64-encoded 32-byte key used to encrypt the token data with AES-256-CBC. |
-| **Key2 (Signing Key)** | A Base64-encoded 64-byte key used to sign the token with HMAC-SHA256, preventing tampering. |
+| **Key 1 (Encryption Key)** | A Base64-encoded 32-byte key used to encrypt the token data with AES-256-CBC. |
+| **Key 2 (Signing Key)** | A Base64-encoded 64-byte key used to sign the token with HMAC-SHA256, preventing tampering. |
 
-[[SCREENSHOT: The Access Credentials tab showing the Key1 and Key2 fields with copy-on-click functionality, and the example PHP code below]]
+[[SCREENSHOT: The Credentials tab showing the two revealed keys with their Copy buttons, and the sign-in link example below]]
 
-Click on either key field to select its value for copying. Provide both keys to the developer who will integrate SSO into your external system.
+Click **Copy** next to a key to copy it, and provide both keys to the developer who will integrate SSO into your external system. The keys stay in the page only until you leave it or click anything else on it, and every reveal is recorded in the staff audit log.
 
 ::: danger
 Treat these keys as sensitive credentials. Anyone who has both keys can generate valid SSO tokens and authenticate as any user. Do not share them publicly, commit them to public code repositories, or transmit them over unencrypted channels.
 :::
 
-The Access Credentials tab also displays a ready-to-use PHP code example that your developer can use as a starting point for the integration. This code example is pre-filled with the actual keys and SSO endpoint URL for your installation.
+The Credentials tab also shows a ready-to-use PHP example that your developer can use as a starting point. It is filled in with the source's code and your installation's SSO address, and with the real keys while they are revealed.
 
 ## Building the SSO Token
 
@@ -181,7 +179,7 @@ The final encoded string is the token value that you pass in the SSO URL.
 
 ### PHP Example
 
-The following PHP code demonstrates how to generate an SSO token. Replace `your-key1-here` and `your-key2-here` with the actual Base64-encoded keys from your SSO source's Access Credentials tab.
+The following PHP code demonstrates how to generate an SSO token. Replace `your-key1-here` and `your-key2-here` with the actual Base64-encoded keys from your SSO source's Credentials tab.
 
 ```php
 <?php
@@ -232,7 +230,7 @@ The `check_time` field must be the current Unix timestamp in UTC at the moment t
 :::
 
 ::: tip
-The example code above is also available directly inside Octeth. Open the SSO source, go to the **Access Credentials** tab, and you will find a PHP example pre-filled with your actual keys and SSO endpoint URL.
+The example code above is also available directly inside Octeth. Open the SSO source in **Settings** > **SSO** of the staff sidebar, go to the **Credentials** tab, and you will find a PHP example filled in with your SSO endpoint URL, and with your actual keys while they are revealed.
 :::
 
 ## Redirecting the User
@@ -289,22 +287,22 @@ For the most reliable user matching, always include a consistent `id` value in y
 
 ## Monitoring SSO Activity
 
-Each SSO source includes a statistics dashboard that tracks activity over the last 30 days.
+Each SSO source includes a statistics chart of its activity, the last 30 days by default.
 
-1. Navigate to **Settings** > **SSO**.
-2. Click on the SSO source name.
+1. In the staff sidebar, click **Settings**, then **SSO**.
+2. Click the SSO source to open it.
 3. Click the **Statistics** tab.
 
-The statistics tab displays a chart and a daily breakdown table with four metrics:
+The tab shows the totals of the window and a chart of four daily counters. Choose **7 days**, **30 days** or **90 days** to change the window.
 
 | Metric | Description |
 |---|---|
-| **Successful** | The number of SSO requests where the token was successfully decrypted and validated. |
-| **Failed** | The number of SSO requests that failed due to invalid tokens, expired tokens, or other errors. |
-| **Logins** | The number of successful user logins performed through SSO. |
-| **Sign Ups** | The number of new user accounts created through SSO (when automatic user creation is enabled). |
+| **Accepted links** | The number of SSO requests where the token was successfully decrypted and validated. |
+| **Refused links** | The number of SSO requests that failed due to invalid tokens, expired tokens, or other errors. |
+| **Sign-ins** | The number of successful user logins performed through SSO. |
+| **Sign-ups** | The number of new user accounts created through SSO (when automatic user creation is enabled). |
 
-[[SCREENSHOT: The Statistics tab showing the 30-day activity chart and the daily breakdown table with Successful, Failed, Logins, and Sign Ups columns]]
+[[SCREENSHOT: The Statistics tab showing the totals and the 30-day chart of accepted links, refused links, sign-ins and sign-ups]]
 
 ::: tip
 Check the statistics regularly after deploying a new SSO integration. A high number of failed requests may indicate a problem with the token generation code, clock synchronization, or key configuration on the external system.
@@ -314,10 +312,10 @@ Check the statistics regularly after deploying a new SSO integration. A high num
 
 To modify an existing SSO source:
 
-1. Navigate to **Settings** > **SSO**.
-2. Click on the SSO source name.
-3. Update the fields on the **Source Configuration** tab.
-4. Click **Save** to apply your changes.
+1. In the staff sidebar, click **Settings**, then **SSO**.
+2. Click the SSO source to open it.
+3. Update the fields on the **Details** tab.
+4. Click **Save changes**.
 
 You can change the source name, description, expiration date, token validity period, and behavior options at any time. The **Source Code** can also be updated, but keep in mind that your external system's SSO URL must be updated to use the new code.
 
@@ -325,16 +323,18 @@ You can change the source name, description, expiration date, token validity per
 Changing the **Source Code** will break any existing SSO integrations that use the old code. Update your external system's configuration immediately after changing the source code.
 :::
 
-The cryptographic keys (Key1 and Key2) are generated when the SSO source is first created and cannot be changed. If you need new keys, delete the SSO source and create a new one.
+Changing the **Code** asks for a confirmation before it is saved.
+
+To replace the keys, for example after a key leaked, open the **Credentials** tab and click **Rotate keys**. After you confirm, both keys are replaced, the new ones are shown once, and the external system stops working until it uses them.
 
 ## Deleting an SSO Source
 
 To delete one or more SSO sources:
 
-1. Navigate to **Settings** > **SSO**.
-2. Select the checkboxes next to the SSO sources you want to delete.
+1. In the staff sidebar, click **Settings**, then **SSO**.
+2. Tick the SSO sources you want to delete.
 3. Click **Delete**.
-4. Confirm the deletion when prompted.
+4. Confirm the deletion.
 
 ::: danger
 Deleting an SSO source is permanent and cannot be undone. Any external systems configured to use the deleted source will no longer be able to authenticate users through SSO. Make sure the source is no longer in use before deleting it.
@@ -348,11 +348,15 @@ The following API commands are available:
 
 | API Command | Description |
 |---|---|
-| `sso.create` | Create a new SSO source with specified configuration and options. |
+| `ssosources.get` | List every SSO source, without its keys. |
+| `sso.get` | Read one SSO source, including its keys. |
+| `sso.create` | Create a new SSO source and return its keys. |
 | `sso.update` | Update an existing SSO source's name, code, options, or expiration. |
 | `sso.delete` | Delete one or more SSO sources by their IDs. |
+| `sso.stats.get` | Read the daily statistics of one SSO source. |
+| `sso.keys.regenerate` | Replace both keys of an SSO source and return them. |
 
-These commands require administrator-level API authentication. For full details on request parameters and response formats, see the [API Reference](/v5.8.1/api-reference/administrators).
+These commands require administrator-level API authentication and the Settings.SSO permission. For full details on request parameters and response formats, see the [SSO API Reference](/v6.0.2/api-reference/sso).
 
 ## Security Considerations
 
@@ -414,14 +418,14 @@ This error means Octeth could not find an SSO source matching the `code` paramet
 
 This error means the SSO source has passed its expiration date.
 
-1. Open the SSO source in **Settings** > **SSO** and check the **Expires At** field.
+1. Open the SSO source in **Settings** > **SSO** of the staff sidebar and check the **Expires** field.
 2. Either clear the expiration date to remove the time limit, or set it to a future date.
 
 ### "Invalid SSO token" Error
 
 This error means Octeth could not decrypt or verify the token. The token data may be corrupted, the keys may be incorrect, or the token format may be invalid.
 
-1. Verify that your external system is using the correct Key1 and Key2 values from the SSO source's **Access Credentials** tab.
+1. Verify that your external system is using the correct Key1 and Key2 values from the SSO source's **Credentials** tab.
 2. Make sure the keys are Base64-decoded before use in the encryption and signing functions.
 3. Confirm that the token is Base64-encoded and then URL-encoded (in that order).
 4. Check that the IV, HMAC signature, and encrypted data are concatenated in the correct order: IV first, then HMAC, then encrypted data.
@@ -460,4 +464,5 @@ If new users are not being created even though **Create new user if not exists**
 ## Related Articles
 
 - [Users](../users) — Manage user accounts and user groups.
-- [API Reference](/v5.8.1/api-reference/administrators) — Create and manage SSO sources programmatically.
+- [SSO API Reference](/v6.0.2/api-reference/sso): Create and manage SSO sources programmatically.
+- [Managing SSO Sources in the Staff Area](/v6.0.2/new-user-interface/staff-sso): The SSO screens of the staff area.
