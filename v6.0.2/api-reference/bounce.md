@@ -4,14 +4,15 @@ layout: doc
 
 # Bounce Processing API Documentation
 
-Admin-only commands covering the bounce receiver metrics, the incoming message spool, manual processing and the bounce pattern set. All eight commands require the Admin API key, and a sub-admin calling them must hold the Bounce privilege.
+Admin-only commands covering the bounce receiver metrics, MTA feedback freshness, the bounce webhook settings, the incoming message spool, manual processing and the bounce pattern set. They back the staff [Bounce processing](/v6.0.2/new-user-interface/staff-bounces) screen. Every command requires the Admin API key or an admin SessionID and the `Bounce` privilege. Since v6.0.2 each command checks `Bounce` in its handler, so a sub-admin without it gets `ErrorCode 99999` even when `ADMIN_API_ENFORCE_PRIVILEGES` is off.
 
 ## Get Bounce Receiver Metrics
 
 <Badge type="info" text="POST" /> `/api/v1/bounce.metrics.get`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (sub-admins need the `Bounce` privilege)
+- Authentication required: Admin API Key or admin SessionID
+- Required privilege: `Bounce`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy Bounce Processing page did (changed in v6.0.2)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -75,6 +76,7 @@ curl -X POST https://example.com/api/v1/bounce.metrics.get \
 ```txt [Error Codes]
 0: Success
 1: Days is not numeric
+99999: Not enough privileges (sub-admin without Bounce)
 ```
 
 :::
@@ -86,7 +88,8 @@ curl -X POST https://example.com/api/v1/bounce.metrics.get \
 <Badge type="info" text="POST" /> `/api/v1/bounce.messages.get`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (sub-admins need the `Bounce` privilege)
+- Authentication required: Admin API Key or admin SessionID
+- Required privilege: `Bounce`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy Bounce Processing page did (changed in v6.0.2)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -141,6 +144,7 @@ curl -X POST https://example.com/api/v1/bounce.messages.get \
 
 ```txt [Error Codes]
 0: Success
+99999: Not enough privileges (sub-admin without Bounce)
 ```
 
 :::
@@ -150,7 +154,8 @@ curl -X POST https://example.com/api/v1/bounce.messages.get \
 <Badge type="info" text="POST" /> `/api/v1/bounce.message.get`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (sub-admins need the `Bounce` privilege)
+- Authentication required: Admin API Key or admin SessionID
+- Required privilege: `Bounce`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy Bounce Processing page did (changed in v6.0.2)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -207,6 +212,7 @@ curl -X POST https://example.com/api/v1/bounce.message.get \
 0: Success
 1: MessageID is required
 2: No spooled message matches MessageID
+99999: Not enough privileges (sub-admin without Bounce)
 ```
 
 :::
@@ -216,7 +222,8 @@ curl -X POST https://example.com/api/v1/bounce.message.get \
 <Badge type="info" text="POST" /> `/api/v1/bounce.message.delete`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (sub-admins need the `Bounce` privilege)
+- Authentication required: Admin API Key or admin SessionID
+- Required privilege: `Bounce`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy Bounce Processing page did (changed in v6.0.2)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 - Not available in demo mode
@@ -264,6 +271,7 @@ curl -X POST https://example.com/api/v1/bounce.message.delete \
 0: Success
 1: MessageID is required
 2: No spooled message matches MessageID, or the file could not be removed
+99999: Not enough privileges (sub-admin without Bounce)
 ```
 
 :::
@@ -273,7 +281,8 @@ curl -X POST https://example.com/api/v1/bounce.message.delete \
 <Badge type="info" text="POST" /> `/api/v1/bounce.messages.process`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (sub-admins need the `Bounce` privilege)
+- Authentication required: Admin API Key or admin SessionID
+- Required privilege: `Bounce`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy Bounce Processing page did (changed in v6.0.2)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 - Not available in demo mode
@@ -281,12 +290,16 @@ curl -X POST https://example.com/api/v1/bounce.message.delete \
 
 Runs every spooled message through the bounce processor (the same code path the bounce SMTP server and `internal.bounce.register` use), in this request. A message is deleted from the spool only after it was processed successfully. Messages that fail (for example a message that matches no bounce pattern, or one whose campaign no longer exists) stay in the spool and are listed in `Results` with the reason, so they can be inspected with `bounce.message.get` or removed with `bounce.message.delete`.
 
+**Batches (new in v6.0.2).** Processing runs synchronously, so a long spool can outlast an HTTP timeout. Pass `MaxMessages` to process at most that many messages per request, and pass the `Cursor` of each answer as `After` in the next one, until `Remaining` is `0`. A message that failed stays in the spool but is not attempted again in the same drain, and a message spooled after the drain started waits for the next one. Without `MaxMessages` the whole spool is processed and the response has no `Remaining` or `Cursor`, as before. The staff [Bounce processing](/v6.0.2/new-user-interface/staff-bounces) screen drains the spool 25 messages at a time. In a batch answer, `TotalMessages`, `Processed`, `Failed` and `Results` cover the batch only.
+
 **Request Body Parameters:**
 
 | Parameter   | Type   | Required | Description                             |
 |-------------|--------|----------|-----------------------------------------|
 | Command     | String | Yes      | API command: `bounce.messages.process`  |
 | AdminAPIKey | String | Yes      | Admin API key                           |
+| MaxMessages | Integer | No       | New in v6.0.2. Process at most this many messages, 1 to 500. Absent: the whole spool, as before |
+| After       | String  | No       | New in v6.0.2. With `MaxMessages`: the `Cursor` of the previous batch. Absent or empty: start from the newest message. Ignored without `MaxMessages` |
 
 ::: code-group
 
@@ -324,6 +337,31 @@ curl -X POST https://example.com/api/v1/bounce.messages.process \
 }
 ```
 
+```bash [Batch Request]
+curl -X POST https://example.com/api/v1/bounce.messages.process \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "bounce.messages.process",
+    "AdminAPIKey": "your-admin-api-key",
+    "MaxMessages": 25,
+    "After": "1760000400_4_d4e5f6.eml"
+  }'
+```
+
+```json [Batch Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalMessages": 25,
+  "Processed": 24,
+  "Failed": 1,
+  "Results": [ ... ],
+  "Remaining": 40,
+  "Cursor": "1760000150_9_a1b2c3.eml"
+}
+```
+
 ```json [Error Response]
 {
   "Success": false,
@@ -333,6 +371,8 @@ curl -X POST https://example.com/api/v1/bounce.messages.process \
 
 ```txt [Error Codes]
 0: Success
+1: MaxMessages is not a whole number from 1 to 500
+99999: Not enough privileges (sub-admin without Bounce)
 ```
 
 :::
@@ -342,7 +382,8 @@ curl -X POST https://example.com/api/v1/bounce.messages.process \
 <Badge type="info" text="POST" /> `/api/v1/bounce.process.manual`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (sub-admins need the `Bounce` privilege)
+- Authentication required: Admin API Key or admin SessionID
+- Required privilege: `Bounce`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy Bounce Processing page did (changed in v6.0.2)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 - Not available in demo mode
@@ -404,6 +445,7 @@ curl -X POST https://example.com/api/v1/bounce.process.manual \
 ```txt [Error Codes]
 0: Success
 1: Lines is missing or blank
+99999: Not enough privileges (sub-admin without Bounce)
 ```
 
 :::
@@ -413,7 +455,8 @@ curl -X POST https://example.com/api/v1/bounce.process.manual \
 <Badge type="info" text="POST" /> `/api/v1/bounce.patterns.get`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (sub-admins need the `Bounce` privilege)
+- Authentication required: Admin API Key or admin SessionID
+- Required privilege: `Bounce`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy Bounce Processing page did (changed in v6.0.2)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -462,6 +505,7 @@ curl -X POST https://example.com/api/v1/bounce.patterns.get \
 
 ```txt [Error Codes]
 0: Success
+99999: Not enough privileges (sub-admin without Bounce)
 ```
 
 :::
@@ -471,7 +515,8 @@ curl -X POST https://example.com/api/v1/bounce.patterns.get \
 <Badge type="info" text="POST" /> `/api/v1/bounce.patterns.update`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (sub-admins need the `Bounce` privilege)
+- Authentication required: Admin API Key or admin SessionID
+- Required privilege: `Bounce`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy Bounce Processing page did (changed in v6.0.2)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 - Not available in demo mode
@@ -531,6 +576,157 @@ curl -X POST https://example.com/api/v1/bounce.patterns.update \
 1: Patterns is missing
 2: Patterns could not be parsed (ErrorText and Errors list every offending line or entry); nothing was changed
 3: The transactional replace failed; the previous patterns were kept
+99999: Not enough privileges (sub-admin without Bounce)
+```
+
+:::
+
+## Get Email Gateway Feedback Freshness
+
+<Badge type="info" text="POST" /> `/api/v1/admin.bounce.feedback.get`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin SessionID
+- Required privilege: `Bounce`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns when the newest delivered, bounced and complained event of email gateway sends arrived, and when the bounce webhook last received a bounce. This is the freshness card the legacy Bounce Processing page showed. An age that keeps growing while gateway sends continue means the feedback pipeline (the MTA accounting post, RabbitMQ, the `emailgateway_events` worker, ClickHouse or the bounce webhook) is broken. Read-only.
+
+Each `*At` field is a Unix time, or `null` when nothing is on record. `EventsAvailable` is `false` when the event store (ClickHouse `eg_events`) could not be read, and the three event times are then `null`. `WebhookAvailable` is `false` when the bounce webhook statistics could not be read. The event store's error text is not returned. The bounce webhook keeps hourly counters, so `LastWebhookBounceAt` is the end of the newest hour with a bounce, capped at `Now`.
+
+**Request Body Parameters:**
+
+| Parameter   | Type   | Required | Description                                 |
+|-------------|--------|----------|---------------------------------------------|
+| Command     | String | Yes      | API command: `admin.bounce.feedback.get`    |
+| SessionID   | String | No       | Session ID obtained from `admin.login`      |
+| AdminAPIKey | String | No       | Admin API key (master or per-sub-admin)     |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.bounce.feedback.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.bounce.feedback.get",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Now": 1760774400,
+  "EventsAvailable": true,
+  "LastDeliveredAt": 1760774310,
+  "LastBouncedAt": 1760773500,
+  "LastComplainedAt": null,
+  "WebhookAvailable": true,
+  "LastWebhookBounceAt": null
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99999: Not enough privileges (sub-admin without Bounce)
+```
+
+:::
+
+## Get the Bounce Webhook Settings
+
+<Badge type="info" text="POST" /> `/api/v1/admin.bounce.webhook.get`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin SessionID
+- Required privilege: `Bounce`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- Rate limit: 30 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns what a bounce sender (PowerMTA through Logstash, or fluentd) needs to post bounces to `/system/bounce_webhook`: whether `BOUNCE_WEBHOOK_AUTH_ENABLED` is on, the webhook URL and the signature header. The signature secret itself is returned only with `Reveal`.
+
+::: warning The signature secret is a credential
+The secret is derived from `OEMPRO_PASSWORD_SALT` and `ADMIN_API_KEY`, and it also signs Octeth's own calls to its private `/system/*` services. It is returned only when `Reveal` is `1`, every reveal is written to the application log with the AdminID, and a reveal is refused in demo mode. To change it, rotate `ADMIN_API_KEY`, which changes it for every sender already configured.
+:::
+
+`SecretAvailable` is `false` when `OEMPRO_PASSWORD_SALT` or `ADMIN_API_KEY` is not set, and a reveal then returns no secret. `WebhookURL` is the endpoint without its query string: the sender adds `?type=pmta` or `?type=fluentd`.
+
+**Request Body Parameters:**
+
+| Parameter   | Type    | Required | Description                                                                  |
+|-------------|---------|----------|------------------------------------------------------------------------------|
+| Command     | String  | Yes      | API command: `admin.bounce.webhook.get`                                      |
+| SessionID   | String  | No       | Session ID obtained from `admin.login`                                       |
+| AdminAPIKey | String  | No       | Admin API key (master or per-sub-admin)                                      |
+| Reveal      | Integer | No       | `1` (or `true`) to include `SignatureSecret`. Any other value leaves it out |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.bounce.webhook.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.bounce.webhook.get",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "AuthEnabled": true,
+  "SecretAvailable": true,
+  "SignatureHeader": "X-Octeth-Signature",
+  "WebhookURL": "https://example.com/system/bounce_webhook",
+  "Revealed": false
+}
+```
+
+```json [Reveal Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "AuthEnabled": true,
+  "SecretAvailable": true,
+  "SignatureHeader": "X-Octeth-Signature",
+  "WebhookURL": "https://example.com/system/bounce_webhook",
+  "Revealed": true,
+  "SignatureSecret": "9f2c1e7a5b3d4f60a8c2e1b7d9f3a5c4e6b8d0f2a4c6e8b0d2f4a6c8e0b2d4f6"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99999: Not enough privileges (sub-admin without Bounce)
+NOT AVAILABLE IN DEMO MODE.: a reveal on an install in demo mode
 ```
 
 :::

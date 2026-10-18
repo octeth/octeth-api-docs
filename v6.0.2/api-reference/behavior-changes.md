@@ -653,6 +653,34 @@ The old enable and disable links changed a plugin's state on a plain GET, so a b
 - **Audited.** Every enable and disable writes a staff audit row naming the plugin.
 - **No browse link.** The legacy page linked to the plugin catalogue on octeth.com. The new screen has no install, upload or update check.
 
+#### The legacy admin Bounce Processing page is removed
+
+The legacy admin **Bounce Processing** page (`/app/admin/bounce/`), an item of the classic **Preferences** drop-menu, is removed. Its metrics, bounce patterns, webhook settings, spooled messages and manual processing are on the [Bounce processing](/v6.0.2/new-user-interface/staff-bounces) screen of the new **Deliverability** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/deliverability/bounces`), which needs the `Bounce` privilege, as the page did (octeth/oempro#3558). The bounce and complaint mailbox settings (POP3/IMAP) stay on the classic **Email Delivery** settings.
+
+**The old URLs keep working, but no longer change anything.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/bounce/`, `/app/admin/bounce/message_download/<id>` and anything else under it not listed below | 302 to `/<staff>/staff/deliverability/bounces` |
+| `/app/admin/bounce/message_delete/<id>`, `x_clear_emails`, `x_start_manual_process`, `x_save_bounce_patterns` | Refused: nothing changes, and the answer is a short page that links to the new screen |
+
+The old delete link removed a spooled message on a plain GET, so a bookmark, a prefetching browser or a crafted link could delete one. It is refused whatever the HTTP method, and so is a POST to any of these URLs. The old download link no longer serves the message. The **Bounce Processing** item of the classic **Preferences** drop-menu opens the new screen. It now also needs the `Bounce` privilege, which the page always checked, so it no longer shows to an administrator the screen would refuse.
+
+**What changed on the way:**
+
+- **The webhook signature secret is masked.** The legacy page printed it in the page and in the Logstash sample. The new screen shows it only after **Reveal**, reads it through the new `admin.bounce.webhook.get` with `Reveal`, and records every reveal in the staff audit log and the application log. The samples carry a placeholder until then. The secret is derived from `ADMIN_API_KEY`, so changing it means rotating that key.
+- **Destructive actions ask first and are audited.** **Process all**, deleting a message and manual processing each ask for a confirmation and write a staff audit row with counts and message IDs, never an address, a line or a message body. Manual processing shows how many bounces, complaints and opt-outs it will apply, and which lines it will skip, before it runs. A download is audited by its message ID.
+- **No more 3-second polling.** The receiver counters are read when the screen opens and on its refresh button.
+- **Patterns are checked before saving**, with the same rules as `bounce.patterns.update`, and the screen says whether the saved patterns or the shipped defaults are in use. Saving an empty list asks first and restores the shipped defaults.
+- **Privilege checked in every handler.** All eight `bounce.*` commands and the two new ones (`admin.bounce.feedback.get`, `admin.bounce.webhook.get`) answer `99999` (`Not enough privileges`) to a sub-admin without `Bounce`, even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the newer staff commands do. See [the Bounce Processing API](/v6.0.2/api-reference/bounce). No request or response field changes.
+- **Manual lines and raw messages stay out of the logs.** The new interface's API call log and debug console redact the manual processing lines and the raw messages and envelope addresses of the spool.
+- **Processing runs in batches the screen can stop.** **Process all** sends the spool 25 messages per request and manual processing 500 lines per request, with a progress line and a **Stop** button, so no request runs into the proxy's timeout while Octeth keeps changing subscribers, and no batch is sent twice. Stopping manual processing leaves the lines not yet sent in the box. Each batch writes its own audit row. Processing itself still runs synchronously inside Octeth, as before.
+- **`bounce.messages.process` takes opt-in batches.** The new `MaxMessages` and `After` parameters process at most that many messages after a cursor and answer with `Remaining` and `Cursor`. Without them the command processes the whole spool and answers exactly as before.
+
+**Who needs to act:** a script that called `bounce.*` with the key of a sub-admin who lacks `Bounce`, on an install with `ADMIN_API_ENFORCE_PRIVILEGES` off, now gets `99999`: grant that sub-admin `Bounce`. Nobody else.
+
+There is no opt-in flag: the page is gone, and the privilege check is the one the page always applied.
+
 #### The legacy admin Email Suppression List is removed
 
 The legacy admin **Email Suppression List** page (`/app/admin/suppression/`), an item of the classic **Preferences** menu, is removed. System-wide suppressions, the search across every account and the suppression patterns are managed on the [Email suppression](/v6.0.2/new-user-interface/staff-email-suppression) screen of the new **Deliverability** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/deliverability/suppression`), which needs the `Suppression` privilege, as the page did (octeth/oempro#3559). The classic menu item now shows only to administrators holding `Suppression`; before, it showed to those holding `Settings` and then refused the ones without `Suppression`.
