@@ -1123,6 +1123,7 @@ export default defineConfig({
                         {text: 'The Default Opt-in Email', link: '/v6.0.2/new-user-interface/staff-optin-email'},
                         {text: 'The Staff S2S Postback Screen', link: '/v6.0.2/new-user-interface/staff-s2s-postback'},
                         {text: 'Managing SSO Sources in the Staff Area', link: '/v6.0.2/new-user-interface/staff-sso'},
+                        {text: 'The Staff Plugins Screen', link: '/v6.0.2/new-user-interface/staff-plugins'},
                         {text: 'Your Staff Profile', link: '/v6.0.2/new-user-interface/staff-profile'},
                         {text: 'The Staff System Screen', link: '/v6.0.2/new-user-interface/staff-system'},
                         {text: 'The Staff Security Screen', link: '/v6.0.2/new-user-interface/staff-security'},

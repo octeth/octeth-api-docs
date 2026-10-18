@@ -5441,7 +5441,8 @@ curl -X POST https://example.com/api.php \
 <Badge type="info" text="GET" /> `/api/v1/admin.plugins.get`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (privilege `Settings`)
+- Authentication required: Admin API Key
+- Required privilege: `Settings`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Plugins page did (answers `99999` without it)
 - v1 REST alias: `GET /api/v1/admin.plugins.get`. Legacy access via `/api.php` is also supported
 - Every plugin under `plugins/` with a parsable header. `Enabled` reflects the `ENABLED_PLUGINS` setting.
 :::
@@ -5453,6 +5454,7 @@ curl -X POST https://example.com/api.php \
 | Command   | String | Yes      | API command: `admin.plugins.get` |
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | Admin API key for authentication      |
+| IncludeCompatibility | Boolean | No | `true` or `1` adds `Compatible` to each plugin: whether this install's version meets the plugin's `MinOemproVersion`. **New in v6.0.2.** Without it the response is unchanged |
 
 ::: code-group
 
@@ -5473,6 +5475,18 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Success Response with IncludeCompatibility]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Plugins": [
+    {"Code": "lindris", "Name": "Lindris", "Description": "AI assistant", "MinOemproVersion": "5.0.0", "Enabled": true, "Compatible": true},
+    {"Code": "future", "Name": "Future", "Description": "Needs a newer Octeth", "MinOemproVersion": "9.0.0", "Enabled": false, "Compatible": false}
+  ],
+  "TotalPlugins": 2
+}
+```
+
 ```json [Error Response]
 {
   "Success": false,
@@ -5482,6 +5496,7 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
+99999: Not enough privileges (the admin account does not hold Settings)
 ```
 
 :::
@@ -5491,9 +5506,10 @@ curl -X POST https://example.com/api.php \
 <Badge type="info" text="POST" /> `/api/v1/admin.plugin.enable`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (privilege `Settings`)
+- Authentication required: Admin API Key
+- Required privilege: `Settings`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Plugins page did (answers `99999` without it)
 - v1 REST alias: `POST /api/v1/admin.plugin.enable`. Legacy access via `/api.php` is also supported
-- Runs the same sequence as the admin Plugins screen: validates the code against the plugins on disk, adds it to `ENABLED_PLUGINS`, includes the plugin and runs its `enable_<code>()` lifecycle hook (table creation, option seeding), then its `load_<code>()`. This is what writing `EnabledPlugins` through `settings.update` does NOT do.
+- Runs the same sequence as the staff Settings > Plugins screen: validates the code against the plugins on disk, adds it to `ENABLED_PLUGINS`, includes the plugin and runs its `enable_<code>()` lifecycle hook (table creation, option seeding), then its `load_<code>()`. This is what writing `EnabledPlugins` through `settings.update` does NOT do.
 :::
 
 **Request Body Parameters:**
@@ -5536,6 +5552,7 @@ curl -X POST https://example.com/api.php \
 1: PluginCode is missing
 2: PluginCode is not an installed plugin
 3: The plugin is already enabled
+99999: Not enough privileges (the admin account does not hold Settings)
 NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 ```
 
@@ -5546,9 +5563,14 @@ NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 <Badge type="info" text="POST" /> `/api/v1/admin.plugin.disable`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (privilege `Settings`)
+- Authentication required: Admin API Key
+- Required privilege: `Settings`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic Plugins page did (answers `99999` without it)
 - v1 REST alias: `POST /api/v1/admin.plugin.disable`. Legacy access via `/api.php` is also supported
-- Removes the code from `ENABLED_PLUGINS` and runs the plugin's `disable_<code>()` lifecycle hook, exactly like the admin Plugins screen.
+- Removes the code from `ENABLED_PLUGINS` and runs the plugin's `disable_<code>()` lifecycle hook, exactly like the staff Settings > Plugins screen.
+:::
+
+::: warning
+For most plugins, `disable_<code>()` drops the plugin's tables and settings, and enabling the plugin again does not restore them. A plugin worker started by supervisord keeps running until it is restarted.
 :::
 
 **Request Body Parameters:**
@@ -5591,6 +5613,7 @@ curl -X POST https://example.com/api.php \
 1: PluginCode is missing
 2: PluginCode is not an installed plugin
 3: The plugin is already disabled
+99999: Not enough privileges (the admin account does not hold Settings)
 NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 ```
 

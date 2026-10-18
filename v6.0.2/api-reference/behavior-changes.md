@@ -115,6 +115,16 @@ The check runs first, so it also applies to `admin.senderdomains.health.get` wit
 
 **Who needs to act:** an integration that calls an SSO command with the key or session of a sub-admin who does not hold `Settings.SSO`. Grant that account `Settings.SSO`, or use a key that has it.
 
+### Plugins (privilege check)
+
+#### `Settings` is checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+
+`admin.plugins.get`, `admin.plugin.enable` and `admin.plugin.disable` relied on the registry's `Settings` tag, which is enforced only when `ADMIN_API_ENFORCE_PRIVILEGES` is on, so with it off any sub-admin session could disable a plugin, which for most plugins deletes its tables and settings. Each handler now checks `Settings` itself and answers `99999` (`Not enough privileges`) without it, as the newer staff commands do (#3521, #3522, #3525) (octeth/oempro#3553). The classic Plugins page always required `Settings`, so the API now matches what the page allowed. In `admin.plugin.enable` and `admin.plugin.disable` the check runs before the demo-mode refusal.
+
+**Not affected:** the master admin, the master `ADMIN_API_KEY`, and every administrator without `Options.AccessLimited`, or holding `Settings`.
+
+**Who needs to act:** an integration that calls a plugin command with the key or session of a sub-admin who does not hold `Settings`. Grant that account `Settings`, or use a key that has it.
+
 ### Admin area
 
 #### The legacy Users section is removed
@@ -516,6 +526,27 @@ A POST to any of these URLs, including the old create, edit and bulk delete form
 - **The statistics chart labels sign-ins and sign-ups correctly.** The legacy chart showed each one under the other's label. The new chart covers the last 7, 30 or 90 days, 30 by default.
 - **Expiry is shown in server time (UTC)**, and an empty expiry reads **Never**.
 
+#### The legacy admin Plugins page is removed
+
+The legacy admin **Plugins** page (`/app/admin/plugins/`), an item of the classic **Settings** sidebar and of the admin drop-menu, is removed. Plugins are enabled and disabled on the [Plugins](/v6.0.2/new-user-interface/staff-plugins) screen of the **Settings** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/plugins`), which needs the `Settings` privilege, as the page did (octeth/oempro#3553). A plugin's own admin pages stay in the classic admin and are unchanged.
+
+**The old URLs keep working, but no longer change anything.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/plugins/`, anything under it not listed below | 302 to `/<staff>/staff/settings/plugins` |
+| `/app/admin/plugins/enable/<code>`, `/app/admin/plugins/disable/<code>` | Refused: nothing changes, and the answer is a short page that links to the new screen |
+
+The old enable and disable links changed a plugin's state on a plain GET, so a bookmark, a prefetching browser or a crafted link could disable a plugin and delete its data. They are refused whatever the HTTP method. A POST to any of these URLs is refused too. The classic **Settings > Plugins** sidebar item and the **Plugins** drop-menu item open the new screen, and the top-right **Settings** link no longer considers the Plugins page as a landing page, which changes nothing in practice, because **Email Delivery**, which comes before it, needs the same `Settings` privilege.
+
+**What changed on the way:**
+
+- **Set, not toggle.** The legacy enable and disable links both toggled the plugin's state, so a stale page could do the opposite of what it showed. The new screen sets the state it shows and says so when the plugin was already in that state.
+- **Disabling asks for the plugin's name.** The dialog says that the plugin's tables and settings are deleted and not restored when it is enabled again, and that a plugin worker keeps running until it is restarted. The legacy page asked a yes or no question in a browser dialog.
+- **A plugin that needs a newer Octeth** shows **Needs vX** and no Enable action, as before.
+- **Audited.** Every enable and disable writes a staff audit row naming the plugin.
+- **No browse link.** The legacy page linked to the plugin catalogue on octeth.com. The new screen has no install, upload or update check.
+
 #### The legacy admin overview points to the new dashboard
 
 The legacy admin overview (`/app/admin/overview/`) is still where the legacy admin login lands, but it no longer shows the reports. It shows a "The dashboard moved" card with a link to the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) of the new interface (`/<UI_STAFF_PREFIX>/staff/dashboard`), the setup checklist (admins with the Settings privilege and no user group limit) and the quick links (admins with `Admin.Dashboard.Links`).
@@ -750,6 +781,12 @@ A new optional parameter `IncludeTrackingFallback=true` adds `TrackingFallbackHo
 `api.php` lowercases every request key, nested ones included, so `Options.CreateNewUserIfNotExists`, `Options.PerformLogin` and `Options.ReturnUserData` reached the two handlers as lowercase names they did not read, and a source created or updated through the API stored all three as `Disabled` whatever was sent. The handlers now read the three flags whatever the case of their names (octeth/oempro#3540). A flag is still `Enabled` only when its value is exactly `Enabled`.
 
 **Who needs to act:** nobody, unless you created or updated an SSO source through the API and worked around the stored options by hand. Check them with `sso.get`.
+
+### Plugins
+
+#### `admin.plugins.get` can report compatibility
+
+A new optional parameter `IncludeCompatibility=true` adds `Compatible` to every plugin: whether this install's version meets the plugin's `MinOemproVersion`, by the comparison the classic Plugins page used. Without the parameter the response is byte-identical to before (octeth/oempro#3553). `admin.plugin.enable` still does not check the version.
 
 ## Additions that need operator attention
 
