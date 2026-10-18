@@ -420,6 +420,29 @@ The classic admin header's **Reports > Inbound SMS** item opens the new screen.
 
 There is no opt-in flag: the page is removed, and its URLs answer as above.
 
+#### The legacy admin Default Opt-in Email page is removed
+
+The legacy admin **Default Opt-in Email** page (`/app/admin/defaultoptinemail/`), an item of the classic **Settings** sidebar, is removed. The default opt-in email is edited on the [Default opt-in email](/v6.0.2/new-user-interface/staff-optin-email) screen of the **Settings** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/optin-email`) (octeth/oempro#3538).
+
+**The old URL keeps working.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/defaultoptinemail/`, anything under it | 302 to `/<staff>/staff/settings/optin-email` |
+
+A POST to it, including the old form submit, is refused: nothing is saved, and the answer is a short page that links to the new screen.
+
+The classic **Settings** sidebar's **Default Opt-in Email** item opens the new screen. The top-right **Settings** link no longer lands on this page: an unrestricted administrator now lands on **Delivery Servers**.
+
+**What changed on the way:**
+
+- **The screen needs `Settings`, not `Settings.General`.** The legacy page opened for an administrator holding `Settings.General`, but it saved through `settings.update`, which needs `Settings`, so such an administrator could open the page and never save. The new screen asks for `Settings` up front. A sub-administrator who only holds `Settings.General` no longer sees the page anywhere.
+- **The confirmation link is checked before saving.** The text must contain `%Link:Confirm%`, spelled exactly so, because that is the spelling the sender replaces. The screen refuses a text without it with a message under the field, and every save sends the subject and the text together, so Octeth's own check (error `7`) always runs as well.
+- **The merge tag menu offers only tags this email replaces:** the opt-in links, the subscriber's email address and IDs, and the date. The legacy menu also offered the account owner's `%User:...%` tags, which this email never replaced, so a subscriber received them as typed.
+- **Restore the default text** fills the form with the text a new install starts with. Nothing is saved until **Save**.
+
+There is no opt-in flag: the page is removed, and its URL answers as above. `settings.get` and `settings.update` are unchanged.
+
 #### The legacy admin Single Sign On section is removed
 
 The legacy admin **Single Sign On** section (`/app/admin/sso/`), an item of the classic **Settings** sidebar, is removed. SSO sources are managed on the [SSO](/v6.0.2/new-user-interface/staff-sso) screen of the new **Settings** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/sso`), which needs the `Settings.SSO` privilege, as the section did (octeth/oempro#3540). The public sign-in address `/app/sso?code=&token=` is a different page and is unchanged.

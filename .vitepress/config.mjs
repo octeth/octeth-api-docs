@@ -1119,6 +1119,7 @@ export default defineConfig({
                         {text: 'The Staff Sender Domain Health Report', link: '/v6.0.2/new-user-interface/staff-sender-domain-health'},
                         {text: 'The Staff SMS Campaigns Screen', link: '/v6.0.2/new-user-interface/staff-sms-campaigns'},
                         {text: 'The Staff Inbound SMS Screen', link: '/v6.0.2/new-user-interface/staff-sms-inbound'},
+                        {text: 'The Default Opt-in Email', link: '/v6.0.2/new-user-interface/staff-optin-email'},
                         {text: 'Managing SSO Sources in the Staff Area', link: '/v6.0.2/new-user-interface/staff-sso'},
                         {text: 'Your Staff Profile', link: '/v6.0.2/new-user-interface/staff-profile'},
                         {text: 'The Staff System Screen', link: '/v6.0.2/new-user-interface/staff-system'},
