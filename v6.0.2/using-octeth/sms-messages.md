@@ -146,62 +146,11 @@ Enter one word or phrase per line in the text area.
 
 ### SMS Suppression (Admin)
 
-The SMS suppression system prevents messages from being sent to specific phone numbers. Administrators can manage suppression entries at three levels: **System** (affects all users), **User** (affects a specific user), and **List** (affects a specific subscriber list).
+The SMS suppression system prevents messages from being sent to specific phone numbers. Administrators manage suppressions at three levels: **System** (every account), **Account** (one account) and **List** (one list). A fourth level, **Gateway**, is written by Octeth when a recipient replies STOP and the reply cannot be matched to an account.
 
-Navigate to **Settings** > **SMS Suppression** in the admin panel.
+Administrators manage every account's suppressions on the **SMS > Suppression** screen of the new interface's staff area: browse and filter every number and pattern, add numbers or patterns at any of the three levels, remove them, and clear the suppression cache. Removing a recipient's own opt-out asks for a reason, which is kept in the staff audit log. See [The Staff SMS Suppression Screen](/v6.0.2/new-user-interface/staff-sms-suppression).
 
-[[SCREENSHOT: Admin SMS Suppression page showing the statistics panel on the left and the Search/Add Numbers/Patterns tabs on the right]]
-
-#### Statistics Panel
-
-The left panel displays suppression statistics:
-
-- **Total Suppressed Numbers**: The total count across all levels.
-- **By Level**: Breakdown by System, User, List, and Pattern counts.
-- **By Reason**: Breakdown by suppression reason (manual, complaint, bounce, opt-out, invalid).
-
-A **Clear cache** link at the bottom resets the suppression cache. Use this after making bulk changes to ensure the latest data is used.
-
-#### Searching for Suppressed Numbers
-
-Use the **Search** tab to check if a phone number is in the suppression list.
-
-1. Enter the phone number in the **Phone Number** field (e.g., `+1234567890`).
-2. Optionally select a **User** to narrow the search.
-3. Optionally select a **List** (appears after selecting a user).
-4. Click **Search**.
-
-If the number is found, the results table shows the phone number, suppression level, reason, and date added. You can remove a suppression by clicking the **X** link next to it.
-
-#### Adding Numbers to the Suppression List
-
-Use the **Add Numbers** tab to suppress specific phone numbers.
-
-1. Enter one or more phone numbers in the **Phone Numbers** field, one per line. Include the country code (e.g., `+1234567890`).
-2. Select the **Suppression Level**:
-   - **System (All Users)**: Blocks the number for every user in the system.
-   - **User**: Blocks the number for a specific user. Select the user from the dropdown.
-   - **List**: Blocks the number for a specific subscriber list. Select the user and then the list.
-3. Select a **Reason** (Manual, Complaint, Hard Bounce, Opt-out, or Invalid Number).
-4. Optionally add **Notes** for reference.
-5. Click **Add to Suppression List**.
-
-#### Managing Suppression Patterns
-
-Patterns allow you to block multiple phone numbers using wildcard matching. Use the **Patterns** tab to create and manage patterns.
-
-To add a pattern:
-
-1. Enter the pattern in the **Pattern** field. Use `*` as a wildcard (e.g., `+1234*` blocks all numbers starting with +1234).
-2. Select the **Suppression Level** (System, User, or List).
-3. Optionally add **Notes**.
-4. Click **Add Pattern**.
-
-Existing patterns are listed in a table below the form. Click the **X** link to remove a pattern.
-
-::: tip
-Patterns are useful for blocking entire area codes or country prefixes. For example, `+44*` would suppress all UK phone numbers.
-:::
+The classic admin **Settings > SMS Suppression List** item opens that screen.
 
 ## Configuring List SMS Settings
 

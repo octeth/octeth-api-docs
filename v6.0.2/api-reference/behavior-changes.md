@@ -462,6 +462,32 @@ The classic admin header's **Reports > Inbound SMS** item opens the new screen.
 
 There is no opt-in flag: the page is removed, and its URLs answer as above.
 
+#### The legacy admin SMS Suppression page is removed
+
+The legacy admin **SMS Suppression List** page (`/app/admin/sms_suppression/`), an item of the classic **Settings** menu, is removed. The list is the [Suppression](/v6.0.2/new-user-interface/staff-sms-suppression) screen of the **SMS** group of the staff sidebar, after **Inbound** (`/<UI_STAFF_PREFIX>/staff/sms/suppression`) (octeth/oempro#3560). It needs the `SMS` and `Settings` privileges, as the page did.
+
+**The old URLs keep working.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/sms_suppression/` and anything under it | 302 to `/<staff>/staff/sms/suppression` |
+| A POST to any of these URLs | Refused: nothing runs, and the answer is a short page that links to the new screen |
+| `/app/admin/sms_suppression/get_lists`, by any method | Refused the same way. It returned the lists of any account |
+
+The classic admin header's **Settings > SMS Suppression List** item opens the new screen, and is shown only to administrators with both `SMS` and `Settings` (it was shown on `Settings` alone, and then refused).
+
+**What changed on the way:**
+
+- **The list can be browsed.** The legacy page could only check one number at a time, through the send path's cached answer, and could not show gateway rows. The new screen lists every suppressed number and pattern of every account, read from the table, and filters by digits of the number, scope, account, list, reason, source, gateway and the date added.
+- **User group limits apply.** The legacy page listed every account in its account picker and removed any ID. A sub-admin limited to some user groups now sees and changes the system rows and the rows of accounts in those groups, and no gateway row, because a gateway row belongs to no account. The screen says so above the list.
+- **Removing an opt-out needs a reason.** Removing a recipient's own opt-out (a STOP reply, an opt-out link, or any gateway row) asks for confirmation that says so and a typed reason, which is kept in the staff audit log.
+- **Every change is audited.** Adding, removing, adding or removing a pattern and clearing the cache each write a staff audit row with the counts and scopes, never a number, pattern or note.
+- **A pattern that would match every number is refused.** A pattern needs at least one digit before its first `*`.
+- **A list row needs only the list ID.** The row is written for the list's owner.
+- **There is no gateway scope for adding**, as on the legacy page. Gateway rows come only from STOP replies.
+
+There is no opt-in flag: the page is removed, and its URLs answer as above.
+
 #### The legacy admin Preferences page is trimmed
 
 Most of the legacy admin **Preferences** page (`/app/admin/preferences/`), an item of the classic **Settings** sidebar, moved to the [Preferences](/v6.0.2/new-user-interface/staff-preferences) screen of the new interface's staff area (`/<UI_STAFF_PREFIX>/staff/settings/preferences`), under the new **Settings** group of the staff sidebar (octeth/oempro#3537). The screen needs the `Settings` privilege, as the page did.
@@ -1028,6 +1054,17 @@ One new admin command, additive and needing the `SMS` and `Settings` privileges,
 
 - `admin.sms.inbound.get` lists one page of the received SMS messages, newest first, 10 to 100 per page (`RecordsPerPage`, default 50, with `Page`), filtered by `Status`, `Number`, `OptOut` (`yes`, `no` or `failed`), `GatewayID`, `DateFrom` and `DateTo`. It returns `TotalMessages`, the rows and the gateway list. A sub-admin limited to some user groups gets only the messages of accounts in those groups and no unattributed message (`UserGroupScoped` is `true`). It returns phone numbers and message bodies, which are personal data, so grant `SMS` and `Settings` with that in mind. Error codes: `1` to `6` an invalid filter, `7` the messages could not be read. Rate limit 100 requests per 60 seconds.
 
+### SMS suppression administrator commands
+
+Eight new admin commands, additive, each needing both the `SMS` and the `Settings` privilege, which it checks even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answering `99999` without them), as the legacy SMS Suppression page did, and each scoped to the user groups of a limited sub-admin: such a sub-admin reaches the system rows and the rows of accounts in those groups, and no gateway row (octeth/oempro#3560). No existing command changes: the `smssuppression.*` commands keep their privileges and answers.
+
+- `admin.sms.suppression.get` lists one page of the suppressed numbers of every account, newest first, 10 to 100 per page, filtered by `Number` (digits anywhere in the number), `Scope`, `Account` (a user ID or the start of a username), `ListID`, `GatewayID`, `Reason`, `Source`, `DateFrom` and `DateTo`. `admin.sms.suppression.patterns.get` does the same for patterns. `admin.sms.suppression.stats` returns the numbers by scope and by reason, the opt-outs among them, and the patterns with their own count by scope. Rate limit 100 requests per 60 seconds each. They return phone numbers and notes, which are personal data, so grant `SMS` and `Settings` with that in mind.
+- `admin.sms.suppression.add` suppresses up to 1,000 numbers at `system`, `user` or `list` scope and returns `Added`, `Existing`, `Invalid` and `Failed`. `admin.sms.suppression.patterns.add` adds one pattern and refuses one with no digit before its first `*` (error `3`).
+- `admin.sms.suppression.delete` removes up to 500 numbers by ID, and **removes a recipient's own opt-out (`Reason` `optout`, or a gateway row) only with `ConfirmOptOuts=1`**: without it, it removes nothing and answers error `3`. `admin.sms.suppression.patterns.delete` removes up to 500 patterns. An ID outside the caller's reach is counted in `NotFound`.
+- `admin.sms.suppression.cache.clear` drops every cached suppression answer, as `smssuppression.cache.clear` does, with `SMS` and `Settings`.
+
+The writes are refused in demo mode and limited to 30 requests per 60 seconds (the cache clear to 10).
+
 ### AI assistant connector
 
 #### New root-level paths `/mcp`, `/oauth/` and `/.well-known/oauth-*` are served by the new user interface
@@ -1116,6 +1153,7 @@ The upgrade adds the index `idx_bouncedate_owner (BounceDate, RelOwnerUserID)` t
 - If an administrator has `AccessLimited` off but still carries `AccessAllowedUserGroupIDs`, `admin.subscriber.search` now shows them every list. Turn `AccessLimited` on for that administrator if the limit was intended.
 - Update bookmarks to the classic Subscriber Email Search: `/app/admin/subscribersearch/` redirects to the staff Subscriber search.
 - If a sub-admin limited to some user groups used the classic Inbound SMS page to watch unattributed replies, give that work to an administrator without a user group limit: the staff Inbound screen shows a limited sub-admin only the messages of its groups' accounts.
+- If a sub-admin limited to some user groups used the classic SMS Suppression page to manage gateway-wide STOP replies, give that work to an administrator without a user group limit: the staff Suppression screen shows a limited sub-admin no gateway row.
 
 ---
 

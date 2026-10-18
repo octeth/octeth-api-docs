@@ -31,6 +31,8 @@ Admin-authenticated calls may additionally pass `system`: `smssuppression.add` a
 
 Phone numbers must be in E.164 format with a leading `+` (e.g. `+15551234567`). Patterns use `*` as a wildcard (e.g. `+1555*` blocks all numbers starting with `+1555`).
 
+The `admin.sms.suppression.*` commands at the end of this page are the staff equivalents: they list, count, add and remove suppressions across every account and every scope, including the `gateway` scope (an unattributed STOP reply, which suppresses the number for every account on that gateway). They back the staff **SMS > Suppression** screen (new in v6.0.2). The `Source` column can also hold `inbound` (a STOP reply), which the inbound SMS path writes.
+
 ## Browse SMS Suppression List
 
 <Badge type="info" text="GET" /> `/api/v1/smssuppression.browse`
@@ -765,3 +767,457 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+## Browse SMS Suppressions (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.sms.suppression.get`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session
+- Required privileges: `SMS` and `Settings`, checked by the command itself even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+One page of the suppressed numbers of every account, newest first (`CreatedAt`, then `SuppressionID`), at every scope: `system`, `user` (one account), `list` (one list) and `gateway`. It reads the suppression table directly, so it lists what is stored, not the cached answer of the send path. Patterns are listed by [Browse SMS Suppression Patterns (Admin)](#browse-sms-suppression-patterns-admin).
+
+A sub-admin limited to some user groups gets the system rows and the rows of accounts in those groups. A gateway row belongs to no account, so only administrators without a user group limit get it, and `Gateways` is empty for a limited sub-admin. `UserGroupScoped` says which applies to the caller.
+
+Phone numbers and notes are personal data. The command returns them and logs neither.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.sms.suppression.get` |
+| AdminAPIKey | String | No | Admin API key. Or authenticate with an admin `SessionID` |
+| Page | Integer | No | Page number, default 1. A value that is not a positive whole number is page 1 |
+| RecordsPerPage | Integer | No | Page size, 10 to 100, default 50. A value outside the range is brought into it |
+| Number | String | No | Digits found anywhere in the normalized number. Everything but digits is dropped, so `+1 (555)` matches numbers containing `1555` |
+| Scope | String | No | `system`, `user`, `list` or `gateway` |
+| Account | String | No | A user ID, or the start of a username |
+| ListID | Integer | No | Rows of one list |
+| GatewayID | Integer | No | Gateway rows of one gateway |
+| Reason | String | No | `manual`, `optout`, `complaint`, `bounce`, `invalid` or `other` |
+| Source | String | No | The stored source, for example `manual_entry`, `import`, `api`, `optout_link` or `inbound`. Lowercase letters and underscores |
+| DateFrom | String | No | Added on or after this date, `YYYY-MM-DD` in UTC |
+| DateTo | String | No | Added on or before this date, `YYYY-MM-DD` in UTC, the whole day included |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.sms.suppression.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.sms.suppression.get",
+    "AdminAPIKey": "your-admin-api-key",
+    "Reason": "optout",
+    "Account": "acme",
+    "RecordsPerPage": 50
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalSuppressions": 1,
+  "Page": 1,
+  "RecordsPerPage": 50,
+  "TotalPages": 1,
+  "UserGroupScoped": false,
+  "Suppressions": [
+    {
+      "SuppressionID": 135901,
+      "Scope": "user",
+      "PhoneNumber": "+15551234567",
+      "PhoneNumberNormalized": "15551234567",
+      "IsPattern": false,
+      "UserID": 42,
+      "Username": "acme",
+      "UserEmailAddress": "ops@acme.example",
+      "ListID": null,
+      "ListName": null,
+      "GatewayID": null,
+      "GatewayName": null,
+      "Reason": "optout",
+      "Source": "inbound",
+      "Notes": "",
+      "AddedByAdminID": null,
+      "AddedByUserID": null,
+      "CreatedAt": "2026-10-17 09:12:44",
+      "IsOptOut": true
+    }
+  ],
+  "Gateways": [
+    {"GatewayID": 2, "GatewayName": "Primary"}
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Scope is not system, user, list or gateway
+2: Reason is not one of the six reasons
+3: Source holds something other than lowercase letters and underscores
+4: Account is not a user ID or a username of at most 100 characters
+5: ListID is not a positive whole number
+6: GatewayID is not a positive whole number
+7: DateFrom is not a valid YYYY-MM-DD date
+8: DateTo is not a valid YYYY-MM-DD date
+9: DateFrom is after DateTo
+10: The suppressions could not be read (see the error log)
+99999: Not enough privileges (sub-admin without SMS or Settings)
+```
+
+:::
+
+**Response fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| TotalSuppressions | Integer | Rows matching the filters and the caller's user group scope |
+| Page, RecordsPerPage, TotalPages | Integer | The page returned, its size, and the number of pages (at least 1). A page past the end returns an empty `Suppressions` |
+| UserGroupScoped | Boolean | `true` when the caller is limited to user groups, so gateway rows are left out |
+| Suppressions | Array | The page, described below |
+| Gateways | Array | Every SMS gateway (`GatewayID`, `GatewayName`), for a gateway filter. Empty for a limited sub-admin, or when the gateways could not be read |
+
+Row fields:
+
+- `PhoneNumber` is the number as it was entered, `PhoneNumberNormalized` the form the send path compares.
+- `UserID`, `Username` and `UserEmailAddress` are set for `user` and `list` rows. `ListID` and `ListName` are set for `list` rows. `GatewayID` and `GatewayName` are set for `gateway` rows, and a name is `null` when the record no longer exists.
+- `IsOptOut` is `true` for the recipient's own opt-out: `Reason` `optout` (a STOP reply or an opt-out link), or any `gateway` row.
+- `CreatedAt` is `Y-m-d H:i:s` in UTC.
+
+## SMS Suppression Stats (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.sms.suppression.stats`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session
+- Required privileges: `SMS` and `Settings`, checked by the command itself
+- Rate limit: 100 requests per 60 seconds
+:::
+
+The counts of the suppression table across every account, in the caller's reach (the same user group rule as above). `ByScope`, `ByReason` and `OptOuts` count numbers only, so `ByScope` and `ByReason` each add up to `Numbers`; `PatternsByScope` counts the patterns. Every key is present, `0` when no row has it. `OptOuts` counts the numbers that are the recipient's own opt-out.
+
+**Request Body Parameters:** `Command` (`admin.sms.suppression.stats`) and the admin credential. No other parameter.
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Total": 94,
+  "Numbers": 86,
+  "Patterns": 8,
+  "OptOuts": 37,
+  "ByScope": {"system": 0, "user": 74, "list": 12, "gateway": 0},
+  "ByReason": {"manual": 19, "optout": 37, "complaint": 10, "bounce": 12, "invalid": 8, "other": 0},
+  "PatternsByScope": {"system": 0, "user": 8, "list": 0, "gateway": 0},
+  "UserGroupScoped": false
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: The counts could not be read (see the error log)
+99999: Not enough privileges (sub-admin without SMS or Settings)
+```
+
+:::
+
+## Add to SMS Suppressions (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.sms.suppression.add`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session
+- Required privileges: `SMS` and `Settings`, checked by the command itself
+- Rate limit: 30 requests per 60 seconds
+- Refused in demo mode
+:::
+
+Suppresses up to 1,000 numbers at one scope: `system` (every account), `user` (one account) or `list` (one list). There is no `gateway` scope: gateway rows are written only by STOP replies. Each number is normalized and written once. A number already suppressed at that scope is counted as existing and left alone, and an entry that cannot be read as a phone number, or a pattern, is counted as invalid. Patterns have their own command.
+
+A list belongs to one account, so `ListID` alone sets a list row, and the row is written for the list's owner. A sub-admin limited to some user groups can add system rows and rows of accounts in those groups. An account or list outside the groups is answered exactly like one that does not exist.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.sms.suppression.add` |
+| Numbers | String or Array | Yes | Phone numbers, one per line, or separated by commas or semicolons. At most 1,000. Spaces inside a number are allowed |
+| Scope | String | Yes | `system`, `user` or `list` |
+| UserID | Integer | For `user` | The account |
+| ListID | Integer | For `list` | The list |
+| Reason | String | No | `manual` (default), `optout`, `complaint`, `bounce`, `invalid` or `other` |
+| Notes | String | No | At most 1,000 characters |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.sms.suppression.add \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.sms.suppression.add",
+    "AdminAPIKey": "your-admin-api-key",
+    "Numbers": "+15551234567\n+15559876543",
+    "Scope": "list",
+    "ListID": 7,
+    "Reason": "complaint"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Added": 1,
+  "Existing": 1,
+  "Invalid": 0,
+  "Failed": 0,
+  "Scope": "list",
+  "UserID": 42,
+  "ListID": 7
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Numbers is missing
+2: More than 1,000 numbers
+3: Scope is not system, user or list
+4: UserID is missing or not a positive whole number (user scope)
+5: The account does not exist, or is outside the administrator's user groups
+6: ListID is missing or not a positive whole number (list scope)
+7: The list does not exist, or its account is outside the administrator's user groups
+8: Reason is not one of the six reasons
+9: Notes is longer than 1,000 characters
+99999: Not enough privileges (sub-admin without SMS or Settings)
+```
+
+:::
+
+`Failed` counts numbers that could not be saved (see the error log). `UserID` and `ListID` are the account and list the rows were written for, `null` for a system row.
+
+## Delete from SMS Suppressions (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.sms.suppression.delete`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session
+- Required privileges: `SMS` and `Settings`, checked by the command itself
+- Rate limit: 30 requests per 60 seconds
+- Refused in demo mode
+:::
+
+Removes up to 500 suppressed numbers by ID, and clears the cached answers of each one. Patterns are removed by [Delete SMS Suppression Patterns (Admin)](#delete-sms-suppression-patterns-admin), and an ID of a pattern is counted as not found here.
+
+**A recipient's own opt-out is removed only with `ConfirmOptOuts` set to `1`.** That is a row with `Reason` `optout` (a STOP reply or an opt-out link) or any `gateway` row. Without it, when such a row is among the IDs, the command removes nothing and answers error `3` with the number of opt-outs it found. Removing an opt-out lets messages reach someone who asked for none, which most carriers and many laws forbid without a new consent.
+
+A sub-admin limited to some user groups can remove system rows and rows of accounts in those groups. Any other ID, a gateway row included, is counted in `NotFound`, exactly like an ID that does not exist.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.sms.suppression.delete` |
+| SuppressionIDs | String or Array | Yes | IDs, comma-separated or a list, at most 500 |
+| ConfirmOptOuts | Integer | No | `1` to remove opt-outs among them |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Deleted": 3,
+  "NotFound": 1,
+  "Failed": 0,
+  "OptOutsDeleted": 1,
+  "DeletedByScope": {"system": 0, "user": 2, "list": 1, "gateway": 0}
+}
+```
+
+```json [Opt-outs Not Confirmed]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Opt-outs are among these suppressions. Send ConfirmOptOuts=1 to remove them. Nothing was removed.",
+  "OptOuts": 1
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: SuppressionIDs is missing or holds something other than positive whole numbers
+2: More than 500 IDs
+3: Opt-outs are among the IDs and ConfirmOptOuts is not 1. Nothing was removed
+4: The suppressions could not be read (see the error log)
+99999: Not enough privileges (sub-admin without SMS or Settings)
+```
+
+:::
+
+## Browse SMS Suppression Patterns (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.sms.suppression.patterns.get`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session
+- Required privileges: `SMS` and `Settings`, checked by the command itself
+- Rate limit: 100 requests per 60 seconds
+:::
+
+One page of the suppression patterns of every account, newest first, with the same user group rule. A pattern such as `+1900*` suppresses every number it matches when a message is sent.
+
+**Request Body Parameters:** `Page`, `RecordsPerPage`, `Number` (digits found anywhere in the pattern), `Scope` (`system`, `user` or `list`), `Account` and `ListID`, as in [Browse SMS Suppressions (Admin)](#browse-sms-suppressions-admin). Other filters are ignored.
+
+**Response:** as Browse SMS Suppressions (Admin), with the total in `TotalPatterns`, the rows in `Patterns` (`IsPattern` is `true` and `PhoneNumber` holds the pattern) and no `Gateways`.
+
+```txt [Error Codes]
+0: Success
+1: Scope is not system, user or list
+4: Account is not a user ID or a username of at most 100 characters
+5: ListID is not a positive whole number
+10: The patterns could not be read (see the error log)
+99999: Not enough privileges (sub-admin without SMS or Settings)
+```
+
+## Add SMS Suppression Pattern (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.sms.suppression.patterns.add`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session
+- Required privileges: `SMS` and `Settings`, checked by the command itself
+- Rate limit: 30 requests per 60 seconds
+- Refused in demo mode
+:::
+
+Adds one pattern at `system`, `user` or `list` scope, with `Reason` `manual`. A pattern is `+`, then digits, with at least one `*` for any run of digits. **It must have at least one digit before the first `*`**: a pattern such as `+*` would match every number on the install and stop all SMS, so it is refused with error `3`. A pattern that already exists at that scope is answered with its ID and `Existing` `true`.
+
+The scope, account and list rules are those of [Add to SMS Suppressions (Admin)](#add-to-sms-suppressions-admin).
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.sms.suppression.patterns.add` |
+| Pattern | String | Yes | For example `+1900*`. Spaces are removed |
+| Scope | String | Yes | `system`, `user` or `list` |
+| UserID | Integer | For `user` | The account |
+| ListID | Integer | For `list` | The list |
+| Notes | String | No | At most 1,000 characters |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "SuppressionID": 135950,
+  "Existing": false,
+  "Scope": "system",
+  "UserID": null,
+  "ListID": null
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Pattern is missing
+2: Pattern is not + followed by digits and at least one *
+3: Pattern has no digit before the first *, so it would match every number
+4: Scope is not system, user or list
+5: UserID is missing or not a positive whole number (user scope)
+6: The account does not exist, or is outside the administrator's user groups
+7: ListID is missing or not a positive whole number (list scope)
+8: The list does not exist, or its account is outside the administrator's user groups
+9: Notes is longer than 1,000 characters
+10: The pattern could not be saved (see the error log)
+99999: Not enough privileges (sub-admin without SMS or Settings)
+```
+
+:::
+
+## Delete SMS Suppression Patterns (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.sms.suppression.patterns.delete`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session
+- Required privileges: `SMS` and `Settings`, checked by the command itself
+- Rate limit: 30 requests per 60 seconds
+- Refused in demo mode
+:::
+
+Removes up to 500 patterns by ID, with the user group rule of [Delete from SMS Suppressions (Admin)](#delete-from-sms-suppressions-admin). An ID of a number is counted as not found here.
+
+**Request Body Parameters:** `SuppressionIDs` (comma-separated or a list, at most 500).
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Deleted": 1,
+  "NotFound": 0,
+  "Failed": 0,
+  "DeletedByScope": {"system": 1, "user": 0, "list": 0, "gateway": 0}
+}
+```
+
+Error codes: `1` SuppressionIDs is missing or invalid, `2` more than 500 IDs, `4` the patterns could not be read, `99999` not enough privileges.
+
+## Clear SMS Suppression Cache (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.sms.suppression.cache.clear`
+
+<Badge type="tip" text="New in v6.0.2" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session
+- Required privileges: `SMS` and `Settings`, checked by the command itself
+- Rate limit: 10 requests per 60 seconds
+- Refused in demo mode
+:::
+
+Drops every cached suppression answer of every account, as [Clear SMS Suppression Cache](#clear-sms-suppression-cache) does, but with the privileges of the staff screen. The send path keeps a suppression answer for up to an hour (`SMS_SUPPRESSION_CACHE_TTL`), so use it after changing suppressions outside the API. No suppression changes.
+
+**Request Body Parameters:** `Command` (`admin.sms.suppression.cache.clear`) and the admin credential.
+
+```json [Success Response]
+{"Success": true, "ErrorCode": 0, "ErrorText": ""}
+```
+
+Error codes: `1` the cache could not be cleared (Redis unavailable or disabled), `99999` not enough privileges.
