@@ -1114,6 +1114,7 @@ export default defineConfig({
                         {text: 'Managing User Groups in the Staff Area', link: '/v6.0.2/new-user-interface/staff-user-groups'},
                         {text: 'Managing Sub-admins in the Staff Area', link: '/v6.0.2/new-user-interface/staff-sub-admins'},
                         {text: 'Searching Subscribers in the Staff Area', link: '/v6.0.2/new-user-interface/staff-subscriber-search'},
+                        {text: 'The List Freshness Report', link: '/v6.0.2/new-user-interface/staff-list-freshness'},
                         {text: 'Your Staff Profile', link: '/v6.0.2/new-user-interface/staff-profile'},
                         {text: 'The Staff System Screen', link: '/v6.0.2/new-user-interface/staff-system'},
                         {text: 'The Staff Security Screen', link: '/v6.0.2/new-user-interface/staff-security'},

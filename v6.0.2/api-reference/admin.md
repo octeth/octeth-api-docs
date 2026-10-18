@@ -1750,7 +1750,8 @@ curl -X POST https://example.com/api/v1/admin.deliveryserver.performance \
 <Badge type="info" text="POST" /> `/api/v1/admin.lists.freshness`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Authentication required: Admin API Key or admin SessionID
+- Required privilege: `Reports`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy List Freshness screen did (changed in v6.0.2)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -1765,7 +1766,7 @@ The admin List Freshness report: every account that owns at least one list, with
 | `Dead` | more than `Stale` |
 | `No Data` | no list of the account has any subscription or import history |
 
-The rows are cached for 60 seconds (the same cache the screen uses); the classification is applied after the cache, so a threshold change shows immediately.
+The rows are cached for 60 seconds (the same cache the staff [List freshness report](/v6.0.2/new-user-interface/staff-list-freshness) uses), and `CacheHit` is `true` when this answer came from that cache. The classification is applied after the cache, so a threshold change shows immediately.
 
 **Request Body Parameters:**
 
@@ -1832,7 +1833,7 @@ curl -X POST https://example.com/api/v1/admin.lists.freshness \
 2: OrderType is not ASC or DESC
 3: The report query failed (see the application log)
 99998: Authentication failure or session expired
-99999: Not enough privileges
+99999: Not enough privileges (the caller lacks Reports)
 ```
 
 :::
@@ -1844,12 +1845,13 @@ curl -X POST https://example.com/api/v1/admin.lists.freshness \
 <Badge type="info" text="POST" /> `/api/v1/admin.lists.freshness.detail`
 
 ::: tip API Usage Notes
-- Authentication required: Admin API Key (sub-admins need the `Reports` privilege)
+- Authentication required: Admin API Key or admin SessionID
+- Required privilege: `Reports`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the legacy List Freshness screen did (changed in v6.0.2)
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-Per-list freshness for one account: every list with its last subscription or import date, the days since, the 90-day subscription, import and unsubscription totals, the active subscriber count, the freshness status (same rules as `admin.lists.freshness`) and a 90-point `DailyGrowth` series (subscriptions plus imports per day, oldest first, ending today), which is the screen's sparkline. `OverallStatus` is the status of the account's freshest list, `No Data` only when no list has any history. Cached 60 seconds per account.
+Per-list freshness for one account: every list with its last subscription or import date, the days since, the 90-day subscription, import and unsubscription totals, the active subscriber count, the freshness status (same rules as `admin.lists.freshness`) and a 90-point `DailyGrowth` series (subscriptions plus imports per day, oldest first, ending today), which the staff List freshness report draws as the 90-day trend. `OverallStatus` is the status of the account's freshest list, `No Data` only when no list has any history. Cached 60 seconds per account.
 
 **Request Body Parameters:**
 
@@ -1911,7 +1913,7 @@ curl -X POST https://example.com/api/v1/admin.lists.freshness.detail \
 1: UserID is missing or not a positive integer
 2: The account does not exist (or, for a restricted sub-admin, is outside the allowed user groups)
 99998: Authentication failure or session expired
-99999: Not enough privileges
+99999: Not enough privileges (the caller lacks Reports)
 ```
 
 :::

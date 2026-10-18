@@ -73,6 +73,16 @@ Until this release a sub-administrator holding `SubAdmins` could create an accou
 
 The `admin.subadmin.*` commands relied on the registry's privilege tag, which is enforced only when `ADMIN_API_ENFORCE_PRIVILEGES` is on, so with it off any sub-admin session could call them. Each handler now checks `SubAdmins` itself and answers `99999` without it, as the newer staff commands do (#3521, #3522). The legacy Sub Admin Accounts screen always required `SubAdmins`, so the API now matches what the screen allowed.
 
+### List freshness (privilege check)
+
+#### `Reports` is checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+
+`admin.lists.freshness` and `admin.lists.freshness.detail` relied on the registry's privilege tag, which is enforced only when `ADMIN_API_ENFORCE_PRIVILEGES` is on, so with it off any sub-admin session or API key could read the report. Each handler now checks `Reports` itself and answers `99999` without it, as the other staff commands do (#3521, #3522, #3525). The legacy List Freshness screen always required `Reports`, so the API now matches what the screen allowed (octeth/oempro#3529).
+
+**Not affected:** the master admin, the master `ADMIN_API_KEY`, every administrator without `Options.AccessLimited`, and every sub-admin holding `Reports`. Their responses are unchanged.
+
+**Who needs to act:** an integration that reads the report with a sub-admin's key or session lacking `Reports`. Grant that account `Reports`, or use the master key.
+
 ### Admin area
 
 #### The legacy Users section is removed
@@ -256,6 +266,27 @@ A POST to any of these URLs, including the old create, edit, bulk delete and API
 - **The API key is shown once.** The legacy edit page printed the stored key on every visit. The new screen shows a key only right after it is issued or rotated, and "Issued" afterwards.
 - **New per-account actions.** Reset two-factor authentication for a sub-admin who lost their authenticator, and sign a sub-admin out of every remembered browser without revoking every administrator's.
 - **A deleted user group stays visible.** A stored group id that no longer exists is listed as "Deleted group #N" and kept on save unless you untick it, so saving never widens an account to every group.
+
+#### The legacy admin List Freshness report is removed
+
+The legacy admin **List Freshness** report (`/app/admin/listfreshness/`), an item of the classic **Reports** menu, is removed. The report is the [List freshness](/v6.0.2/new-user-interface/staff-list-freshness) screen of the new interface's staff area (`/<UI_STAFF_PREFIX>/staff/reports/list-freshness`), under the new **Reports** group of the staff sidebar (octeth/oempro#3529). The screen needs the `Reports` privilege, as the report did, and a sub-administrator limited to some user groups still sees only the users of those groups.
+
+**The old URLs keep working.** The report is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/listfreshness/`, anything under it not listed below | 302 to `/<staff>/staff/reports/list-freshness` |
+| `/app/admin/listfreshness/browse/<field>/<direction>` | 302 to the same screen with the sort kept: `WorstFreshness`, `User`, `TotalLists` and `LastActivity` become `?sort=status`, `user`, `lists` and `activity`, and `ASC` or `DESC` becomes `&dir=asc` or `desc`. An unknown field opens the default sort |
+| `/app/admin/listfreshness/detail/<userId>` | 302 to `/<staff>/staff/reports/list-freshness/<userId>` |
+
+A POST to any of these URLs is refused with a short page that links to the new screen. The classic admin **Reports > List Freshness** menu item opens the new screen.
+
+**What changed on the way:**
+
+- **Status tiles filter the table.** Click a tile to show only the users in that status, and click it again to show everyone. The user's page filters its lists the same way.
+- **No "Login as" link.** The user's name opens their freshness page, and the person icon opens the staff user page, where switching to the user already lives. The icon shows only to administrators with the `Users` and `User.Browse` permissions.
+- **The thresholds are still edited on the classic Preferences page.** The screen states the thresholds in use and links there.
+- **Opening a user's page is recorded in the staff audit log** (`reports.list_freshness.view`), as a subscriber search is.
 
 #### The legacy admin overview points to the new dashboard
 
