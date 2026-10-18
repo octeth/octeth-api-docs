@@ -31,7 +31,7 @@ This section covers the configuration steps that administrators need to complete
 
 ### Managing SMS Gateways
 
-SMS gateways connect Octeth to external SMS delivery providers such as Infobip. To manage gateways, navigate to **Settings** > **SMS Gateways** in the admin panel.
+SMS gateways connect Octeth to external SMS delivery providers such as Infobip. To manage gateways, open **Settings** > **SMS gateways** in the staff sidebar, see [Managing SMS Gateways in the Staff Area](/v6.0.2/new-user-interface/staff-sms-gateways).
 
 [[SCREENSHOT: SMS Gateways list page showing the table with gateway name, type, status, scope, and user count columns]]
 
@@ -49,7 +49,7 @@ The gateway list displays the following information:
 
 To create a new SMS gateway:
 
-1. Navigate to **Settings** > **SMS Gateways**.
+1. In the staff sidebar, click **Settings**, then **SMS gateways**.
 2. Click **Create a new SMS gateway**.
 3. Complete the configuration across four tabs.
 
@@ -109,7 +109,7 @@ Deleting a gateway is permanent. Any journeys using the deleted gateway will no 
 
 #### Testing Gateway Connection
 
-When creating or editing a gateway, use the **Test Connection** button to verify that Octeth can communicate with the SMS provider. This sends a test request to confirm that your API credentials and configuration are correct.
+When creating or editing a gateway, use the **Test Connection** button to verify that Octeth can communicate with the SMS provider. This sends a test request to confirm that your API credentials and configuration are correct. No message is sent, and you can test 5 times an hour.
 
 ### SMS Settings
 

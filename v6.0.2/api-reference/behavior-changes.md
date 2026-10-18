@@ -127,6 +127,16 @@ The check runs first, so it also applies to `admin.senderdomains.health.get` wit
 
 **Who needs to act:** an integration that calls one of these commands with the key or session of a sub-admin who does not hold `DeliveryServers`. Grant that account `DeliveryServers`, or use a key that has it.
 
+### SMS gateways (privilege check)
+
+#### `DeliveryServers` is checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+
+`smsgateway.connectors.get`, `smsgateways.get`, `smsgateway.get`, `smsgateway.create`, `smsgateway.update`, `smsgateways.delete`, `smsgateway.testconnection`, `smsgateway.users.get` and `smsgateway.users.assign` relied on the registry's `DeliveryServers` tag, which is enforced only when `ADMIN_API_ENFORCE_PRIVILEGES` is on, so with it off any sub-admin session could create, change or delete SMS gateways and replace their provider keys. Each handler now checks `DeliveryServers` itself and answers `99999` (`Not enough privileges`) without it, as the newer staff commands do (octeth/oempro#3551). The classic SMS Gateways screen always required `DeliveryServers`, so the API now matches what the screen allowed. In the four commands that refuse in demo mode the check runs before the demo-mode refusal.
+
+**Not affected:** the master admin, the master `ADMIN_API_KEY`, and every administrator without `Options.AccessLimited`, or holding `DeliveryServers`.
+
+**Who needs to act:** an integration that calls an SMS gateway command with the key or session of a sub-admin who does not hold `DeliveryServers`. Grant that account `DeliveryServers`, or use a key that has it.
+
 ### Plugins (privilege check)
 
 #### `Settings` is checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
@@ -589,6 +599,28 @@ A POST to any of these URLs except the reports, including the old create, edit, 
 - **Clone is a row action** of the list, and opens the copy. User groups, delivery routes and email headers are not copied, as before.
 - **The sender rotation rules are checked as JSON** before they are saved.
 - **Any port from 1 to 65535** is accepted, as before.
+
+#### The legacy admin SMS Gateways section is removed
+
+The legacy admin **SMS Gateways** section (`/app/admin/smsgateways/`), an item of the classic **Settings** sidebar, is removed. SMS gateways are managed on the [SMS gateways](/v6.0.2/new-user-interface/staff-sms-gateways) screen of the **Settings** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/sms-gateways`), which needs the `DeliveryServers` privilege, as the section did (octeth/oempro#3551). The callback URLs providers post delivery reports and replies to are unchanged.
+
+**The old URLs keep working.** The section is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/smsgateways/`, anything under it not listed below | 302 to `/<staff>/staff/settings/sms-gateways` |
+| `/app/admin/smsgateways/create/` | 302 to `/<staff>/staff/settings/sms-gateways/new` |
+| `/app/admin/smsgateways/edit/<id>` | 302 to `/<staff>/staff/settings/sms-gateways/<id>/edit` |
+
+A POST to any of these URLs, including the old create, edit and bulk delete forms and the Test Connection request (`/app/admin/smsgateways/testConnection/`), is refused: nothing is saved or tested, and the answer is a short page that links to the new screen. The classic **Settings > SMS Gateways** sidebar link opens the new screen.
+
+**What changed on the way:**
+
+- **Provider keys stay out of the page.** The legacy edit page wrote the stored provider API key and the webhook secret into its page source. The new screen shows a stored key as **A key is stored** with a field that replaces it only when filled.
+- **The webhook secret and the two callback URLs are masked.** **Reveal** reads them for that page view only, and **Rotate secret** replaces the secret after a confirmation that both URLs change at once, then shows the new URLs once. Every reveal and rotation is recorded in the staff audit log. Rotation used to be a "Rotate the secret on save" checkbox on the edit form.
+- **Delete and deactivate list what uses the gateway first:** the SMS campaigns scheduled or sending through it, the journeys with a Send SMS step on it, its assigned accounts, and the account its inbound replies are credited to. Staff can still confirm.
+- **Accounts are assigned with a search** instead of one checkbox per enabled user. A sub-administrator limited to some user groups finds only the accounts in those groups, and assignments outside them are kept.
+- **Each tab of the edit page saves on its own.** The provider is still locked after create, and message parts still default to 3 on the create form.
 
 #### The legacy admin Plugins page is removed
 

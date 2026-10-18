@@ -4,9 +4,9 @@ layout: doc
 
 # SMS Gateway API Documentation
 
-Admin endpoints for managing SMS gateways: the provider connections (Infobip and any other connector installed under `includes/sms_connectors/`), their sender numbers, country restrictions, link-shortening domains, and which user accounts may send through them. These endpoints back the admin "SMS Gateways" screen and expose the same class (`SMSGatewayManager`) it uses.
+Admin endpoints for managing SMS gateways: the provider connections (Infobip and any other connector installed under `includes/sms_connectors/`), their sender numbers, country restrictions, link-shortening domains, and which user accounts may send through them. These endpoints back the staff Settings > SMS gateways screens and expose the same class (`SMSGatewayManager`) it uses.
 
-All commands require the Admin API key (or an admin session) and the `DeliveryServers` sub-admin privilege.
+All commands require the Admin API key (or an admin session) and the `DeliveryServers` sub-admin privilege. Each handler checks the privilege itself, so it applies even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic SMS Gateways screen did. The staff [Settings > SMS gateways](/v6.0.2/new-user-interface/staff-sms-gateways) screens run on these commands.
 
 ::: warning Provider credentials are redacted
 `GatewaySettings` holds provider API keys. Every read endpoint returns credential values as the literal string `***REDACTED***` (the same key-name rule `system.getsettings` applies, plus any connector field declared `"type": "password"`). `smsgateway.update` and `smsgateway.testconnection` accept that literal back as "keep the stored value", so a read-modify-write round trip never has to see, or re-send, the secret. `smsgateway.create` rejects it, since there is nothing stored to keep.
@@ -22,7 +22,7 @@ All commands require the Admin API key (or an admin session) and the `DeliverySe
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Privilege: `DeliveryServers`
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
 - Legacy endpoint access via `/api.php` is also supported
 - The credential form is dynamic per connector. Render `GatewaySettings` from `configuration_fields[]` (`name`, `label`, `type`, `required`, `default`, `placeholder`, `description`) and post the values back keyed by `name`.
 :::
@@ -82,6 +82,7 @@ curl -X POST https://example.com/api/v1/smsgateway.connectors.get \
 ```txt [Error Codes]
 0: Success
 1: Unknown GatewayType
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
 :::
@@ -92,7 +93,7 @@ curl -X POST https://example.com/api/v1/smsgateway.connectors.get \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Privilege: `DeliveryServers`
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
 - Legacy endpoint access via `/api.php` is also supported
 - Credentials inside `GatewaySettings` are returned as `***REDACTED***`
 :::
@@ -155,6 +156,7 @@ curl -X POST https://example.com/api/v1/smsgateways.get \
 ```txt [Error Codes]
 0: Success
 1: Invalid GatewayStatus
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
 :::
@@ -165,7 +167,7 @@ curl -X POST https://example.com/api/v1/smsgateways.get \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Privilege: `DeliveryServers`
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
 - Legacy endpoint access via `/api.php` is also supported
 - Credentials inside `GatewaySettings` are returned as `***REDACTED***`; `smsgateway.update` accepts that value back to keep the stored secret
 :::
@@ -227,6 +229,7 @@ curl -X POST https://example.com/api/v1/smsgateway.get \
 0: Success
 1: Missing or invalid GatewayID
 2: SMS gateway not found
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
 :::
@@ -237,7 +240,7 @@ curl -X POST https://example.com/api/v1/smsgateway.get \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Privilege: `DeliveryServers`
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
 - Legacy endpoint access via `/api.php` is also supported
 - Not available in demo mode
 - `GatewaySettings` keys are the connector's `configuration_fields[].name` from `smsgateway.connectors.get`; required ones must be present and non-empty
@@ -337,6 +340,7 @@ curl -X POST https://example.com/api/v1/smsgateway.create \
 16: Gateway could not be created
 17: Users could not be assigned to the new gateway (the gateway is not created)
 18: Invalid ShortDomains: an entry is not an ASCII hostname (ErrorText lists them)
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
 :::
@@ -347,7 +351,7 @@ curl -X POST https://example.com/api/v1/smsgateway.create \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Privilege: `DeliveryServers`
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
 - Legacy endpoint access via `/api.php` is also supported
 - Not available in demo mode
 - Partial update: only the parameters present in the request change
@@ -441,6 +445,7 @@ curl -X POST https://example.com/api/v1/smsgateway.update \
 16: Gateway could not be updated
 17: Gateway updated but its user assignments could not be saved
 18: Invalid ShortDomains: an entry is not an ASCII hostname (ErrorText lists them)
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
 :::
@@ -451,7 +456,7 @@ curl -X POST https://example.com/api/v1/smsgateway.update \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Privilege: `DeliveryServers`
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
 - Legacy endpoint access via `/api.php` is also supported
 - Not available in demo mode
 - Deletes the gateways and their user assignments. Unknown ids in the list are ignored; the response lists what was actually deleted
@@ -500,6 +505,7 @@ curl -X POST https://example.com/api/v1/smsgateways.delete \
 1: Missing or invalid GatewayIDs
 2: None of the given GatewayIDs exist
 3: Gateways could not be deleted
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
 :::
@@ -510,7 +516,7 @@ curl -X POST https://example.com/api/v1/smsgateways.delete \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Privilege: `DeliveryServers`
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
 - Legacy endpoint access via `/api.php` is also supported
 - Runs the provider's live credential check. Nothing is persisted
 - Two modes: `GatewayID` tests the saved gateway (an optional `GatewaySettings` overrides stored values first, markers keep the stored value); `GatewayType` plus `GatewaySettings` tests unsaved credentials
@@ -571,6 +577,7 @@ curl -X POST https://example.com/api/v1/smsgateway.testconnection \
 5: Missing required connector field(s) (ErrorText lists them)
 6: Rate limit exceeded (RetryAfter seconds and RemainingTests are returned)
 7: Connection test failed (ErrorText carries the provider message, Details any extra data)
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
 :::
@@ -581,7 +588,7 @@ curl -X POST https://example.com/api/v1/smsgateway.testconnection \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Privilege: `DeliveryServers`
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
 - Legacy endpoint access via `/api.php` is also supported
 - Only meaningful for non-global gateways (`IsGlobal=0`); a global gateway always returns an empty list
 - A sub-admin restricted to specific user groups only sees users in those groups; `TotalAssignedUsers` is the unfiltered count
@@ -634,6 +641,7 @@ curl -X POST https://example.com/api/v1/smsgateway.users.get \
 0: Success
 1: Missing or invalid GatewayID
 2: SMS gateway not found
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
 :::
@@ -644,7 +652,7 @@ curl -X POST https://example.com/api/v1/smsgateway.users.get \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Privilege: `DeliveryServers`
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
 - Legacy endpoint access via `/api.php` is also supported
 - Not available in demo mode
 - Replaces the whole assignment set. Pass an empty `UserIDs` to clear it
@@ -702,6 +710,337 @@ curl -X POST https://example.com/api/v1/smsgateway.users.assign \
 5: Unknown UserIDs (ErrorText lists them)
 6: UserIDs outside the user groups this admin account may access
 7: Assignment could not be saved
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
+```
+
+:::
+
+## Get What Uses an SMS Gateway
+
+<Badge type="info" text="POST" /> `/api/v1/admin.smsgateway.references.get`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or an admin session
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
+- Read only. Call it before deleting a gateway or setting it `Inactive`
+- `Campaigns` lists the SMS campaigns that are `Scheduled`, `Queueing`, `Sending` or `Paused` on the gateway; `Journeys` the journeys with a Send SMS step that sends through it
+- `HasSoleInboundOwner` is `1` when the gateway is not global and has exactly one assigned account. That account is credited with the inbound replies that match no subscriber, so changing the assignment changes who sees them
+- A sub-admin limited to some user groups gets only the rows of accounts in those groups. `TotalCampaigns` and `TotalJourneys` count every row, and `SoleInboundOwner` is `null` when the owner is outside those groups
+- Added in v6.0.2 (#3551)
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.smsgateway.references.get` |
+| AdminAPIKey | String | Yes | Admin API key |
+| GatewayID | Integer | Yes | ID of the gateway |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.smsgateway.references.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.smsgateway.references.get",
+    "AdminAPIKey": "your-admin-api-key",
+    "GatewayID": 3
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "GatewayID": 3,
+  "IsGlobal": 0,
+  "Campaigns": [
+    { "CampaignID": 31, "CampaignName": "Spring sale", "Status": "Scheduled", "UserID": 12, "Username": "acme" }
+  ],
+  "TotalCampaigns": 1,
+  "Journeys": [
+    { "JourneyID": 8, "JourneyName": "Welcome series", "Status": "Enabled", "UserID": 12, "Username": "acme" }
+  ],
+  "TotalJourneys": 1,
+  "TotalAssignedUsers": 1,
+  "HasSoleInboundOwner": 1,
+  "SoleInboundOwner": { "UserID": 12, "Username": "acme" }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "SMS gateway not found"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing or invalid GatewayID
+2: SMS gateway not found
+3: The references could not be read
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
+```
+
+:::
+
+## Search Accounts to Assign to an SMS Gateway
+
+<Badge type="info" text="POST" /> `/api/v1/admin.smsgateway.users.search`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or an admin session
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it). It does not need `User.Browse`, which `Users.Get` does
+- Read only. Returns enabled accounts whose username, email address, first or last name or company contains `Keyword`, ordered by username. `%` and `_` in the keyword are matched literally
+- A sub-admin limited to some user groups finds only the accounts in those groups
+- Added in v6.0.2 (#3551)
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.smsgateway.users.search` |
+| AdminAPIKey | String | Yes | Admin API key |
+| Keyword | String | Yes | At least 2 characters |
+| Limit | Integer | No | Most accounts returned. Default 8, at most 25 |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.smsgateway.users.search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.smsgateway.users.search",
+    "AdminAPIKey": "your-admin-api-key",
+    "Keyword": "acme"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Users": [
+    { "UserID": 12, "Username": "acme", "EmailAddress": "ops@acme.example", "FirstName": "Ada", "LastName": "Ops", "CompanyName": "Acme Ltd" }
+  ],
+  "TotalUsers": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Keyword must be at least 2 characters"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Keyword must be at least 2 characters
+2: The accounts could not be read
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
+```
+
+:::
+
+## Get the Webhook Settings of an SMS Gateway
+
+<Badge type="info" text="POST" /> `/api/v1/admin.smsgateway.webhook.get`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or an admin session
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
+- Without `Reveal`, the answer carries no secret: whether delivery reports must carry the secret, whether a secret is set, and the other gateways on the same provider account (`AccountGroupGateways`), which share one set of callback URLs
+- With `Reveal=1` it adds `WebhookSecret` and the two callback URLs, which embed it. Each such read is logged at INFO. The URLs are empty when the install has no public callback address (`SMS_DLR_NOTIFY_BASE_URL` or `APP_URL`)
+- Added in v6.0.2 (#3551)
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.smsgateway.webhook.get` |
+| AdminAPIKey | String | Yes | Admin API key |
+| GatewayID | Integer | Yes | ID of the gateway |
+| Reveal | Boolean | No | `1` to return the secret and the callback URLs. Default: not returned |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.smsgateway.webhook.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.smsgateway.webhook.get",
+    "AdminAPIKey": "your-admin-api-key",
+    "GatewayID": 3,
+    "Reveal": 1
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "GatewayID": 3,
+  "EnforceWebhookSecret": 1,
+  "HasWebhookSecret": 1,
+  "AccountGroupGateways": [
+    { "GatewayID": 4, "GatewayName": "Xeebi backup" }
+  ],
+  "WebhookSecret": "5f2c9a7e...c3f",
+  "DeliveryReportURL": "https://example.com/app/public/sms_deliveryreports/delivery_report/xeebi/<encrypted-id>/<secret>",
+  "InboundURL": "https://example.com/app/public/sms_inbound/receive/xeebi/<encrypted-id>/<secret>"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "SMS gateway not found"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing or invalid GatewayID
+2: SMS gateway not found
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
+```
+
+:::
+
+## Rotate the Webhook Secret of an SMS Gateway
+
+<Badge type="info" text="POST" /> `/api/v1/admin.smsgateway.webhook.rotate`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or an admin session
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it), before the demo-mode refusal
+- Not available in demo mode
+- Replaces the secret. Both callback URLs carry it, so they change at once, and the provider is refused until it is given the new ones. The answer is the only copy of the new values short of a later `admin.smsgateway.webhook.get` with `Reveal=1`. Each rotation is logged at INFO
+- Added in v6.0.2 (#3551)
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.smsgateway.webhook.rotate` |
+| AdminAPIKey | String | Yes | Admin API key |
+| GatewayID | Integer | Yes | ID of the gateway |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.smsgateway.webhook.rotate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.smsgateway.webhook.rotate",
+    "AdminAPIKey": "your-admin-api-key",
+    "GatewayID": 3
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "GatewayID": 3,
+  "WebhookSecret": "9b1d...7e4a",
+  "DeliveryReportURL": "https://example.com/app/public/sms_deliveryreports/delivery_report/xeebi/<encrypted-id>/<new-secret>",
+  "InboundURL": "https://example.com/app/public/sms_inbound/receive/xeebi/<encrypted-id>/<new-secret>"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "The webhook secret could not be rotated. Check the application log for details"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing or invalid GatewayID
+2: SMS gateway not found
+3: The secret could not be generated or saved
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
+NOT AVAILABLE IN DEMO MODE.
+```
+
+:::
+
+## Require the Webhook Secret on Delivery Reports
+
+<Badge type="info" text="POST" /> `/api/v1/admin.smsgateway.webhook.update`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or an admin session
+- Privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it), before the demo-mode refusal
+- Not available in demo mode
+- With `EnforceWebhookSecret=0`, delivery reports are also accepted on the older URL without the secret, which gateways created before webhook secrets existed still use. Inbound messages always require the secret, whatever this is set to. New gateways start with it on
+- Added in v6.0.2 (#3551)
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.smsgateway.webhook.update` |
+| AdminAPIKey | String | Yes | Admin API key |
+| GatewayID | Integer | Yes | ID of the gateway |
+| EnforceWebhookSecret | Boolean | Yes | `1` or `true` to require the secret on delivery reports, `0` or `false` to also accept the older URL |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.smsgateway.webhook.update \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.smsgateway.webhook.update",
+    "AdminAPIKey": "your-admin-api-key",
+    "GatewayID": 3,
+    "EnforceWebhookSecret": 1
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "GatewayID": 3,
+  "EnforceWebhookSecret": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Missing or invalid EnforceWebhookSecret. Allowed: 1, 0, true, false"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing or invalid GatewayID
+2: SMS gateway not found
+3: Missing or invalid EnforceWebhookSecret
+4: The setting could not be saved
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
+NOT AVAILABLE IN DEMO MODE.
 ```
 
 :::

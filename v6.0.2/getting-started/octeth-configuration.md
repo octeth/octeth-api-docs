@@ -5027,7 +5027,7 @@ Most production installations should rely on Delivery Servers and use these glob
 
 SMS Gateways are connections between Octeth and SMS service providers that enable you to send text messages to your subscribers. Each gateway represents a configured account with an SMS provider (like Twilio, Vonage, or other SMS services) that handles the actual message delivery.
 
-To access SMS gateway management, navigate to **Preferences** → **System Settings** → **SMS Gateways** in the administrator dashboard.
+SMS gateways are managed on the staff **Settings > SMS gateways** screen, see [Managing SMS Gateways in the Staff Area](/v6.0.2/new-user-interface/staff-sms-gateways). The classic admin section forwards there.
 
 ::: info Production Setup
 Before you can send SMS campaigns, you need at least one active SMS gateway configured. Each gateway connects to an SMS service provider that you've signed up with separately. Octeth doesn't provide SMS sending - it integrates with your existing SMS provider accounts.
@@ -5035,7 +5035,7 @@ Before you can send SMS campaigns, you need at least one active SMS gateway conf
 
 ### Creating a New SMS Gateway
 
-To create a new gateway, click **Create a new SMS gateway** from the SMS Gateways page. The creation process is organized into four tabs: **Basic Settings**, **Gateway Configuration**, **SMS Settings**, and **User Assignment**.
+To create a new gateway, click **Create a new SMS gateway** from the SMS Gateways page. The create form has four cards: **Gateway**, **Provider settings**, **SMS settings** and **Accounts**.
 
 ### Basic Settings Tab
 
