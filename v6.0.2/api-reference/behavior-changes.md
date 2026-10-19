@@ -157,6 +157,12 @@ The check runs first, so it also applies to `admin.senderdomains.health.get` wit
 
 **Who needs to act:** an integration that calls one of these commands with the key or session of a sub-admin who does not hold `Suppression`. Grant that account `Suppression`, or use a key that has it.
 
+### Global segments (rule values)
+
+`global.segment.create` and `global.segment.update` refuse a rule value that contains a sequence the stored rule string uses as a delimiter (`,,,`, `]||[`, `,::,`, `,#,`, `!))`, `((!`, `[[` or `]]`) with the new error code `9`, "A rule value contains a reserved character sequence". Before, such a value was stored and then read back as a different rule, so the segment silently matched other subscribers than intended. In the stored-string form of `SegmentRules`, an information rule that does not come apart into exactly a field, an operator and a filter is refused the same way. A request without such a value behaves as before (octeth/oempro#3571).
+
+`global.segment.update` now keeps a legacy `ListID` rule that is already stored on the segment when the request sends it back unchanged. Before, such a request was refused with error `5`, so a segment holding one could not be saved with rules at all. A new or changed `ListID` rule is still refused.
+
 ### Admin area
 
 #### The legacy Users section is removed
@@ -754,6 +760,30 @@ A POST to these URLs, including the old create, edit and bulk delete forms, is r
 - **Paged and searchable.** The list pages through the fields 25 at a time and searches name and merge tag.
 - **Audited.** Every create, edit and delete writes a staff audit row.
 
+#### The legacy admin Global Segments page is removed
+
+The legacy admin **Global Segments** page (`/app/admin/segments/`), an item of the classic **Preferences** menu, is removed. Global segments, the delivery routing rules that send the subscribers matching their rules through a chosen delivery server per user group, are managed on the [Segment routing](/v6.0.2/new-user-interface/staff-segment-routing) screen of the **Delivery** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/global-segments`), which needs the `Settings.Segments` privilege, as the page did (octeth/oempro#3571). The classic menu item now shows only to administrators holding `Settings.Segments`; before, it showed to those holding `Settings` and then refused the ones without `Settings.Segments`.
+
+**The old URLs keep working.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/segments/`, anything under it not listed below | 302 to `/<staff>/staff/settings/global-segments` |
+| `/app/admin/segments/edit/<id>` | 302 to `/<staff>/staff/settings/global-segments/<id>/edit` |
+
+A POST to these URLs, including the old create, edit and bulk delete forms, is refused: nothing is saved or deleted, and the answer is a short page that links to the new screen. The user area's list segments are not affected.
+
+**What changed on the way:**
+
+- **One form.** Create and edit are one page with three cards: the segment, its rules and its delivery routing per user group. There are no tabs.
+- **No "Subscriber list ID" rule.** The legacy builder offered it, but the rule check added for octeth/oempro#2720 refused it, so it could not be saved. A `ListID` rule stored before then is shown locked and kept when the segment is saved.
+- **Stored rules are kept as they are.** A rule value is saved exactly as entered, spaces before or after it included. A stored rule the new form would refuse, such as one with an empty value, is shown locked and kept unchanged, and a save that leaves the rules as they were does not check them again.
+- **At least one rule.** A segment without rules matches every subscriber at send time, so the form requires one.
+- **Delete asks first and says what stops.** The confirmation lists the routing that ends (user group and delivery server) before anything is deleted.
+- **A restricted sub-administrator keeps other groups' routing.** The form lists only the user groups the account may act on, and a save keeps the stored routing of the other groups.
+- **Audited.** Every create, edit and delete writes a staff audit row with the settings that changed; rule values are not recorded.
+- **Running send processes pick up a routing change after they restart**, as before. The form says so.
+
 #### The legacy admin overview points to the new dashboard
 
 The legacy admin overview (`/app/admin/overview/`) is still where the legacy admin login lands, but it no longer shows the reports. It shows a "The dashboard moved" card with a link to the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) of the new interface (`/<UI_STAFF_PREFIX>/staff/dashboard`), the setup checklist (admins with the Settings privilege and no user group limit) and the quick links (admins with `Admin.Dashboard.Links`).
@@ -1026,7 +1056,7 @@ The segment engine kept the list of system-global custom fields in its cache for
 
 #### New command `admin.customfield.references.get`
 
-A read-only command that lists, for up to 100 system-global custom fields, the segments, journeys and SMS lists that use each one and how many values it stores (octeth/oempro#3568). See [Get What Uses a Global Custom Field](./customfields#get-what-uses-a-global-custom-field).
+A read-only command that lists, for up to 100 system-global custom fields, the segments, journeys and SMS lists that use each one and how many values it stores (octeth/oempro#3568). See [Get What Uses a Global Custom Field](./customfields#get-what-uses-a-global-custom-field). Global segments are matched on their `SegmentRules` string, the rules the send path reads, and appear with `UserID` `0`, so a global field used only by a global segment is not reported as unused (octeth/oempro#3571).
 
 **Who needs to act:** nobody, unless an integration updates global custom fields with ids of list fields: those calls now answer `6` and change nothing.
 
@@ -1116,6 +1146,12 @@ Eight new admin commands, additive, each needing both the `SMS` and the `Setting
 - `admin.sms.suppression.cache.clear` drops every cached suppression answer, as `smssuppression.cache.clear` does, with `SMS` and `Settings`.
 
 The writes are refused in demo mode and limited to 30 requests per 60 seconds (the cache clear to 10).
+
+### Segment routing command
+
+One new admin command, additive and needing the `Settings.Segments` privilege, which it checks even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (octeth/oempro#3571):
+
+- `global.segment.options.get` returns the user groups (in the caller's scope), delivery servers and system-global custom fields a global segment form needs. Rate limit 100 requests per 60 seconds. See [Get the Global Segment Form Options](./segments#get-the-global-segment-form-options).
 
 ### AI assistant connector
 

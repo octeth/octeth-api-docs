@@ -4,7 +4,7 @@ layout: doc
 
 # Segment API Documentation
 
-Segment management endpoints for creating, updating, and managing subscriber segments within email lists, plus the admin-only endpoints for global segments (the segments managed under **Settings > Segments**, used for per-user-group delivery-server routing).
+Segment management endpoints for creating, updating, and managing subscriber segments within email lists, plus the admin-only endpoints for global segments (the segments managed on the staff **Delivery > Segment routing** screen, used for per-user-group delivery-server routing).
 
 ## Create a Segment
 
@@ -411,7 +411,7 @@ curl -X POST https://example.com/api.php \
 - v1 REST alias: `GET /api/v1/global.segments.get`. Legacy access via `/api.php` is also supported
 :::
 
-A global segment is an admin-managed segment that is not attached to any list or user (`RelOwnerUserID = 0`, `RelListID = 0`). It is what the admin **Settings > Segments** screen manages. Its `Options.UserGroupSettings` map drives per-user-group delivery-server routing at send time: when a recipient matches the segment, the campaign or transactional email of a user in that group is routed through the assigned delivery server.
+A global segment is an admin-managed segment that is not attached to any list or user (`RelOwnerUserID = 0`, `RelListID = 0`). It is what the staff **Delivery > Segment routing** screen manages (it replaced the classic admin **Global Segments** page in v6.0.2). Its `Options.UserGroupSettings` map drives per-user-group delivery-server routing at send time: when a recipient matches the segment, the campaign or transactional email of a user in that group is routed through the assigned delivery server.
 
 **Request Body Parameters:**
 
@@ -570,6 +570,8 @@ curl -X POST https://example.com/api.php \
 
 Either way, every rule field must be a known subscriber column, a `CustomField<n>` id, an activity field, or a `DATE_FORMAT(CustomField<n>, '<format>')` wrapper, and every operator must be a recognised operator phrase (`segments.rulevocabulary.get` returns the exact lists). Activity rules must carry a `Total`/`Any`/`Specific` campaign filter, a recognised times filter, and numeric campaign/times/period values. Anything else is refused with error `5` and nothing is created. This is the same allow-list `segment.create` applies (issue #2720); global segments are evaluated by the same criteria builder.
 
+A rule value may not contain a sequence the stored rule string uses as a delimiter: `,,,`, `]||[`, `,::,`, `,#,`, `!))`, `((!`, `[[` or `]]`. Such a value used to be stored and then read back as a different rule, so the request is refused with error `9` and nothing is created. In the stored-string form, an information rule that does not come apart into exactly a field, an operator and a filter is refused the same way. <Badge type="tip" text="New in v6.0.2" />
+
 ::: code-group
 
 ```bash [Example Request]
@@ -609,6 +611,7 @@ curl -X POST https://example.com/api.php \
 6: Invalid user group settings (unparsable map, or a user group id that does not exist)
 7: Invalid delivery server id
 8: Segment could not be created
+9: A rule value contains a reserved character sequence (,,, ]||[ ,::, ,#, !)) ((! [[ ]])
 NOT AVAILABLE IN DEMO MODE.: demo mode is enabled
 ```
 
@@ -636,7 +639,7 @@ Only the parameters you send are changed. `UserGroupSettings`, when sent, **repl
 | SegmentID | Integer | Yes | ID of the global segment. A user-owned segment id is refused with error `2`. |
 | SegmentName | String | No | New name (empty values are ignored) |
 | SegmentOperator | String | No | `and` or `or` |
-| SegmentRules | String | No | New rules, either accepted form (see `global.segment.create`) |
+| SegmentRules | String | No | New rules, either accepted form (see `global.segment.create`). A value holding a reserved character sequence is refused with error `9`. <Badge type="tip" text="New in v6.0.2" /> A legacy `ListID` rule already stored on the segment may be sent back unchanged and is kept; a new or changed `ListID` rule is refused with error `5` |
 | UserGroupSettings | String | No | JSON object `UserGroupID => DeliveryServerID`; replaces the stored map |
 
 ::: code-group
@@ -673,6 +676,7 @@ curl -X POST https://example.com/api.php \
 5: Invalid segment rules
 6: Invalid user group settings / unknown user group id
 7: Invalid delivery server id
+9: A rule value contains a reserved character sequence (,,, ]||[ ,::, ,#, !)) ((! [[ ]])
 NOT AVAILABLE IN DEMO MODE.: demo mode is enabled
 ```
 
@@ -727,6 +731,80 @@ curl -X POST https://example.com/api.php \
 1: Segment ids are missing
 2: Invalid segment id (a non-numeric entry in the list)
 NOT AVAILABLE IN DEMO MODE.: demo mode is enabled
+```
+
+:::
+
+## Get the Global Segment Form Options <Badge type="tip" text="New in v6.0.2" />
+
+<Badge type="info" text="GET" /> `/api/v1/global.segment.options.get`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required sub-admin privilege: `Settings.Segments`, checked by the command itself as well, so it is required even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- v1 REST alias: `GET /api/v1/global.segment.options.get`. Legacy access via `/api.php` is also supported
+- Rate limit: 100 requests per 60 seconds
+:::
+
+Returns what a form for a global segment needs: the user groups it can route, the delivery servers it can route them to, and the system-global custom fields its rules can name. A sub-administrator holding `Settings.Segments` may hold neither `UserGroups` nor `DeliveryServers`, so the commands that list those may be out of reach. The staff **Delivery > Segment routing** screens read it.
+
+`UserGroups` holds only the user groups a sub-administrator limited to some user groups may act on, and `Scoped` is `true` for such a caller. `DeliveryServers` carries each server's SMTP host and no other connection setting. `CustomFields` holds the system-global fields (`RelOwnerUserID = 0`, `RelListID = 0`, `IsGlobal = Yes`) with their options for Drop down, Multiple choice and Checkboxes fields. Every list is ordered by name and is `[]` when empty.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `global.segment.options.get` |
+| AdminAPIKey | String | Yes | Admin API key |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d "Command=global.segment.options.get" \
+  -d "AdminAPIKey=your-admin-api-key"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Scoped": false,
+  "UserGroups": [
+    {"UserGroupID": 1, "GroupName": "Default"},
+    {"UserGroupID": 3, "GroupName": "Gold"}
+  ],
+  "DeliveryServers": [
+    {"DeliveryServerID": 2, "Name": "Dedicated IP pool", "Host": "mta-02.example.com"}
+  ],
+  "CustomFields": [
+    {
+      "CustomFieldID": 12,
+      "FieldName": "Plan",
+      "FieldType": "Drop down",
+      "ValidationMethod": "Disabled",
+      "ValidationRule": "",
+      "Options": [
+        {"Label": "Starter", "Value": "starter"},
+        {"Label": "Growth", "Value": "growth"}
+      ]
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99999: The administrator does not hold Settings.Segments
 ```
 
 :::
