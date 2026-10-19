@@ -843,12 +843,17 @@ curl -X POST https://example.com/api.php \
 | EmailAddress | String | Yes | User's email address |
 | CustomResetLink | String | No | Base64 encoded custom reset link template |
 | ReturnParams | Boolean | No | Set to true to return reset token and link |
+| EnforceResetSetting | Boolean | No | Set to `true` to apply the admin preference "Let users reset a forgotten password". When that preference is off, the request is refused with `ErrorCode 4` and nothing is sent. Without this parameter the preference is not checked. |
 | AdminAPIKey | String | No | Admin API key for custom email settings |
 | ResetEmailSubject | String | No | Custom email subject (requires AdminAPIKey) |
 | ResetEmailContent | String | No | Custom email content (requires AdminAPIKey) |
 
 ::: warning Behavior change (v6.0.2, #2986)
 Every request counts, not only failed ones, because each one that matches a user sends an email. After `LOGIN_THROTTLE_MAX_FAILURES_PER_IDENTITY` requests for one `EmailAddress` (default 10) within `LOGIN_THROTTLE_WINDOW_SECONDS` (default 900), further requests for it are refused for `LOGIN_THROTTLE_LOCKOUT_SECONDS` (default 900) with **HTTP 429**, a `Retry-After` header and `{"Success":false,"ErrorCode":429,"ErrorText":"Too many failed attempts. Try again later.","RetryAfterSeconds":840}`. The refusal is identical for an email address that belongs to no user. Over the API the count is per email address only, so an integration that sends reminders for many customers from one server is not limited by its own address. The user forgot-password screen also counts per client address (default 50, `LOGIN_THROTTLE_MAX_FAILURES_PER_IP`).
+:::
+
+::: tip New in v6.0.2 (#3549)
+`EnforceResetSetting` is opt-in so that an integration which handles password resets for an operator (an SSO or shop reset page using `CustomResetLink`) keeps working when the operator turns the user-area reset off. The new user interface always sends it. The refusal `{"Success": false, "ErrorCode": 4, "ErrorText": "Password reset is disabled for user accounts"}` is checked before the email address is looked up, so it is the same for every address, and it does not count toward the reminder limit. `Admin.PasswordRemind` is not affected.
 :::
 
 ::: code-group
@@ -885,6 +890,7 @@ curl -X POST https://example.com/api.php \
 1: Missing EmailAddress parameter
 2: Invalid email address format
 3: Email address not found (Note: For security, this returns success even if not found)
+4: Password reset is disabled for user accounts (only with EnforceResetSetting=true)
 429: Too many reminder requests for this email address, try again after RetryAfterSeconds (HTTP 429, see above)
 ```
 

@@ -845,7 +845,20 @@ A successful sign-in clears the count for that name, and a successful `Admin.Log
 
 This is on by default, including on upgrade. Set `LOGIN_THROTTLE_ENABLED=false` in `.oempro_env` to switch it off, and tune the limits with `LOGIN_THROTTLE_MAX_FAILURES_PER_IDENTITY`, `LOGIN_THROTTLE_MAX_FAILURES_PER_IP`, `LOGIN_THROTTLE_WINDOW_SECONDS` and `LOGIN_THROTTLE_LOCKOUT_SECONDS`. An integration that signs many people in from one server address may need a higher `LOGIN_THROTTLE_MAX_FAILURES_PER_IP` (octeth/oempro#2986).
 
+#### The "Let users reset a forgotten password" preference now covers the new interface, and `User.PasswordRemind` can apply it
+
+When an operator turns off **Settings > Preferences > General > Let users reset a forgotten password** (option `DisableUserPasswordReset`), the new user interface no longer shows the Forgot password link on the sign-in page, and its Forgot password page explains that the administrator manages passwords and sends nothing. Before, only the legacy user area applied the preference.
+
+`User.PasswordRemind` has a new opt-in parameter, `EnforceResetSetting`. With `EnforceResetSetting=true` and the preference off, it answers `{"Success": false, "ErrorCode": 4, "ErrorText": "Password reset is disabled for user accounts"}` and sends nothing. Requests without the parameter are unchanged, so an SSO or shop reset page that calls the command keeps working with the preference off. `Admin.PasswordRemind` is not affected.
+
+The preference is now read the same way everywhere: it is on when the stored value is anything other than empty, `0` or `false`. Before, the legacy user area also treated a stored `false` as on, which is what the new Preferences screen stores when an operator turns reset back on, so the legacy sign-in page kept hiding its Forgot password link after reset was re-enabled (octeth/oempro#3549).
+
 ## Tier 2: shape and value changes
+
+### Settings
+
+- `settings.get` now returns runtime options that are true/false flags (`DisableUserPasswordReset`, `PreventUserLoginFromAlienIPs`) as their real boolean. Before, `DisableUserPasswordReset` was always answered as `***REDACTED***`, because the secret redaction matches key names containing `PASSWORD`, so no client could read the preference and the staff Preferences screen always showed password reset as allowed. String and JSON options and the configuration row are redacted as before. There is no opt-in flag, because a true/false flag cannot hold a secret and the old value was unusable (octeth/oempro#3549).
+
 
 ### Remote content and URL imports
 
