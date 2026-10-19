@@ -128,7 +128,7 @@ The staff menu groups its screens by job. The group a screen sits in does not ch
 - **SMS**: Campaigns, Inbound
 - **Suppression**: Email, SMS
 - **Billing**, when billing is enabled
-- **Settings**: Preferences, Default opt-in email, S2S postback, SSO, Integrations, Plugins, Webhooks
+- **Settings**: Preferences, Default opt-in email, Custom fields, S2S postback, SSO, Integrations, Plugins, Webhooks
 - **Administration**: Sub-admins, Security, System, Logs
 - **AI assistants**
 
@@ -157,6 +157,7 @@ Each staff screen follows the administrator permissions:
 | Billing: Discounts, Catalog, Health, Settings | Settings |
 | Settings: Preferences | Settings, see [Staff Preferences](./staff-preferences) |
 | Settings: Default opt-in email | Settings, see [The Default Opt-in Email](./staff-optin-email) |
+| Settings: Custom fields | CustomFields, see [Managing Global Custom Fields in the Staff Area](./staff-custom-fields) |
 | Settings: S2S postback | Settings, see [The Staff S2S Postback Screen](./staff-s2s-postback) |
 | Settings: SSO | Settings.SSO, see [Managing SSO Sources in the Staff Area](./staff-sso) |
 | Settings: Integrations | Settings, see [Staff Integrations](./staff-integrations) |
@@ -201,6 +202,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/settings/delivery-servers` | The delivery servers list, create and edit screens, with the in-use warning before a delete, the write-only SMTP password and the test send, see [Managing Delivery Servers in the Staff Area](./staff-delivery-servers) |
 | `/user/staff/settings/sms-gateways` | The SMS gateways list, create and edit screens, with masked provider keys and webhook secrets, connection tests and an in-use warning before a delete, see [Managing SMS Gateways in the Staff Area](./staff-sms-gateways) |
 | `/user/staff/settings/optin-email` | The confirmation email double opt-in subscribers receive when their list has none of its own, see [The Default Opt-in Email](./staff-optin-email) |
+| `/user/staff/settings/custom-fields` | The global custom fields list, create and edit screens, with what uses a field and how many values it stores before a delete, and the type lock once values are stored, see [Managing Global Custom Fields in the Staff Area](./staff-custom-fields) |
 | `/user/staff/settings/s2s-postback` | The conversion addresses and the S2S parameter names, see [The Staff S2S Postback Screen](./staff-s2s-postback) |
 | `/user/staff/settings/sso` | The SSO sources list, create and edit screens, with masked keys, key rotation and sign-in statistics, see [Managing SSO Sources in the Staff Area](./staff-sso) |
 | `/user/staff/settings/integrations` | The Google Analytics source and medium, and the Stripo email builder with its write-only secret key, project key list, connection check and Disconnect, see [Staff Integrations](./staff-integrations) |
@@ -214,7 +216,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/billing/...` | The staff billing screens, when billing is enabled |
 | `/ui/` | Images, stylesheets, the health check, and inbound payment webhooks |
 | `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants). `MCP_ENABLED=false` turns these off |
-| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Sub Admin Accounts**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About**, **Log Observer**, **Campaign Report**, **List Freshness**, **Sender Domain Health**, **SMS Campaigns**, **Inbound SMS**, **SMS Suppression List**, **Delivery Servers**, **SMS Gateways**, **Default Opt-in Email**, **S2S Postback**, **Single Sign On**, **Plugins**, **Bounce Processing** and **Email Suppression List** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/sub-admins`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system`, `/user/staff/logs`, `/user/staff/reports/campaigns`, `/user/staff/reports/list-freshness`, `/user/staff/reports/sender-domains`, `/user/staff/sms/campaigns`, `/user/staff/sms/inbound`, `/user/staff/sms/suppression`, `/user/staff/settings/delivery-servers`, `/user/staff/settings/sms-gateways`, `/user/staff/settings/optin-email`, `/user/staff/settings/s2s-postback`, `/user/staff/settings/sso`, `/user/staff/settings/plugins`, `/user/staff/deliverability/bounces` and `/user/staff/deliverability/suppression`. The admin **Preferences** page keeps only the user area's own settings and links to `/user/staff/settings/preferences` for the rest, the admin **Integrations** page keeps only Unlayer and the plugin tabs and links to `/user/staff/settings/integrations` for Google Analytics and Stripo, and the delivery server reports stay at `/app/admin/deliveryservers/report` |
+| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Sub Admin Accounts**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About**, **Log Observer**, **Campaign Report**, **List Freshness**, **Sender Domain Health**, **SMS Campaigns**, **Inbound SMS**, **SMS Suppression List**, **Delivery Servers**, **SMS Gateways**, **Default Opt-in Email**, **S2S Postback**, **Single Sign On**, **Plugins**, **Bounce Processing**, **Email Suppression List** and **Global Custom Fields** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/sub-admins`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system`, `/user/staff/logs`, `/user/staff/reports/campaigns`, `/user/staff/reports/list-freshness`, `/user/staff/reports/sender-domains`, `/user/staff/sms/campaigns`, `/user/staff/sms/inbound`, `/user/staff/sms/suppression`, `/user/staff/settings/delivery-servers`, `/user/staff/settings/sms-gateways`, `/user/staff/settings/optin-email`, `/user/staff/settings/s2s-postback`, `/user/staff/settings/sso`, `/user/staff/settings/plugins`, `/user/staff/deliverability/bounces`, `/user/staff/deliverability/suppression` and `/user/staff/settings/custom-fields`. The admin **Preferences** page keeps only the user area's own settings and links to `/user/staff/settings/preferences` for the rest, the admin **Integrations** page keeps only Unlayer and the plugin tabs and links to `/user/staff/settings/integrations` for Google Analytics and Stripo, and the delivery server reports stay at `/app/admin/deliveryservers/report` |
 
 ::: info
 These path names are settings, not fixed values. See the

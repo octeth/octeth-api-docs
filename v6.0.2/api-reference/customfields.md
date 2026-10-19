@@ -504,7 +504,9 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
+- Required admin privilege: `CustomFields`
 - v1 REST alias: `POST /api/v1/global.customfield.update`. Legacy access via `/api.php` is also supported
+- Only system-global fields are updated (`RelOwnerUserID = 0`, `RelListID = 0`, `IsGlobal = Yes`), as `global.customfield.get` and `global.customfields.delete` read them. Any other id answers error 6 <Badge type="warning" text="Changed in v6.0.2" />
 :::
 
 **Request Body Parameters:**
@@ -527,7 +529,12 @@ curl -X POST https://example.com/api.php \
 | IsRequired | String | No | Whether field is required: "Yes" or "No" |
 | IsUnique | String | No | Whether field must be unique: "Yes" or "No" |
 | Visibility | String | No | Field visibility: "Public" or "User Only" |
-| Years | String | No | Year range for date fields. Format: "YYYY-YYYY" |
+| Years | String | No | Year range for date fields. Format: "YYYY-YYYY". <Badge type="warning" text="Changed in v6.0.2" /> Also stored when the same request changes the field to a Date field; before, it was stored only when the field already was one |
+| RefuseTypeChangeWithValues | Boolean | No | <Badge type="tip" text="New in v6.0.2" /> With `true` (also `1` or `yes`), a change of `FieldType`, or of `ValidationMethod`, is refused with error 12 while any value is stored in the field for any account, and with error 13 when that cannot be checked. Nothing is saved then. Default `false`: the change is saved as before |
+
+::: warning Changing the type of a field that holds values
+A global field's values belong to every account. Changing its `FieldType`, or its `ValidationMethod` between a number and text method, moves the stored values to another column and blanks the old one, so values can be lost or hidden for every account at once. Send `RefuseTypeChangeWithValues: true` to refuse such a change while values are stored, and create a new field instead. The staff Custom fields screen sends it on every save.
+:::
 
 ::: code-group
 
@@ -573,6 +580,8 @@ curl -X POST https://example.com/api.php \
 9: Invalid visibility value
 10: Invalid IsRequired value
 11: Invalid IsUnique value
+12: The field type or validation method cannot change while values are stored (only with RefuseTypeChangeWithValues)
+13: Stored values could not be checked (only with RefuseTypeChangeWithValues)
 1000: Merge tag alias code has been set for another custom field
 1001: Merge tag alias code includes invalid characters
 1002: Merge tag alias cannot use a reserved subscriber field name
@@ -794,6 +803,98 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing CustomFieldID
 2: Global custom field not found
+```
+
+:::
+
+## Get What Uses a Global Custom Field <Badge type="tip" text="New in v6.0.2" />
+
+<Badge type="info" text="GET" /> `/api/v1/admin.customfield.references.get`
+
+Lists what still uses one or more system-global custom fields and how many values each stores, so a client can warn before it deletes a field or changes its type. Read-only.
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privilege: `CustomFields`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
+- v1 REST alias: `GET /api/v1/admin.customfield.references.get`. Legacy access via `/api.php` is also supported
+- Rate limited to 100 calls per minute
+- Every id must name a system-global field (`RelOwnerUserID = 0`, `RelListID = 0`, `IsGlobal = Yes`). One that does not refuses the whole request with error 2
+:::
+
+`global.customfields.delete` removes a field and every value stored in it, for every account, and changes none of the references this command lists: a segment rule that names the field then fails, a journey step that decides on it or updates it stops matching or does nothing, and an SMS list that reads its phone numbers from it keeps the deleted field's id.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.customfield.references.get` |
+| SessionID | String | No | Session ID obtained from login |
+| AdminAPIKey | String | No | Admin API key for authentication |
+| CustomFieldIDs | String | Yes | Comma separated ids of system-global custom fields, at most 100 |
+
+**Response fields, per entry of `CustomFields`:**
+
+| Field | Description |
+|-------|-------------|
+| CustomFieldID, FieldName | The field |
+| InUse | `true` when `TotalReferences` is above 0 |
+| TotalReferences | Segments, journeys and SMS lists that use the field |
+| StoredValues | Values stored in the field across every account. A delete removes all of them |
+| Segments | Segments whose rules name the field. `UserID` 0 is a global segment |
+| Journeys | Journeys that use the field, with `Uses`: `Trigger` (the journey starts when the field changes), `Decision` (a Decision step's criteria) and `UpdateField` (a step that changes the field's value) |
+| SMSLists | SMS lists that read their phone numbers from the field |
+
+Each of `Segments`, `Journeys` and `SMSLists` has `Total` (every reference), `Hidden` and `Items` (up to 25, by name, with the owning `UserID` and `Username`). A sub-admin limited to some user groups sees by name only the references of accounts in those groups; the others are counted in `Hidden`. `StoredValues` is never limited this way.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.customfield.references.get",
+    "AdminAPIKey": "your-admin-api-key",
+    "CustomFieldIDs": "789"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "TotalReferences": 3,
+  "TotalStoredValues": 1200,
+  "CustomFields": [
+    {
+      "CustomFieldID": 789,
+      "FieldName": "Industry Sector",
+      "InUse": true,
+      "TotalReferences": 3,
+      "StoredValues": 1200,
+      "Segments": {"Total": 1, "Hidden": 0, "Items": [{"SegmentID": 5, "SegmentName": "Retail", "UserID": 4, "Username": "acme"}]},
+      "Journeys": {"Total": 1, "Hidden": 0, "Items": [{"JourneyID": 8, "JourneyName": "Onboarding", "UserID": 4, "Username": "acme", "Uses": ["Decision", "UpdateField"]}]},
+      "SMSLists": {"Total": 1, "Hidden": 1, "Items": []}
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Invalid custom field id"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing CustomFieldIDs
+2: Invalid custom field id (not numeric, missing, or not a system-global field)
+3: The references of these custom fields could not be read
+4: Too many custom field ids (at most 100)
+99999: Not enough privileges (the admin account does not hold CustomFields)
 ```
 
 :::

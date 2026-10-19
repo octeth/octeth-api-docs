@@ -1124,6 +1124,7 @@ export default defineConfig({
                         {text: 'Managing Delivery Servers in the Staff Area', link: '/v6.0.2/new-user-interface/staff-delivery-servers'},
                         {text: 'Managing SMS Gateways in the Staff Area', link: '/v6.0.2/new-user-interface/staff-sms-gateways'},
                         {text: 'The Default Opt-in Email', link: '/v6.0.2/new-user-interface/staff-optin-email'},
+                        {text: 'Managing Global Custom Fields in the Staff Area', link: '/v6.0.2/new-user-interface/staff-custom-fields'},
                         {text: 'The Staff S2S Postback Screen', link: '/v6.0.2/new-user-interface/staff-s2s-postback'},
                         {text: 'Managing SSO Sources in the Staff Area', link: '/v6.0.2/new-user-interface/staff-sso'},
                         {text: 'Staff Integrations', link: '/v6.0.2/new-user-interface/staff-integrations'},

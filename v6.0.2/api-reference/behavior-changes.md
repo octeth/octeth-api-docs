@@ -732,6 +732,28 @@ A POST to these URLs, including the old search, add, delete and pattern forms, i
 - **Audited.** Every add and delete, of addresses or patterns, writes a staff audit row with counts and the pattern type, never an address or a pattern.
 - **No addresses in the interface's logs.** Search terms, addresses and patterns are masked in the new interface's API call log and debug console.
 
+#### The legacy admin Global Custom Fields page is removed
+
+The legacy admin **Global Custom Fields** page (`/app/admin/customfields/`), an item of the classic **Preferences** menu, is removed. System-global custom fields are managed on the [Custom fields](/v6.0.2/new-user-interface/staff-custom-fields) screen of the **Settings** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/custom-fields`), which needs the `CustomFields` privilege, as the page did (octeth/oempro#3568). The classic menu item now shows only to administrators holding `CustomFields`; before, it showed to those holding `Settings` and then refused the ones without `CustomFields`.
+
+**The old URLs keep working.** The page is now a redirect shim:
+
+| Old URL | Answer |
+|---|---|
+| `/app/admin/customfields/`, anything under it not listed below | 302 to `/<staff>/staff/settings/custom-fields` |
+| `/app/admin/customfields/create/` | 302 to `/<staff>/staff/settings/custom-fields/new` |
+| `/app/admin/customfields/edit/<id>` | 302 to `/<staff>/staff/settings/custom-fields/<id>/edit` |
+
+A POST to these URLs, including the old create, edit and bulk delete forms, is refused: nothing is saved or deleted, and the answer is a short page that links to the new screen. The user area's own list custom fields (`/app/user/customfields/`) are not affected.
+
+**What changed on the way:**
+
+- **Delete asks first and says what breaks.** The legacy page deleted the ticked fields without a confirmation. The new screen lists, for each field, how many values it stores across every account, the segments, journeys and SMS lists that use it, then deletes on confirmation. Nothing that uses a field is changed by the delete, as before.
+- **Type and validation are locked once values are stored.** Changing them moved or blanked every account's values. The edit page shows them read-only once any value is stored, and the save is refused if values were stored meanwhile.
+- **The merge tag is required**, and is suggested from the name. An empty one was always refused by the API; the legacy form did not say so.
+- **Paged and searchable.** The list pages through the fields 25 at a time and searches name and merge tag.
+- **Audited.** Every create, edit and delete writes a staff audit row.
+
 #### The legacy admin overview points to the new dashboard
 
 The legacy admin overview (`/app/admin/overview/`) is still where the legacy admin login lands, but it no longer shows the reports. It shows a "The dashboard moved" card with a link to the [staff dashboard](/v6.0.2/new-user-interface/staff-dashboard) of the new interface (`/<UI_STAFF_PREFIX>/staff/dashboard`), the setup checklist (admins with the Settings privilege and no user group limit) and the quick links (admins with `Admin.Dashboard.Links`).
@@ -983,6 +1005,30 @@ A new optional parameter `IncludeTrackingFallback=true` adds `TrackingFallbackHo
 A read-only command that lists what still sends through a delivery server: user groups per channel, users with their own server, global segments, recipient domain routes and IP pools (octeth/oempro#3550). See [Get What Uses a Delivery Server](./deliveryservers#get-what-uses-a-delivery-server).
 
 **Who needs to act:** nobody.
+
+### Global custom fields
+
+#### `global.customfield.update` can refuse a type change while values are stored
+
+`global.customfield.update` takes an optional `RefuseTypeChangeWithValues` flag (octeth/oempro#3568). With it on, a change of `FieldType` or `ValidationMethod` answers error `12` while any value is stored in the field, and `13` when that cannot be checked, and nothing is saved. Without the flag the command behaves as before. The staff Custom fields screen sends it on every save. See [Update a Global Custom Field](./customfields#update-a-global-custom-field).
+
+#### `global.customfield.update` finds only system-global fields
+
+`global.customfield.update` now looks the field up with `RelOwnerUserID = 0`, `RelListID = 0` and `IsGlobal = Yes`, as `global.customfield.get` and `global.customfields.delete` do. It used to check the owner and the id only, so an id of a list field with owner 0 reached the update. That id now answers error `6` (`Invalid custom field id`). No call made for a system-global field changes (octeth/oempro#3568).
+
+#### `global.customfield.update` keeps the years of a field changed to a Date field
+
+`Years` was stored only when the field already was a Date field, so a request that changed a field to a Date field kept the default year range whatever it sent. It is now stored whenever the field is saved as a Date field (octeth/oempro#3568).
+
+#### Segment listings see a changed global field at once
+
+The segment engine kept the list of system-global custom fields in its cache for up to an hour, and nothing cleared it. A field created, changed or deleted could take that long to reach subscriber listings built from segments, and a deleted field could still be selected. The list is now read on every listing query (octeth/oempro#3568). Nothing to do.
+
+#### New command `admin.customfield.references.get`
+
+A read-only command that lists, for up to 100 system-global custom fields, the segments, journeys and SMS lists that use each one and how many values it stores (octeth/oempro#3568). See [Get What Uses a Global Custom Field](./customfields#get-what-uses-a-global-custom-field).
+
+**Who needs to act:** nobody, unless an integration updates global custom fields with ids of list fields: those calls now answer `6` and change nothing.
 
 ### Plugins
 
