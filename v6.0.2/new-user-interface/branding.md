@@ -38,6 +38,13 @@ docker compose -f docker-compose.yml --env-file .oempro_env restart oempro_ui
 Use the full `docker:up` command whenever you are unsure, because it is always correct.
 :::
 
+::: tip
+An administrator with full access can change most of these values without editing `.oempro_env`
+or restarting, on the staff **Settings > Branding** screen. A value saved there wins over
+`.oempro_env` until it is reset. See
+[Branding the New User Interface from the Staff Area](./staff-branding).
+:::
+
 ## Step 1: Set your name
 
 ```ini
@@ -219,8 +226,9 @@ UI_MAIL_FROM_ADDRESS=no-reply@acmemail.com
 UI_BRAND_MAIL_FOOTER="Sent from app.acmemail.com."
 ```
 
-The sender name on these emails is your `UI_BRAND_NAME`, so there is no separate setting for
-it.
+The sender name on these emails is your `UI_BRAND_NAME`. An administrator with full access can
+set a separate sender name on the staff **Settings > Branding** screen, see
+[Branding the New User Interface from the Staff Area](./staff-branding).
 
 ::: warning
 By default these emails are written to a log file rather than sent. See

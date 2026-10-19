@@ -1056,6 +1056,8 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     **Whitelabel: names and links**
 
+    An administrator with full access (not a sub-admin) can override the name, legal name, tagline, trust stats, logos, favicon, colours, support and legal links and mail footer below from the staff area, **Settings > Branding** (see [Branding the New User Interface from the Staff Area](/v6.0.2/new-user-interface/staff-branding)). A value saved there wins over `.oempro_env` until it is reset on that screen, so editing one of these keys has no visible effect on a field the staff area overrides. The `UI_BRAND_SLUG_*` and `BRAND_FEATURE_*` settings, `UI_MAIL_FROM_ADDRESS` and `UI_MODE` are `.oempro_env` only.
+
     ```bash
     UI_BRAND_NAME=Octeth
     UI_BRAND_LEGAL_NAME=

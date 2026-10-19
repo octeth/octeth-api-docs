@@ -1219,6 +1219,18 @@ v6.0.2 screens three points with fixed rules (issue #3392): every new account, a
 
 The upgrade adds the index `idx_bouncedate_owner (BounceDate, RelOwnerUserID)` to `oempro_stats_bounce` for the windowed dashboard leaderboards. It is built online (`ALGORITHM=INPLACE, LOCK=NONE`), so sending and reporting keep running, but on an install with tens of millions of bounce records the build takes several minutes and the upgrade waits for it (octeth/oempro#3501).
 
+### Staff Branding screen
+
+#### The staff area can override the `UI_BRAND_*` settings (octeth/oempro#3576)
+
+Administrators with full access get a new **Settings > Branding** screen in the staff area of the new interface. It changes the interface's name, legal name, tagline, trust stats, logos, favicon, colours, support and legal links and the sender name and footer of the emails the interface sends, and applies on the next page load with no restart. See [Branding the New User Interface from the Staff Area](/v6.0.2/new-user-interface/staff-branding).
+
+A value saved there is stored in the new `brand_overrides` table of the interface database and wins over `.oempro_env`. After an administrator saves a field, editing its `UI_BRAND_*` key in `.oempro_env` changes nothing visible until the field is reset on the screen (or its row deleted from `brand_overrides`). Saving one field never stores the others, and nothing changes on an install where no one saves on the screen. The URL slugs (`UI_BRAND_SLUG_*`), the feature switches (`BRAND_FEATURE_*`), `UI_MAIL_FROM_ADDRESS` and `UI_MODE` stay `.oempro_env` only.
+
+Uploaded logos are stored in `ui/storage/app/public/branding/` and served at `/ui/brand-assets/`. Upgrades keep `ui/storage/`, so include it in your backups. Sub-admins cannot open the screen, whatever their permissions.
+
+The emails the interface sends now set their From name explicitly from the brand (the saved sender name, else the brand name). On an install with no saved value the From name is the same as before.
+
 ## Upgrade checklist
 
 - If you added `192.168.99.100` to an admin or user IP allow-list as a workaround for every visitor showing that address, replace it with your real public addresses after upgrading, because visitors now resolve to their own address.
@@ -1242,6 +1254,7 @@ The upgrade adds the index `idx_bouncedate_owner (BounceDate, RelOwnerUserID)` t
 - Update bookmarks to the classic Subscriber Email Search: `/app/admin/subscribersearch/` redirects to the staff Subscriber search.
 - If a sub-admin limited to some user groups used the classic Inbound SMS page to watch unattributed replies, give that work to an administrator without a user group limit: the staff Inbound screen shows a limited sub-admin only the messages of its groups' accounts.
 - If a sub-admin limited to some user groups used the classic SMS Suppression page to manage gateway-wide STOP replies, give that work to an administrator without a user group limit: the staff Suppression screen shows a limited sub-admin no gateway row.
+- If an administrator uses the new staff **Settings > Branding** screen, a value saved there wins over the matching `UI_BRAND_*` key in `.oempro_env` until it is reset on that screen. Back up `ui/storage/` with the rest of the install, because uploaded logos live in `ui/storage/app/public/branding/`.
 
 ---
 

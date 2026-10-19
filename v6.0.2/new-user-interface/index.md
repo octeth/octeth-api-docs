@@ -128,7 +128,7 @@ The staff menu groups its screens by job. The group a screen sits in does not ch
 - **SMS**: Campaigns, Inbound
 - **Suppression**: Email, SMS
 - **Billing**, when billing is enabled
-- **Settings**: Preferences, Default opt-in email, Custom fields, S2S postback, SSO, Integrations, Plugins, Webhooks
+- **Settings**: Preferences, Branding, Default opt-in email, Custom fields, S2S postback, SSO, Integrations, Plugins, Webhooks
 - **Administration**: Sub-admins, Security, System, Logs
 - **AI assistants**
 
@@ -157,6 +157,7 @@ Each staff screen follows the administrator permissions:
 | Billing: Revenue, Worklists, Transactions | Reports |
 | Billing: Discounts, Catalog, Health, Settings | Settings |
 | Settings: Preferences | Settings, see [Staff Preferences](./staff-preferences) |
+| Settings: Branding | Administrators with full access only. A sub-administrator never sees or opens it, whatever permissions they hold, see [Branding the New User Interface from the Staff Area](./staff-branding) |
 | Settings: Default opt-in email | Settings, see [The Default Opt-in Email](./staff-optin-email) |
 | Settings: Custom fields | CustomFields, see [Managing Global Custom Fields in the Staff Area](./staff-custom-fields) |
 | Settings: S2S postback | Settings, see [The Staff S2S Postback Screen](./staff-s2s-postback) |
@@ -188,6 +189,7 @@ and signs in again. This loads their permissions into the new interface.
 | Path | What it serves |
 |---|---|
 | `/user/` | The whole interface: sign-in, sign-up, dashboard, campaigns, lists, journeys, billing |
+| `/ui/brand-assets/` | Logos and the favicon uploaded on the staff Branding screen |
 | `/user/staff/dashboard` | The staff dashboard and landing page, see [The Staff Dashboard](./staff-dashboard) |
 | `/user/staff/customers` | The staff Users list, create and edit screens, visible to Octeth administrators only, see [Managing Users in the Staff Area](./staff-users) |
 | `/user/staff/user-groups` | The staff User groups list, create and edit screens, see [Managing User Groups in the Staff Area](./staff-user-groups) |
@@ -200,6 +202,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/sms/inbound` | Every reply and opt-out received on the SMS gateways, including unattributed replies, see [The Staff Inbound SMS Screen](./staff-sms-inbound) |
 | `/user/staff/sms/suppression` | Every suppressed SMS number and pattern of every account, with adding, removing and the cache clear, see [The Staff SMS Suppression Screen](./staff-sms-suppression) |
 | `/user/staff/settings/preferences` | The default language, password reset, limit notifications, the failed webhook handler and the List freshness thresholds, see [Staff Preferences](./staff-preferences) |
+| `/user/staff/settings/branding` | The interface's name, logos, favicon, colours, support and legal links and email sender name, saved over `.oempro_env` with a per-field reset, see [Branding the New User Interface from the Staff Area](./staff-branding) |
 | `/user/staff/settings/delivery-servers` | The delivery servers list, create and edit screens, with the in-use warning before a delete, the write-only SMTP password and the test send, see [Managing Delivery Servers in the Staff Area](./staff-delivery-servers) |
 | `/user/staff/settings/global-segments` | The global segments list, create and edit screens: rules, delivery routing per user group, matching subscriber counts and the routing that stops before a delete, see [Routing Segments Through Delivery Servers](./staff-segment-routing) |
 | `/user/staff/settings/sms-gateways` | The SMS gateways list, create and edit screens, with masked provider keys and webhook secrets, connection tests and an in-use warning before a delete, see [Managing SMS Gateways in the Staff Area](./staff-sms-gateways) |
