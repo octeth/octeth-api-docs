@@ -3581,9 +3581,11 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-Returns the state of the Stripo email builder integration without its secrets, as the staff Settings > Integrations screen shows it: the stored plugin ID, whether a secret key is stored, and which users have a project API key for the template gallery of the legacy email builder. No secret key or project key is returned. `settings.get` redacts the same two values, and `settings.update` writes them.
+Returns the state of the Stripo email builder integration without its secrets, as the staff Settings > Integrations screen shows it: the stored plugin ID, whether a secret key is stored, and which users have a project API key for the template gallery of the legacy email builder. No secret key is ever returned, and the project keys are returned only when `RevealKeyList` asks for them. `settings.get` redacts the same two values, and `settings.update` writes them.
 
 `Connected` is `true` when the plugin ID and the secret key are both stored, which is when both email builders offer Stripo. `KeyUserIDs` lists, in ascending order, the users whose entry in the stored key list is a non-empty key under a positive user ID; any other entry can never match a user and is not counted. `KeyListReadable` is `false` when a stored list is not a JSON object of user ID and key (for example a list truncated by MySQL, or a JSON array), and the template gallery then shows nothing to anyone.
+
+With `RevealKeyList`, the response also carries `KeyList`: the stored key list exactly as stored (the `Stripo_APIKey` setting, a JSON object of user ID and project API key, or an empty string when none is stored), so it can be edited and saved back through `settings.update`. Each such call is logged with the calling admin's ID. Without the parameter the response is unchanged.
 
 **Request Body Parameters:**
 
@@ -3592,6 +3594,7 @@ Returns the state of the Stripo email builder integration without its secrets, a
 | Command     | String | Yes      | API command: `admin.integrations.stripo.get`    |
 | SessionID   | String | No       | Session ID obtained from `admin.login`          |
 | AdminAPIKey | String | No       | Admin API key (master or per-sub-admin)         |
+| RevealKeyList | String | No     | `1`, `true` or `yes` adds `KeyList`, the stored template gallery key list. Refused in demo mode |
 
 ::: code-group
 
@@ -3619,6 +3622,22 @@ curl -X POST https://example.com/api/v1/admin.integrations.stripo.get \
 }
 ```
 
+```json [Success Response with RevealKeyList]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "PluginId": "d0b1c2e3-plugin-id",
+  "SecretKeyStored": true,
+  "Connected": true,
+  "KeyListStored": true,
+  "KeyListReadable": true,
+  "KeyUserCount": 2,
+  "KeyUserIDs": [12, 31],
+  "KeyList": "{\"12\":\"project-key-12\",\"31\":\"project-key-31\"}"
+}
+```
+
 ```json [Error Response]
 {
   "Success": false,
@@ -3630,6 +3649,7 @@ curl -X POST https://example.com/api/v1/admin.integrations.stripo.get \
 ```txt [Error Codes]
 0: Success
 99999: The administrator does not hold the Settings privilege
+NOT AVAILABLE IN DEMO MODE.: RevealKeyList was sent on a demo install
 ```
 
 :::
