@@ -917,6 +917,7 @@ curl -X POST https://example.com/api.php \
 | NewPassword | String | No | Custom new password (requires AdminAPIKey) |
 | DontSendNewPasswordEmail | String | No | Set to 'true' to skip email (requires AdminAPIKey) |
 | ShowPassword | Boolean | No | Set to true to include password in email |
+| EnforceResetSetting | Boolean | No | Set to `true` to apply the admin preference "Let users reset a forgotten password". When that preference is off, the request is refused with `ErrorCode 4` before the token is checked, and the password is not changed. Without this parameter the preference is not checked (v6.0.2, #3605). |
 
 ::: code-group
 
@@ -949,6 +950,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing UserID parameter
 2: Invalid reset token or user not found
+4: Password reset is disabled for user accounts (only with EnforceResetSetting=true)
 ```
 
 :::

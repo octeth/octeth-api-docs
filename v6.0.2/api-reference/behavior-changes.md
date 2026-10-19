@@ -853,6 +853,8 @@ When an operator turns off **Settings > Preferences > General > Let users reset 
 
 The preference is now read the same way everywhere: it is on when the stored value is anything other than empty, `0` or `false`. Before, the legacy user area also treated a stored `false` as on, which is what the new Preferences screen stores when an operator turns reset back on, so the legacy sign-in page kept hiding its Forgot password link after reset was re-enabled (octeth/oempro#3549).
 
+Reset links sent before the preference was turned off stop working too. The new user interface's reset page and the legacy user area refuse them, and `User.PasswordReset` has the same opt-in `EnforceResetSetting` parameter, answering `{"Success": false, "ErrorCode": 4, "ErrorText": "Password reset is disabled for user accounts"}` without changing the password. Requests without the parameter are unchanged (octeth/oempro#3605).
+
 ## Tier 2: shape and value changes
 
 ### Settings
