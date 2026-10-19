@@ -171,6 +171,10 @@ A global segment whose rules hold groups now routes the same subscribers at send
 
 When a recipient matches more than one global segment, campaigns, autoresponders and transactional email now use the segment with the lowest ID among those that route the account's user group to an existing delivery server. Before, the segment with the highest matching ID won, and a matching segment that had no delivery server for the account's user group stopped an earlier segment from routing the recipient, so the recipient went through the user group's own server. A segment without a delivery server for the user group is now skipped. The staff **Segment routing** list shows the segments in this order, oldest first, instead of by name. Installs with overlapping segment routing rules can see recipients move to a different delivery server after the upgrade. There is no opt-in flag, because the old order was not the documented rule and staff could not see it (octeth/oempro#3572).
 
+### Settings (default opt-in email)
+
+- `settings.update` now checks `DEFAULT_OPTIN_EMAIL_BODY` for the confirm link whenever the body is sent, and refuses a body without one with `ErrorCode 7`. Before, the check ran only when `DEFAULT_OPTIN_EMAIL_SUBJECT` was sent in the same call, so a body-only update could save an opt-in email no subscriber could confirm. The check now accepts exactly what the sender replaces: `%Link:Confirm%` in that exact case, or <code v-pre>{{ Link:Confirm }}</code> in any case and spacing. A body whose only link is a wrong-case `%link:confirm%`, which was accepted but sent as plain text, is now refused, and a body using <code v-pre>{{ Link:Confirm }}</code>, which was refused, is now accepted. There is no opt-in flag, because the old behavior could only save a confirmation email that does not work (octeth/oempro#3544).
+
 ### Admin area
 
 #### The legacy Users section is removed

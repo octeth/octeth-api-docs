@@ -276,7 +276,7 @@ Omitted parameters are now left unchanged. In earlier versions, a partial `setti
 | PayPalExpressCurrency | String | No | PayPal currency code |
 | DisplayTriggerSendEngineLink | String | No | Display send engine link: `Yes` or `No` |
 | DefaultOptinEmailSubject | String | No | Default opt-in confirmation email subject |
-| DefaultOptinEmailBody | String | No | Default opt-in confirmation email body (must include %Link:Confirm%) |
+| DefaultOptinEmailBody | String | No | Default opt-in confirmation email body. Must include the confirm link: `%Link:Confirm%` in exactly that case, or <code v-pre>{{ Link:Confirm }}</code> in any case. Checked whenever the body is sent (v6.0.2, #3544) |
 | UserareaFooter | String | No | User area footer content |
 | ForbiddenFromAddresses | String | No | Forbidden sender email addresses |
 | RunCronInUserArea | String | No | Run cron in user area: `true` or `false` |
@@ -356,7 +356,7 @@ curl -X POST https://example.com/api.php \
 2: Invalid enum value (MediaUploadMethod, S3Enabled, LoadBalanceStatus, UserSignupEnabled, UserSignupReputation, SendMethod, SendMethodSMTPSecure, SendMethodSMTPAuth, MailEngine, or RunCronInUserArea)
 3: PreviewMyEmail API connection error
 6: POP3/IMAP connection failed (check EmailSettingsErrorMessage for details)
-7: Default opt-in email body missing required %Link:Confirm% tag
+7: Default opt-in email body has no confirm link (%Link:Confirm% or {{ Link:Confirm }})
 8: DEFAULT_LANGUAGE / USER_SIGNUP_LANGUAGE is not an installed language pack
 9: USER_SIGNUP_GROUPID / USER_SIGNUP_GROUPIDS names a user group that does not exist (or is not an id list)
 10: DEFAULT_THEMEID does not name an existing theme
