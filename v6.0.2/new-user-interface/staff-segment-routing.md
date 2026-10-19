@@ -12,9 +12,11 @@ Open it from the staff sidebar: click **Delivery**, then **Segment routing**. Th
 
 A subscriber who matches no segment routing rule is sent through the delivery server of the account's user group, as usual.
 
+When a subscriber matches more than one segment routing rule, the one created first (the lowest ID) among those with a delivery server for the account's user group is used. A segment without a delivery server for that user group is skipped, so it never stops a later segment from routing the subscriber. The list shows the segments in this order.
+
 ## The list
 
-The list shows every segment routing rule by name:
+The list shows every segment routing rule, oldest first, the order in which they are tried:
 
 - **Name**, with the segment's ID under it.
 - **Rules**: whether all rules or any rule must match, and how many rules there are.
