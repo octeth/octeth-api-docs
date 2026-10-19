@@ -163,6 +163,10 @@ The check runs first, so it also applies to `admin.senderdomains.health.get` wit
 
 `global.segment.update` now keeps a legacy `ListID` rule that is already stored on the segment when the request sends it back unchanged. Before, such a request was refused with error `5`, so a segment holding one could not be saved with rules at all. A new or changed `ListID` rule is still refused.
 
+### Global segments (send-time routing of grouped rules)
+
+A global segment whose rules hold groups now routes the same subscribers at send time as its subscriber count shows. Before, the send-time check evaluated groups wrongly for segments without Opens, Clicks, Browser views or Forwards rules: with "Match any" a group never matched, so a subscriber who matched only through a group was sent through the default delivery server instead of the segment's server, and with "Match all" a group that matched made every later group match too, so subscribers outside the segment were routed through its server. Each group is now evaluated on its own, with the inverse of the segment operator inside the group, as the subscriber count already did. A segment with a rule whose operator the send-time check did not evaluate, such as `In the last X days`, is now decided by the same query as the subscriber count. Before, such a rule was ignored at send time. The same check decides which subscribers an autoresponder limited to a list segment sends to, so those segments change the same way there. Segments without groups and with only the simple operators are unchanged. Installs with such segments can see some recipients move to or from a segment's delivery server after the upgrade. There is no opt-in flag, because the old result disagreed with the segment's own rules (octeth/oempro#3573).
+
 ### Admin area
 
 #### The legacy Users section is removed
