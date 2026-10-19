@@ -119,37 +119,54 @@ permissions reach the staff area within about a minute, and switching to a user 
 checks the current permissions. A switch to a user that is already running is not ended by
 a permission change.
 
-The staff dashboard, billing screens, Webhooks, User groups, Sub-admins, Subscriber search, Reports, SMS, Settings, Deliverability, Your profile, System, Security and Logs follow the administrator permissions too:
+The staff menu groups its screens by job. The group a screen sits in does not change its address.
+
+- **Dashboard**
+- **Accounts**: Users, User groups, Subscriber search
+- **Reports**: Campaigns, List freshness, Sender domain health
+- **Delivery**: Delivery servers, SMS gateways, Bounce processing
+- **SMS**: Campaigns, Inbound
+- **Suppression**: Email, SMS
+- **Billing**, when billing is enabled
+- **Settings**: Preferences, Default opt-in email, S2S postback, SSO, Integrations, Plugins, Webhooks
+- **Administration**: Sub-admins, Security, System, Logs
+- **AI assistants**
+
+The menu has no link to the classic admin area. Open `/app/admin/` directly when you need it.
+
+In the user menu at the bottom of the left menu, **Documentation** opens the Octeth help at `https://octeth.com/help` and **Contact support** opens the Octeth client area at `https://my.octeth.com/`, each in a new tab.
+
+Each staff screen follows the administrator permissions:
 
 | Staff screen | Permission it needs |
 |---|---|
 | Dashboard | Dashboard. Each section needs its own permission as well, see [The Staff Dashboard](./staff-dashboard#sections) |
-| Billing: Revenue, Worklists, Transactions | Reports |
-| Billing: Discounts, Catalog, Health, Settings | Settings |
-| Webhooks | Settings |
-| User groups | UserGroups. A sub-administrator limited to some user groups sees only those groups and cannot create, duplicate or delete one, see [Managing User Groups in the Staff Area](./staff-user-groups) |
-| Sub-admins | SubAdmins. A sub-administrator can grant only the permissions and user groups they hold, and cannot change their own account or a wider one, see [Managing Sub-admins in the Staff Area](./staff-sub-admins) |
-| Subscriber search | Search. A sub-administrator limited to some user groups finds subscribers only on the lists of accounts in those groups, see [Searching Subscribers in the Staff Area](./staff-subscriber-search) |
+| Accounts: User groups | UserGroups. A sub-administrator limited to some user groups sees only those groups and cannot create, duplicate or delete one, see [Managing User Groups in the Staff Area](./staff-user-groups) |
+| Accounts: Subscriber search | Search. A sub-administrator limited to some user groups finds subscribers only on the lists of accounts in those groups, see [Searching Subscribers in the Staff Area](./staff-subscriber-search) |
 | Reports: Campaigns | Reports. A sub-administrator limited to some user groups sees only the campaigns of accounts in those groups, see [The Staff Campaign Report](./staff-campaign-report) |
 | Reports: List freshness | Reports. A sub-administrator limited to some user groups sees only the users of those groups, see [The List Freshness Report](./staff-list-freshness) |
 | Reports: Sender domain health | User.Edit. A sub-administrator limited to some user groups sees and re-checks only the domains of accounts in those groups, see [The Staff Sender Domain Health Report](./staff-sender-domain-health) |
+| Delivery: Delivery servers | DeliveryServers, see [Managing Delivery Servers in the Staff Area](./staff-delivery-servers) |
+| Delivery: SMS gateways | DeliveryServers. A sub-administrator limited to some user groups finds and assigns only the accounts in those groups, see [Managing SMS Gateways in the Staff Area](./staff-sms-gateways) |
+| Delivery: Bounce processing | Bounce, see [The Staff Bounce Processing Screen](./staff-bounces) |
 | SMS: Campaigns | SMS and Settings. A sub-administrator limited to some user groups sees, pauses and cancels only the campaigns of accounts in those groups, see [The Staff SMS Campaigns Screen](./staff-sms-campaigns) |
 | SMS: Inbound | SMS and Settings. A sub-administrator limited to some user groups sees only the messages of accounts in those groups and no unattributed reply, see [The Staff Inbound SMS Screen](./staff-sms-inbound) |
-| SMS: Suppression | SMS and Settings. A sub-administrator limited to some user groups sees and changes the system rows and the rows of accounts in those groups, and no gateway row, see [The Staff SMS Suppression Screen](./staff-sms-suppression) |
+| Suppression: Email | Suppression. A sub-administrator limited to some user groups finds and removes only the suppressions of accounts in those groups, and every system-wide one, see [The Staff Email Suppression Screen](./staff-email-suppression) |
+| Suppression: SMS | SMS and Settings. A sub-administrator limited to some user groups sees and changes the system rows and the rows of accounts in those groups, and no gateway row, see [The Staff SMS Suppression Screen](./staff-sms-suppression) |
+| Billing: Revenue, Worklists, Transactions | Reports |
+| Billing: Discounts, Catalog, Health, Settings | Settings |
 | Settings: Preferences | Settings, see [Staff Preferences](./staff-preferences) |
-| Settings: Delivery servers | DeliveryServers, see [Managing Delivery Servers in the Staff Area](./staff-delivery-servers) |
-| Settings: SMS gateways | DeliveryServers. A sub-administrator limited to some user groups finds and assigns only the accounts in those groups, see [Managing SMS Gateways in the Staff Area](./staff-sms-gateways) |
 | Settings: Default opt-in email | Settings, see [The Default Opt-in Email](./staff-optin-email) |
 | Settings: S2S postback | Settings, see [The Staff S2S Postback Screen](./staff-s2s-postback) |
 | Settings: SSO | Settings.SSO, see [Managing SSO Sources in the Staff Area](./staff-sso) |
 | Settings: Integrations | Settings, see [Staff Integrations](./staff-integrations) |
 | Settings: Plugins | Settings, see [The Staff Plugins Screen](./staff-plugins) |
-| Deliverability: Bounce processing | Bounce, see [The Staff Bounce Processing Screen](./staff-bounces) |
-| Deliverability: Email suppression | Suppression. A sub-administrator limited to some user groups finds and removes only the suppressions of accounts in those groups, and every system-wide one, see [The Staff Email Suppression Screen](./staff-email-suppression) |
+| Settings: Webhooks | Settings |
+| Administration: Sub-admins | SubAdmins. A sub-administrator can grant only the permissions and user groups they hold, and cannot change their own account or a wider one, see [Managing Sub-admins in the Staff Area](./staff-sub-admins) |
+| Administration: Security | Security, see [The Staff Security Screen](./staff-security) |
+| Administration: System | System, see [The Staff System Screen](./staff-system) |
+| Administration: Logs | Settings, see [The Staff Logs Screen](./staff-logs) |
 | Your profile | Account. Its System emails section also needs Settings, and its Two-factor authentication section needs Security, see [Your Staff Profile](./staff-profile) |
-| System | System, see [The Staff System Screen](./staff-system) |
-| Security | Security, see [The Staff Security Screen](./staff-security) |
-| Logs | Settings, see [The Staff Logs Screen](./staff-logs) |
 | AI assistants | None. The keys it creates carry the administrator's own permissions |
 
 A screen the sub-administrator may not use is hidden from the menu and refuses a direct
@@ -208,7 +225,7 @@ proxy configuration.
 
 ## Managing one user from the staff area
 
-In the staff sidebar, open **Users** and pick a user. The page shows who the user is and
+In the staff sidebar, open **Accounts**, then **Users**, and pick a user. The page shows who the user is and
 lets you act on the account. The Users list, **Create user** and the **Edit** page are described
 in [Managing Users in the Staff Area](./staff-users). The tabs and buttons follow the administrator permissions
 described above, and the server checks the same permission again when you use one.

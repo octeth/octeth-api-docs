@@ -23,11 +23,11 @@ You need:
 
 1. A Xeebi account with at least one campaign and its phone number.
 2. Your Xeebi **API key**. Sign in to the Xeebi portal and open **ADMIN** > **Account** to find it.
-3. An Octeth administrator account with the DeliveryServers permission, which opens **Settings** > **SMS gateways** in the staff area.
+3. An Octeth administrator account with the DeliveryServers permission, which opens **Delivery** > **SMS gateways** in the staff area.
 
 ## Creating a Xeebi gateway
 
-1. In the staff sidebar, click **Settings**, then **SMS gateways**. See [Managing SMS Gateways in the Staff Area](/v6.0.2/new-user-interface/staff-sms-gateways).
+1. In the staff sidebar, click **Delivery**, then **SMS gateways**. See [Managing SMS Gateways in the Staff Area](/v6.0.2/new-user-interface/staff-sms-gateways).
 2. Click **Create a new SMS gateway**.
 3. On the **Basic Settings** tab, enter a **Gateway Name**, choose **Xeebi** as the **Gateway Type**, and set **Gateway Status** to **Active**. Tick **Make this gateway available to all users (Global)** or leave it unticked and pick users on the **User Assignment** tab.
 4. Fill in the **Gateway Configuration** tab (see below).
@@ -87,10 +87,10 @@ Xeebi tells Octeth what happened to each message (delivered, failed, rejected) a
 
 ### Finding the callback URLs in Octeth
 
-The **Webhooks** tab appears only when you edit a gateway, so save the new gateway first.
+The **Webhooks** section appears only when you edit a gateway, so save the new gateway first.
 
-1. In the staff sidebar, click **Settings**, then **SMS gateways**, and open your Xeebi gateway.
-2. Open the **Webhooks** tab.
+1. In the staff sidebar, click **Delivery**, then **SMS gateways**, and open your Xeebi gateway.
+2. Click **Webhooks** in the menu on the left of the edit page.
 3. The two URLs are masked. Click **Reveal** to see and copy them.
 4. Copy the **Delivery report URL** and the **Inbound message URL**. Click a field to select its whole URL.
 
@@ -123,8 +123,8 @@ Do not build the URLs by hand. Their exact form depends on your installation. Fo
 Because Xeebi does not sign its callbacks, the secret in the URL is the only authentication. Treat both URLs like passwords: do not post them in tickets, chat or screenshots.
 
 - Octeth always requires the secret on both URLs for a Xeebi gateway.
-- The **Require the secret on delivery reports** switch on the **Webhooks** tab has no effect on a Xeebi gateway. It exists for older gateway types.
-- To replace a leaked secret, click **Rotate secret** on the **Webhooks** tab and confirm. **Both URLs change.** The new URLs are shown once: copy them and paste them into the Xeebi portal straight away. Until you do, Octeth refuses Xeebi's callbacks.
+- The **Require the secret on delivery reports** switch in the **Webhooks** section has no effect on a Xeebi gateway. It exists for older gateway types.
+- To replace a leaked secret, click **Rotate secret** in the **Webhooks** section and confirm. **Both URLs change.** The new URLs are shown once: copy them and paste them into the Xeebi portal straight away. Until you do, Octeth refuses Xeebi's callbacks.
 
 ## What Octeth does with Xeebi's responses
 
@@ -151,7 +151,7 @@ Gateways form a group when all of these are true:
 - They use the same **API Key** and the same **API Base URL**.
 - None of them has **Gateway Status** set to **Inactive**.
 
-When a gateway belongs to a group, its **Webhooks** tab shows a **Shared provider account** section listing the other gateways in the group.
+When a gateway belongs to a group, its **Webhooks** section shows a **Shared provider account** card listing the other gateways in the group.
 
 [[SCREENSHOT: Webhooks tab showing the Shared provider account section that lists the other gateways on the same Xeebi account]]
 
@@ -188,7 +188,7 @@ The **API Base URL** is wrong. Clear the field to use the default `https://porta
 
 Xeebi is not reaching Octeth's **Delivery report URL**:
 
-1. Check that the **Delivery** callback in **ADMIN** > **Account** > **Callbacks** holds the **Delivery report URL** from the **Webhooks** tab, character for character.
+1. Check that the **Delivery** callback in **ADMIN** > **Account** > **Callbacks** holds the **Delivery report URL** from the **Webhooks** section, character for character.
 2. If the secret was rotated, paste the new URL.
 3. Make sure your Octeth installation is reachable from the internet at the address in the URL.
 
@@ -198,7 +198,7 @@ Check that the **Reply**, **Incoming** and **Opt-out** callbacks all hold the **
 
 ### One gateway of a shared account receives nothing
 
-Check that the gateway uses exactly the same **API Key** and **API Base URL** as the others and is not **Inactive**. Open its **Webhooks** tab: if the **Shared provider account** section is missing, the gateway is not part of the group, and Xeebi's callbacks for its messages will not be matched to it.
+Check that the gateway uses exactly the same **API Key** and **API Base URL** as the others and is not **Inactive**. Open its **Webhooks** section: if the **Shared provider account** card is missing, the gateway is not part of the group, and Xeebi's callbacks for its messages will not be matched to it.
 
 ### Messages go out at unexpected times
 

@@ -8,7 +8,7 @@ A **sub-admin** is an administrator account with limited permissions. Each one s
 | Create sub-admin | `/user/staff/sub-admins/new` | SubAdmins |
 | Edit sub-admin | `/user/staff/sub-admins/<id>/edit` | SubAdmins |
 
-Open it from the staff sidebar: click **Sub-admins**. The classic admin **Settings > Sub-admins** link, and the old `/app/admin/subadmins/` addresses, open the same screens.
+Open it from the staff sidebar: click **Administration**, then **Sub-admins**. The classic admin **Settings > Sub-admins** link, and the old `/app/admin/subadmins/` addresses, open the same screens.
 
 ## The list
 

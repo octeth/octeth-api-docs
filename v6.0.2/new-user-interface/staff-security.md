@@ -7,7 +7,7 @@
 | Security, Access section | `/user/staff/security` | Security |
 | Security, Remembered sign-ins section | `/user/staff/security?section=remembered` | Security |
 
-Open it from the staff sidebar: click **Security**. The classic admin **Settings > Security** link opens the same screen.
+Open it from the staff sidebar: click **Administration**, then **Security**. The classic admin **Settings > Security** link opens the same screen.
 
 ::: info
 Every save and every revoke is recorded in the staff audit log.

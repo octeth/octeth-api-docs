@@ -23,7 +23,7 @@ your customers set up for their own lists and subscribers in the classic interfa
 
 ## Setting it up
 
-1. Sign in to the staff area and choose **Webhooks** in the left menu. The page is at
+1. Sign in to the staff area and choose **Settings**, then **Webhooks** in the left menu. The page is at
    `/user/staff/webhooks` on a default install.
 2. Turn on **Send webhook events**.
 3. Enter the **Endpoint URL** that should receive the events.

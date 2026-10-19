@@ -464,7 +464,7 @@ There is no opt-in flag: the page is removed, and its URLs answer as above.
 
 #### The legacy admin SMS Suppression page is removed
 
-The legacy admin **SMS Suppression List** page (`/app/admin/sms_suppression/`), an item of the classic **Settings** menu, is removed. The list is the [Suppression](/v6.0.2/new-user-interface/staff-sms-suppression) screen of the **SMS** group of the staff sidebar, after **Inbound** (`/<UI_STAFF_PREFIX>/staff/sms/suppression`) (octeth/oempro#3560). It needs the `SMS` and `Settings` privileges, as the page did.
+The legacy admin **SMS Suppression List** page (`/app/admin/sms_suppression/`), an item of the classic **Settings** menu, is removed. The list is the [SMS suppression](/v6.0.2/new-user-interface/staff-sms-suppression) screen, the **SMS** item of the **Suppression** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/sms/suppression`) (octeth/oempro#3560). It needs the `SMS` and `Settings` privileges, as the page did.
 
 **The old URLs keep working.** The page is now a redirect shim:
 
@@ -612,7 +612,7 @@ A POST to any of these URLs, including the old create, edit and bulk delete form
 
 #### The legacy admin Delivery servers pages are removed
 
-The legacy admin **Delivery Servers** list, create and edit pages (`/app/admin/deliveryservers/`), an item of the classic **Settings** sidebar, are removed. Delivery servers are managed on the [Delivery servers](/v6.0.2/new-user-interface/staff-delivery-servers) screen of the **Settings** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/delivery-servers`), which needs the `DeliveryServers` privilege, as the pages did (octeth/oempro#3550). The delivery server reports at `/app/admin/deliveryservers/report` are unchanged and stay in the classic admin.
+The legacy admin **Delivery Servers** list, create and edit pages (`/app/admin/deliveryservers/`), an item of the classic **Settings** sidebar, are removed. Delivery servers are managed on the [Delivery servers](/v6.0.2/new-user-interface/staff-delivery-servers) screen of the **Delivery** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/delivery-servers`), which needs the `DeliveryServers` privilege, as the pages did (octeth/oempro#3550). The delivery server reports at `/app/admin/deliveryservers/report` are unchanged and stay in the classic admin.
 
 **The old URLs keep working.** The pages are now a redirect shim:
 
@@ -631,14 +631,15 @@ A POST to any of these URLs except the reports, including the old create, edit, 
 - **A delete lists what still uses the server.** The legacy page deleted without a word. The new confirmation names the user groups (with their channels), the users with their own server, the global segments, the recipient domain routes and the IP pools that send through it, and says that only the user groups switch to the system default: the others keep pointing at the deleted server and fall back to the system default without a warning. You can still confirm.
 - **A connection change of a server in use asks first.** Saving a new host, port, encryption, authentication, username or password of a server that something sends through opens a confirmation that names how many user groups and users it affects.
 - **The password stays write-only.** The edit form says when a password is stored and replaces it only when you enter a new one. A changed host clears the stored password unless you enter the password for the new host, as the classic page did.
-- **Testing is a separate action.** The **Verification** tab (the legacy **Test** tab) shows the stored results and runs **Send test and check DNS** on request. Saving never tests. Octeth allows 10 tests in 5 minutes and says how long to wait.
+- **Testing is a separate action.** The **Verification** section of the edit page (the legacy **Test** tab) shows the stored results and runs **Send test and check DNS** on request. Saving never tests. Octeth allows 10 tests in 5 minutes and says how long to wait.
 - **Clone is a row action** of the list, and opens the copy. User groups, delivery routes and email headers are not copied, as before.
 - **The sender rotation rules are checked as JSON** before they are saved.
 - **Any port from 1 to 65535** is accepted, as before.
+- **Connection and Domains save on their own.** The edit page has a menu of sections on the left, each section saves only its own fields, and leaving a section with unsaved changes asks first. Saving Domains keeps the stored connection, so it never asks about a server in use.
 
 #### The legacy admin SMS Gateways section is removed
 
-The legacy admin **SMS Gateways** section (`/app/admin/smsgateways/`), an item of the classic **Settings** sidebar, is removed. SMS gateways are managed on the [SMS gateways](/v6.0.2/new-user-interface/staff-sms-gateways) screen of the **Settings** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/sms-gateways`), which needs the `DeliveryServers` privilege, as the section did (octeth/oempro#3551). The callback URLs providers post delivery reports and replies to are unchanged.
+The legacy admin **SMS Gateways** section (`/app/admin/smsgateways/`), an item of the classic **Settings** sidebar, is removed. SMS gateways are managed on the [SMS gateways](/v6.0.2/new-user-interface/staff-sms-gateways) screen of the **Delivery** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/sms-gateways`), which needs the `DeliveryServers` privilege, as the section did (octeth/oempro#3551). The callback URLs providers post delivery reports and replies to are unchanged.
 
 **The old URLs keep working.** The section is now a redirect shim:
 
@@ -656,7 +657,7 @@ A POST to any of these URLs, including the old create, edit and bulk delete form
 - **The webhook secret and the two callback URLs are masked.** **Reveal** reads them for that page view only, and **Rotate secret** replaces the secret after a confirmation that both URLs change at once, then shows the new URLs once. Every reveal and rotation is recorded in the staff audit log. Rotation used to be a "Rotate the secret on save" checkbox on the edit form.
 - **Delete and deactivate list what uses the gateway first:** the SMS campaigns scheduled or sending through it, the journeys with a Send SMS step on it, its assigned accounts, and the account its inbound replies are credited to. Staff can still confirm.
 - **Accounts are assigned with a search** instead of one checkbox per enabled user. A sub-administrator limited to some user groups finds only the accounts in those groups, and assignments outside them are kept.
-- **Each tab of the edit page saves on its own.** The provider is still locked after create, and message parts still default to 3 on the create form.
+- **Each section of the edit page saves on its own.** The sections are a menu on the left, and leaving a section with unsaved changes asks first. The provider is still locked after create, and message parts still default to 3 on the create form.
 
 #### The legacy admin Plugins page is removed
 
@@ -681,7 +682,7 @@ The old enable and disable links changed a plugin's state on a plain GET, so a b
 
 #### The legacy admin Bounce Processing page is removed
 
-The legacy admin **Bounce Processing** page (`/app/admin/bounce/`), an item of the classic **Preferences** drop-menu, is removed. Its metrics, bounce patterns, webhook settings, spooled messages and manual processing are on the [Bounce processing](/v6.0.2/new-user-interface/staff-bounces) screen of the new **Deliverability** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/deliverability/bounces`), which needs the `Bounce` privilege, as the page did (octeth/oempro#3558). The bounce and complaint mailbox settings (POP3/IMAP) stay on the classic **Email Delivery** settings.
+The legacy admin **Bounce Processing** page (`/app/admin/bounce/`), an item of the classic **Preferences** drop-menu, is removed. Its metrics, bounce patterns, webhook settings, spooled messages and manual processing are on the [Bounce processing](/v6.0.2/new-user-interface/staff-bounces) screen of the **Delivery** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/deliverability/bounces`), which needs the `Bounce` privilege, as the page did (octeth/oempro#3558). The bounce and complaint mailbox settings (POP3/IMAP) stay on the classic **Email Delivery** settings.
 
 **The old URLs keep working, but no longer change anything.** The page is now a redirect shim:
 
@@ -709,7 +710,7 @@ There is no opt-in flag: the page is gone, and the privilege check is the one th
 
 #### The legacy admin Email Suppression List is removed
 
-The legacy admin **Email Suppression List** page (`/app/admin/suppression/`), an item of the classic **Preferences** menu, is removed. System-wide suppressions, the search across every account and the suppression patterns are managed on the [Email suppression](/v6.0.2/new-user-interface/staff-email-suppression) screen of the new **Deliverability** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/deliverability/suppression`), which needs the `Suppression` privilege, as the page did (octeth/oempro#3559). The classic menu item now shows only to administrators holding `Suppression`; before, it showed to those holding `Settings` and then refused the ones without `Suppression`.
+The legacy admin **Email Suppression List** page (`/app/admin/suppression/`), an item of the classic **Preferences** menu, is removed. System-wide suppressions, the search across every account and the suppression patterns are managed on the [Email suppression](/v6.0.2/new-user-interface/staff-email-suppression) screen, the **Email** item of the **Suppression** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/deliverability/suppression`), which needs the `Suppression` privilege, as the page did (octeth/oempro#3559). The classic menu item now shows only to administrators holding `Suppression`; before, it showed to those holding `Settings` and then refused the ones without `Suppression`.
 
 **The old URL keeps working.** The page is now a redirect shim:
 

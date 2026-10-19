@@ -141,7 +141,7 @@ way to find a configuration gap, and it never changes anything itself.
 
 ### One customer
 
-In the staff sidebar, **Users**, then pick a customer and open the **Billing** tab. This
+In the staff sidebar, **Accounts**, then **Users**, then pick a customer and open the **Billing** tab. This
 shows their subscription, their invoices, their payments and their usage, and lets you
 download any of their invoices as a PDF.
 

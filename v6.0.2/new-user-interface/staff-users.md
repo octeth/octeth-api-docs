@@ -23,8 +23,8 @@ The classic admin **Users** section forwards to these screens, see
 
 ## The Users list
 
-Sign in to the new interface with your Octeth administrator credentials and choose **Users** in
-the left menu.
+Sign in to the new interface with your Octeth administrator credentials and choose **Accounts**,
+then **Users** in the left menu.
 
 [[SCREENSHOT: The staff Users list with the search box, the filter row, the Categories and Create user buttons, and a table of users with limit status dots and 7-day send charts]]
 
@@ -66,8 +66,9 @@ re-sorted.
 
 ### Sorting and page size
 
-Click the **Name**, **Email**, **Created** or **Last active** column header to sort by it, and
-click again to reverse the order. **Name** sorts by first name. The **Sort by** menu also offers
+Click the **Name**, **Created** or **Last active** column header to sort by it, and
+click again to reverse the order. The **Username / Email** column sorts by either: click
+**Username** or **Email** in its header. **Name** sorts by first name. The **Sort by** menu also offers
 last name, company, user ID and single sign-on ID. Show 25, 50 or 100 users per page.
 
 The search, filters, sort order, page size and page number are kept in the address of the page,
@@ -79,7 +80,8 @@ so a reload or a shared link opens the same view.
 - A **Disabled** label on disabled users.
 - A coloured dot for the limit status: green within limits, amber near a limit, red over a
   limit. Click it to open the user's **Limits** tab.
-- Username, email address and user group.
+- The username with the email address under it (**No username** when the user has none), and
+  the user group.
 - **Sends, 7 days**: a small chart of the campaign emails the user sent on each of the last seven
   days (UTC), with the total. Shown when your account has the User.Edit permission.
 - Plan and credits, when billing is on.

@@ -1,12 +1,12 @@
 # The Staff SMS Suppression Screen
 
-The **Suppression** screen of the staff **SMS** group lists every phone number and pattern that is suppressed on the install, for every account. A suppressed number receives no SMS in its scope. Use the screen to check why a number gets no messages, to suppress numbers for every account or for one, and to remove a suppression that was added by mistake. It replaces the classic admin **Settings > SMS Suppression List** page.
+The **SMS** screen of the staff **Suppression** group lists every phone number and pattern that is suppressed on the install, for every account. A suppressed number receives no SMS in its scope. Use the screen to check why a number gets no messages, to suppress numbers for every account or for one, and to remove a suppression that was added by mistake. It replaces the classic admin **Settings > SMS Suppression List** page.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
 | SMS suppression | `/user/staff/sms/suppression` | SMS and Settings |
 
-Open it from the staff sidebar: click **SMS**, then **Suppression**. The classic admin menu item and the old `/app/admin/sms_suppression/` address open the same screen.
+Open it from the staff sidebar: click **Suppression**, then **SMS**. The classic admin menu item and the old `/app/admin/sms_suppression/` address open the same screen.
 
 ## Scopes
 

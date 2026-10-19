@@ -61,7 +61,7 @@ To disable the Stripo integration, click **Disconnect Stripo** and confirm. It c
 
 ### Step 3: Configure Per-User API Keys (Optional)
 
-The **Replace the key list** field of the **Template gallery keys** card allows you to map individual Octeth user accounts to their own Stripo API keys. This is required if you want users to access the **Template Gallery** feature, which lets them browse and load pre-designed templates from your Stripo project.
+The **Key list** field of the **Template gallery keys** card allows you to map individual Octeth user accounts to their own Stripo API keys. This is required if you want users to access the **Template Gallery** feature, which lets them browse and load pre-designed templates from your Stripo project.
 
 The API keys are entered as a JSON object where each key is an Octeth **User ID** and each value is the corresponding **Stripo API key**.
 
@@ -75,7 +75,7 @@ The API keys are entered as a JSON object where each key is an Octeth **User ID*
 }
 ```
 
-The stored keys are never shown. The card shows how many users have a key and their User IDs. A filled list replaces the whole stored list, so include every user who should keep a key, and leave the field blank to keep the stored list.
+When you open the Stripo section, the field shows the stored list, and the card says how many users have a key. Edit it in place, or click **Copy** to copy it. Saving the list unchanged sends nothing. An edited list replaces the whole stored list, so keep every user who should keep a key. Each time the section loads the list, the staff audit log records it with the number of users, never the keys. If the list could not be loaded, click **Load the stored list** to try again. Saving with the field blank keeps the stored list.
 
 ::: info
 If you do not configure an API key for a user, they can still use the Stripo editor to design emails. However, the template gallery will not be available to them — they will only be able to work with the default blank template or paste in their own HTML.
@@ -85,7 +85,7 @@ If you do not configure an API key for a user, they can still use the Stripo edi
 
 To find the User ID for a specific user account:
 
-1. In the staff sidebar of the new interface, click **Users**.
+1. In the staff sidebar of the new interface, click **Accounts**, then **Users**.
 2. Open the account. Its User ID is the number at the end of the address, `/user/staff/customers/{UserID}`. For example, if the address ends in `/staff/customers/5`, the User ID is `5`.
 
 [[SCREENSHOT: A user's page in the staff area with the browser address bar highlighted, showing the User ID at the end of the path]]
@@ -226,7 +226,7 @@ Saving or **Check connection** says Stripo rejected the plugin ID and secret key
 
 If a user can open the Stripo editor but the template gallery shows no templates:
 
-1. Confirm that the user's ID is listed under **User IDs** on the **Template gallery keys** card.
+1. Confirm that the user's ID is a key in the JSON shown in the **Key list** field of the **Template gallery keys** card.
 2. If the card says the stored list cannot be read, paste a corrected list. Each User ID must be a string key with its API key as the value.
 3. Check that the Stripo API key is valid and associated with a project that contains templates.
 4. Ensure the Octeth server has outbound internet access to reach `my.stripo.email`.

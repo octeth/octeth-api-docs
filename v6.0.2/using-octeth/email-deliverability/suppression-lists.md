@@ -136,7 +136,7 @@ For more details about unsubscription behavior and list-specific opt-out setting
 
 Administrators add email addresses to the system-level suppression list on the staff **Email suppression** screen of the new interface.
 
-1. In the staff sidebar, click **Deliverability**, then **Email suppression**.
+1. In the staff sidebar, click **Suppression**, then **Email**.
 2. Click **Add addresses**.
 3. Paste one or more email addresses, one per line, or separated by commas or spaces.
 4. Click **Add to suppression list**.
@@ -197,7 +197,7 @@ In the pattern field, you can use `*` as a wildcard character. Octeth automatica
 
 ### Managing Smart Suppression Patterns
 
-Smart Suppression patterns are managed by administrators on the **Patterns** tab of the staff **Email suppression** screen (**Deliverability > Email suppression**).
+Smart Suppression patterns are managed by administrators on the **Patterns** tab of the staff **Email suppression** screen (**Suppression > Email**).
 
 **To add a pattern:**
 
@@ -219,7 +219,7 @@ Smart Suppression patterns apply to all users and all lists on the system. Sendi
 
 ### Administrator View
 
-Administrators search every account's suppressions on the staff **Email suppression** screen (**Deliverability > Email suppression**). Type the address in the search box. The search matches the exact address; use `*` as a wildcard, for example `*@example.com`.
+Administrators search every account's suppressions on the staff **Email suppression** screen (**Suppression > Email**). Type the address in the search box. The search matches the exact address; use `*` as a wildcard, for example `*@example.com`.
 
 The results show each matching entry with the email address, its scope (system, account or list), the account it belongs to, the suppression source and the reason. Without a search, the screen lists the system-wide suppressions page by page, filtered by source.
 
@@ -262,7 +262,7 @@ Use the `%` character as a wildcard when searching. For example, searching for `
 
 Administrators can remove individual entries from the suppression list:
 
-1. Open **Deliverability > Email suppression** in the staff sidebar and search for the email address.
+1. Open **Suppression > Email** in the staff sidebar and search for the email address.
 2. Click the trash icon of the entry, or tick several entries and click **Remove**.
 3. Confirm. Removing a system-wide entry unblocks the address for every account.
 
@@ -502,7 +502,7 @@ curl -X POST "https://octeth.example.com/api.php" \
 
 If a subscriber shows an active subscription status but is not receiving emails, the email address may be on a suppression list.
 
-1. **Check every suppression list**: in the staff sidebar, open **Deliverability > Email suppression** and search for the email address. The search covers system-wide, account and list suppressions.
+1. **Check every suppression list**: in the staff sidebar, open **Suppression > Email** and search for the email address. The search covers system-wide, account and list suppressions.
 2. **Check the user suppression list** — Log in to the **User Dashboard**, navigate to **Suppression List**, and search for the address.
 3. **Check Smart Suppression patterns**: review the **Patterns** tab of the same screen to see whether a pattern matches the address.
 4. **Check the segment filter** — If you are using segments, verify that the segment does not include a suppression status filter that excludes the subscriber.

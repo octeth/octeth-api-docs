@@ -31,7 +31,7 @@ This section covers the configuration steps that administrators need to complete
 
 ### Managing SMS Gateways
 
-SMS gateways connect Octeth to external SMS delivery providers such as Infobip. To manage gateways, open **Settings** > **SMS gateways** in the staff sidebar, see [Managing SMS Gateways in the Staff Area](/v6.0.2/new-user-interface/staff-sms-gateways).
+SMS gateways connect Octeth to external SMS delivery providers such as Infobip. To manage gateways, open **Delivery** > **SMS gateways** in the staff sidebar, see [Managing SMS Gateways in the Staff Area](/v6.0.2/new-user-interface/staff-sms-gateways).
 
 [[SCREENSHOT: SMS Gateways list page showing the table with gateway name, type, status, scope, and user count columns]]
 
@@ -49,7 +49,7 @@ The gateway list displays the following information:
 
 To create a new SMS gateway:
 
-1. In the staff sidebar, click **Settings**, then **SMS gateways**.
+1. In the staff sidebar, click **Delivery**, then **SMS gateways**.
 2. Click **Create a new SMS gateway**.
 3. Complete the configuration across four tabs.
 
@@ -148,7 +148,7 @@ Enter one word or phrase per line in the text area.
 
 The SMS suppression system prevents messages from being sent to specific phone numbers. Administrators manage suppressions at three levels: **System** (every account), **Account** (one account) and **List** (one list). A fourth level, **Gateway**, is written by Octeth when a recipient replies STOP and the reply cannot be matched to an account.
 
-Administrators manage every account's suppressions on the **SMS > Suppression** screen of the new interface's staff area: browse and filter every number and pattern, add numbers or patterns at any of the three levels, remove them, and clear the suppression cache. Removing a recipient's own opt-out asks for a reason, which is kept in the staff audit log. See [The Staff SMS Suppression Screen](/v6.0.2/new-user-interface/staff-sms-suppression).
+Administrators manage every account's suppressions on the **Suppression > SMS** screen of the new interface's staff area: browse and filter every number and pattern, add numbers or patterns at any of the three levels, remove them, and clear the suppression cache. Removing a recipient's own opt-out asks for a reason, which is kept in the staff audit log. See [The Staff SMS Suppression Screen](/v6.0.2/new-user-interface/staff-sms-suppression).
 
 The classic admin **Settings > SMS Suppression List** item opens that screen.
 

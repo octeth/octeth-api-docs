@@ -1,6 +1,6 @@
 # Managing SMS Gateways in the Staff Area
 
-An **SMS gateway** connects Octeth to one account at an SMS provider, such as Xeebi or Infobip. Campaigns and journeys send text messages through it, and the provider posts delivery reports and replies back to it. The **SMS gateways** screens of the staff **Settings** group replace the classic admin **Settings > SMS Gateways** section.
+An **SMS gateway** connects Octeth to one account at an SMS provider, such as Xeebi or Infobip. Campaigns and journeys send text messages through it, and the provider posts delivery reports and replies back to it. The **SMS gateways** screens of the staff **Delivery** group replace the classic admin **Settings > SMS Gateways** section.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
@@ -8,7 +8,7 @@ An **SMS gateway** connects Octeth to one account at an SMS provider, such as Xe
 | Create SMS gateway | `/user/staff/settings/sms-gateways/new` | DeliveryServers |
 | Edit SMS gateway | `/user/staff/settings/sms-gateways/<id>/edit` | DeliveryServers |
 
-Open it from the staff sidebar: click **Settings**, then **SMS gateways**. The classic admin **Settings > SMS Gateways** link, and the old `/app/admin/smsgateways/` addresses, open the same screens.
+Open it from the staff sidebar: click **Delivery**, then **SMS gateways**. The classic admin **Settings > SMS Gateways** link, and the old `/app/admin/smsgateways/` addresses, open the same screens.
 
 ## The list
 
@@ -47,13 +47,13 @@ Click **Create SMS gateway** and fill in four cards:
    - **Allowed countries**: optional 2-letter country codes. Leave it empty to allow every country.
 4. **Accounts**: for a gateway that is not global, search for accounts by name, username or email and tick them. At least one is needed.
 
-Click **Create SMS gateway**. The new gateway opens on its **Webhooks** tab, where the callback URLs to give the provider are.
+Click **Create SMS gateway**. The create page is a single form. The new gateway opens on its **Webhooks** section, where the callback URLs to give the provider are.
 
 ## Edit a gateway
 
-The edit page has five tabs. Each tab saves only its own fields.
+The edit page has five sections in a menu on the left. Each section saves only its own fields. When you leave a section with unsaved changes, Octeth asks first, for example **Discard your changes to SMS settings?** Click **Discard changes** to drop them and open the other section, or **Keep editing** to stay and save first.
 
-| Tab | What you change |
+| Section | What you change |
 |---|---|
 | **Basic** | The name, the status and global. Setting an active gateway **Inactive** first lists what uses it, as a delete does |
 | **Provider settings** | The provider's fields. A stored key shows **A key is stored**: leave the field empty to keep it, or type a new key to replace it. **Test connection** checks the values in the form, saved or not |
@@ -71,4 +71,4 @@ Give the provider two URLs: the **Delivery report URL** and the **Inbound messag
 
 - **Rotate secret** replaces the secret after a confirmation. Both URLs change at once, and the provider is refused until you give it the new ones, which are shown once after the rotation.
 - **Require the secret on delivery reports**: when this is off, delivery reports are also accepted on the older URL without the secret, so providers set up before webhook secrets existed keep working. Turn it on once the provider uses the URLs above. Inbound messages always require the secret.
-- When other gateways use the same provider account, the tab lists them. The provider sends every callback for the account to one set of URLs, so enter the URLs of any one of them.
+- When other gateways use the same provider account, the section lists them. The provider sends every callback for the account to one set of URLs, so enter the URLs of any one of them.

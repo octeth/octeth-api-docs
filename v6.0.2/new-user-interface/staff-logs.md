@@ -6,7 +6,7 @@
 |---|---|---|
 | Logs | `/user/staff/logs` | Settings |
 
-Open it from the staff sidebar: click **Logs**. The classic admin **Settings > Logs** link, and the old `/app/admin/logobserver/` address, open the same screen.
+Open it from the staff sidebar: click **Administration**, then **Logs**. The classic admin **Settings > Logs** link, and the old `/app/admin/logobserver/` address, open the same screen.
 
 ::: warning
 Log files can hold request parameters, email addresses and other personal data. Only administrators with the Settings permission can open this screen, and every download and every emptied file is recorded in the staff audit log.

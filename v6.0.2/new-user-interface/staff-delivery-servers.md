@@ -1,6 +1,6 @@
 # Managing Delivery Servers in the Staff Area
 
-A **delivery server** is an SMTP relay or MTA that Octeth sends email through. Each user group chooses a server for its marketing, transactional and autoresponder email, and a user, a global segment or a recipient domain route can name one too. The **Delivery servers** screens of the staff **Settings** group replace the classic admin **Settings > Delivery Servers** pages.
+A **delivery server** is an SMTP relay or MTA that Octeth sends email through. Each user group chooses a server for its marketing, transactional and autoresponder email, and a user, a global segment or a recipient domain route can name one too. The **Delivery servers** screens of the staff **Delivery** group replace the classic admin **Settings > Delivery Servers** pages.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
@@ -8,7 +8,7 @@ A **delivery server** is an SMTP relay or MTA that Octeth sends email through. E
 | Create delivery server | `/user/staff/settings/delivery-servers/new` | DeliveryServers |
 | Edit delivery server | `/user/staff/settings/delivery-servers/<id>/edit` | DeliveryServers |
 
-Open it from the staff sidebar: click **Settings**, then **Delivery servers**. The classic admin **Settings > Delivery Servers** link, and the old `/app/admin/deliveryservers/` addresses, open the same screens. The delivery server reports stay in the classic admin at `/app/admin/deliveryservers/report`.
+Open it from the staff sidebar: click **Delivery**, then **Delivery servers**. The classic admin **Settings > Delivery Servers** link, and the old `/app/admin/deliveryservers/` addresses, open the same screens. The delivery server reports stay in the classic admin at `/app/admin/deliveryservers/report`.
 
 ## The list
 
@@ -62,11 +62,13 @@ Click **Create delivery server** and fill in two cards.
 - **Use the list's sender address as the MAIL FROM address when possible** and **as the From address when possible**.
 - **Rotate the sender**, and the **Sender rotation rules** as JSON. The screen checks that the rules are valid JSON; Octeth uses them as entered.
 
-Click **Create delivery server**. Creating does not test the server: it opens on its **Verification** tab, where you send the first test.
+Click **Create delivery server**. Creating does not test the server: it opens on its **Verification** section, where you send the first test. The create page is a single form.
 
 ## Edit a server
 
-The edit page has three tabs. **Connection** and **Domains** hold the fields above, and **Save changes** on either saves both.
+The edit page has three sections in a menu on the left: **Connection**, **Domains** and **Verification**. **Connection** and **Domains** hold the fields above, and each saves only its own fields with its own **Save changes** button.
+
+When you leave a section with unsaved changes, Octeth asks **Discard your changes to Connection?** (or **Domains**). Click **Discard changes** to drop them and open the other section, or **Keep editing** to stay and save first.
 
 ### The password
 
@@ -76,11 +78,11 @@ The password is never shown. When one is stored, the field says **A password is 
 
 When you change the host, port, encryption, authentication, username or password of a server that something sends through, Octeth asks first. The confirmation lists the user groups, users, segments and routes it affects and how many users send through it. Their email goes through the new connection from the moment you save, so send a test right after.
 
-Changing only the name, the domains or the sender settings saves without asking.
+Changing only the name saves without asking. Saving the **Domains** section never asks, because it keeps the stored connection.
 
 ### Verification
 
-The **Verification** tab shows the result of the last test for each check:
+The **Verification** section shows the result of the last test for each check:
 
 - **Test email delivery**: Octeth sends a test email through the server to your own address.
 - **SPF record**, **DKIM record** and **DMARC record** of the MAIL FROM domain.

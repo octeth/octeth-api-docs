@@ -4,9 +4,9 @@ layout: doc
 
 # SMS Gateway API Documentation
 
-Admin endpoints for managing SMS gateways: the provider connections (Infobip and any other connector installed under `includes/sms_connectors/`), their sender numbers, country restrictions, link-shortening domains, and which user accounts may send through them. These endpoints back the staff Settings > SMS gateways screens and expose the same class (`SMSGatewayManager`) it uses.
+Admin endpoints for managing SMS gateways: the provider connections (Infobip and any other connector installed under `includes/sms_connectors/`), their sender numbers, country restrictions, link-shortening domains, and which user accounts may send through them. These endpoints back the staff Delivery > SMS gateways screens and expose the same class (`SMSGatewayManager`) it uses.
 
-All commands require the Admin API key (or an admin session) and the `DeliveryServers` sub-admin privilege. Each handler checks the privilege itself, so it applies even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic SMS Gateways screen did. The staff [Settings > SMS gateways](/v6.0.2/new-user-interface/staff-sms-gateways) screens run on these commands.
+All commands require the Admin API key (or an admin session) and the `DeliveryServers` sub-admin privilege. Each handler checks the privilege itself, so it applies even when `ADMIN_API_ENFORCE_PRIVILEGES` is off, as the classic SMS Gateways screen did. The staff [Delivery > SMS gateways](/v6.0.2/new-user-interface/staff-sms-gateways) screens run on these commands.
 
 ::: warning Provider credentials are redacted
 `GatewaySettings` holds provider API keys. Every read endpoint returns credential values as the literal string `***REDACTED***` (the same key-name rule `system.getsettings` applies, plus any connector field declared `"type": "password"`). `smsgateway.update` and `smsgateway.testconnection` accept that literal back as "keep the stored value", so a read-modify-write round trip never has to see, or re-send, the secret. `smsgateway.create` rejects it, since there is nothing stored to keep.

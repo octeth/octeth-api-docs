@@ -1,12 +1,12 @@
 # The Staff Email Suppression Screen
 
-A **suppression** stops Octeth from sending to an email address. A **system-wide** suppression blocks the address for every account on the install, in campaigns, journeys, transactional email and the email gateway. The **Email suppression** screen of the staff **Deliverability** group lists and manages the system-wide suppressions and the suppression patterns, and finds an address in any account's suppressions. It replaces the classic admin **Email Suppression List** page.
+A **suppression** stops Octeth from sending to an email address. A **system-wide** suppression blocks the address for every account on the install, in campaigns, journeys, transactional email and the email gateway. The **Email** screen of the staff **Suppression** group lists and manages the system-wide suppressions and the suppression patterns, and finds an address in any account's suppressions. It replaces the classic admin **Email Suppression List** page.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
 | Email suppression | `/user/staff/deliverability/suppression` | Suppression |
 
-Open it from the staff sidebar: click **Deliverability**, then **Email suppression**. The classic admin **Preferences > Email Suppression List** link, and the old `/app/admin/suppression/` address, open the same screen.
+Open it from the staff sidebar: click **Suppression**, then **Email**. The classic admin **Preferences > Email Suppression List** link, and the old `/app/admin/suppression/` address, open the same screen.
 
 ::: tip
 An account whose user group turns the suppression check off is not blocked by system-wide suppressions or patterns. Accounts also keep their own account-wide and list suppressions, which they manage on their own **Suppressions** pages. How the scopes work is explained in [Suppression Lists](/v6.0.2/using-octeth/email-deliverability/suppression-lists).

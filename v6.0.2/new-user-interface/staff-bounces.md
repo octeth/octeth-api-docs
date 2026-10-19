@@ -6,7 +6,7 @@
 |---|---|---|
 | Bounce processing | `/user/staff/deliverability/bounces` | Bounce |
 
-Open it from the staff sidebar: click **Deliverability**, then **Bounce processing**. The **Bounce Processing** item of the classic admin **Preferences** menu, and the old `/app/admin/bounce/` address, open the same screen.
+Open it from the staff sidebar: click **Delivery**, then **Bounce processing**. The **Bounce Processing** item of the classic admin **Preferences** menu, and the old `/app/admin/bounce/` address, open the same screen.
 
 The screen has five tabs: **Overview**, **Patterns**, **Webhooks**, **Messages** and **Manual processing**. The open tab is part of the address (`?tab=patterns`), so you can bookmark or share it.
 

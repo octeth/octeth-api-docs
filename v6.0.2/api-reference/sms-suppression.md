@@ -31,7 +31,7 @@ Admin-authenticated calls may additionally pass `system`: `smssuppression.add` a
 
 Phone numbers must be in E.164 format with a leading `+` (e.g. `+15551234567`). Patterns use `*` as a wildcard (e.g. `+1555*` blocks all numbers starting with `+1555`).
 
-The `admin.sms.suppression.*` commands at the end of this page are the staff equivalents: they list, count, add and remove suppressions across every account and every scope, including the `gateway` scope (an unattributed STOP reply, which suppresses the number for every account on that gateway). They back the staff **SMS > Suppression** screen (new in v6.0.2). The `Source` column can also hold `inbound` (a STOP reply), which the inbound SMS path writes.
+The `admin.sms.suppression.*` commands at the end of this page are the staff equivalents: they list, count, add and remove suppressions across every account and every scope, including the `gateway` scope (an unattributed STOP reply, which suppresses the number for every account on that gateway). They back the staff **Suppression > SMS** screen (new in v6.0.2). The `Source` column can also hold `inbound` (a STOP reply), which the inbound SMS path writes.
 
 ## Browse SMS Suppression List
 

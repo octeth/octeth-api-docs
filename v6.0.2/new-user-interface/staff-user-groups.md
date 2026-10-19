@@ -19,7 +19,7 @@ action: Octeth refuses those for such an account.
 
 ## The User groups list
 
-Choose **User groups** in the left menu. Each row shows:
+Choose **Accounts**, then **User groups** in the left menu. Each row shows:
 
 - **Name**. Click the row to open the group's Edit page.
 - **Users**: the number of accounts in the group. Click it to open the **Users** list filtered by

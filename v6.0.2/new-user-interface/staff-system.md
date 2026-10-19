@@ -8,7 +8,7 @@
 | System, License section | `/user/staff/system?section=license` | System |
 | System, System health section | `/user/staff/system?section=health` | System |
 
-Open it from the staff sidebar: click **System**. The classic admin **Settings > License** and **Settings > About** links, and the link in the license notice at the top of the classic admin area, open the same screen.
+Open it from the staff sidebar: click **Administration**, then **System**. The classic admin **Settings > License** and **Settings > About** links, and the link in the license notice at the top of the classic admin area, open the same screen.
 
 The screen has three sections in a menu on the left.
 

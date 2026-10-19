@@ -12,7 +12,7 @@ The screen acts as the administrator who is signed in. A sub-administrator limit
 
 ## Search for an address
 
-1. Choose **Subscriber search** in the left menu.
+1. Choose **Accounts**, then **Subscriber search** in the left menu.
 2. Type the full email address, for example `john@example.com`.
 3. Click **Search** or press Enter.
 
