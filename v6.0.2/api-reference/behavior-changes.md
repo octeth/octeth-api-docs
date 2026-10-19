@@ -279,7 +279,7 @@ The classic admin license notice and the user and subscriber limit notices now s
 
 The legacy admin **Security** page (`/app/admin/security/`), an item of the classic **Settings** sidebar, is removed and its settings are split across two screens of the new interface's staff area (octeth/oempro#3521):
 
-- **Your own two-factor authentication** is the **Two-factor authentication** section of [Your profile](/v6.0.2/new-user-interface/staff-profile) (`/<UI_STAFF_PREFIX>/staff/profile?section=two-factor`). It is shown to administrators with the `Security` privilege, which the 2FA commands require.
+- **Your own two-factor authentication** is the **Two-factor authentication** section of [Your profile](/v6.0.2/new-user-interface/staff-profile) (`/<UI_STAFF_PREFIX>/staff/profile?section=two-factor`). It is shown to every administrator, whatever their privileges, and the 2FA commands need no privilege (octeth/oempro#3566).
 - **The admin area IP allow-list, the rule that applies it to user sign-ins and the remembered sign-ins** of the classic admin area are the new [Security screen](/v6.0.2/new-user-interface/staff-security) (`/<UI_STAFF_PREFIX>/staff/security`), with the sections Access and Remembered sign-ins. It needs the `Security` privilege, as the page did.
 
 **The old URLs keep working.** The page is now a redirect shim:
@@ -302,7 +302,7 @@ A POST to any of these URLs, including the old save, disable and revoke forms, i
 - **A list of only blank lines is reported.** The admin sign-in treats a stored value of only blank lines as a list with no address on it and refuses everyone except the server itself. The Access section says so, and saving the empty list clears it.
 - **Remembered sign-ins show the browser.** Each remembered sign-in now records the browser it was issued to. Ones issued before the upgrade show "Not recorded".
 
-There is no opt-in flag: the page is removed, and its URLs answer as above. `settings.update`, `settings.get` and the `admin.2fa.*` commands are unchanged, and the five new commands are listed under "Additions" below.
+There is no opt-in flag: the page is removed, and its URLs answer as above. `settings.update` and `settings.get` are unchanged, the `admin.2fa.*` commands no longer need `Security` (see "Admin two-factor authentication (self-service)" under Tier 2), and the five new commands are listed under "Additions" below.
 
 #### The legacy admin Log Observer is removed
 
@@ -924,6 +924,11 @@ A failed connection now reports the MySQL connect error on both PHP versions, fo
 ### Users
 
 - `user.update` leaves `OtherEmailAddresses` unchanged when the parameter is left out, like `RateLimits`, `CustomEmailHeaders` and `WhiteListedEmailAddresses`. Before, any call without it (an account status change, a user group change, enabling two-factor authentication, a profile edit) stored an empty value, so the account's other email addresses were silently erased. Sending the parameter, an empty string included, still writes it, so to clear the field send `"OtherEmailAddresses": ""`. The response is unchanged. There is no opt-in flag, because the old behavior destroyed data the caller never asked to change (octeth/oempro#3468).
+
+### Admin two-factor authentication (self-service)
+
+- `admin.2fa.provision`, `admin.2fa.enable` and `admin.2fa.disable` no longer require the `Security` privilege. Every administrator and sub-administrator manages their own two-factor authentication, whatever their privileges, as users already do. Each command acts only on the calling administrator's own account, `admin.2fa.provision` still refuses while two-factor authentication is on (`ErrorCode 2`), and `admin.2fa.disable` still needs the current password. Requests and responses are unchanged, and a caller that held `Security` sees no difference. Before, a sub-administrator without `Security` was refused with `ErrorCode 99999` when `ADMIN_API_ENFORCE_PRIVILEGES` is on. `admin.subadmin.2fa.reset` still needs `SubAdmins`. There is no opt-in flag, because the change only lets an administrator secure their own sign-in (octeth/oempro#3566).
+- The staff **Your profile** screen (`/<UI_STAFF_PREFIX>/staff/profile`) and its **Your profile** user-menu item are now shown to every administrator. Without the `Account` privilege it offers only the Two-factor authentication section, and reads the administrator's own row with `admin.self.get` instead of `admin.get`. Its Profile, Password and API access sections still need `Account`, and System emails still needs `Account` and `Settings`.
 
 ### New user interface sessions
 

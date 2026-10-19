@@ -166,7 +166,7 @@ Each staff screen follows the administrator permissions:
 | Administration: Security | Security, see [The Staff Security Screen](./staff-security) |
 | Administration: System | System, see [The Staff System Screen](./staff-system) |
 | Administration: Logs | Settings, see [The Staff Logs Screen](./staff-logs) |
-| Your profile | Account. Its System emails section also needs Settings, and its Two-factor authentication section needs Security, see [Your Staff Profile](./staff-profile) |
+| Your profile | None for its Two-factor authentication section, which every administrator can open. Its Profile, Password and API access sections need Account, and its System emails section needs Account and Settings, see [Your Staff Profile](./staff-profile) |
 | AI assistants | None. The keys it creates carry the administrator's own permissions |
 
 A screen the sub-administrator may not use is hidden from the menu and refuses a direct

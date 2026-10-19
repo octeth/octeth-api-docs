@@ -3240,7 +3240,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
-- Required privilege: `Security`
+- Required privilege: none <Badge type="tip" text="Changed in v6.0.2" />. Every administrator and sub-administrator manages their own two-factor authentication, whatever their privileges (before v6.0.2 it needed `Security`). The command acts only on the calling administrator's own account
 - v1 REST alias: `POST /api/v1/admin.2fa.provision`. Legacy access via `/api.php` is also supported
 :::
 
@@ -3307,7 +3307,7 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
-- Required privilege: `Security`
+- Required privilege: none <Badge type="tip" text="Changed in v6.0.2" />. Every administrator and sub-administrator manages their own two-factor authentication, whatever their privileges (before v6.0.2 it needed `Security`). The command acts only on the calling administrator's own account
 - v1 REST alias: `POST /api/v1/admin.2fa.enable`. Legacy access via `/api.php` is also supported
 :::
 
@@ -3370,7 +3370,7 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 
 ::: tip API Usage Notes
 - Authentication is done by Admin API Key or admin SessionID
-- Required privilege: `Security`
+- Required privilege: none <Badge type="tip" text="Changed in v6.0.2" />. Every administrator and sub-administrator manages their own two-factor authentication, whatever their privileges (before v6.0.2 it needed `Security`). The command acts only on the calling administrator's own account and needs its current password
 - v1 REST alias: `POST /api/v1/admin.2fa.disable`. Legacy access via `/api.php` is also supported
 :::
 

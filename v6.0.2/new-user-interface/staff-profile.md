@@ -1,11 +1,11 @@
 # Your Staff Profile
 
-**Your profile** is where an administrator changes their own name, email address, username and password, turns their own two-factor authentication on or off with the Security permission, and, with the Settings permission, sets the sender of the emails the install sends on its own. It replaces the classic admin **Account** page and the two-factor part of the classic **Security** page.
+**Your profile** is where an administrator changes their own name, email address, username and password, turns their own two-factor authentication on or off, and, with the Settings permission, sets the sender of the emails the install sends on its own. Every administrator and sub-administrator can open it to manage their own two-factor authentication, whatever their permissions. It replaces the classic admin **Account** page and the two-factor part of the classic **Security** page.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
-| Your profile | `/user/staff/profile` | Account |
-| Your profile, Two-factor authentication section | `/user/staff/profile?section=two-factor` | Account and Security |
+| Your profile, Profile, Password and API access sections | `/user/staff/profile` | Account |
+| Your profile, Two-factor authentication section | `/user/staff/profile?section=two-factor` | None, every administrator |
 | Your profile, System emails section | `/user/staff/profile?section=system-emails` | Account and Settings |
 
 Open it from the user menu: click your name at the bottom of the left menu, then **Your profile**. The classic admin **Settings > Account** link opens the same screen.
@@ -14,7 +14,7 @@ Open it from the user menu: click your name at the bottom of the left menu, then
 The screen acts as the administrator who is signed in, and every save is recorded in the staff audit log with the names of the fields that changed. The values themselves are not recorded.
 :::
 
-The screen has up to five sections in a menu on the left. Each section has its own button and saves only its own fields.
+The screen has up to five sections in a menu on the left. Each section has its own button and saves only its own fields. An administrator without the Account permission sees only **Two-factor authentication**, and the screen opens on it.
 
 ## Profile
 
@@ -34,7 +34,7 @@ Saving signs you out of the staff area. Sign in again with the new password. Whe
 
 ## Two-factor authentication
 
-Shown only to administrators with the Security permission. With two-factor authentication on, signing in to the admin area asks for a code from an authenticator app on your phone as well as your password. It applies to the new interface and to the classic admin area.
+Shown to every administrator and sub-administrator, whatever their permissions. With two-factor authentication on, signing in to the admin area asks for a code from an authenticator app on your phone as well as your password. It applies to the new interface and to the classic admin area.
 
 ### Turn it on
 
@@ -57,7 +57,7 @@ Lost your phone? Open the two-factor reset page of the classic admin area (`/app
 
 ## System emails
 
-Shown only to administrators with the Settings permission. These settings apply to the whole install:
+Shown only to administrators with both the Account and the Settings permission. These settings apply to the whole install:
 
 - **Sender name** and **Sender email address**: the sender of the emails the install sends on its own, such as notifications and automated reports. The same name and address are used as the reply-to.
 - **Alert recipient**: the address that receives system alerts.
