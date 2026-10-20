@@ -863,6 +863,17 @@ A successful sign-in clears the count for that name, and a successful `Admin.Log
 
 This is on by default, including on upgrade. Set `LOGIN_THROTTLE_ENABLED=false` in `.oempro_env` to switch it off, and tune the limits with `LOGIN_THROTTLE_MAX_FAILURES_PER_IDENTITY`, `LOGIN_THROTTLE_MAX_FAILURES_PER_IP`, `LOGIN_THROTTLE_WINDOW_SECONDS` and `LOGIN_THROTTLE_LOCKOUT_SECONDS`. An integration that signs many people in from one server address may need a higher `LOGIN_THROTTLE_MAX_FAILURES_PER_IP` (octeth/oempro#2986).
 
+#### Staff sign-in through the new interface applies Authorized IP Addresses
+
+With Authorized IP Addresses filled in (**Settings > Security**), a staff member who signs in through the new interface from an address outside the list is refused with "Access from your IP address is not allowed.", and a staff member already signed in from such an address is signed out with the same message on their next request. Before v6.0.2 the list protected only the legacy `/admin/` login, and staff sign-in through the new interface ignored it.
+
+The rule is the admin area's: it applies whenever the list is not empty, independent of `ADMIN_API_ENFORCE_ALLOWED_IP`, and loopback is allowed. In API terms, a request that reaches `api.php` from the new interface's container on behalf of a browser is refused as follows when the browser's address is outside the list:
+
+- `admin.login` with `Username` and `Password` answers `{"Success":false,"ErrorCode":3,"ErrorText":"Access from this IP address is not allowed"}` and creates no session. The address is checked only once the username and password match an administrator, so a wrong password gets the ordinary invalid-login answer.
+- A call made with the staff member's admin `SessionID` answers `{"Success":false,"ErrorCode":99998,"ErrorText":"Access from this IP address is not allowed"}`.
+
+Calls that reach `api.php` from any other address, including integrations, are unchanged and stay governed by `ADMIN_API_ENFORCE_ALLOWED_IP`. The new interface's own `AdminAPIKey` calls (customer signup, password reminders and resets) and its background jobs are not measured. With the list empty, every response is unchanged (octeth/oempro#3585).
+
 #### The "Let users reset a forgotten password" preference now covers the new interface, and `User.PasswordRemind` can apply it
 
 When an operator turns off **Settings > Preferences > General > Let users reset a forgotten password** (option `DisableUserPasswordReset`), the new user interface no longer shows the Forgot password link on the sign-in page, and its Forgot password page explains that the administrator manages passwords and sends nothing. Before, only the legacy user area applied the preference.

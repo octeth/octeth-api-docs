@@ -2498,6 +2498,7 @@ curl -X POST https://example.com/api.php \
 username: Missing required parameter username
 password: Missing required parameter password
 3: Invalid username or password
+3: Invalid username or password. With ErrorText "Access from this IP address is not allowed": a staff sign-in through the new interface from an address outside Authorized IP Addresses
 101: Invalid 2FA code
 429: Too many failed attempts, try again after RetryAfterSeconds (HTTP 429, see above)
 ```

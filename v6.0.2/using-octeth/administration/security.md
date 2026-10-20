@@ -16,9 +16,11 @@ One entry per line. Each entry is either a single IPv4 address (`203.0.113.10`) 
 
 ### When it is checked
 
-On every authenticated admin request. That includes the login page, every admin screen, every plugin admin screen, and the "remember me" cookie.
+On every authenticated admin request. That includes the login page, every admin screen, every plugin admin screen, the "remember me" cookie, and staff sign-in through the new interface together with every page a signed-in staff member opens there.
 
 Before v6.0.0 the list was consulted only while the admin login page rendered, so a session that was already open, or a "remember me" cookie, kept working from any address. An admin whose address is not on the list and who is currently signed in is signed out on their next request.
+
+Before v6.0.2 staff sign-in through the new interface did not check the list. A staff member whose address is not on it is now refused at sign-in, and one already signed in is signed out on their next request with "Access from your IP address is not allowed."
 
 When a request is refused, the admin session is destroyed, not merely rejected, and the browser is sent to the admin login page, which explains that the address is not allowed. Removing the restriction afterwards does not revive the old session: the admin signs in again.
 
@@ -53,7 +55,7 @@ A rule matching `/app/admin/` covers the first one only. Authorized IP Addresses
 
 Any one of these gets you back in.
 
-1. **Sign in from the server itself.** Loopback is exempt, so an admin session opened on the server (for example through an SSH tunnel to the app's own port) still works. Clear Authorized IP Addresses from **Settings > Security**.
+1. **Sign in from the server itself.** Loopback is exempt, so an admin session opened on the server (for example through an SSH tunnel to the app's own port, which reaches the legacy admin login) still works. Clear Authorized IP Addresses from **Settings > Security**.
 2. **Clear the setting in the database.** The value lives in the `ADMIN_ALLOWED_IP` column of the single `oempro_config` row. An empty value means no restriction.
 
    ```sql
