@@ -124,7 +124,7 @@ The staff menu groups its screens by job. The group a screen sits in does not ch
 - **Dashboard**
 - **Accounts**: Users, User groups, Subscriber search
 - **Reports**: Campaigns, List freshness, Sender domain health
-- **Delivery**: Delivery servers, Segment routing, SMS gateways, Bounce processing
+- **Delivery**: Delivery servers, Segment routing, Delivery routes, SMS gateways, Bounce processing, Email delivery
 - **SMS**: Campaigns, Inbound
 - **Suppression**: Email, SMS
 - **Billing**, when billing is enabled
@@ -147,6 +147,7 @@ Each staff screen follows the administrator permissions:
 | Reports: List freshness | Reports. A sub-administrator limited to some user groups sees only the users of those groups, see [The List Freshness Report](./staff-list-freshness) |
 | Reports: Sender domain health | User.Edit. A sub-administrator limited to some user groups sees and re-checks only the domains of accounts in those groups, see [The Staff Sender Domain Health Report](./staff-sender-domain-health) |
 | Delivery: Delivery servers | DeliveryServers, see [Managing Delivery Servers in the Staff Area](./staff-delivery-servers) |
+| Delivery: Delivery routes | Settings and DeliveryServers, see [Routing Email by Recipient Mail Server](./staff-delivery-routes) |
 | Delivery: Email delivery | Settings, and Delivery servers for the test email, see [The Staff Email Delivery Screen](./staff-email-delivery) |
 | Delivery: Segment routing | Settings.Segments. A sub-administrator limited to some user groups routes only those groups, and a save keeps the routing of the others, see [Routing Segments Through Delivery Servers](./staff-segment-routing) |
 | Delivery: SMS gateways | DeliveryServers. A sub-administrator limited to some user groups finds and assigns only the accounts in those groups, see [Managing SMS Gateways in the Staff Area](./staff-sms-gateways) |
@@ -207,6 +208,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/settings/preferences` | The default language, password reset, limit notifications, the failed webhook handler and the List freshness thresholds, see [Staff Preferences](./staff-preferences) |
 | `/user/staff/settings/branding` | The interface's name, logos, favicon, colours, support and legal links and email sender name, saved over `.oempro_env` with a per-field reset, see [Branding the New User Interface from the Staff Area](./staff-branding) |
 | `/user/staff/settings/delivery-servers` | The delivery servers list, create and edit screens, with the in-use warning before a delete, the write-only SMTP password and the test send, see [Managing Delivery Servers in the Staff Area](./staff-delivery-servers) |
+| `/user/staff/settings/delivery-routes` | The recipient MX routes in match order, with add, edit, reorder and remove, see [Routing Email by Recipient Mail Server](./staff-delivery-routes) |
 | `/user/staff/settings/email-delivery` | The send method and its write-only credentials, bounces and their mailbox, complaints and inboxes, X-Mailer and custom headers, and the advanced delivery settings, with a test email, see [The Staff Email Delivery Screen](./staff-email-delivery) |
 | `/user/staff/settings/global-segments` | The global segments list, create and edit screens: rules, delivery routing per user group, matching subscriber counts and the routing that stops before a delete, see [Routing Segments Through Delivery Servers](./staff-segment-routing) |
 | `/user/staff/settings/sms-gateways` | The SMS gateways list, create and edit screens, with masked provider keys and webhook secrets, connection tests and an in-use warning before a delete, see [Managing SMS Gateways in the Staff Area](./staff-sms-gateways) |

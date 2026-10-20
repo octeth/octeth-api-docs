@@ -522,13 +522,21 @@ The save rules are unchanged: an empty field (or **Use the deployment value** fo
 
 #### The legacy admin Email Delivery page is removed
 
-The legacy admin **Email Delivery** page (`/app/admin/emaildelivery/`), an item of the classic **Settings** sidebar, is removed. The install's sending settings are on the [Email delivery](/v6.0.2/new-user-interface/staff-email-delivery) screen of the **Delivery** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/email-delivery`) (octeth/oempro#3579). It needs the `Settings` privilege, as the page did, and its test email also needs `DeliveryServers`. The classic sidebar item now opens the new screen, and the classic settings landing page opens Delivery Routes or ESP Settings first instead.
+The legacy admin **Email Delivery** page (`/app/admin/emaildelivery/`), an item of the classic **Settings** sidebar, is removed. The install's sending settings are on the [Email delivery](/v6.0.2/new-user-interface/staff-email-delivery) screen of the **Delivery** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/email-delivery`) (octeth/oempro#3579). It needs the `Settings` privilege, as the page did, and its test email also needs `DeliveryServers`. The classic sidebar item now opens the new screen, and the classic settings landing page opens ESP Settings first instead.
 
 **The old URL keeps working.** A GET to `/app/admin/emaildelivery/` answers with a 302 to the new screen. A POST, including the old save form, the test send and the two header snippets (`snippet_addEmailHeader`, `snippet_removeEmailHeaders`), is refused: nothing is written, and the answer is a short page that links to the new screen. Use `emailheader.create` and `emailheaders.delete` for the headers.
 
 The page's load balancing settings are retired: email sending no longer pauses between batches, whatever `LOAD_BALANCE_STATUS`, `LOAD_BALANCE_EMAILS` and `LOAD_BALANCE_SLEEP` hold. `settings.update` still accepts and stores the three keys and `settings.get` still returns them, so no API caller breaks. An install that had load balancing on now sends without the pause.
 
 Two behaviors of the old page are gone: its Mailjet option, which every save refused, and the clearing of `CENTRALIZED_SENDER_DOMAIN` on every save (the page had no field for it, so it always sent an empty value). The new screen has a **Sender header domain** field. The on-demand SSL domain check address the page showed is not carried over; the bundled reverse proxy reads it from `CADDY_DOMAIN_VERIFY_CODE`.
+
+#### The legacy admin Delivery Routes page is removed
+
+The legacy admin **Delivery Routes** page (`/app/admin/deliveryroutes/`), an item of the classic **Settings** sidebar, is removed. The recipient MX routes are on the [Delivery routes](/v6.0.2/new-user-interface/staff-delivery-routes) screen of the **Delivery** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/delivery-routes`) (octeth/oempro#3580). It needs both `Settings` and `DeliveryServers`. The page needed `DeliveryServers` only, so a sub-administrator with `DeliveryServers` and without `Settings` loses access to the routes; `deliveryroutes.get` and `deliveryroutes.update` already needed `Settings`. The classic sidebar item now opens the new screen, and the classic settings landing page opens ESP Settings first.
+
+**The old URL keeps working.** A GET to `/app/admin/deliveryroutes/` answers with a 302 to the new screen. A POST, including the old save form, is refused: nothing is written, and the answer is a short page that links to the new screen.
+
+The new screen adds what the page lacked: routes can be reordered (the first match wins), a pattern with spaces or a pattern that starts like an expression but does not compile is refused, and every change writes a staff audit row.
 
 #### The legacy admin Preferences page is trimmed
 

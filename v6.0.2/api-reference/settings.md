@@ -391,7 +391,7 @@ NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
 - v1 REST alias: `GET /api/v1/deliveryroutes.get`. Legacy access via `/api.php` is also supported
-- The recipient MX to delivery-server routing map (admin Settings > Delivery Routes). Each entry's `Pattern` is either an exact MX host name or a PCRE pattern (the delivery workers try `preg_match` first, then an exact comparison). Entries are an ordered list: the first match wins.
+- The recipient MX to delivery-server routing map (the staff **Delivery > Delivery routes** screen). Each entry's `Pattern` is either an exact MX host name or a PCRE pattern (the delivery workers try `preg_match` first, then an exact comparison). Entries are an ordered list: the first match wins.
 :::
 
 **Request Body Parameters:**

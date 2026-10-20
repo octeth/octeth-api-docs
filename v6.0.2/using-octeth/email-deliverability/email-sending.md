@@ -127,7 +127,7 @@ Octeth creates the copy and opens its edit page. The copy is named after the ori
 |---|---|
 | Every **Email Delivery** setting, including the stored SMTP password | User group assignments, so the copy shows **Not Allocated** until you assign it |
 | Every **Domains** setting, including the sender rotation options | Custom email headers set for the original server |
-| | Settings on the **Delivery Routes** page |
+| | Routes on the staff [Delivery routes](../../new-user-interface/staff-delivery-routes) screen |
 | | Test results, so the copy starts untested |
 
 ::: warning

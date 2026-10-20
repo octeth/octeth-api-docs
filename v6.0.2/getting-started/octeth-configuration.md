@@ -4969,7 +4969,7 @@ Never deploy to production without testing your email delivery configuration fir
 ::: warning Delivery Server Priority
 If you have both Email Delivery Settings and Delivery Servers configured, Octeth uses this priority:
 1. **Campaign-specific Delivery Server** - If a campaign specifies a server, use that
-2. **Delivery Routes** - If routing rules match, use the specified server
+2. **[Delivery Routes](../new-user-interface/staff-delivery-routes)** - If a route matches the recipient's MX host, campaign email uses the route's server
 3. **User Group Delivery Server** - If the user's group has a default server, use that
 4. **Global Email Delivery Settings** - Fall back to these SMTP settings
 
@@ -5355,130 +5355,7 @@ This approach provides redundancy and allows you to optimize costs and delivery 
 
 ## Delivery Routes
 
-Delivery Routes allow you to control which delivery server handles emails based on where they're being sent. Different email providers (like Gmail, Outlook, or Yahoo) may have different requirements or perform better with specific delivery configurations. By setting up delivery routes, you can optimize email delivery for each recipient's email provider.
-
-To access these settings, navigate to **Preferences** → **System Settings** → **Delivery Routes** in the administrator dashboard.
-
-::: info Current Scope
-Delivery routing currently applies only to outgoing Email Gateway emails. Regular email campaigns do not use these routing rules at this time.
-:::
-
-### How Delivery Routes Work
-
-When Octeth sends an email, it looks at the recipient's email address to determine their mail server (called an MX server). For example, if you're sending to `john@gmail.com`, the MX server is `gmail.com`. With delivery routes configured, you can tell Octeth to use a specific delivery server for all emails going to that mail server.
-
-**Why This Matters:**
-
-Different email providers have different requirements and behaviors:
-
-- Some providers may perform better with specific IP addresses or domains
-- You might want to use a dedicated delivery server for high-volume providers like Gmail
-- Certain providers may have stricter requirements that work better with particular SMTP configurations
-- You can isolate delivery issues by routing problematic providers through separate servers
-
-### Setting Up a New Delivery Route
-
-To create a new delivery route:
-
-1. Locate the **New Email Delivery Route** section at the bottom of the page
-2. In the first field, enter the mail server you want to route
-3. From the dropdown menu, select which delivery server should handle emails to that mail server
-4. Click **UPDATE EMAIL DELIVERY ROUTES** to save your changes
-
-**Specifying the Mail Server:**
-
-You have two options for defining which mail server to route:
-
-**Option 1: Exact Match** - Enter the exact domain name
-
-Examples:
-- `gmail.com` - Routes only emails to Gmail addresses
-- `outlook.com` - Routes only emails to Outlook.com addresses
-- `company.com` - Routes only emails to that specific company domain
-
-**Option 2: Pattern Match** - Use a regular expression to match multiple variations
-
-Examples:
-- `/.*\.?outlook\.com/i` - Matches outlook.com, mail.outlook.com, and any other Outlook subdomain
-- `/.*\.?google\.com/i` - Matches gmail.com, googlemail.com, and Google-owned domains
-- `/.*\.?yahoo\.(com|co\.uk)/i` - Matches yahoo.com and yahoo.co.uk
-
-::: tip When to Use Patterns
-Use exact matches for simple routing. Use pattern matching when:
-- A provider uses multiple domain variations (like Outlook.com, hotmail.com, live.com)
-- You want to route all subdomains of a company's email system
-- You're consolidating multiple similar providers
-
-If you're not familiar with regular expressions, stick with exact domain matches. They work perfectly for most use cases.
-:::
-
-**Selecting a Delivery Server:**
-
-The dropdown menu shows all delivery servers configured in your Octeth installation. Each option displays:
-- The delivery server's name
-- The SMTP host it uses
-- The SMTP username (if configured)
-
-Choose the delivery server that's best suited for the target mail server.
-
-### Managing Existing Routes
-
-All configured delivery routes are listed at the top of the page. Each route shows:
-- The mail server or pattern being matched
-- An arrow (→) indicating the route direction
-- The delivery server handling those emails
-
-**To Delete a Route:**
-
-1. Locate the route you want to remove
-2. Click the dropdown menu for that route
-3. Select **Delete this route** from the **Actions** section
-4. Click **UPDATE EMAIL DELIVERY ROUTES** to save your changes
-
-**To Modify a Route:**
-
-1. Locate the route you want to change
-2. Update the mail server pattern in the text field, or
-3. Select a different delivery server from the dropdown menu
-4. Click **UPDATE EMAIL DELIVERY ROUTES** to save your changes
-
-::: warning Important
-Changes to delivery routes take effect immediately after saving. Any emails sent after you click the update button will use the new routing configuration. Make sure your delivery servers are properly configured and tested before creating routes to them.
-:::
-
-### Common Delivery Route Scenarios
-
-**Scenario 1: Dedicated Gmail Routing**
-
-If you send high volumes to Gmail and have a delivery server optimized for Gmail's requirements:
-
-- Mail Server: `gmail.com`
-- Delivery Server: Your Gmail-optimized server
-
-**Scenario 2: Outlook Family Routing**
-
-Microsoft operates multiple email domains (Outlook.com, Hotmail.com, Live.com). Route them all through one server:
-
-- Mail Server: `/.*\.?(outlook|hotmail|live)\.com/i`
-- Delivery Server: Your Microsoft-optimized server
-
-**Scenario 3: Corporate Domain Routing**
-
-A client's company uses multiple email subdomains (mail.company.com, support.company.com, etc.):
-
-- Mail Server: `/.*\.?company\.com/i`
-- Delivery Server: A dedicated server for that client
-
-**Scenario 4: Geographic Routing**
-
-Route European email providers through a European-based delivery server for better performance:
-
-- Create multiple routes for European providers
-- Point them all to your EU-based delivery server
-
-::: info Testing Your Routes
-After configuring delivery routes, send test emails to addresses matching your routing rules. Check your delivery server logs to confirm the emails are being routed correctly. Monitor bounce rates and delivery performance to ensure the routing improves your email delivery.
-:::
+Delivery routes send campaign email through a chosen delivery server when the recipient's MX host matches a host name or a PCRE pattern. They are managed on the staff **Delivery > Delivery routes** screen, see [Routing Email by Recipient Mail Server](../new-user-interface/staff-delivery-routes).
 
 ## S2S Postback
 
