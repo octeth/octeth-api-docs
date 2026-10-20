@@ -520,6 +520,14 @@ What changes for an administrator:
 
 The save rules are unchanged: an empty field (or **Use the deployment value** for a switch) hands the setting back to `.oempro_env`, a value equal to the one in force is not stored, and a change reaches the workers within about a minute.
 
+#### The legacy admin Email Delivery page is removed
+
+The legacy admin **Email Delivery** page (`/app/admin/emaildelivery/`), an item of the classic **Settings** sidebar, is removed. The install's sending settings are on the [Email delivery](/v6.0.2/new-user-interface/staff-email-delivery) screen of the **Delivery** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/settings/email-delivery`) (octeth/oempro#3579). It needs the `Settings` privilege, as the page did, and its test email also needs `DeliveryServers`. The classic sidebar item now opens the new screen, and the classic settings landing page opens Delivery Routes or ESP Settings first instead.
+
+**The old URL keeps working.** A GET to `/app/admin/emaildelivery/` answers with a 302 to the new screen. A POST, including the old save form, the test send and the two header snippets (`snippet_addEmailHeader`, `snippet_removeEmailHeaders`), is refused: nothing is written, and the answer is a short page that links to the new screen. Use `emailheader.create` and `emailheaders.delete` for the headers.
+
+Two behaviors of the old page are gone: its Mailjet option, which every save refused, and the clearing of `CENTRALIZED_SENDER_DOMAIN` on every save (the page had no field for it, so it always sent an empty value). The new screen has a **Sender header domain** field. The on-demand SSL domain check address the page showed is not carried over; the bundled reverse proxy reads it from `CADDY_DOMAIN_VERIFY_CODE`.
+
 #### The legacy admin Preferences page is trimmed
 
 Most of the legacy admin **Preferences** page (`/app/admin/preferences/`), an item of the classic **Settings** sidebar, moved to the [Preferences](/v6.0.2/new-user-interface/staff-preferences) screen of the new interface's staff area (`/<UI_STAFF_PREFIX>/staff/settings/preferences`), under the new **Settings** group of the staff sidebar (octeth/oempro#3537). The screen needs the `Settings` privilege, as the page did.
@@ -899,6 +907,7 @@ Reset links sent before the preference was turned off stop working too. The new 
 
 ### Settings
 
+- `settings.update` that enables a bounce or FBL mailbox (`POP3_BOUNCE_STATUS` or `POP3_FBL_STATUS` set to `Enabled`) without its password now tests the mailbox with the stored password when `POP3_BOUNCE_HOST` or `POP3_FBL_HOST` matches the stored host (case and surrounding spaces ignored). Before, the test always used an empty password, so such a request failed with ErrorCode 6 unless the mailbox accepted an empty password. With a different host the test still uses an empty password, so a stored password is never sent to another server. The stored password is not written either way, as before. A request that sends the password, or does not enable a mailbox, is unchanged. There is no opt-in flag: the staff Email delivery screen never shows a stored password, so it omits the field to keep it (octeth/oempro#3579).
 - `settings.get` now returns runtime options that are true/false flags (`DisableUserPasswordReset`, `PreventUserLoginFromAlienIPs`) as their real boolean. Before, `DisableUserPasswordReset` was always answered as `***REDACTED***`, because the secret redaction matches key names containing `PASSWORD`, so no client could read the preference and the staff Preferences screen always showed password reset as allowed. String and JSON options and the configuration row are redacted as before. There is no opt-in flag, because a true/false flag cannot hold a secret and the old value was unusable (octeth/oempro#3549).
 
 

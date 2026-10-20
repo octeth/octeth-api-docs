@@ -101,7 +101,7 @@ Octeth can poll a dedicated POP3 mailbox for FBL report emails. This is useful w
 
 The POP3 processor (`cli/pop3_fbl.php`) connects to the configured mailbox, downloads FBL emails, processes each one, and optionally deletes the processed emails. It processes up to 500 emails per run.
 
-Configure POP3 FBL polling in **Admin Area** > **Settings** > **Email Delivery** under the **Spam Complaints** tab. See the [Administrator Settings](#administrator-settings) section for details.
+Configure the feedback loop mailbox on the staff [Email delivery](/v6.0.2/new-user-interface/staff-email-delivery) screen (**Delivery > Email delivery**), in the **Complaints and inboxes** section. See the [Administrator Settings](#administrator-settings) section for details.
 
 ### MTA Webhook (PowerMTA, Logstash)
 
@@ -278,7 +278,7 @@ You can use any log-forwarding tool to send FBL data to Octeth — not just Logs
 
 ## Administrator Settings
 
-Several complaint-related settings are available in **Admin Area** > **Settings** > **Email Delivery** under the **Spam Complaints** tab.
+Several complaint-related settings are in the **Complaints and inboxes** section of the staff [Email delivery](/v6.0.2/new-user-interface/staff-email-delivery) screen (**Delivery > Email delivery**).
 
 | Setting | Description |
 |---|---|
@@ -286,14 +286,14 @@ Several complaint-related settings are available in **Admin Area** > **Settings*
 | **X-Complaints-To Header** | The email address inserted into the `X-Complaints-To` header of outgoing emails. Some email providers use this header to send complaint notifications. |
 | **FBL Incoming Email Address** | The email address where FBL reports are delivered. This address is used in the `X-MessageID` header and should match the address configured in your FBL registrations with email providers. |
 | **Unsubscribe Incoming Email Address** | The email address that handles `List-Unsubscribe` header requests. When a recipient uses the list-unsubscribe mechanism, the unsubscribe request is sent to this address. |
-| **POP3 FBL Status** | Enable or disable POP3 mailbox polling for FBL reports. When enabled, Octeth periodically connects to the configured POP3 mailbox to retrieve and process FBL emails. |
+| **Feedback loop mailbox** | Turn mailbox polling for FBL reports on or off. When enabled, Octeth periodically connects to the configured POP3 mailbox to retrieve and process FBL emails. |
 | **POP3 FBL Host** | The hostname of the POP3 mail server where FBL reports are delivered (e.g., `mail.example.com`). |
 | **POP3 FBL Port** | The port number for the POP3 connection (typically `110` for plain text or `995` for SSL). |
 | **POP3 FBL Username** | The username for authenticating with the POP3 mail server. |
-| **POP3 FBL Password** | The password for authenticating with the POP3 mail server. |
+| **POP3 FBL Password** | The password for authenticating with the POP3 mail server. It is never shown: leave it blank to keep the stored one while the host stays the same. |
 | **POP3 FBL SSL** | Enable SSL encryption for the POP3 connection. Enable this if your mail server requires SSL (port 995). |
 
-[[SCREENSHOT: Admin Area Settings Email Delivery page showing the Spam Complaints tab with the Report Abuse Email, X-Complaints-To, FBL Incoming Email Address, and POP3 FBL configuration fields]]
+[[SCREENSHOT: Staff Email delivery screen, Complaints and inboxes section, with the abuse report address, X-Complaints-To, the feedback loop address and the feedback loop mailbox]]
 
 ### Configuring POP3 FBL Polling
 
@@ -301,12 +301,12 @@ To set up POP3-based complaint processing:
 
 1. Create a dedicated email address for receiving FBL reports (e.g., `fbl@bounces.example.com`).
 2. Register this email address with the ISP feedback loop programs you want to receive complaints from.
-3. Navigate to **Admin Area** > **Settings** > **Email Delivery**.
-4. Click the **Spam Complaints** tab.
-5. Set **POP3 FBL Status** to **Enabled**.
-6. Enter the POP3 server hostname, port, username, and password for the FBL mailbox.
-7. Enable **SSL** if your mail server requires it.
-8. Click **Save**.
+3. In the staff sidebar, click **Delivery**, then **Email delivery**.
+4. Open the **Complaints and inboxes** section.
+5. Turn on **Read this mailbox** in the **Feedback loop mailbox** card.
+6. Enter the mail server host, port, username and password of the FBL mailbox.
+7. Turn on **Connect over SSL** if your mail server requires it.
+8. Click **Save complaint settings**. Octeth signs in to the mailbox first and saves nothing if that fails.
 
 Once enabled, Octeth's scheduled task processor will periodically connect to the POP3 mailbox, download any FBL emails, process them, and delete the processed emails from the server.
 
@@ -394,7 +394,7 @@ Subscribers who have not opened or clicked your emails in several months are mor
 
 ### Complaints Are Not Being Processed
 
-1. **Verify the FBL email address** — Confirm that the **FBL Incoming Email Address** in **Admin Area** > **Settings** > **Email Delivery** > **Spam Complaints** matches the address registered with ISP feedback loop programs.
+1. **Verify the FBL email address**: Confirm that the **FBL Incoming Email Address** in the **Complaints and inboxes** section of the staff [Email delivery](/v6.0.2/new-user-interface/staff-email-delivery) screen (**Delivery > Email delivery**) matches the address registered with ISP feedback loop programs.
 2. **Check POP3 FBL status** — If using POP3 polling, ensure **POP3 FBL Status** is set to **Enabled** and the POP3 server credentials are correct.
 3. **Test POP3 connectivity** — Verify that the Octeth server can reach the POP3 mail server on the configured port. Check for firewall rules that may be blocking the connection.
 4. **Check the webhook integration** — If using PowerMTA with Logstash, verify that Logstash is running and the FBL filter is active. Check the **Webhooks** tab in the Bounce Processing section for incoming events.

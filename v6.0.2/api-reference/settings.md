@@ -179,6 +179,7 @@ Omitted parameters are now left unchanged. In earlier versions, a partial `setti
 ::: warning Partial updates, null and the redaction marker
 - Omitted parameters are left unchanged. A JSON `null` value is treated as omitted (a silent no-op); to clear a setting send the empty string `""`.
 - `settings.get` returns secrets as the literal `***REDACTED***`. Sending that literal as a value is refused with ErrorCode 13. Omit the field to keep the stored secret.
+- To keep a stored bounce or FBL mailbox password while enabling or changing that mailbox, omit `POP3BouncePassword` or `POP3FBLPassword`. The connection test then uses the stored password, as long as the host you send is the stored host. With a new host, send the password (since v6.0.2, #3579).
 - `DEFAULT_LANGUAGE` and `USER_SIGNUP_LANGUAGE` must name an installed language pack (`system.languages.get`), `USER_SIGNUP_GROUPID` / `USER_SIGNUP_GROUPIDS` must name existing user groups, and `DEFAULT_THEMEID` must name an existing theme. Empty values are still accepted.
 :::
 
@@ -621,7 +622,7 @@ NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 ::: tip API Usage Notes
 - Authentication required: Admin API Key (privilege `Settings`)
 - v1 REST alias: `GET /api/v1/emailheaders.get`. Legacy access via `/api.php` is also supported
-- System-wide custom email headers (admin Settings > Email Delivery > Headers). `DeliveryServerID` 0 means the header applies on every delivery server.
+- System-wide custom email headers (the staff **Delivery > Email delivery** screen, **Headers** section). `DeliveryServerID` 0 means the header applies on every delivery server.
 :::
 
 **Request Body Parameters:**

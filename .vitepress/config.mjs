@@ -1124,6 +1124,7 @@ export default defineConfig({
                         {text: 'Staff Preferences', link: '/v6.0.2/new-user-interface/staff-preferences'},
                         {text: 'Branding from the Staff Area', link: '/v6.0.2/new-user-interface/staff-branding'},
                         {text: 'Managing Delivery Servers in the Staff Area', link: '/v6.0.2/new-user-interface/staff-delivery-servers'},
+                        {text: 'The Staff Email Delivery Screen', link: '/v6.0.2/new-user-interface/staff-email-delivery'},
                         {text: 'Routing Segments Through Delivery Servers', link: '/v6.0.2/new-user-interface/staff-segment-routing'},
                         {text: 'Managing SMS Gateways in the Staff Area', link: '/v6.0.2/new-user-interface/staff-sms-gateways'},
                         {text: 'The Default Opt-in Email', link: '/v6.0.2/new-user-interface/staff-optin-email'},

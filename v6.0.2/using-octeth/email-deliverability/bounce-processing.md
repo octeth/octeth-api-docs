@@ -99,7 +99,7 @@ Most modern MTAs like PowerMTA capture both synchronous and asynchronous bounces
 
 To prevent ongoing delivery attempts to consistently failing addresses, Octeth converts soft bounces to hard bounces when a threshold is reached. The default threshold is **3** — meaning if the same email address soft bounces three or more times, Octeth treats it as a hard bounce and suppresses the address.
 
-You can adjust this threshold in **Admin Area** > **Settings** > **Email Delivery**, in the **Soft Bounce Threshold** field.
+You can adjust this threshold on the staff [Email delivery](/v6.0.2/new-user-interface/staff-email-delivery) screen (**Delivery > Email delivery**), **Bounces** section, in the **Soft bounces before a hard bounce** field.
 
 ::: tip
 A threshold of 3 works well for most sending operations. Setting it lower (e.g., 1 or 2) is more aggressive and removes addresses faster. Setting it higher (e.g., 5 or more) gives addresses more chances but risks your reputation if addresses are genuinely invalid.
@@ -112,7 +112,7 @@ When Octeth detects a bounce — whether synchronous or asynchronous — it foll
 1. **Parse the bounce notification** — Extract the recipient email address, DSN code, and diagnostic message from the bounce report.
 2. **Identify the subscriber** — Match the bounced address to a specific subscriber, subscriber list, campaign (or autoresponder), and user account.
 3. **Classify the bounce** — Compare the diagnostic message against the bounce pattern database to determine whether it is a hard or soft bounce.
-4. **Check the soft-to-hard threshold** — For soft bounces, check the subscriber's bounce history. If the count exceeds the threshold, escalate to hard bounce.
+4. **Check the soft-to-hard threshold**: For soft bounces, check the subscriber's bounce history. If the count exceeds the threshold, escalate to hard bounce.
 5. **Update the subscriber record** — Set the subscriber's bounce status to `Hard` or `Soft`.
 6. **Add to suppression list** — For hard bounces, add the email address to the global suppression list to prevent future delivery.
 7. **Update campaign statistics** — Increment the campaign's hard bounce or soft bounce counter.
@@ -505,16 +505,18 @@ Vector's default batch has no event limit and can carry several thousand records
 
 ## Administrator Email Delivery Settings
 
-Several bounce-related settings are available in the **Admin Area** > **Settings** > **Email Delivery** page:
+Several bounce-related settings are in the **Bounces** section of the staff [Email delivery](/v6.0.2/new-user-interface/staff-email-delivery) screen (**Delivery > Email delivery**):
 
 | Setting | Description |
 |---|---|
-| **Bounce Catch-All Domain** | The domain used as the fallback bounce address in email headers. This should match your primary Mail From domain. |
-| **Soft Bounce Threshold** | The number of soft bounces before an address is escalated to hard bounce. Default: `3`. |
-| **Bounce Forward To** | An optional email address where all incoming bounce emails are forwarded for external monitoring or archival. |
-| **Bounce Notification Emails** | When enabled, Octeth sends notification emails to the administrator when unrecognized bounce patterns are detected. This helps you identify new patterns to add. |
+| **Bounce domain** | The domain used as the fallback bounce address in email headers. This should match your primary Mail From domain. |
+| **Soft bounces before a hard bounce** | The number of soft bounces before an address is escalated to hard bounce. Default: `3`. |
+| **Forward postmaster mail to** | An optional email address where email to `abuse@`, `postmaster@` and `root@` of your sender domains is forwarded. |
+| **Failure notifications** | When enabled, Octeth sends notification emails to the administrator when unrecognized bounce patterns are detected. This helps you identify new patterns to add. |
 
-[[SCREENSHOT: Email Delivery settings page showing the bounce-related fields: Bounce Catch-All Domain and Soft Bounce Threshold]]
+The same section holds the **Bounce mailbox**, the IMAP mailbox Octeth reads delivery reports from. Its password is never shown: leave it blank to keep the stored one while the host stays the same.
+
+[[SCREENSHOT: Staff Email delivery screen, Bounces section, showing the bounce domain, the soft bounce threshold and the bounce mailbox]]
 
 ## Tips and Best Practices
 
@@ -551,14 +553,14 @@ Email providers occasionally change their bounce response messages. If you notic
 
 1. **Check the bounce patterns** — Review the **Patterns** tab to ensure the relevant pattern exists. If a specific bounce response is being misclassified, add or update the pattern.
 2. **Check the MTA bounce category** — Your MTA may provide its own bounce classification (e.g., PowerMTA's `bounceCat` field). Verify that the category mapping aligns with Octeth's hard/soft classification.
-3. **Enable bounce notification emails** — Turn on bounce notifications in **Settings** > **Email Delivery** so you are alerted when unrecognized bounce formats are received.
+3. **Enable bounce notification emails**: Turn on **Failure notifications** in the **Bounces** section of the staff [Email delivery](/v6.0.2/new-user-interface/staff-email-delivery) screen (**Delivery > Email delivery**) so you are alerted when unrecognized bounce formats are received.
 
 ### High Bounce Rate on Campaigns
 
 1. **Check list quality** — A high bounce rate typically indicates poor list hygiene. Remove subscribers who have not engaged in over 12 months.
 2. **Enable double opt-in** — Switch your subscriber lists to double opt-in to prevent invalid addresses from being added.
 3. **Review the suppression list** — Verify that previously hard-bounced addresses are in the suppression list and not being re-added. See the [Suppression Lists](./suppression-lists) article.
-4. **Check the soft-to-hard threshold** — If soft bounces are accumulating without being escalated, review the threshold setting in **Admin Area** > **Settings** > **Email Delivery**.
+4. **Check the soft-to-hard threshold**: If soft bounces are accumulating without being escalated, review the threshold in the **Bounces** section of the staff [Email delivery](/v6.0.2/new-user-interface/staff-email-delivery) screen (**Delivery > Email delivery**).
 
 ## Related Features
 

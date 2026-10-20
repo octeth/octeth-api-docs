@@ -10,7 +10,7 @@ Open it from the staff sidebar: click **Delivery**, then **Bounce processing**. 
 
 The screen has five tabs: **Overview**, **Patterns**, **Webhooks**, **Messages** and **Manual processing**. The open tab is part of the address (`?tab=patterns`), so you can bookmark or share it.
 
-The bounce and complaint mailboxes Octeth reads over POP3 or IMAP are not on this screen. They stay on the classic admin **Settings > Email Delivery** page.
+The bounce and complaint mailboxes Octeth reads over POP3 or IMAP are not on this screen. They are on the [Email delivery](./staff-email-delivery) screen, in the **Bounces** and **Complaints and inboxes** sections.
 
 ::: info
 Every reveal of the webhook signature, every message download and delete, every **Process all**, every manual run and every pattern save is recorded in the staff audit log. The log keeps counts and message IDs, never an email address, a pasted line or the content of a message.
