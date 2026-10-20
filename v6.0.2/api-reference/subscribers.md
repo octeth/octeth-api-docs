@@ -1046,7 +1046,7 @@ curl -X POST https://example.com/api/v1/subscribers.import \
 14: ImportFrom source must be provided
 15: Fields are not mapped
 16: Missing EscapedBy parameter
-17: Field mapping is invalid
+17: Field mapping is invalid (v6.0.2: the error object also carries a Reason key naming the cause, see below)
 18: ImportFrom.CSV.URL remote data fetch failure, or (v6.0.0) the URL is not a publicly reachable http or https URL
 28: ImportStatusUpdateWebhookURL is not a publicly reachable http or https URL (v6.0.0)
 19: List not found
@@ -1055,6 +1055,34 @@ curl -X POST https://example.com/api/v1/subscribers.import \
 ```
 
 :::
+
+### Error 17 and its Reason
+
+Before it accepts the job, the import checks the mapping and the first two lines after the header line of the CSV (the first line is always read as the header). When that check fails, it returns error 17 with the unchanged message `Field mapping is invalid` and, since v6.0.2, an additional `Reason` key on that error object. The `Reason` names the row and the column, never the cell value. Other error objects carry no `Reason` key, so a client that reads only `Code` and `Message` sees no change.
+
+| Reason | Meaning |
+|---|---|
+| `no column is mapped as EmailAddress or SMSPhoneNumber` | `MappedFields` has no identity column. |
+| `both EmailAddress and SMSPhoneNumber are mapped` | `MappedFields` maps two identity columns. Map one. |
+| `row N, column M (mapped as EmailAddress) is empty` | Line N after the header line has no value in identity column M. Both count from 1. A blank line counts as a line but is not checked. |
+| `row N, column M (mapped as EmailAddress) is not a valid email address` | The value fails email validation. |
+| `row N, column M (mapped as SMSPhoneNumber) is not a valid phone number` | The value cannot be normalized to an E.164 number. |
+| `row N, column M (mapped as ...) is missing` | The row has fewer columns than the mapping. |
+| `no CSV data rows to validate`, `no fields are mapped` | The CSV data or the field map is empty. |
+
+```json [Error Response: empty identity column]
+{
+  "Errors": [
+    {
+      "Code": 17,
+      "Message": "Field mapping is invalid",
+      "Reason": "row 1, column 5 (mapped as EmailAddress) is empty"
+    }
+  ]
+}
+```
+
+An empty or invalid identity value on one of those two lines still refuses the whole request. Later rows are checked by the import worker, which skips each bad row and imports the rest.
 
 ## Get Import Job Status
 

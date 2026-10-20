@@ -1101,6 +1101,10 @@ A new opt-in `ReturnDetailedCounts=true` parameter adds `TotalAlreadySuppressed`
 
 `SuppressionList::Add()`, which every suppression writer calls, now returns `0` when its insert fails instead of whatever the connection's last insert id was, so a failed write can no longer be counted in `TotalImported`.
 
+### Subscriber import
+
+- `subscribers.import.post`: error 17 (`Field mapping is invalid`) now carries an additive `Reason` key that names the failing row and column and the cause: an empty, invalid or missing identity value, or a mapping with no identity column or two. `Code` and `Message` are unchanged, and no other error object gains the key. Which requests are refused is unchanged. See [Error 17 and its Reason](/v6.0.2/api-reference/subscribers#error-17-and-its-reason) (octeth/oempro#3613).
+
 **Who needs to act:** nobody. Send `ReturnDetailedCounts=true` if you reconcile the counters against what you submitted.
 
 ## Additions that need operator attention
