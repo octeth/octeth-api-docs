@@ -18,18 +18,30 @@ Every setting can come from three places, and the first one that has a value win
 
 The pill next to each setting's name says which one is in force. Under the field, the help text names the `.oempro_env` key, its value (or that it is not set) and the shipped default. If you edit `.oempro_env` and nothing changes, check the pill: a value saved here wins over the file.
 
+## Sections
+
+The settings are split into sections in the menu on the left:
+
+- **Limits and cost**: campaign size, message cost, currency and drift tolerance.
+- **Sending window**: quiet hours, default send rate and the journey capacity reserve.
+- **Opt-out and replies**: the default opt-out footer, opt-out keywords and the reply attribution window.
+- **Retention**: how long SMS events, campaign queue detail and received messages are kept.
+
+The open section is part of the address, so you can link to one, for example `/user/staff/sms/settings?section=retention`.
+
 ## Changing a setting
 
-1. Change the fields you need.
-2. Click **Save SMS settings**.
+1. Open the section in the menu on the left.
+2. Change the fields you need.
+3. Click the section's **Save** button, for example **Save limits and cost**.
 
-Only the fields you changed are saved. A change reaches the sending workers within about a minute.
+Each section saves on its own, and only the fields you changed are saved. Opening another section before saving discards your unsaved changes. A change reaches the sending workers within about a minute.
 
 Numbers take digits only, with a decimal point for the cost and the drift tolerance. The quiet-hours times take a 24-hour time such as `21:00`. A value Octeth cannot use is marked on its field, and nothing is saved until it is fixed.
 
 ## Handing a setting back to .oempro_env
 
-A setting with the **Set here** pill has a **Reset** button. Click it, then **Save SMS settings**: the saved value is removed and the `.oempro_env` value applies again. Emptying the field does the same.
+A setting with the **Set here** pill has a **Reset** button. Click it, then the section's **Save** button: the saved value is removed and the `.oempro_env` value applies again. Emptying the field does the same.
 
 For an on and off setting, choose **Use the deployment value**. On and Off save a value here.
 

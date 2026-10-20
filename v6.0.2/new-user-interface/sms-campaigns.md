@@ -236,7 +236,7 @@ If a campaign's per-recipient detail has expired, or the campaign was deleted, a
 
 Administrators set the defaults for every SMS campaign in the staff area of the new interface under **SMS** > **Settings**, see [The Staff SMS Settings Screen](./staff-sms-settings).
 
-Each value is saved on that screen, taken from `.oempro_env`, or the shipped default, and the screen says which. **Reset** hands a saved value back to `.oempro_env`. Click **Save SMS settings**. A change reaches the sending workers within about a minute.
+Each value is saved on that screen, taken from `.oempro_env`, or the shipped default, and the screen says which. **Reset** hands a saved value back to `.oempro_env`. The settings are split into sections, and each section has its own **Save** button. A change reaches the sending workers within about a minute.
 
 | Setting | Default | Notes |
 |---|---|---|
