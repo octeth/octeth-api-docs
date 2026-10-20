@@ -1,6 +1,6 @@
 # Branding the New User Interface from the Staff Area
 
-The **Branding** screen of the staff **Settings** group changes how the new interface presents itself: its name, logos, browser tab icon, colours, support and legal links, and the sender name and footer of the emails it sends. A value saved here applies on the next page load, with no file to edit and no restart.
+The **Branding** screen of the staff **Settings** group changes how the new interface presents itself: its name, logos, browser tab icon, colours, support and legal links, the sender name and footer of the emails it sends, and which sections customers see. A value saved here applies on the next page load, with no file to edit and no restart.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
@@ -72,9 +72,22 @@ The interface sends a few emails itself: welcome, password reset and billing not
 
 The sender address stays the `UI_MAIL_FROM_ADDRESS` setting in `.oempro_env`.
 
+## Features
+
+One switch per customer section: **Dashboard**, **Campaigns**, **Journeys**, **Transactional**, **SMS**, **Lists**, **Suppressions**, **Templates**, **Header & footer**, **Analytics**, **Deliverability**, **Senders & domains**, **API** and **Account webhooks**. A section switched off leaves the customer sidebar and its pages answer "not found". Staff pages are not affected.
+
+Each switch starts as its `BRAND_FEATURE_*` setting in `.oempro_env`, or the default for the product mode (see [Product mode and sections](./configuration-reference#product-mode-and-sections)), and shows **Configured**. A switch you save shows **Set here** and the configured value under it, and **Reset** brings that value back. Setting a switch back to its configured value removes the saved value, so it follows `.oempro_env` again.
+
+Click **Save features** to apply the changes. The save is refused, with a message on the switch, when:
+
+- **Campaigns** or **Journeys** is on while **Lists** is off. Both need lists.
+- Every section would be off, which leaves customers no page to land on.
+
+Turning **Senders & domains** off stops customers setting up their own sending domains, so set them up from the staff area instead.
+
 ## Set in .oempro_env only
 
-The last card lists the URL slugs (`UI_BRAND_SLUG_*`) and the feature switches (`BRAND_FEATURE_*`) for reference. They change the interface's routes, which are cached when the container starts, so they cannot be changed here: set them in `.oempro_env` and restart the interface container.
+The last card lists the URL slugs (`UI_BRAND_SLUG_*`) and the billing switch (`BRAND_FEATURE_BILLING`) for reference. The slugs change the interface's routes, which are cached when the container starts, and the billing switch is read when the container starts, so they cannot be changed here: set them in `.oempro_env` and restart the interface container.
 
 ## Save
 
@@ -82,7 +95,7 @@ Click **Save branding** at the foot of the page. Only the fields you changed are
 
 ## What is recorded
 
-Every save, reset and logo change writes a staff audit row naming the settings it changed, with the old and new value of each text field and colour, and the old and new file name of each logo.
+Every save, reset and logo change writes a staff audit row naming the settings it changed, with the old and new value of each text field, colour and feature switch, and the old and new file name of each logo.
 
 ## Demo mode
 

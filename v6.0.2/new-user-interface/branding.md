@@ -274,7 +274,9 @@ These are covered in the [Configuration reference](./configuration-reference):
 - **Section paths.** The `UI_BRAND_SLUG_*` settings rename the path of eight customer sections,
   for example serving campaigns at `/user/broadcasts`.
 - **Which sections exist.** `UI_MODE` and the `BRAND_FEATURE_*` settings hide whole sections,
-  such as journeys or SMS.
+  such as journeys, SMS, transactional email or the API page. Every section switch except
+  billing can also be changed from the staff area, under **Settings** > **Branding** >
+  **Features**.
 
 ## What cannot be branded yet
 
@@ -285,10 +287,9 @@ Be aware of the current limits before you promise something to a customer.
 - **Some paths are fixed.** Only the eight sections with a `UI_BRAND_SLUG_*` setting can be
   renamed. Paths such as `/user/account`, `/user/billing` and `/user/suppressions` stay as
   they are.
-- **Individual product areas cannot be hidden.** You can turn the billing system on and off,
-  but not journeys, transactional email or SMS individually. Octeth's own permission system
-  has no matching setting for those, so what a customer sees is decided by their Octeth user
-  group, not by the interface.
+- **Sections are hidden for every customer at once.** A `BRAND_FEATURE_*` switch applies to
+  the whole install. To give one customer journeys and another none, use their Octeth user
+  group, which decides what each account may do.
 - **The tagline and the testimonial quotes on the sign-in page are empty and stay empty.**
   The block is hidden entirely rather than showing quotes your install cannot stand behind.
 

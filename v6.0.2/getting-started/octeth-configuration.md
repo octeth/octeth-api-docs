@@ -1056,7 +1056,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     **Whitelabel: names and links**
 
-    An administrator with full access (not a sub-admin) can override the name, legal name, tagline, trust stats, logos, favicon, colours, support and legal links and mail footer below from the staff area, **Settings > Branding** (see [Branding the New User Interface from the Staff Area](/v6.0.2/new-user-interface/staff-branding)). A value saved there wins over `.oempro_env` until it is reset on that screen, so editing one of these keys has no visible effect on a field the staff area overrides. The `UI_BRAND_SLUG_*` and `BRAND_FEATURE_*` settings, `UI_MAIL_FROM_ADDRESS` and `UI_MODE` are `.oempro_env` only.
+    An administrator with full access (not a sub-admin) can override the name, legal name, tagline, trust stats, logos, favicon, colours, support and legal links and mail footer below from the staff area, **Settings > Branding** (see [Branding the New User Interface from the Staff Area](/v6.0.2/new-user-interface/staff-branding)). A value saved there wins over `.oempro_env` until it is reset on that screen, so editing one of these keys has no visible effect on a field the staff area overrides. The section switches (`BRAND_FEATURE_*` except `BRAND_FEATURE_BILLING`) can be overridden there too, under **Features**. The `UI_BRAND_SLUG_*` settings, `BRAND_FEATURE_BILLING`, `UI_MAIL_FROM_ADDRESS` and `UI_MODE` are `.oempro_env` only.
 
     ```bash
     UI_BRAND_NAME=Octeth
@@ -1211,6 +1211,29 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     individual section can be switched back on with its `BRAND_FEATURE_<NAME>=true` key (for example
     `BRAND_FEATURE_CAMPAIGNS=true`, which also needs `BRAND_FEATURE_LISTS=true`). Restart the
     interface container after changing it.
+
+    **Section switches**
+
+    ```bash
+    # BRAND_FEATURE_DASHBOARD=true
+    # BRAND_FEATURE_CAMPAIGNS=true
+    # BRAND_FEATURE_JOURNEYS=true
+    # BRAND_FEATURE_SMS=true
+    # BRAND_FEATURE_LISTS=true
+    # BRAND_FEATURE_TEMPLATES=true
+    # BRAND_FEATURE_EMAIL_HEADER_FOOTER=true
+    # BRAND_FEATURE_ANALYTICS=true
+    # BRAND_FEATURE_DELIVERABILITY=true
+    # BRAND_FEATURE_USER_WEBHOOKS=true
+    # BRAND_FEATURE_TRANSACTIONAL=true
+    # BRAND_FEATURE_SUPPRESSIONS=true
+    # BRAND_FEATURE_SENDERS=true
+    # BRAND_FEATURE_API=true
+    ```
+
+    Each key shows (`true`) or hides (`false`) one customer section, and a hidden section's pages return 404. Leave a key out to keep the default: the first ten are on in `full` mode and off in `gateway` mode, and the last four (transactional email, the email suppression list, sender domains and the API page) are on in both modes. Only a non-empty value is passed to the interface. `BRAND_FEATURE_CAMPAIGNS=true` and `BRAND_FEATURE_JOURNEYS=true` also need `BRAND_FEATURE_LISTS=true`. Hiding `BRAND_FEATURE_SENDERS` stops customers setting up their own sending domains, so set them up from the staff area instead. An administrator with full access can override each switch from **Settings > Branding > Features**, with no restart, and a value saved there wins until it is reset. The table of sections is in [Product mode and sections](/v6.0.2/new-user-interface/configuration-reference#product-mode-and-sections).
+
+    `BRAND_FEATURE_TRANSACTIONAL`, `BRAND_FEATURE_SUPPRESSIONS`, `BRAND_FEATURE_SENDERS` and `BRAND_FEATURE_API` introduced in v6.0.2 (issue #3300). Before that, those sections were always shown.
 
     **URL slugs**
 

@@ -156,6 +156,10 @@ Each setting below shows or hides one section. Set it to `true` or `false`. Leav
 | `BRAND_FEATURE_ANALYTICS` | **Analytics** | `true` | `false` |
 | `BRAND_FEATURE_DELIVERABILITY` | **Deliverability** | `true` | `false` |
 | `BRAND_FEATURE_USER_WEBHOOKS` | The **Webhooks** tab on the **API & webhooks** page | `true` | `false` |
+| `BRAND_FEATURE_TRANSACTIONAL` | **Transactional** (overview, event log and the sections of each sending domain) | `true` | `true` |
+| `BRAND_FEATURE_SUPPRESSIONS` | **Suppressions** > **Email** | `true` | `true` |
+| `BRAND_FEATURE_SENDERS` | **Senders & domains** | `true` | `true` |
+| `BRAND_FEATURE_API` | **API & webhooks** and the connected assistants (MCP) connector | `true` | `true` |
 
 For example, to run in gateway mode but keep SMS:
 
@@ -168,13 +172,15 @@ BRAND_FEATURE_SMS=true
 Campaigns and journeys need lists. If you turn on `BRAND_FEATURE_CAMPAIGNS` or `BRAND_FEATURE_JOURNEYS`, turn on `BRAND_FEATURE_LISTS` too. The interface checks this every time it starts and writes a warning to its container log when a section is on while one it needs is off.
 :::
 
-Transactional email, email suppressions, senders and the API page have no setting and are always shown. Restart the interface container after a change.
+Restart the interface container after a change to `.oempro_env`. An administrator with full access can also switch each of these sections on or off from the staff area, under **Settings** > **Branding** > **Features**, with no restart. A switch saved there wins over `.oempro_env` until it is reset, see [Branding the New User Interface from the Staff Area](./staff-branding#features).
+
+If you hide **Senders & domains**, customers can no longer set up their own sending domains, so set them up from the staff area instead. The `BRAND_FEATURE_*` settings for the four sections above were added in v6.0.2 (issue #3300). Before that, those sections were always shown.
 
 ## Billing
 
 | Setting | Default | What it does |
 |---|---|---|
-| `BRAND_FEATURE_BILLING` | `false` | Turns the whole subscription billing system on or off. |
+| `BRAND_FEATURE_BILLING` | `false` | Turns the whole subscription billing system on or off. Set in `.oempro_env` only, because the interface reads it when the container starts. |
 
 ::: warning
 Like the other `BRAND_FEATURE_*` settings, this one does not start with `UI_`. Writing
