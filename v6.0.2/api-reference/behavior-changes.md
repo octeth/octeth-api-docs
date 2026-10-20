@@ -1105,6 +1105,10 @@ A new opt-in `ReturnDetailedCounts=true` parameter adds `TotalAlreadySuppressed`
 
 - `subscribers.import.post`: error 17 (`Field mapping is invalid`) now carries an additive `Reason` key that names the failing row and column and the cause: an empty, invalid or missing identity value, or a mapping with no identity column or two. `Code` and `Message` are unchanged, and no other error object gains the key. Which requests are refused is unchanged. See [Error 17 and its Reason](/v6.0.2/api-reference/subscribers#error-17-and-its-reason) (octeth/oempro#3613).
 
+### S2S conversion postback (configured Track parameter)
+
+Click links of S2S campaigns now carry the identifier under the Track parameter configured on the staff S2S postback screen instead of always `ocrid`. The conversion address `/system/s2s-postback/` reads the identifier under the configured name and also under `ocrid`; when both are present, in the query string or the request body, the configured name wins. A JSON or urlencoded body sent without a matching Content-Type is now read with the four configured names instead of always `ocrid`, `channel`, `value` and `unit`. An install that never renamed the parameters sees no change (octeth/oempro#3542).
+
 **Who needs to act:** nobody. Send `ReturnDetailedCounts=true` if you reconcile the counters against what you submitted.
 
 ## Additions that need operator attention

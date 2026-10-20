@@ -40,7 +40,7 @@ Only the names you changed are saved, and each save is recorded in the staff aud
 ## Renaming the Track parameter
 
 ::: warning
-Click links carry the identifier as `ocrid`, whatever the Track parameter is called, and campaigns already sent keep the name they were sent with. After a rename, conversions match only if the advertiser sends the identifier under the new name.
+After a rename, click links carry the identifier under the new name, and the conversion address reads it under the new name. The conversion address also keeps accepting `ocrid`, so identifiers an advertiser captured under `ocrid` keep matching. An identifier captured under any other previous name matches only if the advertiser sends it under the new name.
 :::
 
 When a save renames the Track parameter, the screen asks first. Click **Rename** to save, or **Cancel** to keep the current name.

@@ -305,11 +305,11 @@ S2S tracking enables conversion tracking by appending a unique tracking paramete
 To enable S2S tracking:
 
 1. Check the **Enable S2S Postback** checkbox.
-2. The **S2S URL Parameter** field displays the parameter name (default: `ocrid`) that will be appended to links in your email.
+2. The **S2S URL Parameter** field displays the parameter name that will be appended to links in your email: the Track parameter set on the staff **S2S postback** screen (default: `ocrid`).
 3. The **S2S Postback URL** field displays the URL your website should call to report conversions.
 
 ::: tip
-Copy the S2S URL parameter and postback URL values, and configure your website or landing page to call the postback URL when a conversion occurs. Pass the `ocrid` value from the original click-through URL as a parameter in the postback request.
+Copy the S2S URL parameter and postback URL values, and configure your website or landing page to call the postback URL when a conversion occurs. Pass the identifier from the original click-through URL back under the same parameter name. The postback URL also accepts it as `ocrid`; when a request carries both, the configured name wins.
 :::
 
 #### Google Analytics Integration
