@@ -1055,6 +1055,11 @@ On PHP 8.1, the send engine (`cli/email_campaign_controller/run.php`) crashed wi
 
 A failed connection now reports the MySQL connect error on both PHP versions, for example `MySql Error: Couldn't connect to database - Connection refused`, where PHP 8.1 reported the `TypeError` instead. Startup behavior with MySQL down is unchanged.
 
+### Recurring campaigns
+
+- A campaign created when a recurring campaign fires now has its own `CreateDateTime` (the time it was created) and a `SendProcessStartedOn` that records when sending actually started. Before, it carried its recurring parent's `CreateDateTime` and a `SendProcessStartedOn` of 00:00 on the day before it was created, so `Campaign.Get`, `Campaigns.Get` and campaign lists sorted or filtered by creation date placed these campaigns at the parent's creation date. An upgrade migration sets the `CreateDateTime` of existing recurring copies from the creation time stored in their `Options` (`cloned_at`) when it is earlier than that time. Their `SendProcessStartedOn` is left as it was, because the real start time was not recorded (octeth/oempro#3631).
+- The daily `campaign:drop-old-queues` command now drops a campaign's queue table only when the campaign is `Sent` or `Failed`, and measures `RETENTION_DAYS_CAMPAIGN_QUEUE` from `SendProcessFinishedOn` (from `CreateDateTime` when the finish time is empty). Before, it dropped the queue of every campaign created more than that many days ago, including recurring copies that were still sending, which then stayed `Sending` with nothing sent. Finished campaigns now keep their queue table for the retention period after the send, which can be longer than before, never shorter (octeth/oempro#3631).
+
 ### Users
 
 - `user.update` leaves `OtherEmailAddresses` unchanged when the parameter is left out, like `RateLimits`, `CustomEmailHeaders` and `WhiteListedEmailAddresses`. Before, any call without it (an account status change, a user group change, enabling two-factor authentication, a profile edit) stored an empty value, so the account's other email addresses were silently erased. Sending the parameter, an empty string included, still writes it, so to clear the field send `"OtherEmailAddresses": ""`. The response is unchanged. There is no opt-in flag, because the old behavior destroyed data the caller never asked to change (octeth/oempro#3468).
