@@ -312,12 +312,17 @@ curl -X POST https://example.com/api.php \
 20: Missing UTMCampaign parameter (required when UTMTracking is enabled)
 21: FromEmail cannot be sent: it has no domain and no sender domain is set (only raised when ValidateScope=Campaign; OptIn and AutoResponder scopes bypass this check). The email is not changed.
 22: The email cannot be changed while a campaign that uses it is sending (only raised when the user group's ScreeningContentMode is hold). ErrorText names the campaigns. Pause the campaign or wait until it is sent. The email is not changed. Added in v6.0.2
+23: FromEmail is on the administrator's forbidden From addresses list (Settings, Preferences). Raised for every ValidateScope. The email is not changed. Added in v6.0.2
 ```
 
 :::
 
 ::: warning FromEmail without a domain
 With `ValidateScope=Campaign`, `email.update` refuses a FromEmail that has no `@` and no merge tag unless a sender domain applies: the `SenderDomain` parameter, or the sender domain already stored on the email, and only when the user group has `SenderDomainManagement=Enabled`. The response is `{"Success": false, "ErrorCode": 21, "ErrorText": "..."}` and the email is left unchanged. The check is skipped when the user group's marketing delivery server enforces a From address. Before v6.0.1 the value was stored and every recipient of the campaign failed at send time.
+:::
+
+::: warning Forbidden From addresses
+`email.update` refuses a `FromEmail` that matches a line of the administrator's forbidden From addresses list (Settings, Preferences) with `{"Success": false, "ErrorCode": 23, "ErrorText": "FromEmail is not allowed: the administrator has forbidden this From address."}`, for every `ValidateScope`, and leaves the email unchanged. Matching ignores case. A line without `&#42;` must equal the whole address, and each `&#42;` in a line matches any text, anywhere in the address. The check is skipped when the list is empty, when `FromEmail` is absent or empty, and when `FromEmail` is the address already stored on the email, so a content-only update of an email saved before its address was listed still succeeds. The address checked is the one the email will be sent with: without whitespace, line breaks or comments outside a quoted local part, with a quoted local part unquoted and its quoted-pairs decoded, and each spinner (<code v-pre>[[a|b]]</code>) alternative. With `ValidateScope=OptIn` it is the address the confirmation is built with: under sender domain management, the local part under the MFROM domain of the selected `SenderDomain`, otherwise `FromEmail` as written. With `Campaign` and `AutoResponder` it is the local part under the sender domain the send path resolves for the email (or `FromEmail` as written when none resolves), and a request that only changes `SenderDomain` is checked with the stored `FromEmail`. The check is skipped when the user group's delivery server enforces its own From address. Added in v6.0.2.
 :::
 
 ::: warning Untrusted Accounts

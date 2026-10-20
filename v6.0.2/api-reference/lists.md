@@ -128,6 +128,8 @@ curl -X POST https://example.com/api.php \
 24: confirmationemail.plaincontent is required when contenttype is Plain or Both
 25: Invalid confirmationemail.mode (must be Editor, Stripo, Unlayer, Empty, Template, or Import)
 26: confirmationemail.reltemplateid is required when confirmationemail.mode is Template
+27: confirmationemail.fromemail is on the administrator's forbidden From addresses list. Checked before the list is created, so nothing is written. Added in v6.0.2
+28: SenderEmailAddress is on the administrator's forbidden From addresses list. Checked before the list is created, so nothing is written. Added in v6.0.2
 30: Confirmation email creation failed; list and email were rolled back
 ```
 
@@ -315,6 +317,7 @@ curl -X POST https://example.com/api.php \
 22: ClickBank transaction-type action must be one of: subscribe, unsubscribe, ignore
 23: Invalid subscriber list id for <FieldName> (v6.0.0)
 24: Invalid email id for <FieldName> (v6.0.0)
+25: SenderEmailAddress is on the administrator's forbidden From addresses list. The list is not changed. Sending back the address the list already stores is not refused. Added in v6.0.2
 ```
 
 ::: danger Behavior change (v6.0.0): the behaviour columns are validated

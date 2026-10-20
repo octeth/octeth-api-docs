@@ -1270,6 +1270,7 @@ curl -X PATCH https://example.com/api/v1/journey.actions \
 16: Target journey not found, or TargetJourneyID is not a digits-only id (v6.0.0)
 17: Custom field not found, or TargetCustomFieldID is not a digits-only id (v6.0.0)
 18: Invalid WebhookURL parameter: the URL must be a publicly reachable http or https address (v6.0.0)
+19: A SendEmail action's From.Email is on the administrator's forbidden From addresses list. Checked before anything is deleted or written, Decision branches included. An address the journey already stores is not refused (v6.0.2)
 ```
 
 :::
