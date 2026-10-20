@@ -152,6 +152,7 @@ Each staff screen follows the administrator permissions:
 | Delivery: Bounce processing | Bounce, see [The Staff Bounce Processing Screen](./staff-bounces) |
 | SMS: Campaigns | SMS and Settings. A sub-administrator limited to some user groups sees, pauses and cancels only the campaigns of accounts in those groups, see [The Staff SMS Campaigns Screen](./staff-sms-campaigns) |
 | SMS: Inbound | SMS and Settings. A sub-administrator limited to some user groups sees only the messages of accounts in those groups and no unattributed reply, see [The Staff Inbound SMS Screen](./staff-sms-inbound) |
+| SMS: Settings | SMS and Settings. The bulk SMS limits, cost, quiet hours, opt-out defaults and retention of the whole installation, see [The Staff SMS Settings Screen](./staff-sms-settings) |
 | Suppression: Email | Suppression. A sub-administrator limited to some user groups finds and removes only the suppressions of accounts in those groups, and every system-wide one, see [The Staff Email Suppression Screen](./staff-email-suppression) |
 | Suppression: SMS | SMS and Settings. A sub-administrator limited to some user groups sees and changes the system rows and the rows of accounts in those groups, and no gateway row, see [The Staff SMS Suppression Screen](./staff-sms-suppression) |
 | Billing: Revenue, Worklists, Transactions | Reports |
@@ -200,6 +201,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/reports/sender-domains` | The DNS health of every sender domain, with per-record results and an on-demand re-check, see [The Staff Sender Domain Health Report](./staff-sender-domain-health) |
 | `/user/staff/sms/campaigns` | Every account's bulk SMS campaigns, with Pause and Cancel, see [The Staff SMS Campaigns Screen](./staff-sms-campaigns) |
 | `/user/staff/sms/inbound` | Every reply and opt-out received on the SMS gateways, including unattributed replies, see [The Staff Inbound SMS Screen](./staff-sms-inbound) |
+| `/user/staff/sms/settings` | The bulk SMS settings, with the layer each value comes from, see [The Staff SMS Settings Screen](./staff-sms-settings) |
 | `/user/staff/sms/suppression` | Every suppressed SMS number and pattern of every account, with adding, removing and the cache clear, see [The Staff SMS Suppression Screen](./staff-sms-suppression) |
 | `/user/staff/settings/preferences` | The default language, password reset, limit notifications, the failed webhook handler and the List freshness thresholds, see [Staff Preferences](./staff-preferences) |
 | `/user/staff/settings/branding` | The interface's name, logos, favicon, colours, support and legal links and email sender name, saved over `.oempro_env` with a per-field reset, see [Branding the New User Interface from the Staff Area](./staff-branding) |

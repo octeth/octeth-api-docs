@@ -506,6 +506,20 @@ The classic admin header's **Settings > SMS Suppression List** item opens the ne
 
 There is no opt-in flag: the page is removed, and its URLs answer as above.
 
+#### The legacy admin Bulk SMS Settings page is removed
+
+The legacy admin **Bulk SMS Settings** page (`/app/admin/smssettings/`), an item of the classic **Settings** sidebar, is removed. The bulk SMS business settings are on the [SMS settings](/v6.0.2/new-user-interface/staff-sms-settings) screen of the **SMS** group of the staff sidebar (`/<UI_STAFF_PREFIX>/staff/sms/settings`) (octeth/oempro#3581). It needs the `SMS` and `Settings` privileges, as the page did. The classic sidebar item now opens the new screen.
+
+**The old URL keeps working.** A GET to `/app/admin/smssettings/` answers with a 302 to the new screen. A POST, including the old save form, is refused: nothing is written, and the answer is a short page that links to the new screen.
+
+What changes for an administrator:
+
+- **Each setting names the layer in force:** a value saved here, the `.oempro_env` key, or the shipped default. The legacy page could not tell an `.oempro_env` value from the shipped default.
+- **Values are checked before anything is saved.** A number field takes digits only, and the quiet-hours times take HH:MM. The legacy page stored any text, which the workers then read as 0 or 00:00. Ranges are unchanged: the workers still clamp what is stored.
+- **Every save writes a staff audit row** naming the settings changed, with their old and new values.
+
+The save rules are unchanged: an empty field (or **Use the deployment value** for a switch) hands the setting back to `.oempro_env`, a value equal to the one in force is not stored, and a change reaches the workers within about a minute.
+
 #### The legacy admin Preferences page is trimmed
 
 Most of the legacy admin **Preferences** page (`/app/admin/preferences/`), an item of the classic **Settings** sidebar, moved to the [Preferences](/v6.0.2/new-user-interface/staff-preferences) screen of the new interface's staff area (`/<UI_STAFF_PREFIX>/staff/settings/preferences`), under the new **Settings** group of the staff sidebar (octeth/oempro#3537). The screen needs the `Settings` privilege, as the page did.
@@ -1186,6 +1200,15 @@ Eight new admin commands, additive, each needing both the `SMS` and the `Setting
 - `admin.sms.suppression.cache.clear` drops every cached suppression answer, as `smssuppression.cache.clear` does, with `SMS` and `Settings`.
 
 The writes are refused in demo mode and limited to 30 requests per 60 seconds (the cache clear to 10).
+
+### Bulk SMS settings commands
+
+Two new admin commands, additive, each needing both the `SMS` and the `Settings` privilege, which it checks even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answering `99999` without them), as the legacy Bulk SMS Settings page did (octeth/oempro#3581). No existing command changes: `sms.settings.get` and `sms.settings.update` still read and write the frequency limits and forbidden words.
+
+- `admin.sms.settings.get` returns the 15 bulk SMS business settings with the value in force, its type, the layer it comes from (`Source`: `option`, `env` or `default`), the `.oempro_env` key and raw value, and the shipped default. Error `1` means the settings could not be read.
+- `admin.sms.settings.update` takes one parameter per setting name. An empty value removes the stored value, and a value equal to the one in force is not stored. Every value is checked before anything is written (error `2`, with `InvalidSettings`). Error `4` means a write failed after others succeeded, listed in `FailedSettings`, `Saved` and `Cleared`. Refused in demo mode.
+
+Both are limited to 100 requests per 60 seconds.
 
 ### Segment routing command
 

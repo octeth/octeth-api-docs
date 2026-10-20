@@ -234,9 +234,9 @@ If a campaign's per-recipient detail has expired, or the campaign was deleted, a
 
 ## Bulk SMS Settings for administrators
 
-Administrators set the defaults for every SMS campaign in the classic admin area under **Preferences** > **System Settings** > **Bulk SMS Settings**.
+Administrators set the defaults for every SMS campaign in the staff area of the new interface under **SMS** > **Settings**, see [The Staff SMS Settings Screen](./staff-sms-settings).
 
-Each value is either stored on this page or taken from `.oempro_env`. Clear a field to hand the setting back to `.oempro_env`. Click **SAVE CHANGES**. A change reaches the sending workers within about a minute.
+Each value is saved on that screen, taken from `.oempro_env`, or the shipped default, and the screen says which. **Reset** hands a saved value back to `.oempro_env`. Click **Save SMS settings**. A change reaches the sending workers within about a minute.
 
 | Setting | Default | Notes |
 |---|---|---|
@@ -249,12 +249,12 @@ Each value is either stored on this page or taken from `.oempro_env`. Clear a fi
 | **Default send rate per minute** | 0 | 0 means no cap other than the gateway's own rate limit. |
 | **Journey capacity reserve** | 10 | Percentage of gateway capacity kept for journey and transactional messages, so a bulk campaign cannot starve them (0 to 50). |
 | **Append an opt-out footer by default** | On | |
-| **Default opt-out footer** | `Reply STOP to opt out.` | |
+| **Default opt-out footer** | ` Reply STOP to opt out.` | Starts with a space so it separates from the message. |
 | **Opt-out keywords** | STOP, STOPALL, UNSUBSCRIBE, CANCEL, END, QUIT | Replies with these words opt the sender out. |
 | **Reply attribution window** | 30 days | How long after a send a reply is still credited to that campaign. |
-| **Event retention** | 365 days | 30 to 3,650 days. How long SMS events are kept for reports. |
-| **Campaign queue retention** | 365 days | 30 to 3,650 days. How long per-recipient campaign detail is kept. |
-| **Inbound message retention** | 365 days | 30 to 3,650 days. How long received messages and reply history are kept. |
+| **Event retention** | 365 days | 30 to 3,650 days, or 0 to turn pruning off. How long SMS events are kept for reports. |
+| **Campaign queue retention** | 365 days | 30 to 3,650 days, or 0 to turn pruning off. How long per-recipient campaign detail is kept. |
+| **Inbound message retention** | 365 days | 30 to 3,650 days, or 0 to turn pruning off. How long received messages and reply history are kept. |
 
 ### Cross-account views
 

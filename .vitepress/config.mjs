@@ -1119,6 +1119,7 @@ export default defineConfig({
                         {text: 'The Staff Sender Domain Health Report', link: '/v6.0.2/new-user-interface/staff-sender-domain-health'},
                         {text: 'The Staff SMS Campaigns Screen', link: '/v6.0.2/new-user-interface/staff-sms-campaigns'},
                         {text: 'The Staff Inbound SMS Screen', link: '/v6.0.2/new-user-interface/staff-sms-inbound'},
+                        {text: 'The Staff SMS Settings Screen', link: '/v6.0.2/new-user-interface/staff-sms-settings'},
                         {text: 'The Staff SMS Suppression Screen', link: '/v6.0.2/new-user-interface/staff-sms-suppression'},
                         {text: 'Staff Preferences', link: '/v6.0.2/new-user-interface/staff-preferences'},
                         {text: 'Branding from the Staff Area', link: '/v6.0.2/new-user-interface/staff-branding'},

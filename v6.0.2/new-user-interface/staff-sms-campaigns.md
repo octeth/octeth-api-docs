@@ -58,4 +58,4 @@ If the campaign changed status after the list was loaded, for example it finishe
 
 ## Bulk SMS settings
 
-Click **SMS settings** to open the bulk SMS settings, which are still in the classic admin area. They open in a new tab.
+Click **SMS settings** in the text above the list to open the campaign limits, cost, quiet hours and retention, see [The Staff SMS Settings Screen](./staff-sms-settings). Gateways are under **Delivery > SMS gateways**.

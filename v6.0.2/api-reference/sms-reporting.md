@@ -1153,6 +1153,185 @@ Message fields:
 - `IsOptOut` is `true` for an opt-out. `OptOutScope` is `user` (the account's contact) or `gateway` (every account on the gateway), and `none` for other messages.
 - `UnsubscribeStatus` is `none`, `pending`, `done` or `failed`. A `failed` opt-out is suppressed, but the contact still counts as subscribed until the unsubscribe succeeds.
 
+## Get Bulk SMS Settings (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.sms.settings.get`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session
+- Required privileges: `SMS` and `Settings`, checked by the command itself even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+- Added in v6.0.2
+:::
+
+Every bulk SMS business setting with the value in force and the layer it comes from. It is the read behind the staff **SMS > Settings** screen, which replaced the classic admin **Bulk SMS Settings** page. Each setting uses a value stored by an administrator first, then its `.oempro_env` key, then the shipped default.
+
+Not to be confused with `sms.settings.get`, which reads the SMS frequency limits and forbidden words.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.sms.settings.get` |
+| AdminAPIKey | String | No | Admin API key. Or authenticate with an admin `SessionID` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.sms.settings.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.sms.settings.get",
+    "AdminAPIKey": "your-admin-api-key"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Settings": [
+    {
+      "Name": "SMSCampaignCostPerPart",
+      "Value": 0.0125,
+      "Type": "float",
+      "Source": "option",
+      "EnvKey": "SMS_CAMPAIGN_COST_PER_PART",
+      "EnvValue": "0.0100",
+      "Default": 0.01
+    },
+    {
+      "Name": "SMSReplyAttributionDays",
+      "Value": 30,
+      "Type": "int",
+      "Source": "default",
+      "EnvKey": "SMS_REPLY_ATTRIBUTION_DAYS",
+      "EnvValue": null,
+      "Default": 30
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+:::
+
+**Error Codes:**
+
+| Code | Description |
+|---|---|
+| 1 | The settings could not be read |
+| 99999 | The administrator lacks the `SMS` or `Settings` privilege |
+
+**Response fields:**
+
+- `Settings` lists all 15 settings in a fixed order: `SMSCampaignMaxRecipients`, `SMSCampaignCostPerPart`, `SMSCampaignCostCurrency`, `SMSCampaignCostDriftTolerance`, `SMSCampaignQuietHoursStart`, `SMSCampaignQuietHoursEnd`, `SMSCampaignDefaultSendRatePerMinute`, `SMSCampaignJourneyReservePercent`, `SMSCampaignOptOutFooterEnabledDefault`, `SMSCampaignOptOutFooterDefault`, `SMSOptOutKeywords`, `SMSReplyAttributionDays`, `SMSEventRetentionDays`, `SMSCampaignQueueRetentionDays` and `SMSInboundRetentionDays`.
+- `Type` is `int`, `float`, `string` or `bool`, and `Value` and `Default` carry that type. `Value` is what the workers use, after the clamps (for example a journey reserve above 50 reads as 50).
+- `Source` is `option` (stored by an administrator), `env` (`.oempro_env` sets the key) or `default` (the shipped default).
+- `EnvValue` is the raw `.oempro_env` string, or `null` when the file does not set the key.
+
+## Update Bulk SMS Settings (Admin)
+
+<Badge type="info" text="POST" /> `/api/v1/admin.sms.settings.update`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key or admin session
+- Required privileges: `SMS` and `Settings`, checked by the command itself even when `ADMIN_API_ENFORCE_PRIVILEGES` is off
+- Rate limit: 100 requests per 60 seconds
+- Not available in demo mode
+- Legacy endpoint access via `/api.php` is also supported
+- Added in v6.0.2
+:::
+
+Stores or removes administrator values for the bulk SMS business settings. Send each setting to change as its own parameter, named after the setting. A setting you do not send is left alone. A change reaches the running workers within about a minute.
+
+- **An empty value** removes the stored value and hands the setting back to `.oempro_env`.
+- **A value equal to the one in force is not stored**, so sending the current value never turns an `.oempro_env` value into a stored one.
+- **Every value is checked before anything is written.** `int` settings take whole numbers of zero or more, `float` settings take decimals of zero or more, `bool` settings take `1`, `0`, `true`, `false`, `yes`, `no`, `on` or `off` (or a JSON boolean), and the two quiet-hours settings take a 24-hour `HH:MM` time. Other text settings are stored as sent, spaces included. Ranges are not refused: the workers clamp what is stored, and a retention of `0` turns pruning off.
+
+Not to be confused with `sms.settings.update`, which writes the SMS frequency limits and forbidden words.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.sms.settings.update` |
+| AdminAPIKey | String | No | Admin API key. Or authenticate with an admin `SessionID` |
+| `<SettingName>` | String | At least one | Any setting name returned by `admin.sms.settings.get`, for example `SMSCampaignCostPerPart`. Names match in any letter case. An empty value hands the setting back to `.oempro_env` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/admin.sms.settings.update \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.sms.settings.update",
+    "AdminAPIKey": "your-admin-api-key",
+    "SMSCampaignCostPerPart": "0.0125",
+    "SMSCampaignQuietHoursStart": "",
+    "SMSCampaignOptOutFooterEnabledDefault": false
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Saved": ["SMSCampaignCostPerPart", "SMSCampaignOptOutFooterEnabledDefault"],
+  "Cleared": ["SMSCampaignQuietHoursStart"],
+  "Unchanged": [],
+  "Settings": [
+    {
+      "Name": "SMSCampaignMaxRecipients",
+      "Value": 1000000,
+      "Type": "int",
+      "Source": "env",
+      "EnvKey": "SMS_CAMPAIGN_MAX_RECIPIENTS",
+      "EnvValue": "1000000",
+      "Default": 1000000
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "SMSCampaignQuietHoursEnd must be a time as HH:MM, for example 21:00. Nothing was saved.",
+  "InvalidSettings": {
+    "SMSCampaignQuietHoursEnd": "must be a time as HH:MM, for example 21:00"
+  }
+}
+```
+
+:::
+
+**Error Codes:**
+
+| Code | Description |
+|---|---|
+| 1 | No setting was sent |
+| 2 | A value is invalid. `InvalidSettings` names each one with the reason. Nothing was written |
+| 3 | The settings could not be read, so nothing was written |
+| 4 | A write failed after others succeeded. `FailedSettings` lists the failures, `Saved` and `Cleared` what was written |
+| 99999 | The administrator lacks the `SMS` or `Settings` privilege |
+
+**Response fields:**
+
+- `Saved` lists the settings stored, `Cleared` the settings handed back to `.oempro_env`, and `Unchanged` the settings sent with the value already in force, or empty with no stored value to remove.
+- `Settings` is the full list as `admin.sms.settings.get` returns it, read after the write.
+
 ## Get a Subscriber's SMS History
 
 <Badge type="info" text="GET" /> `/api/v1/subscriber.sms.events`
