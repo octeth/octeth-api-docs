@@ -130,7 +130,7 @@ curl -X GET "https://example.com/api.php?Command=system.health.check&adminapikey
     "SendEngine": "No send engine containers running",
     "AdminFrontend": "OK",
     "UserFrontend": "Backend user login form action is not found",
-    "FilePermissions": "logs/campaign_delivery.log: expected 0777, 0666 or 0644, found 0640"
+    "FilePermissions": "logs/campaign_delivery.log: expected 0664, 0660, 0644 or 0640, found 0666"
   }
 }
 ```
@@ -181,7 +181,7 @@ The endpoint performs comprehensive health checks on the following components:
 - **SendEngine**: Send engine container discovery and supervisor process status
 - **AdminFrontend**: Admin login page renders on the origin server, with the expected login form <Badge type="tip" text="Changed in v6.0.1" />
 - **UserFrontend**: User login page renders on the origin server, with the expected login form <Badge type="tip" text="Changed in v6.0.1" />
-- **FilePermissions**: Directory and log file permissions (expects 0777 for directories, 0777/0666/0644 for log files)
+- **FilePermissions**: Directory and log file permissions (expects 0775 or 0770 for directories, which `permissions:fix` sets as 2775, and 0664, 0660, 0644 or 0640 for log files; since v6.0.2 a world-writable directory or log file fails)
 
 **Response Details:**
 

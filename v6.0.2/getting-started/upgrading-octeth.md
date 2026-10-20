@@ -269,7 +269,27 @@ Then confirm that nothing in the two directories is world-writable. Run this fro
 find system/storage system/bootstrap/cache -perm -o+w
 ```
 
-The `data/` directories are unchanged in this release and stay at `0777`.
+The `data/` directory changed in v6.0.2, see the next section.
+
+### The data directory is no longer world-writable
+
+From v6.0.2, the upgrade, `permissions:fix` and a fresh installation no longer set `data/` to mode `0777`. They now give it group `www-data`, set `data/` and the directories directly inside it to `2775`, set any other world-writable directory to `2775` and world-writable files to `0664`, and make the `.htaccess` web access guards inside it owned by `root` with mode `0644`, so the web server cannot rewrite them. Files with a stricter mode keep it, and the owner of everything in `data/` other than the guards is left as it was. `data/backups` keeps its modes, except that nothing in it stays world-writable. Log files and reports that Octeth creates are now `0664` instead of `0666`. The containers apply the same rules each time they start.
+
+The web server and the background workers keep write access through the `www-data` group. Other local accounts on the server can no longer read or change logs, imports, exports, attachments or uploaded media.
+
+The upgrade applies this automatically. If the upgrade warned that it could not apply file permissions, or you change these permissions by hand later, run this once:
+
+```bash
+/opt/octeth/cli/octeth.sh permissions:fix
+```
+
+Then confirm that nothing in `data/` is world-writable. Run this from `/opt/octeth`. It prints nothing when the fix is in place:
+
+```bash
+find data ! -type l -perm -o+w
+```
+
+If something outside Octeth writes into `data/`, give that process the `www-data` group instead of making the directory world-writable.
 
 ### The drag-and-drop builder in the new interface uses the integration settings
 
