@@ -2401,6 +2401,7 @@ Authenticates an administrator and creates a session. This endpoint supports bot
 | Username      | String  | Yes*     | Administrator username (*required unless using AdminAPIKey)                                      |
 | Password      | String  | Yes*     | Administrator password (*required unless using AdminAPIKey)                                      |
 | TFACode       | String  | Conditional | Two-Factor Authentication code (required if 2FA is enabled for the admin account)             |
+| TFARecoveryCode | String | No | The administrator's two-factor recovery key, for a lost authenticator. Checked after the username, password and IP allow-list. A matching key turns two-factor authentication off for the account (secret, recovery key and the enabled flag are cleared) and the login succeeds without `TFACode`. A wrong key answers `ErrorCode 6` and counts as a failed sign-in (v6.0.2, #3584) |
 | AdminAPIKey   | String  | No       | Admin API Key for alternative authentication (bypasses username/password when valid). Either the master `ADMIN_API_KEY` from `.oempro_env`, which logs in the master administrator, or a sub-admin's own key issued on the sub-admin edit screen, which logs in that sub-admin (v5.9.6, #2774) |
 | Disable2FA    | Boolean | No       | Skip 2FA verification for this request. Honored **only** when `Disable2FAToken` is also supplied and valid (see note below). |
 | Disable2FAToken | String | Conditional | Server-derived token that authorizes `Disable2FA`. Required for `Disable2FA` to take effect. |
@@ -2447,6 +2448,17 @@ curl -X POST https://example.com/api.php \
     "Username": "admin",
     "Password": "securepassword123",
     "TFACode": "123456"
+  }'
+```
+
+```bash [Example Request with Recovery Key]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.login",
+    "Username": "admin",
+    "Password": "securepassword123",
+    "TFARecoveryCode": "your-recovery-key"
   }'
 ```
 
@@ -2499,6 +2511,7 @@ username: Missing required parameter username
 password: Missing required parameter password
 3: Invalid username or password
 3: Invalid username or password. With ErrorText "Access from this IP address is not allowed": a staff sign-in through the new interface from an address outside Authorized IP Addresses
+6: Invalid 2FA recovery key (TFARecoveryCode sent and wrong, or two-factor authentication is not on)
 101: Invalid 2FA code
 429: Too many failed attempts, try again after RetryAfterSeconds (HTTP 429, see above)
 ```
@@ -2514,7 +2527,7 @@ password: Missing required parameter password
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
-Sends a password reset link to the administrator's email address. This endpoint validates the email address, generates a password reset link, and sends it via email. The reset link contains an MD5 hash of the admin ID for security.
+Sends a password reset link to the administrator's email address. The link carries a signed token that is valid for one hour and stops working once the password changes. By default it opens the staff reset page of the new interface (`/<UI_CUSTOMER_PREFIX>/reset-password/staff?token=...`).
 
 **Request Body Parameters:**
 
@@ -2522,7 +2535,9 @@ Sends a password reset link to the administrator's email address. This endpoint 
 |------------------|--------|----------|--------------------------------------------------------------------------------------------------|
 | Command          | String | Yes      | API command: `admin.passwordremind`                                                              |
 | EmailAddress     | String | Yes      | Administrator email address                                                                      |
-| CustomResetLink  | String | No       | Custom password reset URL template (base64 encoded). Use `%s` placeholder for MD5 hash. If not provided, default reset link will be used |
+| CustomResetLink  | String | No       | Custom reset URL template, base64 encoded, with exactly one `%s` placeholder for the token. Honoured only when it has the same scheme, host and port as the installation; otherwise the default link is used |
+| ReturnParams     | Boolean | No      | With a valid master `AdminAPIKey`, return the token as `PasswordResetToken` and send no email, so the caller can deliver its own link. Ignored without the key (v6.0.2, #3584) |
+| AdminAPIKey      | String | No       | The master `ADMIN_API_KEY`. Only needed with `ReturnParams` |
 
 ::: warning Behavior change (v6.0.2, #2986)
 Every request counts, not only failed ones, because each one that matches an administrator sends an email. After `LOGIN_THROTTLE_MAX_FAILURES_PER_IDENTITY` requests for one `EmailAddress` (default 10) or `LOGIN_THROTTLE_MAX_FAILURES_PER_IP` requests from one client address (default 50) within `LOGIN_THROTTLE_WINDOW_SECONDS` (default 900), further requests are refused for `LOGIN_THROTTLE_LOCKOUT_SECONDS` (default 900) with **HTTP 429**, a `Retry-After` header and `{"Success":false,"ErrorCode":429,"ErrorText":"Too many failed attempts. Try again later.","RetryAfterSeconds":840}`. The refusal is identical for an email address that belongs to no administrator. The settings are under **Login Brute-Force Protection** in [Octeth Configuration](/v6.0.2/getting-started/octeth-configuration#main-configuration-file-oempro-env).
@@ -2553,6 +2568,14 @@ curl -X POST https://example.com/api.php \
 {
   "Success": true,
   "ErrorCode": 0
+}
+```
+
+```json [Success Response with ReturnParams]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "PasswordResetToken": "MS0xNzMwMDAwMDAwLWFi..."
 }
 ```
 
@@ -2590,14 +2613,17 @@ NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
-Resets an administrator's password and sends the new password via email. This endpoint requires the MD5 hash of the admin ID (typically obtained from the password reset link). A new random password is generated, stored in the database, and emailed to the administrator.
+Resets an administrator's password from the token sent by `admin.passwordremind`. By default a new random password is generated, stored and emailed to the administrator. The token expires after one hour and is spent by the reset.
 
 **Request Body Parameters:**
 
 | Parameter | Type   | Required | Description                                                                                      |
 |-----------|--------|----------|--------------------------------------------------------------------------------------------------|
 | Command   | String | Yes      | API command: `admin.passwordreset`                                                               |
-| AdminID   | String | Yes      | MD5 hash of the admin ID (obtained from password reset link)                                    |
+| AdminID   | String | Yes      | The token from the reset link (`admin.passwordremind`)                                           |
+| NewPassword | String | No | With a valid master `AdminAPIKey`, store this password instead of a generated one. It must differ from the current password (v6.0.2, #3584) |
+| DontSendNewPasswordEmail | String | No | `true` with a valid master `AdminAPIKey`: send no email (v6.0.2, #3584) |
+| AdminAPIKey | String | No | The master `ADMIN_API_KEY`. Only needed with `NewPassword` or `DontSendNewPasswordEmail` |
 
 ::: code-group
 
@@ -2606,7 +2632,7 @@ curl -X POST https://example.com/api.php \
   -H "Content-Type: application/json" \
   -d '{
     "Command": "admin.passwordreset",
-    "AdminID": "c4ca4238a0b923820dcc509a6f75849b"
+    "AdminID": "<token from the reset link>"
   }'
 ```
 
@@ -2627,8 +2653,9 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 adminid: Missing required parameter adminid
-2: Admin ID not found (invalid reset link)
+2: Invalid, expired or already used reset token
 3: The new password could not be stored (nothing changed, no email sent)
+4: NewPassword is the current password (the token stays unspent, choose a different password)
 NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 ```
 

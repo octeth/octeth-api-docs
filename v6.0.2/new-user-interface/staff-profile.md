@@ -52,7 +52,9 @@ Turning it on revokes your remembered sign-ins of the classic admin area.
 Enter your **Current password** and click **Turn off two-factor authentication**. When the password is wrong, the field says so and two-factor authentication stays on.
 
 ::: tip
-Lost your phone? Open the two-factor reset page of the classic admin area (`/app/admin/reset2fa/`, also linked from the sign-in code prompt) and enter your recovery key. It turns two-factor authentication off, and you can set it up again here.
+Lost your phone? Sign in with your username and password, choose **Lost your authenticator? Use your recovery key** on the code step, and enter your recovery key. It turns two-factor authentication off and signs you in, so set it up again here.
+
+Forgot your password? On the sign-in page choose **Forgot password**, then **Reset your staff password**, and enter the email address of your staff account. The link in the email works for one hour. This works even when customer password reset is turned off in Preferences.
 :::
 
 ## System emails

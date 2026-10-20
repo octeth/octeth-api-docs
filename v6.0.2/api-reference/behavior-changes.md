@@ -891,6 +891,12 @@ Reset links sent before the preference was turned off stop working too. The new 
 
 ## Tier 2: shape and value changes
 
+### Admin sign-in help
+
+- `Admin.PasswordRemind` without `CustomResetLink` now emails a link to the staff reset page of the new interface (`/<UI_CUSTOMER_PREFIX>/reset-password/staff?token=...`). Before, the default link named `/admin/reset_password.php`, a page that does not exist. Requests and responses are unchanged.
+- `Admin.Login` accepts `TFARecoveryCode`, `Admin.PasswordRemind` accepts `ReturnParams` and `Admin.PasswordReset` accepts `NewPassword` and `DontSendNewPasswordEmail`. All are opt-in: a request without them gets the same response as before, and the last three take effect only with the master `AdminAPIKey`.
+- The legacy pages `/app/admin/passwordreminder/` and `/app/admin/reset2fa/` redirect to the new interface's Forgot password page (staff form) and sign-in page, and refuse a POST. An old reminder link (`/app/admin/passwordreminder/reset/...`) opens the staff form, so request a new link (octeth/oempro#3584).
+
 ### Settings
 
 - `settings.get` now returns runtime options that are true/false flags (`DisableUserPasswordReset`, `PreventUserLoginFromAlienIPs`) as their real boolean. Before, `DisableUserPasswordReset` was always answered as `***REDACTED***`, because the secret redaction matches key names containing `PASSWORD`, so no client could read the preference and the staff Preferences screen always showed password reset as allowed. String and JSON options and the configuration row are redacted as before. There is no opt-in flag, because a true/false flag cannot hold a secret and the old value was unusable (octeth/oempro#3549).
