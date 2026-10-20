@@ -204,9 +204,9 @@ Omitted parameters are now left unchanged. In earlier versions, a partial `setti
 | S3Bucket | String | No | AWS S3 bucket name |
 | S3MediaLibraryPath | String | No | S3 path for media library |
 | S3URL | String | No | S3 bucket URL |
-| LoadBalanceStatus | String | No | Enable load balancing: `true` or `false` |
-| LoadBalanceEmails | Integer | No | Number of emails for load balancing |
-| LoadBalanceSleep | Integer | No | Sleep interval for load balancing |
+| LoadBalanceStatus | String | No | Accepted and stored, but has no effect since v6.0.2: Octeth no longer pauses between batches. `true` or `false` |
+| LoadBalanceEmails | Integer | No | Accepted and stored, no effect since v6.0.2 |
+| LoadBalanceSleep | Integer | No | Accepted and stored, no effect since v6.0.2 |
 | UserSignupEnabled | String | No | Enable user signup: `true` or `false` |
 | UserSignupFields | String | No | User signup form fields |
 | UserSignupReputation | String | No | User signup reputation: `Trusted` or `Untrusted` |

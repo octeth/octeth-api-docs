@@ -4354,7 +4354,7 @@ You cannot delete a delivery server that's currently assigned to active campaign
 
 Email Delivery Settings control how Octeth sends emails, handles bounces and spam complaints, and processes email headers. These are system-wide default settings that apply when specific delivery servers aren't configured.
 
-To access these settings, navigate to **Preferences** → **System Settings** → **Email Delivery Settings** in the administrator dashboard.
+To access these settings, open the staff area of the new interface and click **Delivery**, then **Email delivery** (`/user/staff/settings/email-delivery`). Since v6.0.2 they are on that screen, see [The Staff Email Delivery Screen](/v6.0.2/new-user-interface/staff-email-delivery); the classic admin page redirects there. The sections below describe each setting, and the field names on the new screen may differ slightly.
 
 ::: info Production Setup Recommendation
 Most production installations should use Delivery Servers instead of these global SMTP settings. Delivery Servers provide better performance, load balancing, and failover capabilities. Use these Email Delivery Settings primarily for:
@@ -4363,7 +4363,7 @@ Most production installations should use Delivery Servers instead of these globa
 - Simple installations with a single SMTP server
 :::
 
-The Email Delivery Settings page has five tabs: **Email Delivery**, **Load Balancing**, **Bounce Handling**, **Spam Complaint Handling**, and **Headers**.
+The screen has five sections: **Send method**, **Bounces**, **Complaints and inboxes**, **Headers** and **Advanced**. The load balancing settings were retired in v6.0.2: Octeth no longer pauses between batches, whatever `LOAD_BALANCE_STATUS` holds.
 
 ### Email Delivery Tab
 
@@ -4589,56 +4589,7 @@ The directory must exist and be writable by the web server user (typically `www-
 After configuring your send method, click the **Test Email Delivery Settings** button at the bottom of the page. This sends a test email to verify that your configuration works correctly.
 
 ::: tip
-Always test your email delivery settings after making changes. The test email will be sent to the administrator email address configured in your account settings.
-:::
-
-### Load Balancing Tab
-
-Load balancing helps prevent your emails from being rate-limited or blocked by pausing between batches of emails. This is particularly useful when sending through SMTP servers that have hourly or daily sending limits.
-
-**Load Balancing Status**
-
-Enable or disable load balancing for email delivery:
-- **Enabled** - Octeth pauses between email batches
-- **Disabled** - Octeth sends emails continuously without pausing
-
-**Emails Per Batch**
-
-The number of emails to send before pausing. For example, if you set this to `100`, Octeth will send 100 emails, pause, send another 100, pause again, and continue this pattern.
-
-::: info Choosing a Batch Size
-Your batch size should align with your SMTP provider's limits:
-- **SendGrid Free** - Limit to 100 emails per batch
-- **Mailgun** - Typically safe with 500-1000 per batch
-- **Custom SMTP** - Check with your email provider for recommended batch sizes
-- **Amazon SES** - Start with 1000 per batch (SES has a default sending rate of 14 emails/second)
-:::
-
-**Sleep Duration**
-
-The number of seconds to wait between batches. For example, if you set this to `60`, Octeth will wait 60 seconds after sending each batch before starting the next batch.
-
-::: warning Calculating Total Send Time
-Load balancing significantly impacts how long it takes to send large campaigns. For example:
-- Campaign size: 10,000 emails
-- Batch size: 100 emails
-- Sleep duration: 60 seconds
-- Total batches: 10,000 / 100 = 100 batches
-- Total sleep time: 100 batches × 60 seconds = 6,000 seconds (1.67 hours)
-
-Balance your need for rate-limiting against how quickly you need campaigns delivered.
-:::
-
-::: tip Recommended Settings
-For most SMTP providers with hourly limits:
-- **Emails Per Batch**: 100-500
-- **Sleep Duration**: 30-60 seconds
-
-For providers with high volume limits or dedicated infrastructure:
-- **Emails Per Batch**: 1000-5000
-- **Sleep Duration**: 10-30 seconds
-
-Monitor your delivery logs and adjust based on actual performance and any rate limiting you encounter.
+Always test your email delivery settings after making changes. The test email is sent to the alert recipient address, set on the staff **Your profile** screen.
 :::
 
 ### Bounce Handling Tab

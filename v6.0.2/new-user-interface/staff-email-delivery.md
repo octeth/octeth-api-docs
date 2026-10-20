@@ -1,6 +1,6 @@
 # The Staff Email Delivery Screen
 
-The **Email delivery** screen of the staff **Delivery** group holds the sending settings of the whole installation: how email leaves Octeth when a user group has no delivery server of its own, where bounces and complaints go, the headers Octeth adds, load balancing, the seed list and the other install-wide delivery settings. It replaces the classic admin **Settings > Email Delivery** page.
+The **Email delivery** screen of the staff **Delivery** group holds the sending settings of the whole installation: how email leaves Octeth when a user group has no delivery server of its own, where bounces and complaints go, the headers Octeth adds, the seed list and the other install-wide delivery settings. It replaces the classic admin **Settings > Email Delivery** page.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
@@ -16,7 +16,6 @@ The settings are split into sections in the menu on the left. The open section i
 - **Bounces**: the bounce domain, the soft bounce threshold, forwarding of postmaster mail, failure notifications and the bounce mailbox.
 - **Complaints and inboxes**: the abuse report address, `X-Complaints-To`, the feedback loop and unsubscribe-by-email addresses, and the feedback loop mailbox.
 - **Headers**: the `X-Mailer` header and the custom headers added to every email.
-- **Load balancing**: sending in batches with a pause between them.
 - **Advanced**: the seed list, reply forwarding, relay domains, the pre-header block, the Sender header domain and subscriber snapshots.
 
 Each section has its own **Save** button and saves only the settings of that section that you changed. If the stored settings changed since you opened the page, for example from another tab, nothing is saved and the screen shows the stored values, so make your change again. When nothing changed, saving says so and sends nothing. If you open another section with unsaved changes, Octeth asks whether to discard them.
@@ -90,14 +89,10 @@ The **Feedback loop mailbox** works like the bounce mailbox, for spam complaints
 
 - **Header name**: letters, digits and `-`, no spaces or colons, for example `X-List-ID`.
 - **Applies to**: all emails, campaigns, autoresponders or transactional email.
-- **Value**: one line. **Insert a merge tag** adds a merge tag that applies to the chosen email type. Merge tags that do not apply to an email are removed from the value when it is sent.
+- **Value**: one line. Type <code v-pre>{{</code> to list the merge tags of the chosen email type, then keep typing to filter, and press Enter or click one to insert it. Merge tags that do not apply to an email are removed from the value when it is sent.
 - **Delivery server**: every delivery server, or one. Choosing one needs the **Delivery servers** privilege.
 
 To remove a header, click its delete icon and confirm.
-
-## Load balancing
-
-Turn on **Send in batches** and enter the number of emails per batch and the pause in seconds between batches. Use it to spare a shared or small mail server.
 
 ## Advanced
 

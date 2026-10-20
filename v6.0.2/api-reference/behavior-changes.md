@@ -526,6 +526,8 @@ The legacy admin **Email Delivery** page (`/app/admin/emaildelivery/`), an item 
 
 **The old URL keeps working.** A GET to `/app/admin/emaildelivery/` answers with a 302 to the new screen. A POST, including the old save form, the test send and the two header snippets (`snippet_addEmailHeader`, `snippet_removeEmailHeaders`), is refused: nothing is written, and the answer is a short page that links to the new screen. Use `emailheader.create` and `emailheaders.delete` for the headers.
 
+The page's load balancing settings are retired: email sending no longer pauses between batches, whatever `LOAD_BALANCE_STATUS`, `LOAD_BALANCE_EMAILS` and `LOAD_BALANCE_SLEEP` hold. `settings.update` still accepts and stores the three keys and `settings.get` still returns them, so no API caller breaks. An install that had load balancing on now sends without the pause.
+
 Two behaviors of the old page are gone: its Mailjet option, which every save refused, and the clearing of `CENTRALIZED_SENDER_DOMAIN` on every save (the page had no field for it, so it always sent an empty value). The new screen has a **Sender header domain** field. The on-demand SSL domain check address the page showed is not carried over; the bundled reverse proxy reads it from `CADDY_DOMAIN_VERIFY_CODE`.
 
 #### The legacy admin Preferences page is trimmed
