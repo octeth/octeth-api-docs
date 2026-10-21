@@ -5528,6 +5528,8 @@ NOT AVAILABLE IN DEMO MODE.: DEMO_MODE_ENABLED is on
 - The names of the sender-domain DNS record templates the install ships (`EMAILGATEWAY_DNS_TEMPLATES` and `EMAILCAMPAIGN_DNS_TEMPLATES`). Only names are returned; the record bodies are expanded per domain when a sender domain is created.
 :::
 
+`TrackingWarnings` lists, per template group, only the templates with a warning. `EmptyRecordSet`: the template has no records, so domains created from it verify without any DNS lookup (this is the case for the shipped `Default` templates, whose records are commented out). `NoTrackingRecord`: the template lists no tracking host for the global subdomain and tracking prefix settings (for example `track-sl._SenderDomain_` with the defaults), so domains created from it have no tracking host of their own. A template that lists the tracking host in either the campaign or the gateway form is not reported.
+
 **Request Body Parameters:**
 
 | Parameter | Type   | Required | Description                           |
@@ -5535,6 +5537,7 @@ NOT AVAILABLE IN DEMO MODE.: DEMO_MODE_ENABLED is on
 | Command   | String | Yes      | API command: `admin.dnstemplates.get` |
 | SessionID | String | No       | Session ID obtained from login        |
 | APIKey    | String | No       | Admin API key for authentication      |
+| IncludeTrackingCheck <Badge type="tip" text="New in v6.0.2" /> | Boolean | No | When true (`1`, `true`, `yes` or `on`), adds `TrackingWarnings`: the templates that give a domain no tracking host of its own. Absent or any other value leaves the response unchanged (issue #3310) |
 
 ::: code-group
 
@@ -5549,6 +5552,20 @@ curl -X POST https://example.com/api.php \
   "Success": true,
   "ErrorCode": 0,
   "DNSTemplates": {"EmailGateway": ["Default"], "EmailCampaign": ["Default"]}
+}
+```
+
+```json [Response with IncludeTrackingCheck]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "DNSTemplates": {"EmailGateway": ["Default"], "EmailCampaign": ["Default", "Branded"]},
+  "TrackingWarnings": {
+    "EmailGateway": [{"Template": "Default", "Warning": "EmptyRecordSet"}],
+    "EmailCampaign": [
+      {"Template": "Default", "Warning": "EmptyRecordSet"}
+    ]
+  }
 }
 ```
 

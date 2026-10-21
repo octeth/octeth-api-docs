@@ -513,6 +513,7 @@ The latest per-record verified flags are merged into the existing `VerificationM
 | APIKey    | String  | No                 | API key for authentication                                               |
 | DomainID  | Integer | Yes (single-domain mode) | The ID of the sender domain to verify. Must be owned by the calling user. Ignored when `verifyall=true` |
 | verifyall | Boolean | No                 | When true, verifies every `Approval Pending` domain owned by the caller in one call (issue #1890). Capped at 25 domains per call; if more are pending, the response carries `Truncated: true` and the caller should re-invoke to process the next batch. `DomainID` is ignored when this is set |
+| IncludeTrackingWarning <Badge type="tip" text="New in v6.0.2" /> | Boolean | No | When true (`1`, `true`, `yes` or `on`), the response carries `TrackingWarning` and `TrackingWarningMessage`, and on the bulk path every `Domains` entry carries both. Absent or any other value leaves the response unchanged (issue #3310) |
 
 ::: code-group
 
@@ -546,6 +547,20 @@ curl -X POST https://example.com/api/v1/user.senderdomain.verify \
     "sl.example.com": ["CNAME", "tracking-host.octeth.example.", true],
     "track-sl.example.com": ["CNAME", "tracking-host.octeth.example.", true]
   }
+}
+```
+
+```json [Response with IncludeTrackingWarning]
+{
+  "Success": true,
+  "DomainID": 12,
+  "IsVerified": true,
+  "Status": "Enabled",
+  "DNSRecords": {
+    "sl.example.com": ["CNAME", "mailer.deliveryservers.com", true]
+  },
+  "TrackingWarning": "NoTrackingRecord",
+  "TrackingWarningMessage": "Link or open tracking is on, but the DNS records of this domain do not include a tracking host. Emails from this domain cannot use a tracking host of their own for click tracking, open tracking and unsubscribe links. Ask your administrator to add a tracking record to the DNS template."
 }
 ```
 
@@ -583,6 +598,16 @@ curl -X POST https://example.com/api/v1/user.senderdomain.verify \
 
 ::: tip Bulk verify response shape (issue #1890)
 The bulk path's per-domain entries intentionally omit `DNSRecords` to keep the payload compact on large accounts. Callers that need the full record list for a specific domain should follow up with `user.senderdomain.dns` or `user.senderdomain.get`. The 60-second Redis cache inside the per-domain probe still applies, so a bulk verify that runs shortly after a single-domain verify (or vice versa) reuses the cached probe rather than re-hitting DNS.
+:::
+
+::: tip Tracking coverage warning (issue #3310)
+Verification never changes its outcome because of this warning: a domain whose records all resolve is still `Enabled` (or `Blocked` under manual approval). With `IncludeTrackingWarning=true` the response reports what the verified record set cannot give the domain:
+
+- `TrackingWarning: "EmptyRecordSet"`: the domain has no DNS records to check, so it verified without any DNS lookup. No sender domain DNS template is configured for the install or the user group.
+- `TrackingWarning: "NoTrackingRecord"`: link or open tracking is on for the domain, but its records include no tracking host. Email Gateway and journey emails use the fallback tracking host for click tracking, open tracking and unsubscribe links. A domain with "Use separate tracking subdomain" turned off is covered when its MFROM host (for example `sl.example.com`) is in the records.
+- `TrackingWarning: null`: no warning.
+
+`TrackingWarningMessage` is a human readable sentence for the code, or `null`. The same warning is logged on every passing verification, including the scheduled one, and shown on the sender domain edit page.
 :::
 
 ## Get DNS Records for a Sender Domain
