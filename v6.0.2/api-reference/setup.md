@@ -14,7 +14,7 @@ All three endpoints are available to an operator AI assistant connected through 
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Required permissions: `Settings`
+- Required permissions: `Settings`, and no user group limit. An admin limited to some user groups gets error `99999`, as the report covers the whole install
 - Rate limit: 60 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
@@ -105,7 +105,8 @@ curl -X POST https://example.com/api/v1/admin.setup.status \
 ```json [Error Response]
 {
   "Success": false,
-  "ErrorCode": 99999
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
 }
 ```
 

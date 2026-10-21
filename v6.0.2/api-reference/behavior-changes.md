@@ -1095,6 +1095,7 @@ No configuration change is needed.
 
 - `admin.overview.get` accepts an optional `Days` of 7, 30 or 90 that windows the three leaderboards and caches the result for 300 seconds. Without `Days` the response is unchanged. A request that already sent a `Days` parameter with any other value, which the command used to ignore, is now refused with error code 1. An empty `Days` is still treated as absent (octeth/oempro#3501).
 - `admin.setup.status` accepts an optional `Cached=true` that returns the report cached for up to 60 seconds with `FromCache`. Without it the response is unchanged (octeth/oempro#3501).
+- `admin.setup.status` refuses an admin limited to some user groups with error `99999` ("Not enough privileges"), with or without `Cached`, whatever `ADMIN_API_ENFORCE_PRIVILEGES` is set to. The report covers the whole install, and the admin overview and the staff dashboard already hid it from that admin. An unrestricted admin with `Settings` gets the same response as before (octeth/oempro#3513).
 - `admin.senderdomains.health.get` accepts an optional `SummaryOnly=true` that returns only the health counts. Without it the response is unchanged (octeth/oempro#3501).
 
 ### Sender domain health
