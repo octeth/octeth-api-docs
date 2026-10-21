@@ -98,7 +98,7 @@ The send engine handles the actual delivery of your emails. You can scale it up 
 /opt/octeth/cli/octeth.sh sendengine:start
 ```
 
-This starts one send engine instance. The send engine connects to your SMTP servers and delivers emails.
+This starts the send engine with the number of instances saved in `SENDENGINE_REPLICAS` in `.oempro_env`, or, when that is empty, as many as are running now (one if none are). Add `--scale N` to choose the number yourself. The send engine connects to your SMTP servers and delivers emails.
 
 **Scaling the send engine:**
 
@@ -106,7 +106,11 @@ This starts one send engine instance. The send engine connects to your SMTP serv
 /opt/octeth/cli/octeth.sh sendengine:scale 5
 ```
 
-This adjusts the number of send engine instances. Increase this number when sending large campaigns to speed up delivery.
+This adjusts the number of send engine instances. Increase this number when sending large campaigns to speed up delivery. The new count is saved as `SENDENGINE_REPLICAS` in `.oempro_env`, so `docker:up`, `docker:restart`, `sendengine:restart` and upgrades keep it. To scale for a short burst without saving the count, add `--no-persist`:
+
+```bash
+/opt/octeth/cli/octeth.sh sendengine:scale 8 --no-persist
+```
 
 **Checking send engine status:**
 
