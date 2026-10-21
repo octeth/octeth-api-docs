@@ -1162,6 +1162,10 @@ A new opt-in `ReturnDetailedCounts=true` parameter adds `TotalAlreadySuppressed`
 
 `SuppressionList::Add()`, which every suppression writer calls, now returns `0` when its insert fails instead of whatever the connection's last insert id was, so a failed write can no longer be counted in `TotalImported`.
 
+### Email suppression (date added)
+
+- New suppression rows store `CreatedOn` (UTC). `suppression.browse`, `global.suppression.browse` and `global.suppression.search` return it only when the request passes `IncludeCreatedOn=true`. Without the flag their responses are unchanged. Rows that existed before the upgrade have no date and return `CreatedOn: null`. The user suppression list page shows the date in an "Added" column, and "Unknown" for older rows (octeth/oempro#3178).
+
 ### Subscriber import
 
 - `subscribers.import.post`: error 17 (`Field mapping is invalid`) now carries an additive `Reason` key that names the failing row and column and the cause: an empty, invalid or missing identity value, or a mapping with no identity column or two. `Code` and `Message` are unchanged, and no other error object gains the key. Which requests are refused is unchanged. See [Error 17 and its Reason](/v6.0.2/api-reference/subscribers#error-17-and-its-reason) (octeth/oempro#3613).

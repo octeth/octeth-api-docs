@@ -49,12 +49,15 @@ Changed in v6.0.1: before, these reads returned only `PerList` entries.
 | ListID | Integer | No | When omitted or `0`, returns the account-wide suppression list (rows with `RelListID = 0` owned by the caller), unchanged. When non-zero, returns the list's [effective suppression view](#effective-suppression-view-of-a-list). The list must be owned by the authenticated user, otherwise the call fails with `ErrorCode: 4`. |
 | StartFrom | Integer | No      | Starting record index for pagination (default: 0) |
 | RetrieveCount | Integer | No  | Number of records to retrieve (default: 100) |
+| IncludeCreatedOn | Boolean | No | When `true` (or `1`), every entry in `SuppressedEmails` carries `CreatedOn`: when the entry was added, as `YYYY-MM-DD HH:MM:SS` in UTC. Entries added before this field existed have `CreatedOn: null` because their date was never recorded. Omitted or `false`: the response is unchanged. |
 
 **Response Shape:**
 
 `SuppressedEmails` is an associative map keyed by email address (not a JSON array). Use `Object.values()` (or the equivalent in your language) if you need a list. `TotalRecords` reflects whatever filters (`SearchPattern`, `SuppressionSource`) the request set, so paging math always lines up with the rendered page.
 
 Every entry in `SuppressedEmails` carries a `Scope` field (`PerList`, `AccountWide` or `SystemWide`), derived the same way as `suppression.check`'s `MatchedScopes`. The field is additive. With a `ListID`, `TotalRecords` counts distinct addresses in the effective view for the same `SearchPattern` and `SuppressionSource` filters.
+
+With `IncludeCreatedOn`, each entry also carries `CreatedOn` (UTC, `null` when unknown). A `null` means the entry predates the field, not that it is new. Without the flag the field is never returned.
 
 ::: code-group
 
@@ -84,6 +87,46 @@ curl -X POST https://example.com/api.php \
       "EmailAddress": "user@example.com",
       "SuppressionSource": "Hard Bounced",
       "Reason": "Bounce: 550 mailbox unavailable",
+      "Scope": "AccountWide"
+    }
+  }
+}
+```
+
+```bash [Example Request with CreatedOn]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "suppression.browse",
+    "SessionID": "your-session-id",
+    "IncludeCreatedOn": true
+  }'
+```
+
+```json [Success Response with CreatedOn]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "TotalRecords": 2,
+  "SuppressedEmails": {
+    "new@example.com": {
+      "SuppressionID": "1240",
+      "RelListID": "0",
+      "RelOwnerUserID": "42",
+      "SuppressionSource": "Hard Bounced",
+      "EmailAddress": "new@example.com",
+      "Reason": "Bounce: 550 mailbox unavailable",
+      "CreatedOn": "2026-10-21 10:07:00",
+      "Scope": "AccountWide"
+    },
+    "old@example.com": {
+      "SuppressionID": "1234",
+      "RelListID": "0",
+      "RelOwnerUserID": "42",
+      "SuppressionSource": "User",
+      "EmailAddress": "old@example.com",
+      "Reason": "",
+      "CreatedOn": null,
       "Scope": "AccountWide"
     }
   }
@@ -588,6 +631,7 @@ Pages through the **system-wide** suppression rows (`RelListID = 0` and `RelOwne
 | SuppressionSource | String | No | Restrict results to one or more sources. Comma-separated list of `SuppressionSource` ENUM values. |
 | StartFrom | Integer | No      | Starting record index for pagination (default: 0) |
 | RetrieveCount | Integer | No  | Number of records to retrieve (default: 100, max: 1000) |
+| IncludeCreatedOn | Boolean | No | When `true` (or `1`), every entry carries `CreatedOn` (UTC, `YYYY-MM-DD HH:MM:SS`), `null` for entries added before the field existed. Omitted or `false`: the response is unchanged. |
 
 ::: code-group
 
@@ -663,13 +707,14 @@ A restricted sub-admin (one with `AccessAllowedUserGroupIDs` set) only sees rows
 | EmailAddress | String | Yes   | Email address to look up, or a pattern with `*` wildcards |
 | StartFrom | Integer | No      | Starting record index for pagination (default: 0) |
 | RetrieveCount | Integer | No  | Number of records to retrieve (default: 100, max: 1000) |
+| IncludeCreatedOn | Boolean | No | When `true` (or `1`), every entry carries `CreatedOn` (UTC, `YYYY-MM-DD HH:MM:SS`), `null` for entries added before the field existed. Omitted or `false`: the response is unchanged. |
 
 **Response Fields:**
 
 | Field | Type | Description |
 |-------|------|-------------|
 | TotalRecords | Integer | Rows matching across all reachable accounts |
-| Suppressions | Array | Matching rows, ordered by `SuppressionSource` then `SuppressionID` |
+| Suppressions | Array | Matching rows, ordered by `SuppressionSource` then `SuppressionID`. Each row carries `CreatedOn` only when `IncludeCreatedOn` is set. |
 
 Each `Suppressions` entry carries the raw columns (`SuppressionID`, `RelListID`, `RelOwnerUserID`, `SuppressionSource`, `EmailAddress`, `Reason`) plus `Scope`: `SystemWide` (`RelListID = 0`, `RelOwnerUserID = 0`), `AccountWide` (`RelListID = 0`, owner set) or `PerList` (`RelListID` set).
 
