@@ -223,6 +223,16 @@ Before starting the upgrade, the command automatically verifies:
 
 If any check fails, the command stops and tells you what to fix before retrying.
 
+### Journey and Email Gateway tracking hosts
+
+From v6.0.2, before it stops any service, the upgrade also checks which tracking host journey and Email Gateway links will use after the upgrade, for each Enabled sender domain whose user group has Sender Domain Management turned on. It applies the rules of the release you are installing to your current sender domains and settings, and changes nothing.
+
+- When every domain keeps its own tracking host, it prints one line and continues.
+- When some domains will send these links on a fallback host instead (the `TRACKING_FALLBACK_DOMAIN` host, the delivery server's tracking domain, or the application host), it prints how many, each fallback host with its count, and up to 10 example domains. In a terminal without `--yes` it then asks **Continue with the upgrade?**. Answer `y` to continue. Any other answer cancels the upgrade with exit code `0`, before any service is stopped. With `--yes`, or when input is not a terminal, it prints the same report and continues.
+- If the check cannot run, it prints a warning and the upgrade continues.
+
+A domain keeps its own tracking host only while its DNS record set lists that host and the domain is Enabled, see [v5.9.6 behavior changes](/v5.9.6/api-reference/behavior-changes). `--dry-run` prints the same report when the installed upgrade command is v6.0.2 or later.
+
 ## Automatic Rollback
 
 If the upgrade fails at any point after the backup is created, the command automatically attempts a rollback:
