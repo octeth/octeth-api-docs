@@ -12,27 +12,29 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Changelog will be updated upon release.
+Octeth v6.0.3 corrects the v6.0.2 download. The v6.0.2 package was missing seven files of the new user interface, so on installations upgraded or installed from it the Connected AI assistants pages showed an error and AI assistants could not connect. v6.0.3 contains those files and everything in v6.0.2, including its security fix, and also fixes uploading a CSV file in the import wizard. Installations on v6.0.2 or earlier should upgrade to v6.0.3.
 
 ### New Features
 
-- (To be documented)
+None
 
 ### Enhancements
 
-- (To be documented)
+None
 
 ### Bug Fixes
 
-- (To be documented)
+- **AI assistant connector pages** - The release package contains the views of the AI assistant connector again. On installations of the v6.0.2 package, the staff AI assistants page and the customer [Connected AI assistants](/v6.0.3/new-user-interface/ai-assistants) page showed an error, connecting an assistant could not show its sign-in and approval screen, and the interface's view cache could not be built (#3678)
+- **Import wizard** - Choosing Upload CSV file and picking a file now enables Next, so a file import can continue to field mapping. Paste CSV was not affected (#3676)
 
 ### Security Patches
 
-- (To be documented)
+None. v6.0.3 includes every security fix of v6.0.2, including the patched container image for CVE-2026-109618 and CVE-2026-109619. Installations on v6.0.1 or earlier get it by upgrading straight to v6.0.3.
 
 ### Upgrade Notes
 
-- (To be documented)
+- **Upgrading from v6.0.1 or earlier** - Read the [v6.0.2 Upgrade Notes](#v6-0-2) first. They all apply, because the upgrade to v6.0.3 makes every v6.0.2 change.
+- **Upgrading from v6.0.2** - Nothing changes in `.oempro_env` apart from `PRODUCT_VERSION`, and there are no database changes. If you copied the missing AI assistant files onto your installation by hand, the upgrade writes the same files.
 
 ### Deprecations
 

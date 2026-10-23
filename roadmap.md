@@ -9,7 +9,7 @@ description: Track Octeth version releases, development status, and upcoming fea
 This roadmap shows all past and upcoming Octeth releases. Use this page to track version history, plan upgrades, and see what's coming next.
 
 ::: tip Current Version
-The latest stable release is **v6.0.2** (released October 22nd, 2026). [View changelog](/changelog#v6-0-2) to see what's new.
+The latest stable release is **v6.0.3** (released October 23rd, 2026). [View changelog](/changelog#v6-0-3) to see what's new.
 :::
 
 ## Understanding Version Numbers
@@ -68,6 +68,7 @@ Each version has a status badge indicating its current state:
 | v6.0.0  |           <Badge type="tip" text="Released" />           | Sep 25th, 2026 | API security audit remediation, bulk SMS campaigns via API, enforced API rate limits, real visitor IP addresses |
 | v6.0.1  |           <Badge type="tip" text="Released" />           | Oct 10th, 2026 | Bulk SMS campaigns in the new interface, Xeebi SMS gateway, sender domain health report, email gateway sending controls |
 | v6.0.2  |           <Badge type="tip" text="Released" />           | Oct 22nd, 2026 | Critical PHP security fix, AI assistant connector, sender screening, staff area in the new interface |
+| v6.0.3  |           <Badge type="tip" text="Released" />           | Oct 23rd, 2026 | Corrected v6.0.2 package with the AI assistant connector pages, CSV upload in the import wizard |
 
 ::: info What's Next?
 Octeth ships on a **two-week release cadence**, so expect a new version roughly every fortnight. The next release is due **November 5th, 2026**.
