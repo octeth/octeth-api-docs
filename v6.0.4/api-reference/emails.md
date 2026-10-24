@@ -724,6 +724,10 @@ curl -X GET "https://example.com/api/v1/email.render?UserID=100&ListID=50&Subscr
 | SubscriberID    | Integer | No       | Subscriber ID (random subscriber selected if not provided)         |
 | IsPreview       | Boolean | No       | Preview mode flag (accepts: 1/true/on/yes or 0/false/off/no)      |
 
+::: info Sub-admin user group scope (v6.0.4, #3512)
+With admin authentication by a sub-admin limited to some user groups, a `UserID` outside those groups is answered like a user that does not exist (error code `1`, invalid UserID).
+:::
+
 ::: code-group
 
 ```bash [Example Request]

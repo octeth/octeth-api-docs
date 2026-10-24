@@ -2213,6 +2213,10 @@ curl -X POST https://example.com/api/v1/admin.revenue.series \
 
 Retrieves complete email information for admin users without user restrictions. This allows administrators to view email details from any account, useful for debugging and cross-account support.
 
+::: info Sub-admin user group scope (v6.0.4, #3512)
+A sub-admin limited to some user groups receives error code `2` (email not found) for an email owned by an account outside its user groups. The master admin API key and unrestricted admins are not affected.
+:::
+
 **Request Body Parameters:**
 
 | Parameter | Type    | Required | Description                          |
