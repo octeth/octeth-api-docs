@@ -94,6 +94,15 @@ A subscriber whose `BounceType` is `Soft` and whose `SubscriptionStatus` is `Sub
 - **The new interface** shows a soft-bounced subscriber as Active with a "Soft bounce" badge, and segment browsing and segment exports include them. "Bounced" now means a hard bounce.
 - **Unchanged:** campaigns, `Subscribers.Search` with `AddMustHaveFilters`, and the bounce processor's soft-to-hard threshold, which still turns repeated soft bounces into a hard bounce.
 
+#### Multi-list campaigns skip journey enrollees only on lists that ask for it
+
+The list setting "Skip subscribers already in a journey or auto responder" (`DoNotSendEmailCampaignIfRecipientIsEnrolledInJourneyOrAutoresponder` in the list `Options`) now applies to that list's recipients only.
+
+- **Before:** when a campaign was sent to several lists and one of them had the setting on, Octeth removed journey and autoresponder enrollees from every list in the campaign, including lists that had it off.
+- **Now:** a list with the setting on loses its own enrollees, and a list with it off keeps them. A campaign sent to lists that all have the setting on, or all have it off, is unchanged, and so is every single-list campaign.
+- **Autoresponder enrollees above 10,000:** when more than 10,000 recipients of one list were waiting for an autoresponder email, earlier versions removed only part of them and logged the full number. All of them are now removed, and the log shows the number actually removed.
+- **New per-campaign override:** `campaign.create` and `campaign.update` accept `JourneyEnrolleeHandling` (`list`, `include` or `exclude`), and `campaign.get` returns it inside `Options` once it is set. `list`, or no value, keeps the per-list behavior above. See [Update a Campaign](/v6.0.4/api-reference/campaigns#update-a-campaign).
+
 ## Upgrade checklist
 
 1. **If a ClickBank account still sends instant notifications to `/app/public/cbs2spostback/`**, point it at the list's `clickbank_webhook.php?list=<list hash>` address instead. The old address never recorded a sale, so nothing that worked before stops working.
@@ -106,6 +115,7 @@ A subscriber whose `BounceType` is `Soft` and whose `SubscriptionStatus` is `Sub
 8. **Expect users of the classic user area who ticked "Remember me" to sign in once more** after the upgrade. Accounts with two-factor authentication are no longer remembered at all.
 9. **If an integration reuses a `SessionID` it got by signing in as a user who also signs in to the new interface**, expect error 99998 after that user revokes the session or signs out, and sign in again with `user.login`. Integrations that authenticate with a user `APIKey` are not affected.
 10. **If you read journey send counts or skip reasons**, expect more sends and fewer `Bounced` skips on lists with soft-bounced subscribers.
+11. **If you send one campaign to several lists and only some of them skip journey enrollees**, expect enrollees on the other lists to receive it. Set `JourneyEnrolleeHandling` to `exclude` on the campaign to skip them on every list.
 
 ---
 

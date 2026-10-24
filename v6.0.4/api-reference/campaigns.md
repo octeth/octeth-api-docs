@@ -209,6 +209,7 @@ curl -X POST https://example.com/api.php \
 | SessionID    | String | No       | Session ID obtained from login            |
 | APIKey       | String | No       | API key for authentication                |
 | CampaignName | String | Yes      | Name of the new campaign                  |
+| JourneyEnrolleeHandling | String | No | How the campaign treats subscribers who are in a journey or waiting for an autoresponder email when its queue is built: `list` (default) follows each target list's "Skip subscribers already in a journey or auto responder" setting, `include` sends to them on every list, `exclude` skips them on every list. When omitted, nothing is stored and the campaign follows the list settings. Any other value is refused with ErrorCode 2. Added in v6.0.4. |
 
 ::: code-group
 
@@ -240,6 +241,7 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 1: Missing required parameter (CampaignName)
+2: Invalid JourneyEnrolleeHandling (must be list, include or exclude)
 ```
 
 :::
@@ -317,6 +319,8 @@ curl -X POST https://example.com/api.php \
 2: Invalid CampaignID (non-numeric)
 3: Campaign not found or doesn't belong to user - only returned when FailOnNotFound=true
 ```
+
+`Campaign.Options.JourneyEnrolleeHandling` (`list`, `include` or `exclude`) is present once it was set with `campaign.create` or `campaign.update`. When it is absent the campaign follows each list's setting. Added in v6.0.4.
 
 ::: warning Campaign Not Found Is Not An Error By Default
 Unless `FailOnNotFound=true` is passed, requesting a campaign that does not exist (or that belongs to another user) returns:
@@ -599,6 +603,7 @@ With an AI agent key, an update that leaves the campaign scheduled or sending ne
 | Exclude_RecipientListsAndSegments | String | No  | Comma-separated exclusion list (format: ListID:SegmentID)         |
 | RulesJsonBundle              | String  | No       | JSON string with advanced recipient selection rules. Every `list_id` in `criteria` and every `segments` rule value must be an existing list or segment owned by the authenticated user, otherwise the update is refused with ErrorCode 28 (or 29 for a value that is not a positive integer) and nothing is changed. An empty `list_id` names no list and is ignored. |
 | S2SEnabled                   | Boolean | No       | Enable server-to-server tracking                                  |
+| JourneyEnrolleeHandling      | String  | No       | How the campaign treats subscribers who are in a journey or waiting for an autoresponder email when its queue is built: `list` follows each target list's "Skip subscribers already in a journey or auto responder" setting, `include` sends to them on every list, `exclude` skips them on every list. Stored in `Options.JourneyEnrolleeHandling`. When omitted, the stored value is kept. Any other value is refused with ErrorCode 31 and nothing is changed. Added in v6.0.4. |
 | ABTesting                    | Object  | No       | A/B testing configuration (see [A/B Testing Parameters](#a-b-testing-parameters) below) |
 
 **A/B Testing Parameters:**
@@ -616,6 +621,10 @@ When the `ABTesting` object is provided, the campaign is configured as an A/B sp
 - Each variation must have a distribution of at least 1%.
 - To disable A/B testing on a campaign, pass an empty `ABTesting` parameter.
 - The system randomly distributes recipients across variations during queue generation, so each subscriber receives exactly one variation.
+:::
+
+::: info Journey and autoresponder enrollees
+The list setting "Skip subscribers already in a journey or auto responder" applies to that list's recipients only. In a campaign sent to several lists, a list with the setting off keeps its enrollees even when another list has it on. `JourneyEnrolleeHandling` overrides the list settings for one campaign: `include` sends to enrollees on every list, `exclude` skips them on every list. Enrollment is checked once, when the campaign's queue is built. To skip only the members of one journey, set `include` and add a `not in journey` rule (`journey-email-action`) to the list's criterion in `RulesJsonBundle`. For an `Untrusted` owner, changing the value to `include` or `exclude` on an approved campaign is an audience change and puts it back in `Pending Approval`. Added in v6.0.4.
 :::
 
 ::: warning Pending Approval
@@ -693,6 +702,7 @@ curl -X POST https://example.com/api.php \
 28: RulesJsonBundle names a list or segment that does not exist or does not belong to the user
 29: RulesJsonBundle holds a list_id or segments rule value that is not a positive integer
 30: The campaign is in Pending Approval and the requested CampaignStatus is not Draft or Pending Approval (only campaign.approve releases it)
+31: Invalid JourneyEnrolleeHandling (must be list, include or exclude)
 ```
 
 :::
