@@ -251,6 +251,18 @@ This command is read-only. It does not modify any files — it only analyzes and
 Always restart the appropriate containers after changing configuration values to apply your changes.
 :::
 
+## Security
+
+**Rotating an install salt:**
+
+```bash
+/opt/octeth/cli/octeth.sh security:rotate-salt --salt=scrty              # Print what a SCRTY_SALT rotation invalidates, change nothing
+/opt/octeth/cli/octeth.sh security:rotate-salt --salt=scrty --confirm    # Rotate SCRTY_SALT
+/opt/octeth/cli/octeth.sh security:rotate-salt --salt=hashids --confirm  # Rotate HASH_IDS_SALT, keep the old value in HASH_IDS_SALT_PREVIOUS
+```
+
+Options: `--confirm` (required to change anything), `--replace-previous` (hashids only: overwrite a non-empty `HASH_IDS_SALT_PREVIOUS`), `--yes` (restart even while a campaign is sending), `--note TEXT` (recorded with the change). `--salt=password` is always refused. See "Install salts" on the [configuration page](./octeth-configuration.md).
+
 ## Database Operations
 
 These commands help you manage your Octeth database and run maintenance tasks.

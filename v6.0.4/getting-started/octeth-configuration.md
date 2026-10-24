@@ -75,12 +75,29 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
    ```bash
    LICENSE_KEY=eyJ2IjoyLCJraWQiOi...                       # Your signed Octeth license key from my.octeth.com (one line, about 800 characters). A short OCT-... key is not a license
    ADMIN_API_KEY=SZaQtZfJ4zufb8blykpvHPM6IBhFGFf0           # Admin API access key
-   HASH_IDS_SALT=elis9RqKmDLLt3B+Ls5kfC_+fl7IZoO3          # Hash ID salt
-   OEMPRO_PASSWORD_SALT=elis9RqKmDLLt3B+Ls5kfC_+fl7IZoO3   # Password encryption salt
-   SCRTY_SALT=elis9RqKmDLLt3B+Ls5kfC_+fl7IZoO3             # Security salt
+   HASH_IDS_SALT=<32 random characters>                    # Hashids salt (website tracker ids, ClickBank webhook URLs, SMS callback URLs)
+   HASH_IDS_SALT_PREVIOUS=                                 # Previous Hashids salt, decode only, set by security:rotate-salt. Empty = no fallback
+   OEMPRO_PASSWORD_SALT=<32 random characters>             # Password hash salt. Never change it on an existing install
+   SCRTY_SALT=<32 random characters>                       # Key of the password-reset links, the saved-accounts cookie and the internal disable2fa tokens
    OEMPRO_SUPERADMIN_AUTH_CODE=                            # Optional super-admin auth code (enables an extra admin authentication gate). Empty = disabled
    OEMPRO_SUPERADMIN_AUTH_TIMEOUT=                         # Timeout (seconds) for the super-admin auth session when the code above is set
    ```
+
+   **Install salts.** The installer generates the three salts independently, 32 random characters each, so knowing one tells nothing about the others. An install created by an older installer has one value in all three. An upgrade never changes an existing salt: it only appends keys an install lacks, and `HASH_IDS_SALT_PREVIOUS` is appended empty. Rotate a salt with `./cli/octeth.sh security:rotate-salt`, one salt at a time, because each one breaks different things when it changes. Without `--confirm` the command only prints what the rotation invalidates. With `--confirm` it snapshots `.oempro_env` (undo with `./cli/octeth.sh env:rollback`), writes the new value without printing it, and restarts the workers and containers that cache the key, the same way `env:apply` does. Add `--yes` to rotate while a campaign is sending.
+
+   **Rotating `SCRTY_SALT`.** Run `./cli/octeth.sh security:rotate-salt --salt=scrty --confirm`. It invalidates outstanding password-reset links for users and administrators (anyone mid-reset requests a new link), the saved accounts in the account switcher (each browser forgets them, and they are added again by signing in), and any copy of the internal disable2fa tokens. Two-factor authentication is not affected: each 2FA secret is generated once and stored with the account, and sign-in checks the stored secret, so nobody re-enrols and everyone signs in as before. This also holds for 2FA enrolments made by older versions, whose secret was derived from `SCRTY_SALT` at enrolment time but is stored, so the rotation does not change it. Passwords, sessions, remember-me tokens and API keys are not affected either.
+
+   **Rotating `HASH_IDS_SALT`.** Run `./cli/octeth.sh security:rotate-salt --salt=hashids --confirm`. The current value moves to `HASH_IDS_SALT_PREVIOUS` and a new `HASH_IDS_SALT` is written. New ids are always made with `HASH_IDS_SALT`. Every place that reads an id tries `HASH_IDS_SALT` first and `HASH_IDS_SALT_PREVIOUS` second, so these keep working:
+
+   - website tracker snippets already pasted into customer sites (their user and list ids),
+   - ClickBank webhook URLs, whose list hash is stored with the list and never regenerated,
+   - SMS provider callback URLs (delivery reports and inbound messages) registered at the provider.
+
+   The Xeebi idempotency key also uses the salt, so a retry of a message submitted before the rotation is not deduplicated by the provider. The command refuses to run while `HASH_IDS_SALT_PREVIOUS` is already set, because overwriting it breaks ids from the earlier generation. `--replace-previous` overrides that once those ids are no longer in use. It also refuses when `HASH_IDS_SALT` is empty.
+
+   **Retiring `HASH_IDS_SALT_PREVIOUS`.** There is no automatic expiry. Keep it for at least 12 months after the rotation, since a tracker snippet or a provider callback URL keeps the old id until someone updates it. Before you remove it, update the tracker snippet on every customer site, set up each ClickBank integration again, and update the callback URLs at each SMS provider, then remove the line from `.oempro_env` by hand and run `./cli/octeth.sh backend:restart`. Ids made with the old salt stop resolving at that point. If you rotate because the old salt leaked, note that while `HASH_IDS_SALT_PREVIOUS` holds it, anyone who has it can still produce ids that resolve. Shorten the grace period in that case and accept that old ids break.
+
+   **Why `OEMPRO_PASSWORD_SALT` cannot be rotated.** Every stored password hash is computed with it, so a new value would lock out every user and administrator. `security:rotate-salt --salt=password` refuses with this explanation. The value stops mattering once passwords are stored with `password_hash()`, which keeps a salt per row. It is also part of `CADDY_DOMAIN_VERIFY_CODE` and the bounce webhook secret, described below.
 
    **License key and limits.** Copy the license key for the installation's domain from the license page at my.octeth.com. It is one line of about 800 characters, `base64url(payload).base64url(signature)`. The same key shown as a `-----BEGIN OCTETH LICENSE-----` / `-----END OCTETH LICENSE-----` block, or wrapped over several lines, works too: the BEGIN and END lines and all spaces and line breaks are removed before it is checked. Octeth verifies the key offline (Ed25519, with the public keys shipped in the release and never fetched) and takes the edition, the user account limit and the active subscriber limit from it. A key issued before subscriber limits were added means 10,000 subscribers for a Community license and unlimited for a paid one. Only the `APP_URL` host counts as the installation's domain, compared without case and without a leading `www.`.
 
