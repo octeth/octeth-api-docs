@@ -1,6 +1,6 @@
 # The Staff S2S Postback Screen
 
-**S2S postback** shows the addresses an advertiser's server calls to report a conversion back to Octeth, and the names of the query parameters it sends. It replaces the classic admin **S2S Postback** page. Nothing on this screen sends a request.
+**S2S postback** shows the address an advertiser's server calls to report a conversion back to Octeth, and the names of the query parameters it sends. It replaces the classic admin **S2S Postback** page. Nothing on this screen sends a request.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
@@ -8,14 +8,11 @@
 
 Open it from the staff sidebar: click **Settings**, then **S2S postback**. The classic admin **Settings > S2S Postback** link, and the old `/app/admin/s2spostback/` address, open the same screen.
 
-## Conversion addresses
+## Conversion address
 
-The **Conversion addresses** card shows two addresses. They are fixed for the install and built from its public address.
+The **Conversion address** card shows `<your install>/system/s2s-postback/`. It is fixed for the install and built from its public address. Give it to the advertiser or affiliate network: their server calls it with the parameters below when a subscriber converts. Click the copy icon at the end of the address to copy it.
 
-- **Conversion address** (`<your install>/system/s2s-postback/`): give this to the advertiser or affiliate network. Their server calls it with the parameters below when a subscriber converts.
-- **ClickBank address** (`<your install>/app/public/cbs2spostback/`): for ClickBank, use this one as the instant notification URL instead.
-
-Click the copy icon at the end of an address to copy it.
+ClickBank is not set up here. Each subscriber list has its own ClickBank instant notification address in the list's integration settings.
 
 ## Parameter names
 
