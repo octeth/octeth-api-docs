@@ -84,7 +84,15 @@ The new interface's **Account, Active sessions** tab now ends the Octeth session
 
 ## Tier 2: shape and value changes
 
-None recorded yet.
+#### Journeys send to soft-bounced subscribers
+
+A subscriber whose `BounceType` is `Soft` and whose `SubscriptionStatus` is `Subscribed` is now treated as active by journeys, the same way campaigns have always treated them. Only a hard bounce takes a subscriber out.
+
+- **Send Email and Send SMS journey actions** now send to a soft-bounced subscriber. Earlier versions skipped them with the reason `Bounced` ("Subscriber has bounced") in the action's execution metadata. A hard-bounced subscriber is still skipped with that reason.
+- **Scheduled-pull journeys** now select soft-bounced subscribers and still exclude hard-bounced ones.
+- **Journey reports and per-action counts** therefore show more sends on lists that hold soft-bounced subscribers.
+- **The new interface** shows a soft-bounced subscriber as Active with a "Soft bounce" badge, and segment browsing and segment exports include them. "Bounced" now means a hard bounce.
+- **Unchanged:** campaigns, `Subscribers.Search` with `AddMustHaveFilters`, and the bounce processor's soft-to-hard threshold, which still turns repeated soft bounces into a hard bounce.
 
 ## Upgrade checklist
 
@@ -97,6 +105,7 @@ None recorded yet.
 7. **If your integration tells an operator "no such administrator" when `admin.passwordremind` returns `ErrorCode 3`**, show one neutral "if the address is registered, a reset link is on its way" message for every success instead.
 8. **Expect users of the classic user area who ticked "Remember me" to sign in once more** after the upgrade. Accounts with two-factor authentication are no longer remembered at all.
 9. **If an integration reuses a `SessionID` it got by signing in as a user who also signs in to the new interface**, expect error 99998 after that user revokes the session or signs out, and sign in again with `user.login`. Integrations that authenticate with a user `APIKey` are not affected.
+10. **If you read journey send counts or skip reasons**, expect more sends and fewer `Bounced` skips on lists with soft-bounced subscribers.
 
 ---
 
