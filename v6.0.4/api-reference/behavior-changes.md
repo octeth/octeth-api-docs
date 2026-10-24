@@ -52,6 +52,26 @@ Unrestricted admins, the master admin API key and user API keys are not affected
 
 `tag.update` had no unknown-id error, because a `TagID` you do not own matched no row and the call still answered success. A malformed `TagID` now gets error code `1`, the same code as a missing `TagID`. A well-formed `TagID` you do not own still answers success, as before.
 
+#### Exponent, decimal and signed ids are refused where ownership is checked
+
+The commands below checked an id against what you own, then used the value you sent. MySQL reads `117e1` as `1170` and stores `1.9` as `2`, so a malformed id could pass the check as one record and act on another. They now accept an id only when it is a whole number of 1 or more written in digits. Leading zeros still work (`007` is 7). Spellings such as `1e3`, `1.9`, `5.0` or `+5` are refused, and nothing is written or deleted.
+
+| Command | Parameter | Error code for a malformed id |
+|---|---|---|
+| `campaigns.delete` | `Campaigns` | `2` |
+| `subscribers.delete` | `SubscriberListID` | `5` (Invalid list id) |
+| `campaign.update` | A/B testing variation `EmailID` | `24` |
+| `segment.create` | `SubscriberListID` | `4` |
+| `segments.copy` | `SourceListID`, `TargetListID` | `4` |
+| `segments.delete` | `Segments` | `2` (new code: Invalid segment ids; no segments were deleted) |
+| `automated_reports.create` | `FilterTags` | `6` |
+| `automated_reports.update` | `FilterTags` | `5` |
+| `customfield.create` | `SubscriberListID` | `8` |
+| `users.delete` (sub-admin limited to some user groups) | `Users` | `5003` |
+| `user.update` (sub-admin limited to some user groups) | `RelUserGroupID` | `5003` |
+
+The master admin API key and unrestricted admins are not affected. A blank or zero `SubscriberListID` on `subscribers.delete` still means the global suppression list.
+
 #### `admin.passwordremind` no longer reveals whether an address is an administrator
 
 `admin.passwordremind` needs no authentication, and an email address that belongs to no administrator used to return `{"Success": false, "ErrorCode": [3]}`. Anyone could use that answer to find out which addresses are administrator accounts. Such an address now returns `{"Success": true, "ErrorCode": 0}`, the same body as a real administrator's address, and no email is sent.
@@ -111,11 +131,12 @@ The list setting "Skip subscribers already in a journey or auto responder" (`DoN
 4. **If your SSO broker parsed the plain-text "Decrypted Token" response**, read the JSON `error` field instead.
 5. **If a restricted sub-admin account adds SMS suppressions for other accounts** through `smssuppression.add` or `smssuppression.patterns.add`, check that every target account is in one of its allowed user groups, or call the commands with an unrestricted admin account.
 6. **If your integration sends an object id as anything other than a plain number** to one of the eleven commands above (for example `"12abc"` or a JSON array), send the numeric id instead.
-7. **If your integration tells an operator "no such administrator" when `admin.passwordremind` returns `ErrorCode 3`**, show one neutral "if the address is registered, a reset link is on its way" message for every success instead.
-8. **Expect users of the classic user area who ticked "Remember me" to sign in once more** after the upgrade. Accounts with two-factor authentication are no longer remembered at all.
-9. **If an integration reuses a `SessionID` it got by signing in as a user who also signs in to the new interface**, expect error 99998 after that user revokes the session or signs out, and sign in again with `user.login`. Integrations that authenticate with a user `APIKey` are not affected.
-10. **If you read journey send counts or skip reasons**, expect more sends and fewer `Bounced` skips on lists with soft-bounced subscribers.
-11. **If you send one campaign to several lists and only some of them skip journey enrollees**, expect enrollees on the other lists to receive it. Set `JourneyEnrolleeHandling` to `exclude` on the campaign to skip them on every list.
+7. **If your integration sends an id in exponent, decimal or signed form** (for example `1e3`, `5.0` or `+5`) to one of the commands in the ownership-check table above, send the plain digits instead.
+8. **If your integration tells an operator "no such administrator" when `admin.passwordremind` returns `ErrorCode 3`**, show one neutral "if the address is registered, a reset link is on its way" message for every success instead.
+9. **Expect users of the classic user area who ticked "Remember me" to sign in once more** after the upgrade. Accounts with two-factor authentication are no longer remembered at all.
+10. **If an integration reuses a `SessionID` it got by signing in as a user who also signs in to the new interface**, expect error 99998 after that user revokes the session or signs out, and sign in again with `user.login`. Integrations that authenticate with a user `APIKey` are not affected.
+11. **If you read journey send counts or skip reasons**, expect more sends and fewer `Bounced` skips on lists with soft-bounced subscribers.
+12. **If you send one campaign to several lists and only some of them skip journey enrollees**, expect enrollees on the other lists to receive it. Set `JourneyEnrolleeHandling` to `exclude` on the campaign to skip them on every list.
 
 ---
 

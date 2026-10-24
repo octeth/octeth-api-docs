@@ -321,6 +321,7 @@ curl -X POST https://example.com/api.php \
 ```txt [Error Codes]
 0: Success
 1: Segment ids are missing
+2: Invalid segment ids; no segments were deleted
 ```
 
 :::
