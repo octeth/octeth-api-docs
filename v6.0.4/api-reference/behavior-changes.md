@@ -62,6 +62,18 @@ Unrestricted admins, the master admin API key and user API keys are not affected
 
 This change is on by default, with no setting to restore the old answer, because the old answer was the disclosure (octeth/oempro#3437).
 
+#### "Remember me" in the classic user area signs everyone in once more after the upgrade
+
+The "Remember me" cookie of the classic user area (`/app/user/`) is now a random token whose hash is stored on the server, the same design the admin login already uses. A remembered browser is signed out when the user signs out in that browser, uses "log out of all accounts", changes their password, turns on two-factor authentication, has their account disabled or deleted, or after 14 days from the first sign-in, whichever comes first.
+
+- **Every existing cookie stops working once.** A cookie issued before the upgrade is not accepted and is removed silently, so users who ticked "Remember me" see the login form one more time and can tick it again.
+- **No "Remember me" for accounts with two-factor authentication.** Such a user is never remembered, and a remembered browser stops working as soon as two-factor authentication is turned on, so the code is always asked for.
+- **The cookie is HttpOnly**, and Secure when `APP_URL` starts with `https://`. Page scripts can no longer read it.
+- **To sign a user out of every remembered browser** from the admin side, change the user's password or disable the account.
+- **`user.update` has a new `ErrorCode 12`.** A call that changes the password, turns on two-factor authentication or disables the account also revokes the user's remembered browsers. If that revoke cannot be recorded, nothing is saved and the call answers `ErrorCode 12` instead of reporting success. Every successful response is unchanged.
+
+The new interface at `/user/` is not affected: its "Remember me" already used a random server-side token (octeth/oempro#3230).
+
 ## Tier 2: shape and value changes
 
 None recorded yet.
@@ -75,6 +87,7 @@ None recorded yet.
 5. **If a restricted sub-admin account adds SMS suppressions for other accounts** through `smssuppression.add` or `smssuppression.patterns.add`, check that every target account is in one of its allowed user groups, or call the commands with an unrestricted admin account.
 6. **If your integration sends an object id as anything other than a plain number** to one of the eleven commands above (for example `"12abc"` or a JSON array), send the numeric id instead.
 7. **If your integration tells an operator "no such administrator" when `admin.passwordremind` returns `ErrorCode 3`**, show one neutral "if the address is registered, a reset link is on its way" message for every success instead.
+8. **Expect users of the classic user area who ticked "Remember me" to sign in once more** after the upgrade. Accounts with two-factor authentication are no longer remembered at all.
 
 ---
 

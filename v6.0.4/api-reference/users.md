@@ -581,6 +581,7 @@ curl -X POST https://example.com/api.php \
 9: CurrentPassword is required to change the password (v6.0.0)
 10: CurrentPassword is incorrect (v6.0.0)
 11: Password must be a string (v6.0.0)
+12: The account could not be updated, no change was saved (v6.0.4)
 ```
 
 :::
@@ -591,6 +592,10 @@ The call that enables two-factor authentication (`Enable2FA=true` with a valid `
 
 ::: tip Clearing a field (v6.0.2)
 `user.update` skips an empty value for the contact and address fields, so a field could not be blanked. Send `ClearEmptyFields: true` with the fields to clear set to an empty string, for example `{"Command": "user.update", "UserID": 123, "CompanyName": "", "ClearEmptyFields": true}`. Only fields present in the request are cleared. A call without the flag behaves exactly as before.
+:::
+
+::: tip Error code 12 (v6.0.4)
+A call that changes the password, turns on two-factor authentication or disables the account also signs the user out of every browser where "Remember me" was ticked in the classic user area. When that sign-out cannot be recorded, nothing is saved and the call answers `ErrorCode 12` instead of reporting success. Retry the call. Every other `user.update` response is unchanged.
 :::
 
 ## Get Monthly User Snapshot
