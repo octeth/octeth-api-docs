@@ -46,6 +46,12 @@ Under admin authentication, a sub-admin account limited to some user groups coul
 
 Unrestricted admins, the master admin API key and user API keys are not affected. The `system` level is unchanged.
 
+#### Object ids must be plain numbers in eleven commands
+
+`email.update`, `tag.update`, `list.update`, `segment.update`, `customfield.update`, `autoresponder.update`, `subscriber.update`, `subscribers.import`, `email.template.update`, `usergroup.update` and the `EmailID` parameter of `subscriber.unsubscribe` now refuse an object id that is not a plain number (digits, with surrounding spaces allowed). An array or object value, or a string such as `5abc`, gets the error the command already returns for an unknown id. A numeric id behaves exactly as before.
+
+`tag.update` had no unknown-id error, because a `TagID` you do not own matched no row and the call still answered success. A malformed `TagID` now gets error code `1`, the same code as a missing `TagID`. A well-formed `TagID` you do not own still answers success, as before.
+
 ## Tier 2: shape and value changes
 
 None recorded yet.
@@ -57,6 +63,7 @@ None recorded yet.
 3. **If an SSO source has Valid for (seconds) above 300**, lower it the next time you edit the source.
 4. **If your SSO broker parsed the plain-text "Decrypted Token" response**, read the JSON `error` field instead.
 5. **If a restricted sub-admin account adds SMS suppressions for other accounts** through `smssuppression.add` or `smssuppression.patterns.add`, check that every target account is in one of its allowed user groups, or call the commands with an unrestricted admin account.
+6. **If your integration sends an object id as anything other than a plain number** to one of the eleven commands above (for example `"12abc"` or a JSON array), send the numeric id instead.
 
 ---
 
