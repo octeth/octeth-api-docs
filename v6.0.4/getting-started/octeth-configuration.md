@@ -2859,12 +2859,6 @@ Monthly fee for autoresponder feature access.
 **AutoResponders Per Recipient**
 Enable per-recipient billing for autoresponder emails.
 
-**Design Preview Charge Per Request**
-Cost charged each time a user requests an email design preview.
-
-**Design Preview Charge Amount**
-Monthly fee for design preview feature access.
-
 **Payment Pricing Range**
 JSON configuration defining tiered pricing based on volume. Higher volumes typically get lower per-email costs.
 

@@ -401,16 +401,6 @@ The **Content Analysis** section scans your email HTML and reports on elements t
 If the content analysis detects JavaScript in your email, remove it. JavaScript in emails is universally blocked by email clients and may cause your email to be flagged as suspicious by spam filters.
 :::
 
-### Design Preview Testing
-
-If your administrator has enabled design preview testing, a **Test Email Design** button appears. Click it to submit your email for rendering across dozens of email clients and devices. After the test completes, a gallery of screenshots shows how your email appears in each client.
-
-Previous design tests are available in a dropdown so you can compare results over time.
-
-::: info
-Design preview testing uses an external service to render your email in real email clients. The test may take a few minutes to complete depending on the number of clients being tested.
-:::
-
 ## Managing Email Templates
 
 Email templates are reusable email designs that you can save and apply to multiple campaigns, auto responders, or other emails. Instead of designing an email from scratch each time, you can create a template once and reuse it whenever needed.

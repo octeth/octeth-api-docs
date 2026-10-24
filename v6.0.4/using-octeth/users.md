@@ -307,8 +307,6 @@ When the Payment System is enabled, the following additional fields appear:
 |---|---|
 | **Monthly Charge Amount** | Fixed monthly fee charged to users in this group. |
 | **Campaigns Per Campaign Cost** | Fee charged per campaign sent. |
-| **Design Preview Charge Per Request** | Number of free design previews before charges apply. |
-| **Design Preview Charge Amount** | Fee charged per design preview after the free allowance. |
 | **Auto Responders Charge Amount** | Fee charged for auto-responder usage. |
 | **Credit System** | Set to **Enabled** to require email credits, or **Disabled** to allow unlimited sending within limits. |
 | **Charge Per Auto Responder Recipient** | Whether to deduct credits for each auto-responder recipient. |
@@ -368,7 +366,7 @@ Permissions are organized into the following categories, each containing individ
 | Category | Permissions |
 |---|---|
 | **Account** | Update own account settings, set custom email header/footer |
-| **Email** | Spam test, design preview, manage email templates |
+| **Email** | Spam test, manage email templates |
 | **Campaigns** | Create, update, delete, view campaigns |
 | **Subscriber Lists** | Create, update, delete, view lists, connect external MySQL |
 | **Custom Fields** | Create, update, delete, view custom fields |
