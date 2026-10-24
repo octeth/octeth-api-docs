@@ -40,6 +40,12 @@ On an upgraded install, `./cli/octeth.sh upgrade:remove-retired-files` removes t
 - **When Redis cannot be reached**, a sign-in is refused with `SSO sign-in is temporarily unavailable` instead of being accepted without replay protection.
 - **With both Perform login and Return user data disabled**, a successful sign-in now returns `{"error": false, "message": "Signed in"}`. Earlier versions printed the decrypted token as plain text, including the password of a new user.
 
+#### `smssuppression.add` and `smssuppression.patterns.add` respect a sub-admin's user groups
+
+Under admin authentication, a sub-admin account limited to some user groups could add a suppressed number or a pattern at the `user` or `list` level for any account. Both commands now refuse an account outside the admin's allowed user groups with the same answer they give for an account that does not exist: error code `10` from `smssuppression.add` and `8` from `smssuppression.patterns.add`.
+
+Unrestricted admins, the master admin API key and user API keys are not affected. The `system` level is unchanged.
+
 ## Tier 2: shape and value changes
 
 None recorded yet.
@@ -50,6 +56,7 @@ None recorded yet.
 2. **If your SSO broker reuses a token** (for example to retry a failed request), change it to mint a new token per attempt.
 3. **If an SSO source has Valid for (seconds) above 300**, lower it the next time you edit the source.
 4. **If your SSO broker parsed the plain-text "Decrypted Token" response**, read the JSON `error` field instead.
+5. **If a restricted sub-admin account adds SMS suppressions for other accounts** through `smssuppression.add` or `smssuppression.patterns.add`, check that every target account is in one of its allowed user groups, or call the commands with an unrestricted admin account.
 
 ---
 
