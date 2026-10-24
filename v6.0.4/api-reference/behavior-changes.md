@@ -29,6 +29,17 @@ The address recorded nothing. It accepted either a `tid` and `value` pair or Cli
 
 On an upgraded install, `./cli/octeth.sh upgrade:remove-retired-files` removes the old controller file.
 
+### Security tightening
+
+#### SSO tokens are single-use and `ValidForSeconds` is capped at 300
+
+- **`sso.create` and `sso.update`** refuse a `ValidForSeconds` above `300` with error `8`. A source saved earlier with a larger value keeps working until it is next edited, and that edit must bring the value to `300` or less.
+- **The SSO sign-in address** (`/app/sso?code=&token=`) accepts each token once. A second request with the same token inside its validity window returns `{"error": true, "message": "Token has already been used"}` and is counted as failed data. Mint a fresh token for every sign-in, including a retry after a network error.
+- **A `check_time` more than 60 seconds ahead** of the Octeth server clock is refused with `Token check_time is in the future`.
+- **`check_time` is compared with the server's Unix time.** Earlier versions added the server's timezone offset, so on a server not running in UTC a token lived longer or shorter than `ValidForSeconds`. On a UTC server nothing changes.
+- **When Redis cannot be reached**, a sign-in is refused with `SSO sign-in is temporarily unavailable` instead of being accepted without replay protection.
+- **With both Perform login and Return user data disabled**, a successful sign-in now returns `{"error": false, "message": "Signed in"}`. Earlier versions printed the decrypted token as plain text, including the password of a new user.
+
 ## Tier 2: shape and value changes
 
 None recorded yet.
@@ -36,6 +47,9 @@ None recorded yet.
 ## Upgrade checklist
 
 1. **If a ClickBank account still sends instant notifications to `/app/public/cbs2spostback/`**, point it at the list's `clickbank_webhook.php?list=<list hash>` address instead. The old address never recorded a sale, so nothing that worked before stops working.
+2. **If your SSO broker reuses a token** (for example to retry a failed request), change it to mint a new token per attempt.
+3. **If an SSO source has Valid for (seconds) above 300**, lower it the next time you edit the source.
+4. **If your SSO broker parsed the plain-text "Decrypted Token" response**, read the JSON `error` field instead.
 
 ---
 

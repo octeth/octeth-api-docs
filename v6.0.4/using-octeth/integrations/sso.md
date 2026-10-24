@@ -80,7 +80,7 @@ You will see a list of existing SSO sources (if any have been created). From her
 | **Code** | Yes | A unique identifier used in the SSO URL. Only letters (A-Z), numbers (0-9), dashes (`-`), and underscores (`_`) are allowed. No spaces. For example, `my-website` or `woocommerce_store`. |
 | **Description** | No | An optional description for your own reference. |
 | **Expires** | No | An optional expiration date and time for the entire SSO source, in server time (UTC). After this moment, the source stops accepting SSO requests. Leave it empty for no expiration. |
-| **Valid for (seconds)** | Yes | How long each token remains valid, in seconds. The default value is `5` seconds, which means a token must be used within 5 seconds of being generated. |
+| **Valid for (seconds)** | Yes | How long each token remains valid, in seconds. The default value is `5` seconds, which means a token must be used within 5 seconds of being generated. The maximum is 300 seconds. Each token can be used once: a second sign-in with the same token is refused. |
 
 [[SCREENSHOT: The Create SSO source form showing the Source and Sign-in rules cards]]
 
@@ -226,7 +226,7 @@ exit;
 ```
 
 ::: warning
-The `check_time` field must be the current Unix timestamp in UTC at the moment the token is generated. If your server's clock is significantly out of sync, tokens may fail validation. Make sure your server's time is accurate.
+The `check_time` field must be the current Unix timestamp in UTC at the moment the token is generated. If your server's clock is significantly out of sync, tokens may fail validation. Make sure your server's time is accurate. A token whose `check_time` is more than 60 seconds ahead of the Octeth server's clock is refused.
 :::
 
 ::: tip
@@ -256,14 +256,16 @@ The outcome depends on the SSO source configuration:
 
   The JSON response includes fields such as `UserID`, `Username`, `EmailAddress`, `FirstName`, `LastName`, `SSOID`, and a `_SessionID` that can be used for subsequent API calls on behalf of the user. It holds the same account fields the `user.login` API command returns. Since v6.0.1 it no longer includes credentials such as the password hash, API key, two-factor secrets or the user group's SMTP settings.
 
+- **If both are disabled**, Octeth signs the user in and returns <code v-pre>{"error": false, "message": "Signed in"}</code>.
+
 ### What Happens on Failure
 
 If the SSO request fails for any reason, Octeth returns a JSON response with an error description. For example:
 
 ```json
 {
-    "Success": false,
-    "ErrorText": ["Token has expired"]
+    "error": true,
+    "message": "Token has expired"
 }
 ```
 
@@ -437,7 +439,19 @@ This error means the `check_time` value in the token is too far in the past rela
 
 1. Verify that your external system generates a fresh `check_time` value (using the current Unix timestamp in UTC) for each token, not a cached or hard-coded value.
 2. Check whether the clocks on your external system and the Octeth server are synchronized. A time difference greater than the **Valid For Seconds** setting will cause tokens to expire immediately.
-3. If needed, increase the **Valid For Seconds** value on the SSO source to allow more time for network latency.
+3. If needed, increase the **Valid for (seconds)** value on the SSO source, up to 300, to allow more time for network latency.
+
+### "Token has already been used" Error
+
+Each token signs in once. Generate a new token for every sign-in, including when your system retries a request that failed or timed out.
+
+### "Token check_time is in the future" Error
+
+The token's `check_time` is more than 60 seconds ahead of the Octeth server's clock. Use the current Unix timestamp in UTC, and keep both servers synchronized with NTP.
+
+### "SSO sign-in is temporarily unavailable" Error
+
+Octeth could not reach Redis to record the token as used, so it refused the sign-in rather than accept a token it cannot protect from reuse. Check that the Redis service is running.
 
 ### "Invalid user credentials" Error
 

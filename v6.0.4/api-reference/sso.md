@@ -32,7 +32,7 @@ Single Sign-On (SSO) source management endpoints for creating, reading, updating
 | SourceCode | String | Yes      | Unique code for the SSO source (alphanumeric, underscores, and hyphens only) |
 | SourceDescription | String | No | Description of the SSO source         |
 | ExpiresAt | String | No       | Expiration date and time (format: YYYY-MM-DD HH:MM:SS) |
-| ValidForSeconds | Integer | Yes | Token validity duration in seconds (must be >= 1) |
+| ValidForSeconds | Integer | Yes | Token validity duration in seconds (must be between 1 and 300). **Changed in v6.0.4:** values above 300 are refused. A source saved earlier with a larger value keeps it until it is next updated |
 | Options   | Object | No       | SSO options configuration. Each flag is `Enabled` only when its value is exactly `Enabled`; a missing flag is saved as `Disabled`. The flag names are matched whatever their case. **Changed in v6.0.2:** over HTTP the flags used to be saved as `Disabled` whatever you sent, because the API lowercases request keys |
 | Options.CreateNewUserIfNotExists | String | No | Create new user if not exists (`Enabled` or `Disabled`) |
 | Options.PerformLogin | String | No | Perform automatic login (`Enabled` or `Disabled`) |
@@ -50,7 +50,7 @@ curl -X POST https://example.com/api.php \
     "SourceCode": "external_portal_v1",
     "SourceDescription": "SSO integration for external portal",
     "ExpiresAt": "2025-12-31 23:59:59",
-    "ValidForSeconds": 3600,
+    "ValidForSeconds": 30,
     "Options": {
       "CreateNewUserIfNotExists": "Enabled",
       "PerformLogin": "Enabled",
@@ -86,7 +86,7 @@ curl -X POST https://example.com/api.php \
 5: Invalid expiresat (must be in YYYY-MM-DD HH:MM:SS format)
 6: sourcecode already exists
 7: Missing validforseconds
-8: Invalid validforseconds (must be numeric and >= 1)
+8: Invalid validforseconds (must be numeric, between 1 and 300)
 99999: Not enough privileges (the admin account does not hold Settings.SSO)
 ```
 
@@ -122,7 +122,7 @@ curl -X POST https://example.com/api.php \
 | SourceCode | String | Yes      | Unique code for the SSO source (alphanumeric, underscores, and hyphens only) |
 | SourceDescription | String | No | Description of the SSO source         |
 | ExpiresAt | String | No       | Expiration date and time (format: YYYY-MM-DD HH:MM:SS) |
-| ValidForSeconds | Integer | Yes | Token validity duration in seconds (must be >= 1) |
+| ValidForSeconds | Integer | Yes | Token validity duration in seconds (must be between 1 and 300). **Changed in v6.0.4:** values above 300 are refused. A source saved earlier with a larger value keeps it until it is next updated |
 | Options   | Object | No       | SSO options configuration. Each flag is `Enabled` only when its value is exactly `Enabled`; a missing flag is saved as `Disabled`. The flag names are matched whatever their case. **Changed in v6.0.2:** over HTTP the flags used to be saved as `Disabled` whatever you sent, because the API lowercases request keys |
 | Options.CreateNewUserIfNotExists | String | No | Create new user if not exists (`Enabled` or `Disabled`) |
 | Options.PerformLogin | String | No | Perform automatic login (`Enabled` or `Disabled`) |
@@ -141,7 +141,7 @@ curl -X POST https://example.com/api.php \
     "SourceCode": "external_portal_v2",
     "SourceDescription": "Updated SSO integration for external portal",
     "ExpiresAt": "2026-12-31 23:59:59",
-    "ValidForSeconds": 7200,
+    "ValidForSeconds": 30,
     "Options": {
       "CreateNewUserIfNotExists": "Disabled",
       "PerformLogin": "Enabled",
@@ -174,7 +174,7 @@ curl -X POST https://example.com/api.php \
 5: Invalid expiresat (must be in YYYY-MM-DD HH:MM:SS format)
 6: sourcecode already exists
 7: Missing validforseconds
-8: Invalid validforseconds (must be numeric and >= 1)
+8: Invalid validforseconds (must be numeric, between 1 and 300)
 9: Missing sourceid
 10: Invalid sourceid
 99999: Not enough privileges (the admin account does not hold Settings.SSO)
@@ -286,7 +286,7 @@ curl -X POST https://example.com/api.php \
       "CreateNewUserIfNotExists": "Enabled",
       "PerformLogin": "Enabled",
       "ReturnUserData": "Disabled",
-      "ValidForSeconds": "3600"
+      "ValidForSeconds": "30"
     }
   }
 }
@@ -357,7 +357,7 @@ curl -X POST https://example.com/api.php \
         "CreateNewUserIfNotExists": "Enabled",
         "PerformLogin": "Enabled",
         "ReturnUserData": "Disabled",
-        "ValidForSeconds": "3600"
+        "ValidForSeconds": "30"
       }
     }
   ],
