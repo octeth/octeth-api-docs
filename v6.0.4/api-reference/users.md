@@ -414,6 +414,79 @@ The `"*"` sentinel is emitted when an administrator is impersonating the user wi
 Everything below `DefaultSenderDomain` in the table above was added in v5.9.3. Previously these were readable only through the admin-authenticated `user.get`, which forced frontend integrations to hold an admin API key purely to render a user's own UI. The change is **purely additive**: the four pre-existing `GroupInfo` keys are unchanged in name and value.
 :::
 
+## User Logout
+
+<Badge type="info" text="POST" /> `/api/v1/user.logout`
+
+<Badge type="tip" text="New in v6.0.4" />
+
+::: tip API Usage Notes
+- Authentication is done by user SessionID (a user API key works too, see below)
+- Required permissions: none
+- v1 REST alias: `POST /api/v1/user.logout`. Legacy access via `/api.php` is also supported
+:::
+
+Ends sessions of the calling user. It has two forms.
+
+**Without `TargetSessionHashes`** the calling session is ended. The `SessionID` stops working at once, and later calls with it answer error 99998. With a user `APIKey` call there is no persistent session to end, and the command succeeds as a no-op.
+
+**With `TargetSessionHashes`** other sessions of the same user are ended, and the calling session stays signed in. Each value is the SHA-256 hex digest of a `SessionID`, so a client can end a session it no longer holds the id of, for example one listed on another device. From then on `api.php` refuses that session with error 99998 and the text `This session was signed out from another device`, whether it is sent as `SessionID` or as the session cookie, and the legacy user area signs it out.
+
+A hash is always recorded against the calling user's own account, and a session is refused only when its hash was recorded by the account it is signed in as. Sending the hash of another user's session therefore has no effect: one user can never end another user's session.
+
+A recorded hash is kept for the session lifetime (`SESSION_LIFETIME_DAYS`, at least 30 days) plus one day, then removed.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `user.logout` |
+| SessionID | String | Yes | The calling user's session |
+| TargetSessionHashes | String | No | Comma-separated SHA-256 hex digests (64 characters each) of other `SessionID`s of the same user, at most 100. An array of strings is accepted too |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "user.logout",
+    "SessionID": "session-id-from-user-login",
+    "TargetSessionHashes": "3f1c...e9a0,8b2d...41c7"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "RevokedSessions": 2
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "TargetSessionHashes must be a comma-separated list of SHA-256 hex digests"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: TargetSessionHashes is empty or holds a value that is not a SHA-256 hex digest
+2: TargetSessionHashes holds more than 100 hashes
+3: The sessions could not be signed out
+99998: Authentication failure or session expired
+```
+
+:::
+
+`RevokedSessions` is returned only with `TargetSessionHashes`, and counts the distinct hashes in the request. Recording a hash a second time is not an error.
+
+To compute a hash, take the SHA-256 of the `SessionID` string exactly as `user.login` returned it, and send the lowercase hex digest.
+
 ## Get User Information
 
 <Badge type="info" text="GET" /> `/api/v1/user.get`

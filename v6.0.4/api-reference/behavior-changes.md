@@ -74,6 +74,14 @@ The "Remember me" cookie of the classic user area (`/app/user/`) is now a random
 
 The new interface at `/user/` is not affected: its "Remember me" already used a random server-side token (octeth/oempro#3230).
 
+#### A revoked user session is refused by the API
+
+The new interface's **Account, Active sessions** tab now ends the Octeth session behind a revoked device, through the new [`user.logout`](/v6.0.4/api-reference/users#user-logout) command. Before v6.0.4 a revoke signed the device out of the interface only, and its `SessionID` kept working against `api.php` until it expired.
+
+- **A `SessionID` that was revoked** (Revoke, Sign out all other sessions, or `user.logout` with `TargetSessionHashes`) now answers `{"Success":false,"ErrorCode":99998,"ErrorText":"This session was signed out from another device"}` on every command, whether it arrives as the `SessionID` parameter or as the session cookie, and the session is ended. The legacy user area signs the same session out too. Sign in again with `user.login` to get a new one.
+- **Signing out of the new interface**, or logging one saved account out of its account switcher, now ends that account's `SessionID` too.
+- **Unchanged:** a `SessionID` that was not revoked answers exactly as before, and user `APIKey` calls are not affected.
+
 ## Tier 2: shape and value changes
 
 None recorded yet.
@@ -88,6 +96,7 @@ None recorded yet.
 6. **If your integration sends an object id as anything other than a plain number** to one of the eleven commands above (for example `"12abc"` or a JSON array), send the numeric id instead.
 7. **If your integration tells an operator "no such administrator" when `admin.passwordremind` returns `ErrorCode 3`**, show one neutral "if the address is registered, a reset link is on its way" message for every success instead.
 8. **Expect users of the classic user area who ticked "Remember me" to sign in once more** after the upgrade. Accounts with two-factor authentication are no longer remembered at all.
+9. **If an integration reuses a `SessionID` it got by signing in as a user who also signs in to the new interface**, expect error 99998 after that user revokes the session or signs out, and sign in again with `user.login`. Integrations that authenticate with a user `APIKey` are not affected.
 
 ---
 
