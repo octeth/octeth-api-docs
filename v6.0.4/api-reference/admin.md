@@ -2527,7 +2527,7 @@ password: Missing required parameter password
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
-Sends a password reset link to the administrator's email address. The link carries a signed token that is valid for one hour and stops working once the password changes. By default it opens the staff reset page of the new interface (`/<UI_CUSTOMER_PREFIX>/reset-password/staff?token=...`).
+Sends a password reset link to the administrator's email address. The link carries a signed token that is valid for one hour and stops working once the password changes. By default it opens the staff reset page of the new interface (`/<UI_CUSTOMER_PREFIX>/reset-password/staff?token=...`). An email address that belongs to no administrator gets the same success response and no email, so the answer does not reveal which addresses are administrator accounts.
 
 **Request Body Parameters:**
 
@@ -2536,11 +2536,15 @@ Sends a password reset link to the administrator's email address. The link carri
 | Command          | String | Yes      | API command: `admin.passwordremind`                                                              |
 | EmailAddress     | String | Yes      | Administrator email address                                                                      |
 | CustomResetLink  | String | No       | Custom reset URL template, base64 encoded, with exactly one `%s` placeholder for the token. Honoured only when it has the same scheme, host and port as the installation; otherwise the default link is used |
-| ReturnParams     | Boolean | No      | With a valid master `AdminAPIKey`, return the token as `PasswordResetToken` and send no email, so the caller can deliver its own link. Ignored without the key (v6.0.2, #3584) |
+| ReturnParams     | Boolean | No      | With a valid master `AdminAPIKey`, return the token as `PasswordResetToken` and send no email, so the caller can deliver its own link. `PasswordResetToken` is an empty string when no administrator has the address. Ignored without the key (v6.0.2, #3584) |
 | AdminAPIKey      | String | No       | The master `ADMIN_API_KEY`. Only needed with `ReturnParams` |
 
 ::: warning Behavior change (v6.0.2, #2986)
 Every request counts, not only failed ones, because each one that matches an administrator sends an email. After `LOGIN_THROTTLE_MAX_FAILURES_PER_IDENTITY` requests for one `EmailAddress` (default 10) or `LOGIN_THROTTLE_MAX_FAILURES_PER_IP` requests from one client address (default 50) within `LOGIN_THROTTLE_WINDOW_SECONDS` (default 900), further requests are refused for `LOGIN_THROTTLE_LOCKOUT_SECONDS` (default 900) with **HTTP 429**, a `Retry-After` header and `{"Success":false,"ErrorCode":429,"ErrorText":"Too many failed attempts. Try again later.","RetryAfterSeconds":840}`. The refusal is identical for an email address that belongs to no administrator. The settings are under **Login Brute-Force Protection** in [Octeth Configuration](/v6.0.4/getting-started/octeth-configuration#main-configuration-file-oempro-env).
+:::
+
+::: warning Behavior change (v6.0.4, #3437)
+An email address that belongs to no administrator now returns `{"Success": true, "ErrorCode": 0}`, the same body as a real administrator's address, and no email is sent. Earlier versions returned `ErrorCode [3]`, which told any caller whether an address is an administrator account. With `ReturnParams` and the master `AdminAPIKey`, the response carries an empty `PasswordResetToken` for an unknown address. Missing and malformed addresses still return `[1]` and `[2]`.
 :::
 
 ::: code-group
@@ -2579,6 +2583,14 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Success Response with ReturnParams, unknown address]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "PasswordResetToken": ""
+}
+```
+
 ```json [Error Response - Invalid Email]
 {
   "Success": false,
@@ -2586,18 +2598,10 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
-```json [Error Response - Email Not Found]
-{
-  "Success": false,
-  "ErrorCode": [3]
-}
-```
-
 ```txt [Error Codes]
-0: Success
+0: Success, also returned for an email address that belongs to no administrator (v6.0.4, #3437)
 emailaddress: Missing required parameter emailaddress
 2: Invalid email address format
-3: Email address not found
 NOT AVAILABLE IN DEMO MODE.: Feature disabled in demo mode
 429: Too many reminder requests, try again after RetryAfterSeconds (HTTP 429, see above)
 ```

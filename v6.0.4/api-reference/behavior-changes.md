@@ -52,6 +52,16 @@ Unrestricted admins, the master admin API key and user API keys are not affected
 
 `tag.update` had no unknown-id error, because a `TagID` you do not own matched no row and the call still answered success. A malformed `TagID` now gets error code `1`, the same code as a missing `TagID`. A well-formed `TagID` you do not own still answers success, as before.
 
+#### `admin.passwordremind` no longer reveals whether an address is an administrator
+
+`admin.passwordremind` needs no authentication, and an email address that belongs to no administrator used to return `{"Success": false, "ErrorCode": [3]}`. Anyone could use that answer to find out which addresses are administrator accounts. Such an address now returns `{"Success": true, "ErrorCode": 0}`, the same body as a real administrator's address, and no email is sent.
+
+- **An integration that showed "no such administrator" on `ErrorCode 3`** loses that signal by design. Show the same "if the address is registered, a reset link is on its way" message for every success.
+- **With `ReturnParams` and the master `AdminAPIKey`**, the response carries `PasswordResetToken` as an empty string for an unknown address. Treat an empty token as "send nothing".
+- **Unchanged:** a missing address (`emailaddress`), a malformed one (`[2]`), the HTTP 429 brute-force refusal from v6.0.2 and the email sent to a real administrator.
+
+This change is on by default, with no setting to restore the old answer, because the old answer was the disclosure (octeth/oempro#3437).
+
 ## Tier 2: shape and value changes
 
 None recorded yet.
@@ -64,6 +74,7 @@ None recorded yet.
 4. **If your SSO broker parsed the plain-text "Decrypted Token" response**, read the JSON `error` field instead.
 5. **If a restricted sub-admin account adds SMS suppressions for other accounts** through `smssuppression.add` or `smssuppression.patterns.add`, check that every target account is in one of its allowed user groups, or call the commands with an unrestricted admin account.
 6. **If your integration sends an object id as anything other than a plain number** to one of the eleven commands above (for example `"12abc"` or a JSON array), send the numeric id instead.
+7. **If your integration tells an operator "no such administrator" when `admin.passwordremind` returns `ErrorCode 3`**, show one neutral "if the address is registered, a reset link is on its way" message for every success instead.
 
 ---
 
