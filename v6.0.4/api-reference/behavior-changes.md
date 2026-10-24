@@ -102,6 +102,14 @@ The new interface's **Account, Active sessions** tab now ends the Octeth session
 - **Signing out of the new interface**, or logging one saved account out of its account switcher, now ends that account's `SessionID` too.
 - **Unchanged:** a `SessionID` that was not revoked answers exactly as before, and user `APIKey` calls are not affected.
 
+#### An array or object sent for a single-value parameter is refused
+
+Every command now answers HTTP 400 with `{"Success":false,"ErrorCode":100017,"ErrorText":"Parameter 'password' must be a single value, not an array."}` when a top-level parameter that takes a single value arrives as an array or object, for example `Password[]=x` in a form body or a JSON array where a string is expected. The check runs before the credentials are checked and before the command does anything (octeth/oempro#2954).
+
+- **Before:** the value was turned into the text `Array`, into an empty value, or dropped, without an error. On `user.update` that skipped the current-password check and stored a predictable password.
+- **Unchanged:** parameters that a command documents as a list or a structure (`Tags`, rule bundles, journey actions, custom field options, the email gateway `To`, `Cc` and `Attachments` and the rest) accept one as before, and every request that sends single values answers exactly as before.
+- **Operators** can set `API_SCALAR_PARAMETER_CHECK=log` in `.oempro_env` to log such requests instead of refusing them, while an integration is corrected. See [error code 100017](/v6.0.4/api-reference/error-handling#request-shape-errors).
+
 ## Tier 2: shape and value changes
 
 #### Journeys send to soft-bounced subscribers
@@ -135,8 +143,9 @@ The list setting "Skip subscribers already in a journey or auto responder" (`DoN
 8. **If your integration tells an operator "no such administrator" when `admin.passwordremind` returns `ErrorCode 3`**, show one neutral "if the address is registered, a reset link is on its way" message for every success instead.
 9. **Expect users of the classic user area who ticked "Remember me" to sign in once more** after the upgrade. Accounts with two-factor authentication are no longer remembered at all.
 10. **If an integration reuses a `SessionID` it got by signing in as a user who also signs in to the new interface**, expect error 99998 after that user revokes the session or signs out, and sign in again with `user.login`. Integrations that authenticate with a user `APIKey` are not affected.
-11. **If you read journey send counts or skip reasons**, expect more sends and fewer `Bounced` skips on lists with soft-bounced subscribers.
-12. **If you send one campaign to several lists and only some of them skip journey enrollees**, expect enrollees on the other lists to receive it. Set `JourneyEnrolleeHandling` to `exclude` on the campaign to skip them on every list.
+11. **If your integration sends a form field with `[]` or a JSON array or object** for a parameter that takes one value, send a single value instead (for a list, use the format the command documents, usually a comma-separated string). Watch for `ErrorCode 100017` after the upgrade.
+12. **If you read journey send counts or skip reasons**, expect more sends and fewer `Bounced` skips on lists with soft-bounced subscribers.
+13. **If you send one campaign to several lists and only some of them skip journey enrollees**, expect enrollees on the other lists to receive it. Set `JourneyEnrolleeHandling` to `exclude` on the campaign to skip them on every list.
 
 ---
 

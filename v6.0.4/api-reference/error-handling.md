@@ -40,6 +40,14 @@ Error codes can be single values or arrays:
 | 6 | Invalid 2FA code | Check your authenticator app |
 | 101 | 2FA required | Include `tfacode` parameter |
 
+### Request Shape Errors
+
+| Code | HTTP | Description | Fix |
+|------|------|-------------|-----|
+| 100017 | 400 | A parameter that takes a single value was sent as an array or object, for example `Password[]=x` or a JSON array. `ErrorText` names the parameter: "Parameter 'password' must be a single value, not an array." | Send the parameter as a single value. For a list, use the format the command documents (usually a comma-separated string) |
+
+The check runs on every command before the credentials are checked. Parameters that a command documents as a list or a structure accept one as before. An operator can switch the refusal to logging only with `API_SCALAR_PARAMETER_CHECK=log` in `.oempro_env`.
+
 ### AI Agent Key Errors
 
 Returned only for requests made with an AI agent key. See [AI agent keys](/v6.0.4/api-reference/users#ai-agent-keys).
