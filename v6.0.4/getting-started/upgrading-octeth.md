@@ -67,7 +67,7 @@ The command will display the upgrade plan and ask for confirmation before procee
 Type `y` and press Enter to start the upgrade.
 
 ::: tip
-If you have campaigns actively sending, the upgrade command will warn you and ask for confirmation before stopping backend services.
+If you have campaigns actively sending, the upgrade offers to pause them before it stops backend services and resumes them afterwards. See [Campaigns that are sending during an upgrade](#campaigns-that-are-sending-during-an-upgrade).
 :::
 
 ::: tip The summary appears twice — this is expected (new in v5.9.3)
@@ -75,6 +75,27 @@ After you confirm, the command refreshes its own `cli/` scripts from the release
 
 This guarantees that a years-old installation is still upgraded by the newest, fixed upgrade logic rather than by the scripts that shipped with the version you are leaving. The step is skipped automatically when your `cli/` already matches the release.
 :::
+
+## Campaigns that are sending during an upgrade
+
+When campaigns are sending, the upgrade offers to pause them before it stops any service:
+
+```
+⚠ 2 campaign(s) currently sending.
+▸ Pause 2 sending campaign(s) during the upgrade and resume them afterwards? (Y/n):
+```
+
+Press Enter (or pass `--yes`) to accept. The upgrade pauses each campaign, waits up to two minutes for its delivery batches to stop, and continues. When the upgrade finishes it resumes exactly the campaigns it paused, and they continue from where they stopped. A campaign you had paused yourself before the upgrade is never resumed by it, and a campaign you change while the upgrade runs is left as you set it.
+
+Answer `n` to keep the previous behaviour: the upgrade warns that stopping the backend interrupts active deliveries and asks "Continue anyway?", and nothing is paused.
+
+The upgrade lists the campaigns it paused in `.octeth-upgrade-paused-campaigns` in the Octeth directory (a copy goes into the upgrade's backup directory). If an upgrade fails and rolls back, the campaigns are resumed once the previous version is running again. If it stops before it can resume them, they stay paused and the upgrade prints the command that resumes them:
+
+```bash
+./cli/octeth.sh upgrade:resume-campaigns
+```
+
+The command resumes only the listed campaigns that are still paused, and removes the list when it is done.
 
 ## What the Upgrade Command Does
 
@@ -345,13 +366,13 @@ In an interactive run without `--yes`, the upgrade then stops at the environment
 Without `--yes`, an upgrade whose input is not a terminal (a scheduled job, a CI pipeline, an AI agent, or a run with input piped in) cannot show you this prompt. If the upgrade would add any of these settings, it stops before Phase 2 and exits with code `3`, even when the earlier prompts were answered (including `yes | ./cli/octeth.sh upgrade ...`). The message lists each setting, the value it would be given and the env file it would be added to.
 
 ::: warning Unattended upgrades must pass --yes
-A run without `--yes` whose input is not a terminal also exits with code `3` when input ends at a prompt asked before any service is stopped: "Proceed with upgrade?" or the active-campaign check. Nobody can answer, so the run is treated as non-interactive rather than cancelled. An explicit `n` (or an empty answer) still cancels with exit code `0`.
+A run without `--yes` whose input is not a terminal also exits with code `3` when input ends at a prompt asked before any service is stopped: "Proceed with upgrade?" or the active-campaign check. Nobody can answer, so the run is treated as non-interactive rather than cancelled. An explicit `n` (or an empty answer) at "Proceed with upgrade?" or "Continue anyway?" still cancels with exit code `0`. At the campaign pause question an empty answer means yes.
 
 In every exit `3` case, no service is stopped, no application file is synced and no env file or database table is written. If the upgrade had already refreshed its own runner (`cli/`) from the new release, the new-settings message says so and names the backup of the previous `cli/` under `data/backups/cli.bak.<version>.<timestamp>/`. The next run uses the refreshed runner, which is the intended state.
 
 Choose one of the remedies and run the same command again:
 
-- Add `--yes` (alias `--non-interactive`) to accept the prompts and the listed values. `--yes` confirms the upgrade summary, the active-campaign check and the new settings.
+- Add `--yes` (alias `--non-interactive`) to accept the prompts and the listed values. `--yes` confirms the upgrade summary, pauses and later resumes the sending campaigns, and accepts the new settings.
 - For new settings, add each one you want to keep off to the env file named next to it, as described below.
 
 `--dry-run` in the same situation lists the settings, states that the real run would stop before Phase 2 with exit code `3`, and exits `0`.
