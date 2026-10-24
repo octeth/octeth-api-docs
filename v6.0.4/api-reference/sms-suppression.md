@@ -360,7 +360,7 @@ curl -X POST https://example.com/api.php \
 7: Invalid Source value
 8: Add failed (single path, see server log; typically an invalid phone number)
 9: PhoneNumbers parsed to an empty list
-10: Target UserID does not exist (admin-authed only)
+10: Target UserID does not exist, or is outside the user groups this admin account may access (admin-authed only)
 ```
 
 :::
@@ -622,7 +622,7 @@ curl -X POST https://example.com/api.php \
 5: ListID does not belong to the target user (or does not exist)
 6: Invalid Source value
 7: Add failed (see server log; typically an invalid pattern format)
-8: Target UserID does not exist (admin-authed only)
+8: Target UserID does not exist, or is outside the user groups this admin account may access (admin-authed only)
 ```
 
 :::
