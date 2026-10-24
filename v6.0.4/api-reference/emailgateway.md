@@ -6,6 +6,8 @@ layout: doc
 
 Email Gateway endpoints for managing transactional email sending through verified domains, including domain management, API keys, SMTP credentials, webhooks, and email delivery.
 
+Gateway messages carry `X-Report-Abuse: <https://<tracking or app host>/report_abuse.php?mid=<abuse id>>` and `X-Complaints-To`. The abuse ID is signed, opens the report form for that message, and an administrator resolves it to the account with `admin.emailgateway.abuse.lookup`. When `SENDGRID_EMAIL_HEADER` is on, `X-SMTPAPI` carries the same ID as `abuse-id` instead of `000`. See the behavior-changes page.
+
 ## Add a Sender Domain
 
 <Badge type="info" text="POST" /> `/api.php`

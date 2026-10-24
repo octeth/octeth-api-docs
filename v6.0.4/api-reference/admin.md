@@ -6336,6 +6336,103 @@ curl -X GET "https://example.com/api/v1/admin.journey.action.audit?AdminAPIKey=y
 
 :::
 
+## Look Up an Email Gateway Message
+
+<Badge type="tip" text="Added in v6.0.4" />
+
+Traces an email gateway message to the account that sent it, from what an abuse desk or a recipient forwards. Returns the queue row, the owning user, the sender domain and the API key the message came in through. The API key itself is never returned, only its last four characters.
+
+**Endpoint:** `POST /api.php`
+
+**Authentication:** Admin API Key or admin session. Privilege: `User.Browse`. A restricted sub-admin sees only messages of users in its allowed user groups, and any other message is reported as not found.
+
+**Rate limit:** 60 requests per 60 seconds.
+
+### Request Body Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | `admin.emailgateway.abuse.lookup` |
+| Query | String | Yes | At most 2048 characters. One of: a gateway abuse ID (`eg.` followed by four `.` separated segments); the `X-Report-Abuse` header line or its URL (the `mid` parameter is read); the `X-SMTPAPI` header (its `abuse-id`); the `Message-ID` header or value, with or without angle brackets; the MFROM / `Return-Path` address of a gateway message (`eg-<token>@<domain>`); or the message UUID that `emailgateway.sendemail` returned. |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.emailgateway.abuse.lookup",
+    "AdminAPIKey": "your-admin-api-key",
+    "Query": "X-Report-Abuse: <https://example.com/report_abuse.php?mid=eg.8q.7.c.0123456789abcdef0123456789abcdef>"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "MatchedBy": "abuseid",
+  "Queue": {
+    "QueueID": 314,
+    "UUID": "97040ef4-9d74-41ed-8f27-abbfdad6f3b9",
+    "MessageID": "8968eab7bc367658954585d2514dca4b@mail.example.com",
+    "Status": "Sent",
+    "StatusMessage": "",
+    "RecipientTo": "recipient@example.net",
+    "Subject": "Your account is locked",
+    "FromEmailAddress": "security@example.com",
+    "QueuedAt": "2026-09-27 10:00:00",
+    "ProcessedAt": "2026-09-27 10:00:05",
+    "Delivered": true,
+    "Opened": false,
+    "Clicked": true,
+    "Bounced": false,
+    "SpamComplaint": false,
+    "JourneyID": 0,
+    "ActionID": 0,
+    "AbuseID": "eg.8q.7.c.0123456789abcdef0123456789abcdef"
+  },
+  "User": {
+    "UserID": 7,
+    "Username": "acme",
+    "EmailAddress": "owner@example.com",
+    "FirstName": "Ada",
+    "LastName": "Lovelace",
+    "CompanyName": "Acme Ltd",
+    "AccountStatus": "Enabled",
+    "ReputationLevel": "Trusted",
+    "UserGroupID": 3,
+    "DisableLinkTrackingRedirects": false
+  },
+  "SenderDomain": {"DomainID": 12, "SenderDomain": "example.com", "Status": "Enabled"},
+  "GatewayAPIKey": {"APIKeyID": 77, "Description": "production", "Status": "Enabled", "CreatedAt": "2026-09-01 00:00:00", "MaskedKey": "****wxyz"},
+  "SMTPID": 0
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "No email gateway message found"
+}
+```
+
+:::
+
+`MatchedBy` is `abuseid`, `mfrom`, `messageid` or `uuid`. `SenderDomain` and `GatewayAPIKey` are `null` when the row no longer exists (a message sent through SMTP has `GatewayAPIKey` `null` and a non-zero `SMTPID`). A Message-ID is recorded only once a message is sent, so a queued or failed message is found by its abuse ID, MFROM address or UUID.
+
+### Error Codes
+
+| Code | Description |
+|---|---|
+| 0 | Success |
+| 1 | `Query` is missing or is none of the accepted forms |
+| 2 | No email gateway message found. Also returned for a forged, altered or truncated abuse ID and for a message of a user outside a restricted sub-admin's user groups, so the command does not reveal whether a message exists |
+| 3 | The Message-ID or UUID lookup query failed. Retry, and check the database if it persists |
+| 99999 | The administrator lacks the `User.Browse` privilege |
+
 ## Search Subscribers Across All Lists
 
 <Badge type="info" text="POST" /> `/api/v1/admin.subscriber.search`
