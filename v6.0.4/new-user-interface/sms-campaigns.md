@@ -88,6 +88,29 @@ Recipients must be able to stop your messages, so keep **Append an opt-out line*
 
 While **Append an opt-out line** is on, the **Opt-out line** field cannot be empty. Keep the default wording or write your own. If you clear it, **Save message**, **Estimate cost**, **Send now** and **Schedule** all stop with **Enter the opt-out line, or turn the opt-out line off.**
 
+## Sending a test <Badge type="tip" text="New in v6.0.4" />
+
+Before you send a campaign to a list, you can send one copy to your own phone to see how it arrives.
+
+1. Save the message. A test sends the saved version.
+2. Click **Send a test** under the message.
+3. The dialog shows the message as it will arrive and what one test costs.
+4. Choose one of your verified numbers under **Send to**, then click **Send test**.
+
+A test goes only to a number you have verified, so nobody can use test sends to message other people. To add a number:
+
+1. Under **Your test numbers**, type the number with its country code, for example `+15550100000`, and click **Send code**. Octeth texts it a six-digit code through the campaign's gateway.
+2. Type the code into the field under the number and click **Verify**. The code works for 10 minutes. If it expires, click **New code**.
+
+An account can have up to 5 test numbers. Remove one with its trash button to make room for another.
+
+What a test looks like is not quite what a recipient sees:
+
+- Links are written out in full rather than shortened, and a <code v-pre>{{ SMS:TrackingCode }}</code> tag shows as twenty zeros.
+- Merge tags show their fallback values, because a test is not sent to a contact.
+
+Each test and each code is a real message and costs the same as one. An account can send 10 tests in any 24 hours, at least 30 seconds apart; your administrator may set different limits.
+
 ## Checking the cost
 
 Nothing can be sent until the campaign has been costed and you have seen the figure.
@@ -255,6 +278,8 @@ Each value is saved on that screen, taken from `.oempro_env`, or the shipped def
 | **Event retention** | 365 days | 30 to 3,650 days, or 0 to turn pruning off. How long SMS events are kept for reports. |
 | **Campaign queue retention** | 365 days | 30 to 3,650 days, or 0 to turn pruning off. How long per-recipient campaign detail is kept. |
 | **Inbound message retention** | 365 days | 30 to 3,650 days, or 0 to turn pruning off. How long received messages and reply history are kept. |
+| **Test sends per account per 24 hours** | 10 | 0 turns test sends off. |
+| **Seconds between test sends** | 30 | |
 
 ### Cross-account views
 
@@ -296,6 +321,14 @@ Check the report for **Paused for quiet hours**. Sending resumes on its own when
 ### Recipients were skipped
 
 Open the **Recipients** tabs in the report and read the reason next to each number. See [Why a recipient was skipped](#why-a-recipient-was-skipped).
+
+### A test was not sent
+
+The dialog says why. Common reasons:
+
+- **The number is not verified.** Verify it with the code first, or send a new code if it expired.
+- **The daily limit or the wait between tests.** The message says when the next test can go.
+- **Test sends are turned off on this install.** Ask your administrator.
 
 ## Related articles
 

@@ -31,6 +31,12 @@ On an upgraded install, `./cli/octeth.sh upgrade:remove-retired-files` removes t
 
 ### Security tightening
 
+#### `smscampaign.test` sends only to verified test numbers, with a daily limit and a cooldown
+
+`smscampaign.test` used to send a test of a campaign to any `RecipientNumber`, with only the account's SMS rate limits (unlimited by default) in the way, so an account could message any phone through test sends. It now refuses a number the account has not verified, with error code `14`. A number is verified by adding it with `sms.testnumber.add`, which texts it a six-digit code through a gateway the account may use, then passing that code to `sms.testnumber.verify`. An account can hold at most 5 test numbers and be sent at most 3 codes in any 24 hours, 60 seconds apart.
+
+Test sends are also limited per account to 10 in any 24 hours (error `16`) and 30 seconds apart (error `17`), set install-wide in the staff SMS settings as `SMSTestDailyLimit` and `SMSTestCooldownSeconds`. A limit of `0` turns test sends off (error `15`). There is no flag to keep the old behaviour: the old behaviour was the spam route this closes. Before upgrading, add and verify the numbers an integration sends tests to. The success response is unchanged. (octeth/oempro#3734)
+
 #### SSO tokens are single-use and `ValidForSeconds` is capped at 300
 
 - **`sso.create` and `sso.update`** refuse a `ValidForSeconds` above `300` with error `8`. A source saved earlier with a larger value keeps working until it is next edited, and that edit must bring the value to `300` or less.

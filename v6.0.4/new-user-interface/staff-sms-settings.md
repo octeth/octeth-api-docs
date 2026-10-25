@@ -25,6 +25,7 @@ The settings are split into sections in the menu on the left:
 - **Limits and cost**: campaign size, message cost, currency and drift tolerance.
 - **Sending window**: quiet hours, default send rate and the journey capacity reserve.
 - **Opt-out and replies**: the default opt-out footer, opt-out keywords and the reply attribution window.
+- **Test sends**: how many campaign tests an account may send in a day, and how far apart.
 - **Retention**: how long SMS events, campaign queue detail and received messages are kept.
 
 The open section is part of the address, so you can link to one, for example `/user/staff/sms/settings?section=retention`.
@@ -66,6 +67,8 @@ Saving a value equal to the one already in force stores nothing, so the setting 
 | **Event retention (days)** | 365 | How long SMS events are kept for reports. 0 turns pruning off. |
 | **Campaign queue retention (days)** | 365 | How long per-recipient campaign detail is kept. 0 turns pruning off. |
 | **Inbound message retention (days)** | 365 | How long received messages and reply history are kept. 0 turns pruning off. |
+| **Test sends per account per 24 hours** <Badge type="tip" text="New in v6.0.4" /> | 10 | How many campaign tests one account may send in any 24 hours, at most 1000. 0 turns test sends off. |
+| **Seconds between test sends** <Badge type="tip" text="New in v6.0.4" /> | 30 | The wait after one test before the next, at most 3600. |
 
 Octeth keeps each value inside a safe range when it uses it, for example a retention below 30 days other than 0 is read as 30.
 

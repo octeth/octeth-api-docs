@@ -1544,7 +1544,11 @@ curl -X GET https://example.com/api/v1/smscampaign.estimate \
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-Sends one copy of a campaign's message to one number, using the campaign's gateway and links. It counts against the account's SMS send limits like any other message.
+Sends one copy of a campaign's message to one of the account's verified test numbers, using the campaign's gateway. It counts against the account's SMS send limits like any other message.
+
+<Badge type="warning" text="Changed in v6.0.4" /> `RecipientNumber` must be a number the account has verified with `sms.testnumber.add` and `sms.testnumber.verify`; any other number is refused with error `14`. Test sends are also limited per account to `SMSTestDailyLimit` in any 24 hours (default 10, error `16`) and `SMSTestCooldownSeconds` apart (default 30, error `17`), both set in the staff SMS settings, and a limit of `0` turns them off (error `15`). Each test is recorded against the campaign. See [behavior changes](./behavior-changes).
+
+A test differs from the campaign's own messages: links are written out in full, a tracking tag (<code v-pre>{{ SMS:TrackingCode }}</code>) is written as twenty zeros, and subscriber merge tags render their fallbacks. `smscampaign.test.preview` returns exactly what a test sends, and its cost.
 
 **Request Body Parameters:**
 
@@ -1552,8 +1556,9 @@ Sends one copy of a campaign's message to one number, using the campaign's gatew
 |-----------|------|----------|-------------|
 | Command | String | Yes | API command: `smscampaign.test` |
 | SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
 | SMSCampaignID | Integer | Yes | The campaign whose message to test |
-| RecipientNumber | String | Yes | The destination number |
+| RecipientNumber | String | Yes | <Badge type="warning" text="Changed in v6.0.4" /> One of the account's Verified test numbers |
 | SenderID | String | No | Override the campaign's sender id |
 
 ::: code-group
@@ -1570,7 +1575,93 @@ curl -X POST https://example.com/api/v1/smscampaign.test \
 ```
 
 ```json [Success Response]
-{ "Success": true, "ErrorCode": 0 }
+{
+  "Success": true,
+  "SMSCampaignID": 4821,
+  "QueueID": 98123,
+  "RecipientNumber": "+15550100001",
+  "SenderID": "+15550100000",
+  "SenderIDHonoured": true,
+  "Measurement": { "parts": 1, "encoding": "GSM-7" }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "Errors": [{ "Code": 14, "Message": "A test can only go to a number this account has verified. Add and verify it with sms.testnumber.add and sms.testnumber.verify." }],
+  "ErrorCode": 14
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing or invalid SMSCampaignID parameter
+2: Missing RecipientNumber parameter
+3: Campaign not found
+4: The campaign has no SMS gateway
+5: The campaign's gateway is no longer active or assigned to this account
+6: RecipientNumber is not a valid phone number
+7: The campaign's links could not be read, so nothing was sent
+8: The campaign has no message content to test
+9: The test message is too long for the gateway's concatenation limit
+10: SMS rate limit exceeded for an interval
+11: The test message could not be queued, so nothing was sent
+12: The message's merge tags could not be rendered, so nothing was sent
+13: The message has a merge tag that cannot be read, which would be sent as typed
+14: RecipientNumber is not one of the account's verified test numbers (new in v6.0.4)
+15: Test sends are turned off on this install (new in v6.0.4)
+16: The account has sent its daily limit of tests in the last 24 hours (new in v6.0.4)
+17: Too soon after the previous test (new in v6.0.4)
+18: The test numbers or limits could not be read, so nothing was sent (new in v6.0.4)
+```
+
+:::
+
+### Preview a Test Message <Badge type="tip" text="New in v6.0.4" />
+
+<Badge type="info" text="GET" /> `/api/v1/smscampaign.test.preview`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `SMSCampaigns.Manage`
+- Rate limit: 120 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+What a test of the campaign would send, and what it would cost. Sends nothing. `Content` is the message exactly as `smscampaign.test` sends it, and `Cost` is its parts times the install's cost per part, in `CostCurrency`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `smscampaign.test.preview` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| SMSCampaignID | Integer | Yes | The campaign to preview |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET https://example.com/api/v1/smscampaign.test.preview \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "smscampaign.test.preview",
+    "SessionID": "your-session-id",
+    "SMSCampaignID": 4821
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "SMSCampaignID": 4821,
+  "Content": "Spring sale: https://example.com/spring",
+  "Measurement": { "parts": 1, "encoding": "GSM-7" },
+  "CostPerPart": 0.0075,
+  "Cost": 0.0075,
+  "CostCurrency": "USD"
+}
 ```
 
 ```json [Error Response]
@@ -1584,17 +1675,266 @@ curl -X POST https://example.com/api/v1/smscampaign.test \
 ```txt [Error Codes]
 0: Success
 1: Missing or invalid SMSCampaignID parameter
-2: Missing RecipientNumber parameter
 3: Campaign not found
 4: The campaign has no SMS gateway
 5: The campaign's gateway is no longer active or assigned to this account
-7: The campaign's links could not be read, so nothing was sent
+7: The campaign's links could not be read
 8: The campaign has no message content to test
 9: The test message is too long for the gateway's concatenation limit
+12: The message's merge tags could not be rendered
+13: The message has a merge tag that cannot be read
+```
+
+:::
+
+### List Test Numbers <Badge type="tip" text="New in v6.0.4" />
+
+<Badge type="info" text="GET" /> `/api/v1/sms.testnumbers`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `SMSCampaigns.Manage`
+- Rate limit: 120 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+The account's test numbers, and where its test limits stand. `Status` is `Pending` until the number is verified, then `Verified`. In `Limits`, `Remaining` is the tests left in the last 24 hours, and `NextTestAt` (UTC) is when the next one may go while the daily limit or the cooldown holds it back, otherwise `null`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `sms.testnumbers.get` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET https://example.com/api/v1/sms.testnumbers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "sms.testnumbers.get",
+    "SessionID": "your-session-id"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "TestNumbers": [
+    { "TestNumberID": 30, "PhoneNumber": "+15550100002", "Status": "Verified", "CodeExpiresAt": null, "VerifiedAt": "2026-10-24 09:12:00", "CreatedAt": "2026-10-24 09:10:00" }
+  ],
+  "Limits": {
+    "TestsEnabled": true,
+    "DailyLimit": 10,
+    "UsedLast24Hours": 2,
+    "Remaining": 8,
+    "CooldownSeconds": 30,
+    "NextTestAt": null,
+    "MaxNumbers": 5,
+    "MaxCodesPerDay": 3
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "Errors": [{ "Code": 1, "Message": "The account's test numbers could not be read." }],
+  "ErrorCode": 1
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: The account's test numbers could not be read
+```
+
+:::
+
+### Add a Test Number <Badge type="tip" text="New in v6.0.4" />
+
+<Badge type="info" text="POST" /> `/api/v1/sms.testnumber.add`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `SMSCampaigns.Manage`
+- Rate limit: 10 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Adds a number as `Pending` and texts it a six-digit code through `GatewayID`, a gateway the account may send through. Calling it again for a `Pending` number sends a new code and makes the old one stop working. The code works for 10 minutes. An account can hold at most 5 test numbers and be sent at most 3 codes in any 24 hours, 60 seconds apart. Each code is a real message, counted against the account's SMS send limits.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `sms.testnumber.add` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| PhoneNumber | String | Yes | The number, in international form such as `+15550100001` |
+| GatewayID | Integer | Yes | The gateway the code is sent through |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/sms.testnumber.add \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "sms.testnumber.add",
+    "SessionID": "your-session-id",
+    "PhoneNumber": "+15550100001",
+    "GatewayID": 3
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "TestNumber": { "TestNumberID": 31, "PhoneNumber": "+15550100001", "Status": "Pending", "CodeExpiresAt": "2026-10-25 12:10:00", "VerifiedAt": null, "CreatedAt": "2026-10-25 12:00:00" }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "Errors": [{ "Code": 7, "Message": "Wait 42 seconds before asking for another code." }],
+  "ErrorCode": 7
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing PhoneNumber parameter
+2: PhoneNumber is not a valid phone number
+3: Missing or invalid GatewayID, or a gateway this account may not use
+4: The number is already verified
+5: The account already has the most test numbers it can have
+6: The account has been sent its daily limit of codes in the last 24 hours
+7: Too soon after the previous code
+8: The code could not be created or queued, so none was sent
+9: The test numbers could not be updated, try again
 10: SMS rate limit exceeded for an interval
-11: The test message could not be queued, so nothing was sent
-12: The message's merge tags could not be rendered, so nothing was sent
-13: The message has a merge tag that cannot be read, which would be sent as typed
+```
+
+:::
+
+### Verify a Test Number <Badge type="tip" text="New in v6.0.4" />
+
+<Badge type="info" text="POST" /> `/api/v1/sms.testnumber.verify`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `SMSCampaigns.Manage`
+- Rate limit: 30 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Verifies a `Pending` number with the code `sms.testnumber.add` sent to it. After 5 wrong codes, or once the code is 10 minutes old, a new code has to be sent. Verifying a number that is already verified succeeds and changes nothing.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `sms.testnumber.verify` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| TestNumberID | Integer | Yes | The number to verify |
+| Code | String | Yes | The six-digit code sent to it |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/sms.testnumber.verify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "sms.testnumber.verify",
+    "SessionID": "your-session-id",
+    "TestNumberID": 31,
+    "Code": "042195"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "TestNumber": { "TestNumberID": 31, "PhoneNumber": "+15550100001", "Status": "Verified", "CodeExpiresAt": null, "VerifiedAt": "2026-10-25 12:02:00", "CreatedAt": "2026-10-25 12:00:00" }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "Errors": [{ "Code": 5, "Message": "That code is not right. 4 tries left." }],
+  "ErrorCode": 5
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing or invalid TestNumberID parameter
+2: Test number not found
+3: The code has expired, send a new one
+4: Too many wrong codes, send a new one
+5: The code is not right
+6: The number could not be marked verified
+7: The code could not be checked, try again
+```
+
+:::
+
+### Remove a Test Number <Badge type="tip" text="New in v6.0.4" />
+
+<Badge type="info" text="POST" /> `/api/v1/sms.testnumber.delete`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `SMSCampaigns.Manage`
+- Rate limit: 30 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Removes one of the account's test numbers, so tests can no longer go to it. Its recorded test messages are kept.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `sms.testnumber.delete` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| TestNumberID | Integer | Yes | The number to remove |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/sms.testnumber.delete \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "sms.testnumber.delete",
+    "SessionID": "your-session-id",
+    "TestNumberID": 31
+  }'
+```
+
+```json [Success Response]
+{ "Success": true }
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "Errors": [{ "Code": 2, "Message": "Test number not found." }],
+  "ErrorCode": 2
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing or invalid TestNumberID parameter
+2: Test number not found
+3: The test number could not be removed
 ```
 
 :::

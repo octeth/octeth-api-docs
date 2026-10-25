@@ -1270,7 +1270,7 @@ curl -X POST https://example.com/api/v1/admin.sms.settings.get \
 
 **Response fields:**
 
-- `Settings` lists all 15 settings in a fixed order: `SMSCampaignMaxRecipients`, `SMSCampaignCostPerPart`, `SMSCampaignCostCurrency`, `SMSCampaignCostDriftTolerance`, `SMSCampaignQuietHoursStart`, `SMSCampaignQuietHoursEnd`, `SMSCampaignDefaultSendRatePerMinute`, `SMSCampaignJourneyReservePercent`, `SMSCampaignOptOutFooterEnabledDefault`, `SMSCampaignOptOutFooterDefault`, `SMSOptOutKeywords`, `SMSReplyAttributionDays`, `SMSEventRetentionDays`, `SMSCampaignQueueRetentionDays` and `SMSInboundRetentionDays`.
+- `Settings` lists all 17 settings in a fixed order: `SMSCampaignMaxRecipients`, `SMSCampaignCostPerPart`, `SMSCampaignCostCurrency`, `SMSCampaignCostDriftTolerance`, `SMSCampaignQuietHoursStart`, `SMSCampaignQuietHoursEnd`, `SMSCampaignDefaultSendRatePerMinute`, `SMSCampaignJourneyReservePercent`, `SMSCampaignOptOutFooterEnabledDefault`, `SMSCampaignOptOutFooterDefault`, `SMSOptOutKeywords`, `SMSReplyAttributionDays`, `SMSEventRetentionDays`, `SMSCampaignQueueRetentionDays`, `SMSInboundRetentionDays`, `SMSTestDailyLimit` and `SMSTestCooldownSeconds`. <Badge type="tip" text="New in v6.0.4" /> The last two limit campaign test sends: tests per account in any 24 hours (0 to 1000, 0 turns them off) and seconds between two tests (0 to 3600).
 - `Type` is `int`, `float`, `string` or `bool`, and `Value` and `Default` carry that type. `Value` is what the workers use, after the clamps (for example a journey reserve above 50 reads as 50).
 - `Source` is `option` (stored by an administrator), `env` (`.oempro_env` sets the key) or `default` (the shipped default).
 - `EnvValue` is the raw `.oempro_env` string, or `null` when the file does not set the key.

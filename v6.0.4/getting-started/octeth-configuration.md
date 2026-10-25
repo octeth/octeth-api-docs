@@ -1447,6 +1447,8 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     SMS_EVENT_RETENTION_DAYS=365                         # Retention for SMS events. Clamped 30 to 3650
     SMS_CAMPAIGN_QUEUE_RETENTION_DAYS=365                # Retention for campaign queue rows. Clamped 30 to 3650
     SMS_INBOUND_RETENTION_DAYS=365                       # Retention for inbound messages. Clamped 30 to 3650, or 0 to disable pruning
+    SMS_TEST_DAILY_LIMIT=10                              # Campaign test sends per account in any 24 hours. 0 turns them off. Clamped 0 to 1000
+    SMS_TEST_COOLDOWN_SECONDS=30                         # Seconds between two test sends from one account. Clamped 0 to 3600
     SMS_ANALYTICS_RETENTION_DAYS=365                     # Retention for SMS analytics rows
     SMS_SUPPRESSION_DEFAULT_COUNTRY_CODE=+1              # Country code assumed for a number that arrives without one
     SMS_LINK_EXPIRY_HOURS_DEFAULT=72                     # How long a tracked link stays valid after its message was sent
@@ -1477,6 +1479,8 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     `SMS_EVENT_RETENTION_DAYS`, `SMS_CAMPAIGN_QUEUE_RETENTION_DAYS` and `SMS_INBOUND_RETENTION_DAYS` are the retention periods for SMS events, campaign queue rows and inbound messages. Reporting cannot look further back than the events retained, so cutting event retention cuts the reporting history with it. The clamp floor of 30 days exists because a retention of a day or two is easier to type than to notice, and would silently destroy the reporting the feature exists to provide.
 
     `SMS_INBOUND_RETENTION_DAYS` alone also accepts `0`, which switches inbound pruning off entirely and keeps every inbound message. That is the one value below the floor that is honoured rather than raised to 30, because it is how an install says "never delete these", and raising it would delete the replies the operator was keeping. The other two have no such setting: to keep events or queue rows for longer, raise the number.
+
+    `SMS_TEST_DAILY_LIMIT` and `SMS_TEST_COOLDOWN_SECONDS` limit campaign test sends <Badge type="tip" text="New in v6.0.4" />: how many tests one account may send in any 24 hours, and how many seconds apart. A test goes only to a number the account has verified with a code, so these limit cost rather than reach. `SMS_TEST_DAILY_LIMIT=0` turns test sends off for every account. Both are defaults that the staff SMS settings screen overrides.
 
     `SMS_SUPPRESSION_DEFAULT_COUNTRY_CODE` is the country code assumed when a phone number arrives without one. It decides how a bare national number is normalized, and therefore whether a suppression entry written in one form matches a number sent in another: a contact suppressed as `5550100001` and later sent as `+15550100001` is only recognised as the same person if this value turns the first into the second. Set it to the country the majority of your contacts are in, and store numbers in full international form wherever you can, which makes the setting irrelevant.
 
