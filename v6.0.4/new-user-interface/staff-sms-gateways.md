@@ -43,7 +43,7 @@ Click **Create SMS gateway** and fill in four cards:
    - **Sender numbers**: one per line, with the country code, for example `+12025550100`.
    - **Default sender**: one of the sender numbers, used when a message sets none.
    - **Message parts**: the most parts a long message is split into, from 1 to 10. The default is 3.
-   - **Short link domains**: optional hostnames such as `go.example.com` for tracked links. Point each at your Octeth host with a CNAME record.
+   - **Short link domains**: optional hostnames such as `go.example.com` for tracked links. Point each at your Octeth host with a CNAME record. Links that carry the <code v-pre>{{ SMS:TrackingCode }}</code> tag, such as links to an external tracker, are sent as written and never use these domains, so do not list a tracker's domain here.
    - **Allowed countries**: optional 2-letter country codes. Leave it empty to allow every country.
 4. **Accounts**: for a gateway that is not global, search for accounts by name, username or email and tick them. At least one is needed.
 

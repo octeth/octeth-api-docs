@@ -55,7 +55,7 @@ If your server URL starts with `http://`, a warning tells you that the API key i
 
 ## Step 2: Set up Keitaro
 
-The **Setup checklist** card on the Keitaro screen repeats these four steps with your own sub ID.
+The **Setup checklist** card on the Keitaro screen repeats these five steps with your own sub ID.
 
 1. **Create a traffic source** in Keitaro and paste the postback URL into its **S2S postback** field.
 2. In that traffic source, tick **Send postback to traffic source** for every conversion status you want to see in Octeth.
@@ -95,6 +95,7 @@ When the message is sent, Octeth replaces the tag with that recipient's code. Th
 
 - The tag only works **inside a link**. A message with the tag anywhere else cannot be saved, and the editor says "The <code v-pre>{{ SMS:TrackingCode }}</code> tag can only be used inside a link."
 - A link with the tag is sent **as you wrote it**, with only the tag replaced. It does not go through Octeth's short link, so it does not count in the report's **Clicked** figures. Keitaro counts it instead.
+- The SMS gateway's **Short link domains** never apply to a link with the tag, so you do not need to change them for Keitaro. They still shorten the other links in your messages. Do not add your tracker's domain to them: those domains must point at Octeth. The editor shows a note under the message when it contains the tag.
 - Your other links work as before. A message can mix a Keitaro link and normal links.
 - If your account is not connected to Keitaro yet, the editor shows a note with a link to the Keitaro screen. You can still save and send the campaign, but no Keitaro figures are collected until you connect.
 
