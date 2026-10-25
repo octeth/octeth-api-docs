@@ -126,6 +126,14 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
    `SENDENGINE_LOG_LEVEL` sets the log level of the send-engine controller (`cli/email_campaign_controller/run.php`), the PHP 8.1 process in the send-engine container that spawns and supervises campaign delivery workers. It is separate from `CAMPAIGN_DELIVERY_LOG_LEVEL`, which covers the delivery workers themselves, so you can raise one without the other. Accepted values are `DEBUG`, `INFO`, `NOTICE`, `WARNING`, `ERROR`, `CRITICAL`, `ALERT` and `EMERGENCY`, case-insensitive. The default is `INFO`. An empty value uses `INFO`, and an unknown value falls back to `INFO` with a warning in the controller log naming it. The level applies to both `data/logs/email_campaign_controller-<date>.log` and the controller's stdout. Set it to `DEBUG` to see per-worker spawn and exit lines and the failure-count decay. The value is read when the controller starts, so apply a change with `/opt/octeth/cli/octeth.sh sendengine:restart`.
 
+   **API parameter shape check** <Badge type="tip" text="New in v6.0.4" />
+
+   ```bash
+   API_SCALAR_PARAMETER_CHECK=enforce       # enforce (default) or log
+   ```
+
+   `API_SCALAR_PARAMETER_CHECK` decides what `api.php` does when a request sends an array or an object for a parameter that takes a single value, for example `Password[]=x` on `User.Update`. With `enforce`, the request is refused with HTTP 400 and `ErrorCode` 100017, and the error names the parameter. With `log`, the request goes through and a warning naming the command and the parameter is written to the application log. Parameters meant to take a list or a structure, such as `Tags`, journey actions and custom field options, are declared per command and still accept one, so only requests that send the wrong shape are affected. The default is `enforce`, and an empty or unknown value also means `enforce`, so an upgraded installation refuses these requests with no change to `.oempro_env`. Set `log` only if an integration sends an array for a parameter that should accept one, and report that parameter so it can be declared. See [API behavior changes](../api-reference/behavior-changes) (octeth/oempro#2954).
+
 5. **Session Management**
    ```bash
    SESSION_LIFETIME_DAYS=30                 # Session validity in whole days
