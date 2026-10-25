@@ -110,6 +110,16 @@ Every command now answers HTTP 400 with `{"Success":false,"ErrorCode":100017,"Er
 - **Unchanged:** parameters that a command documents as a list or a structure (`Tags`, rule bundles, journey actions, custom field options, the email gateway `To`, `Cc` and `Attachments` and the rest) accept one as before, and every request that sends single values answers exactly as before.
 - **Operators** can set `API_SCALAR_PARAMETER_CHECK=log` in `.oempro_env` to log such requests instead of refusing them, while an integration is corrected. See [error code 100017](/v6.0.4/api-reference/error-handling#request-shape-errors).
 
+### Stricter validation
+
+#### Segment rules refuse a `status` key on an operator that has no status
+
+`sms-events` rules gained the Keitaro operators `integration clicked`, `not integration clicked`, `integration converted` and `not integration converted`, and the two converted operators take an optional `status` key (see [Segmenting on Keitaro activity](/v6.0.4/api-reference/segments#create-a-segment)).
+
+- **Now:** `segment.create` and `segment.update` refuse a rule that carries a non-empty `status` key on any other operator, including the existing `sent`, `delivered`, `failed`, `clicked`, `replied` and `opted out` operators and their negations, with error code `12` and "The status filter is only available for Keitaro conversion rules." (HTTP 422). Nothing is saved.
+- **Before:** the key was accepted, stored and ignored when the segment was evaluated.
+- **Unchanged:** a rule without a `status` key, or with `status` absent, `null` or `""`, is validated and evaluated as before. A segment stored earlier with such a key still evaluates as before, and is refused only when it is saved again without removing the key (octeth/oempro#3720).
+
 ## Tier 2: shape and value changes
 
 #### Journeys send to soft-bounced subscribers
@@ -130,6 +140,31 @@ The list setting "Skip subscribers already in a journey or auto responder" (`DoN
 - **Now:** a list with the setting on loses its own enrollees, and a list with it off keeps them. A campaign sent to lists that all have the setting on, or all have it off, is unchanged, and so is every single-list campaign.
 - **Autoresponder enrollees above 10,000:** when more than 10,000 recipients of one list were waiting for an autoresponder email, earlier versions removed only part of them and logged the full number. All of them are now removed, and the log shows the number actually removed.
 - **New per-campaign override:** `campaign.create` and `campaign.update` accept `JourneyEnrolleeHandling` (`list`, `include` or `exclude`), and `campaign.get` returns it inside `Options` once it is set. `list`, or no value, keeps the per-list behavior above. See [Update a Campaign](/v6.0.4/api-reference/campaigns#update-a-campaign).
+
+#### SMS campaigns refuse the tracking code tag outside a link
+
+`smscampaign.create` and `smscampaign.update` accept the new <code v-pre>{{ SMS:TrackingCode }}</code> tag inside a link URL, for Keitaro tracking links (see [User Integrations](/v6.0.4/api-reference/user-integrations)).
+
+- **Now:** a message that has the tag outside a link URL is refused with the new error code 22, "The <code v-pre>{{ SMS:TrackingCode }}</code> tag can only be used inside a link." (HTTP 422).
+- **Before:** the same message was refused as a merge tag that cannot be read, code 16 on `smscampaign.create` and code 19 on `smscampaign.update`.
+- **Unchanged:** a message without the tag is validated and sent exactly as before. There is no flag, because the only affected messages were already refused (octeth/oempro#3720).
+
+#### `integrations` is a reserved URL slug in the new user interface
+
+The new interface has a new **Integrations** page at `/user/integrations`.
+
+- **Now:** a `UI_BRAND_SLUG_*` value of `integrations` in `.oempro_env` is ignored when the interface container starts, with the warning "is a path the new user interface already uses for a fixed page", and that section keeps its default slug. `php artisan brand:check` lists it as reserved too.
+- **Before:** `integrations` was accepted as a slug.
+- **Unchanged:** every other slug. An installation that never set a slug to `integrations` sees no difference (octeth/oempro#3720).
+
+#### SMS reporting accepts the Keitaro event names
+
+Keitaro activity is stored as two new SMS event types, `integration_click` and `integration_conversion`.
+
+- **Now:** `smscampaign.stats.timeseries` (in `Events`) accepts the two names. `smscampaign.events.browse`, `smscampaign.events.export.post`, `smscampaign.stats.breakdown` and `subscriber.sms.events.get` accept them only with the new `IncludeIntegrations` parameter, and leave those events out without it. `sms.stats.account` returns their daily rows only with `IncludeIntegrations`. `smscampaign.stats` adds an `Integrations` block only with `IncludeIntegrations` and only for a campaign with a tracking-tag link.
+- **Before:** the two names were refused with error code 4, "Unknown event type".
+- **The flag:** `IncludeIntegrations` on `smscampaign.stats`, `smscampaign.events.browse`, `smscampaign.events.export.post`, `smscampaign.stats.breakdown`, `subscriber.sms.events.get` and `sms.stats.account` accepts `1`, `true` or `yes` in any letter case, the same values as `include_bots`. Any other value, or no value, is off.
+- **Unchanged:** a call that names neither event and does not pass `IncludeIntegrations` returns exactly what it did before, including the default event list of `smscampaign.stats.timeseries`. `smscampaign.stats.timeseries` has no flag for the newly accepted names, because they were refused before and its default event list leaves them out (octeth/oempro#3720).
 
 ## Upgrade checklist
 

@@ -91,7 +91,7 @@ curl -X POST https://example.com/api.php \
 3: Missing segment operator
 4: List not found or doesn't belong to user
 5: Invalid segment rule field or operator (issue #2720)
-12: RulesJSON is not valid: an sms-events rule is invalid (issue #2742), or RulesJSON is not a string, or the rules are not a list, nest deeper than three levels, or a rule carries a key 0 (issue #3056)
+12: RulesJSON is not valid: an sms-events rule is invalid (issue #2742) or carries a status key it cannot take (issue #3720), or RulesJSON is not a string, or the rules are not a list, nest deeper than three levels, or a rule carries a key 0 (issue #3056)
 ```
 
 :::
@@ -130,6 +130,40 @@ These rules are validated when the segment is saved, so an unknown operator, an 
 A negative rule naming a specific campaign means "was a recipient of it and did not", not "is not in the matching set", so contacts who never received that campaign do not satisfy "did not click it".
 
 Segment results lag SMS activity by the rollup cycle, about one minute.
+:::
+
+::: tip Segmenting on Keitaro activity <Badge type="tip" text="New in v6.0.4" />
+`sms-events` rules in `segment.create` and `segment.update` accept four more operators, for accounts connected to Keitaro (see [Keitaro for SMS Campaigns](../new-user-interface/sms-keitaro)):
+
+| Operator | Matches contacts who |
+|---|---|
+| `integration clicked` | clicked a Keitaro link in an SMS |
+| `not integration clicked` | did not click one |
+| `integration converted` | have a Keitaro conversion after an SMS |
+| `not integration converted` | do not have one |
+
+They read Keitaro's own click and conversion records, never the Octeth short link clicks, so `clicked` and `integration clicked` are independent. Bot clicks and conversions are not counted. `value`, `time_filter` and `aggregation` work as for the other operators, with the same restrictions, and a negative rule naming a campaign means "was a recipient of it and did not".
+
+The two converted operators take an optional `status` key:
+
+```json
+{
+  "type": "sms-events",
+  "operator": "integration converted",
+  "value": "",
+  "status": "sale",
+  "time_filter": { "type": "in_last_x_days", "value": 7 }
+}
+```
+
+| `status` | Effect |
+|---|---|
+| absent, `null` or `""` | Any status except `rejected` |
+| text of 1 to 64 characters | Only conversions whose latest status is this value, compared without regard to case. `rejected` matches rejected conversions. |
+
+A conversion stores only its latest status, so a contact whose `lead` later became a `sale` matches `sale` and not `lead`.
+
+A `status` key on any other operator, including the existing ones such as `clicked`, is refused with error code `12` and the message "The status filter is only available for Keitaro conversion rules.". A `status` that is not a string, is blank after trimming, or is longer than 64 characters is refused with error code `12` and "The Keitaro conversion status must be text of 1 to 64 characters.". Nothing is saved in either case.
 :::
 
 ## Update a Segment
@@ -200,7 +234,7 @@ curl -X POST https://example.com/api.php \
 5: Invalid segment operator
 6: Invalid subscriber list id
 7: Invalid segment rule field or operator (issue #2720)
-12: RulesJSON is not valid: an sms-events rule is invalid (issue #2742), or RulesJSON is not a string, or the rules are not a list, nest deeper than three levels, or a rule carries a key 0 (issue #3056)
+12: RulesJSON is not valid: an sms-events rule is invalid (issue #2742) or carries a status key it cannot take (issue #3720), or RulesJSON is not a string, or the rules are not a list, nest deeper than three levels, or a rule carries a key 0 (issue #3056)
 ```
 
 :::

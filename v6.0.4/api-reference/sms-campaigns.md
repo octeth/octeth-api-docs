@@ -54,7 +54,7 @@ The message is measured with the gateway's longest short URL domain, because eac
 | APIKey | String | No | API key for authentication |
 | CampaignName | String | Yes | A name for the campaign |
 | ListID | Integer | Yes | The audience list. Must belong to the caller and have a phone field |
-| MessageContent | String | Yes | The message body. May contain merge tags from `sms.mergetags.get`, written as in email: <code v-pre>{{ Subscriber:FirstName }}</code>, or <code v-pre>{{ Subscriber:FirstName &#124; "there" }}</code> with a fallback. A tag naming a field the list does not have is refused |
+| MessageContent | String | Yes | The message body. May contain merge tags from `sms.mergetags.get`, written as in email: <code v-pre>{{ Subscriber:FirstName }}</code>, or <code v-pre>{{ Subscriber:FirstName &#124; "there" }}</code> with a fallback. A tag naming a field the list does not have is refused. <Badge type="tip" text="New in v6.0.4" /> <code v-pre>{{ SMS:TrackingCode }}</code> is allowed only inside a link URL, where it is replaced with the recipient's tracking code and the link is sent as written instead of shortened (error 22 otherwise) |
 | GatewayID | Integer | No | The sending gateway. Must be active and assigned to the account |
 | SegmentID | Integer | No | Narrow the audience to a saved segment of that list. Cannot be combined with `RulesJsonBundle` |
 | RulesJsonBundle | String | No | Narrow the audience with conditions, as a JSON-encoded bundle holding exactly one criterion for `ListID`: `{"operator":"or","criteria":[{"list_id":42,"operator":"and","rules":[...]}]}`. `rules` takes the same shape as a saved segment's rules. The criterion's `operator` joins its rule groups, and the rules inside a group are joined the other way (see the example below). Possible values: `and`, `or`. Cannot be combined with `SegmentID`. Omit it to send to the whole list |
@@ -120,6 +120,7 @@ curl -X POST https://example.com/api/v1/smscampaign.create \
 16: MessageContent has a merge tag that cannot be read (a misspelt or email-only scope, or a space after the colon), which would be sent as typed; the message lists them
 17: Timezone is not a known timezone
 21: LinkExpiryHours is not a whole number from 0 to the install maximum
+22: The {{ SMS:TrackingCode }} tag is used outside a link. It can only be used inside a link's URL (new in v6.0.4)
 ```
 
 :::
@@ -181,7 +182,7 @@ The message is measured with the gateway's longest short URL domain, because eac
 | ListID | Integer | No | Move the campaign to another list. Must belong to the caller and have a phone field |
 | SegmentID | Integer | No | Narrow the audience to a saved segment of the list. `0` clears it. Cannot be combined with `RulesJsonBundle` |
 | RulesJsonBundle | String | No | Narrow the audience with conditions, in the same format as `smscampaign.create`. An empty string clears them. Cannot be combined with `SegmentID` |
-| MessageContent | String | No | A new message body |
+| MessageContent | String | No | A new message body. <Badge type="tip" text="New in v6.0.4" /> <code v-pre>{{ SMS:TrackingCode }}</code> is allowed only inside a link URL (error 22 otherwise) |
 | GatewayID | Integer | No | A different gateway |
 | SenderID | String | No | A different sender id |
 | AppendOptOutFooter | Boolean | No | Whether to append the opt-out footer |
@@ -240,6 +241,7 @@ curl -X POST https://example.com/api/v1/smscampaign.update \
 19: The message has a merge tag that cannot be read, which would be sent as typed; the message lists them
 20: Timezone is not a known timezone
 21: LinkExpiryHours is not a whole number from 0 to the install maximum
+22: The {{ SMS:TrackingCode }} tag is used outside a link. It can only be used inside a link's URL (new in v6.0.4)
 ```
 
 :::

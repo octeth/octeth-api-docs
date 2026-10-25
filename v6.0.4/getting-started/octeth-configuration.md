@@ -1453,6 +1453,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     SMS_LINK_EXPIRY_HOURS_MAX=8760                       # The longest expiry a campaign may ask for
     SMS_LINK_BOT_DETECTION=true                          # Screen link clicks for bots
     SMS_LINK_CLICK_RATE_LIMIT=30                         # Clicks allowed per link per minute
+    SMS_KEITARO_POLL_INTERVAL_SECONDS=300                # Seconds between Keitaro click log reads. Minimum 30
     ```
 
     `SMS_CAMPAIGN_MAX_RECIPIENTS` is the largest audience a single campaign may target. It is a guard against an accidental send to everybody, not a licence limit, so set it to the largest campaign you actually intend to run rather than to the size of your database.
@@ -1488,6 +1489,10 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     `SMS_ANALYTICS_RETENTION_DAYS` is how long SMS analytics rows are kept.
 
     Introduced in v6.0.0 (issue #2742).
+
+    `SMS_KEITARO_POLL_INTERVAL_SECONDS` is how often the Keitaro click poller (`oempro_sms_keitaro_poller`) reads the click log of every account connected to Keitaro. Each read starts 120 seconds before the end of the previous one, so a click Keitaro logs late is still picked up, and a click read twice is stored once. A lower value brings Keitaro clicks into SMS campaign reports sooner and calls each Keitaro server more often. Values below `30` are raised to `30`. When a read fails (a wrong API key, an unreachable server, or a login page instead of the API), the account is marked as failing with the error, nothing is skipped, and the next interval reads the same window again. Restart the poller after changing it.
+
+    Introduced in v6.0.4 (issue #3720).
 
 51. **API Rate Limit Enforcement**
 

@@ -221,7 +221,7 @@ Segments and campaign conditions can use the **SMS activity** rule to target con
 
 | Part | Options |
 |---|---|
-| Activity | Was sent, Was not sent, Delivered, Not delivered, Failed, Not failed, Clicked, Not clicked, Replied, Not replied, Opted out, Not opted out |
+| Activity | Was sent, Was not sent, Delivered, Not delivered, Failed, Not failed, Clicked, Not clicked, Replied, Not replied, Opted out, Not opted out, and the Keitaro activities Clicked a Keitaro link, Did not click a Keitaro link, Converted in Keitaro, Did not convert in Keitaro (see [Keitaro for SMS Campaigns](./sms-keitaro#segmenting-by-keitaro-activity)) |
 | Campaign | **Any SMS** or one specific campaign |
 | When | Any time, In the last X days, Not in the last X days, After date, Before date. Between dates and Not between dates need a specific campaign. |
 | How often | With **Any SMS** and no time filter: Any number of times, At least, At most or Exactly N times. Not available for the opt-out activities. |
@@ -302,3 +302,4 @@ Open the **Recipients** tabs in the report and read the reason next to each numb
 - **[SMS Messages](../using-octeth/sms-messages)**: gateways, list SMS settings, suppression and journey SMS.
 - **[Xeebi SMS Gateway](../using-octeth/sms-gateways/xeebi)**: connect a Xeebi account and its callbacks.
 - **[Segments](../using-octeth/segments)**: build segments to target your campaigns.
+- **[Keitaro for SMS Campaigns](./sms-keitaro)**: track Keitaro clicks, conversions and revenue from your SMS links.

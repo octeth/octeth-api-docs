@@ -30,6 +30,7 @@ Everything else reads the event store directly and is deduplicated at read time.
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
 | SMSCampaignID | Integer | Yes | The campaign to report on |
+| IncludeIntegrations | Boolean | No | <Badge type="tip" text="New in v6.0.4" /> Add the `Integrations` block with Keitaro clicks, conversions and revenue. Accepted values: `1`, `true`, `yes` (any case). The block is added only when the campaign has a link carrying the <code v-pre>{{ SMS:TrackingCode }}</code> tag. Without this parameter the response is unchanged |
 
 **Response fields worth knowing:**
 
@@ -39,6 +40,14 @@ Everything else reads the event store directly and is deduplicated at read time.
 | `Rates.*` | `null` rather than `0` when the denominator is zero. A campaign that has delivered nothing has no click rate, and `0` would render as "0% clicked" next to a campaign that genuinely got none |
 | `DetailExpired` | `true` once per-recipient detail has passed its retention window. Counters remain correct and available; only the per-recipient list is gone |
 | `Funnel.Skipped` | Recipients removed before sending, broken down by reason |
+| `Integrations` | <Badge type="tip" text="New in v6.0.4" /> Present only when `IncludeIntegrations` is set and the campaign has a tracking-tag link. `null` when the integration figures could not be read: the rest of the response is still correct, and the call does not fail |
+| `Integrations.UniqueClicks` | Contacts with at least one Keitaro click. Bot clicks are excluded. These clicks never count in `TotalClicks`, `TotalUniqueClicks` or `Rates.ClickRate`, which stay the figures of the tracked short links |
+| `Integrations.ClickRate` | `UniqueClicks` over delivered messages, a 0 to 1 ratio rounded to 6 decimals like `Rates.ClickRate` (so `0.048` means 4.8%). `null` when nothing was delivered |
+| `Integrations.Conversions` | Contacts with a conversion whose latest status is not `rejected`. Bots are excluded |
+| `Integrations.Revenue` | Revenue of those conversions by currency, as 4 decimal strings. Revenue never goes into `ActualCost` |
+| `Integrations.Statuses` | Every conversion status Keitaro reported, with `Count` and `Revenue`, including statuses a conversion later moved past (a lead that became a sale counts once as `lead` and once as `sale`) and `rejected` ones. Bots are excluded |
+| `Integrations.Links` | Per link ordinal (`LinkOrdinal` matches the campaign's links): `UniqueClicks`, `Conversions` and `Revenue` |
+| `Integrations.LastPolledAt` | When Octeth last read clicks from Keitaro (UTC), or `null` when the account has no Keitaro connection |
 
 ::: code-group
 
@@ -111,6 +120,29 @@ curl -X GET https://example.com/api/v1/smscampaign.stats \
 
 :::
 
+::: details Integrations block (with IncludeIntegrations)
+
+```json
+"Integrations": {
+  "Provider": "keitaro",
+  "UniqueClicks": 120,
+  "ClickRate": 0.048,
+  "Conversions": 9,
+  "Revenue": {"USD": "315.0000"},
+  "Statuses": [
+    {"Status": "lead", "Count": 14, "Revenue": "0.0000"},
+    {"Status": "sale", "Count": 9, "Revenue": "315.0000"},
+    {"Status": "rejected", "Count": 2, "Revenue": "0.0000"}
+  ],
+  "Links": [
+    {"LinkOrdinal": 1, "UniqueClicks": 120, "Conversions": 9, "Revenue": "315.0000"}
+  ],
+  "LastPolledAt": "2026-10-24 12:00:00"
+}
+```
+
+:::
+
 ## Get Campaign Statistics Over Time
 
 <Badge type="info" text="GET" /> `/api/v1/smscampaign.stats.timeseries`
@@ -130,8 +162,8 @@ curl -X GET https://example.com/api/v1/smscampaign.stats \
 | APIKey | String | No | API key for authentication |
 | SMSCampaignID | Integer | Yes | The campaign to report on |
 | Granularity | String | No | Possible values: `minute`, `hour` (default), `day`. <Badge type="tip" text="New in v6.0.1" /> `minute` buckets each event by the minute it happened in, for a campaign that finished sending inside a single hour |
-| Events | String | No | Comma-separated event types to include. Possible values: `queued`, `skipped`, `send_attempt`, `sent`, `send_failed`, `delivered`, `undelivered`, `expired`, `clicked`, `replied`, `opted_out`. Defaults to all of them. An unrecognised value is an error, not an empty series |
-| IncludeBots | Boolean | No | Include bot clicks. Defaults to excluding them |
+| Events | String | No | Comma-separated event types to include. Possible values: `queued`, `skipped`, `send_attempt`, `sent`, `send_failed`, `delivered`, `undelivered`, `expired`, `clicked`, `replied`, `opted_out`. Defaults to all of them. An unrecognised value is an error, not an empty series. <Badge type="tip" text="New in v6.0.4" /> `integration_click` and `integration_conversion` (Keitaro activity) can be named too, and are never part of the default list |
+| IncludeBots | Boolean | No | Include bot clicks, and bot `integration_click` and `integration_conversion` events. Defaults to excluding them |
 
 ::: warning Events and Messages count different things
 Each point returns both `Events` and `Messages`.
@@ -205,8 +237,9 @@ curl -X GET https://example.com/api/v1/smscampaign.stats.timeseries \
 | APIKey | String | No | API key for authentication |
 | SMSCampaignID | Integer | Yes | The campaign to report on |
 | Dimension | String | Yes | The single dimension to group by. Possible values: `hour`, `day`, `gateway_status`, `error_code`, `carrier`, `country`, `link`, `sender_id` |
-| Event | String | No | Restrict to one event type. Possible values: `queued`, `skipped`, `send_attempt`, `sent`, `send_failed`, `delivered`, `undelivered`, `expired`, `clicked`, `replied`, `opted_out` |
-| IncludeBots | Boolean | No | Include bot clicks. Defaults to excluding them |
+| Event | String | No | Restrict to one event type. Possible values: `queued`, `skipped`, `send_attempt`, `sent`, `send_failed`, `delivered`, `undelivered`, `expired`, `clicked`, `replied`, `opted_out`, and with `IncludeIntegrations` also `integration_click`, `integration_conversion` |
+| IncludeIntegrations | Boolean | No | <Badge type="tip" text="New in v6.0.4" /> Count Keitaro activity (`integration_click`, `integration_conversion`) in the breakdown. Accepted values: `1`, `true`, `yes` (any case). Without it those events are left out, and naming one in `Event` returns error 4, so the response is the same as before they existed |
+| IncludeBots | Boolean | No | Include bot clicks, and bot `integration_click` and `integration_conversion` events. Defaults to excluding them |
 | Limit | Integer | No | Rows to return, 1 to 500. Default 50 |
 
 ::: code-group
@@ -399,7 +432,8 @@ curl -X GET https://example.com/api/v1/smscampaign.recipients \
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
 | SMSCampaignID | Integer | Yes | The campaign to read |
-| Event | String | No | Restrict to one event type. Possible values: `queued`, `skipped`, `send_attempt`, `sent`, `send_failed`, `delivered`, `undelivered`, `expired`, `clicked`, `replied`, `opted_out` |
+| Event | String | No | Restrict to one event type. Possible values: `queued`, `skipped`, `send_attempt`, `sent`, `send_failed`, `delivered`, `undelivered`, `expired`, `clicked`, `replied`, `opted_out`, and with `IncludeIntegrations` also `integration_click`, `integration_conversion` |
+| IncludeIntegrations | Boolean | No | <Badge type="tip" text="New in v6.0.4" /> Include Keitaro activity (`integration_click`, `integration_conversion`). Accepted values: `1`, `true`, `yes` (any case). Without it those events are left out of the page, and naming one in `Event` returns error 4, so the response is the same as before they existed |
 | From | String | No | Earliest event time, any parseable date |
 | To | String | No | Latest event time |
 | SubscriberID | Integer | No | Restrict to one contact |
@@ -623,7 +657,8 @@ curl -X GET https://example.com/api/v1/smscampaign.linkclicks \
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
 | SMSCampaignID | Integer | Yes | The campaign to export |
-| Event | String | No | Restrict to one event type |
+| Event | String | No | Restrict to one event type. Same values as `smscampaign.events.browse` |
+| IncludeIntegrations | Boolean | No | <Badge type="tip" text="New in v6.0.4" /> Include Keitaro activity (`integration_click`, `integration_conversion`) in the file. Accepted values: `1`, `true`, `yes` (any case). Without it those events are left out, and naming one in `Event` returns error 4. When set, `Filters` in the response carries `"includeintegrations": true` |
 | From | String | No | Earliest event time |
 | To | String | No | Latest event time |
 
@@ -766,6 +801,7 @@ curl -X GET https://example.com/api/v1/smscampaign.events.export \
 | APIKey | String | No | API key for authentication |
 | From | String | No | First day to include. Defaults to 30 days ago |
 | To | String | No | Last day to include. Defaults to today |
+| IncludeIntegrations | Boolean | No | <Badge type="tip" text="New in v6.0.4" /> Add the daily rows of Keitaro activity (`Event` `integration_click` and `integration_conversion`). Accepted values: `1`, `true`, `yes` (any case). Without it those rows are left out and the series is the same as before they existed |
 
 Results are broken down by `Source`, because an account's SMS activity is not one number and "why did this month cost more" is usually answered by which source grew.
 
@@ -1351,7 +1387,8 @@ curl -X POST https://example.com/api/v1/admin.sms.settings.update \
 | APIKey | String | No | API key for authentication |
 | ListID | Integer | Yes | The list the contact belongs to. This is the ownership boundary and is checked before anything is read |
 | SubscriberID | Integer | Yes | The contact to read |
-| Event | String | No | Restrict to one event type |
+| Event | String | No | Restrict to one event type. Possible values: `queued`, `skipped`, `send_attempt`, `sent`, `send_failed`, `delivered`, `undelivered`, `expired`, `clicked`, `replied`, `opted_out`, and with `IncludeIntegrations` also `integration_click`, `integration_conversion` |
+| IncludeIntegrations | Boolean | No | <Badge type="tip" text="New in v6.0.4" /> Include the contact's Keitaro activity (`integration_click`, `integration_conversion`). Accepted values: `1`, `true`, `yes` (any case). Without it those events are left out of the page, and naming one in `Event` returns error 4, so the response is the same as before they existed |
 | Limit | Integer | No | Rows per page, 1 to 500. Default 50 |
 | CursorTime | String | No | `NextCursor.CursorTime` from the previous page. Must be sent together with `CursorID` |
 | CursorID | String | No | `NextCursor.CursorID` from the previous page |

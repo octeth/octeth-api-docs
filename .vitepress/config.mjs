@@ -1148,6 +1148,7 @@ export default defineConfig({
                         {text: 'Running Billing', link: '/v6.0.4/new-user-interface/billing-operations'},
                         {text: 'Webhooks', link: '/v6.0.4/new-user-interface/webhooks'},
                         {text: 'SMS Campaigns', link: '/v6.0.4/new-user-interface/sms-campaigns'},
+                        {text: 'Keitaro for SMS', link: '/v6.0.4/new-user-interface/sms-keitaro'},
                         {text: 'Connect Claude or ChatGPT', link: '/v6.0.4/new-user-interface/ai-assistants'},
                         {text: 'Configuration Reference', link: '/v6.0.4/new-user-interface/configuration-reference'},
                         {text: 'Troubleshooting', link: '/v6.0.4/new-user-interface/troubleshooting'}
@@ -1237,6 +1238,7 @@ export default defineConfig({
                                 {text: 'Emails', link: '/v6.0.4/api-reference/emails'},
                                 {text: 'User Email Templates', link: '/v6.0.4/api-reference/user-email-templates'},
                                 {text: 'User Webhooks', link: '/v6.0.4/api-reference/user-webhooks'},
+                                {text: 'User Integrations', link: '/v6.0.4/api-reference/user-integrations'},
                                 {text: 'User Sender Domains', link: '/v6.0.4/api-reference/user-senderdomains'},
                                 {text: 'User Email Content', link: '/v6.0.4/api-reference/user-emailcontent'},
                                 {text: 'Media Library', link: '/v6.0.4/api-reference/medialibrary'},
