@@ -59,8 +59,27 @@ The **Setup checklist** card on the Keitaro screen repeats these four steps with
 
 1. **Create a traffic source** in Keitaro and paste the postback URL into its **S2S postback** field.
 2. In that traffic source, tick **Send postback to traffic source** for every conversion status you want to see in Octeth.
-3. In your Keitaro campaign, **map your link's query parameter to `sub_id_1`** (or to the sub ID you chose in Step 1).
-4. In your SMS message, **put <code v-pre>{{ SMS:TrackingCode }}</code> as that parameter's value**, for example <code v-pre>https://tracker.example.com/offer?click={{ SMS:TrackingCode }}</code>.
+3. In that traffic source, **map your link's query parameter to `sub_id_1`** (or to the sub ID you chose in Step 1). See [Mapping the query parameter to the sub ID](#mapping-the-query-parameter-to-the-sub-id) below.
+4. Open your Keitaro campaign and select that traffic source in its **Source** field.
+5. In your SMS message, **put <code v-pre>{{ SMS:TrackingCode }}</code> as that parameter's value**, for example <code v-pre>https://tracker.example.com/offer?click={{ SMS:TrackingCode }}</code>.
+
+### Mapping the query parameter to the sub ID
+
+Octeth does not detect which sub ID holds the tracking code. It uses the one you chose in **Sub ID for the tracking code** in Step 1. Octeth reads that sub ID from each click in Keitaro's click log, and the postback URL sends it back as `code={sub_id_1}`. Keitaro fills that sub ID only if a query parameter in your link is mapped to it.
+
+The parameter name is up to you. `click` is used in this article, but any name works as long as the mapping uses the same one.
+
+1. In Keitaro, open **Sources** and edit the traffic source you created for Octeth.
+2. Find the **Parameters** table. It has one row for each parameter, with three columns: the name shown in reports, the name of the query parameter in the link, and a token.
+3. In the **Sub ID 1** row (or the row of the sub ID you chose in Step 1), enter `click` in the second column, the query parameter name.
+4. Leave the token in the third column empty. The value comes from your link, not from an ad network macro.
+5. Save the traffic source. If Keitaro asks, choose **Apply to campaigns** so the campaigns that use this source pick up the change.
+
+From now on, a visit to `https://tracker.example.com/offer?click=0aB3xY…` stores `0aB3xY…` in `sub_id_1`, and Octeth can match the click and its conversions to the recipient.
+
+::: tip How to check the mapping
+Open a link with a test value, for example `?click=test123`, then look the click up in Keitaro's click log. If `sub_id_1` shows `test123`, the mapping works. If the mapping is missing, Keitaro sends the macro itself, `{sub_id_1}`, in the postback, and the Keitaro screen in Octeth reports it as an unmapped sub ID.
+:::
 
 ::: danger Keep the postback URL as it is
 Paste the postback URL exactly as Octeth shows it. Do not remove any part of it. Keep `subid={subid}`: it is Keitaro's click ID, and Octeth rejects a conversion without it. Keep `time={conversion_time:U}`: Octeth uses that time to put a recipient's statuses in the right order. Without it, a late or repeated postback can replace a newer status with an older one, for example turn a **sale** back into a **lead**.
@@ -78,6 +97,66 @@ When the message is sent, Octeth replaces the tag with that recipient's code. Th
 - A link with the tag is sent **as you wrote it**, with only the tag replaced. It does not go through Octeth's short link, so it does not count in the report's **Clicked** figures. Keitaro counts it instead.
 - Your other links work as before. A message can mix a Keitaro link and normal links.
 - If your account is not connected to Keitaro yet, the editor shows a note with a link to the Keitaro screen. You can still save and send the campaign, but no Keitaro figures are collected until you connect.
+
+## Optional: shorter links with Cloudflare
+
+A link such as <code v-pre>https://go.example.com/HBRzZB?click={{ SMS:TrackingCode }}</code> takes up a lot of an SMS. If your tracker domain is on Cloudflare, you can send a shorter link that is just the domain and the code:
+
+<code v-pre>https://go.example.com/{{ SMS:TrackingCode }}</code>
+
+Cloudflare turns each visit into the full Keitaro link before it reaches Keitaro, so Keitaro records the click as usual. The examples below use `go.example.com` for the tracker domain and `HBRzZB` for the Keitaro campaign's alias, the part after the domain in the campaign URL. Replace both with your own.
+
+Before you start, complete Step 2 with `click` mapped to your sub ID, and copy your Keitaro campaign URL, for example `https://go.example.com/HBRzZB`.
+
+### 1. Put the domain behind Cloudflare's proxy
+
+In the Cloudflare dashboard, open the domain's **DNS** records and make sure the record for your tracker domain shows **Proxied** (the orange cloud). Redirect rules only run on proxied traffic.
+
+### 2. Create the redirect rule
+
+1. Open **Rules** > **Redirect Rules** and click **Create rule**.
+2. **Rule name:** for example `SMS tracking code to Keitaro`.
+3. Under **If incoming requests match**, choose **Custom filter expression** and click **Edit expression**. Enter:
+
+```
+(http.host eq "go.example.com"
+ and len(http.request.uri.path) eq 21
+ and trim(substring(http.request.uri.path, 1), "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz") eq "")
+```
+
+4. Under **Then**, set:
+
+| Setting | Value |
+|---|---|
+| **Type** | Dynamic |
+| **Expression** | `concat("https://go.example.com/HBRzZB?click=", substring(http.request.uri.path, 1))` |
+| **Status code** | 302 |
+
+5. Click **Deploy**.
+
+The expression matches only paths that look like a tracking code. Every code is exactly 20 letters and digits, and the path adds a slash, so its length is 21. Your other links on the same domain, such as other Keitaro campaign URLs, the Keitaro admin pages and its postback address, have a different length or contain other characters, so they pass through unchanged.
+
+::: warning Keep the length check
+Without `len(http.request.uri.path) eq 21`, the rule also catches any other short path made of letters and digits, such as another campaign's URL `https://go.example.com/Xy7Kq2`, and sends those visitors to the wrong campaign.
+:::
+
+### 3. Use the short link in your SMS
+
+Write the link with the tag as the whole path:
+
+<code v-pre>Our autumn sale is on: https://go.example.com/{{ SMS:TrackingCode }}</code>
+
+A recipient who taps `https://go.example.com/0aB3xY…` is sent to `https://go.example.com/HBRzZB?click=0aB3xY…`, Keitaro stores the code in your sub ID, and the click and its conversions reach Octeth as described above.
+
+Every tracking code has the same length, so the message's character count and part count do not change from one recipient to another, and the cost estimate stays accurate.
+
+::: tip Check it before you send
+Send yourself a test of the campaign. A test has no contact behind it, so its code is `00000000000000000000`. Tapping the link should land on your Keitaro campaign. To test the whole flow, including a click recorded in Octeth, send the campaign to a small list that contains your own number.
+:::
+
+::: info One campaign per domain
+The rule sends every tracking code to one Keitaro campaign. To send SMS traffic to several Keitaro campaigns with short links, use a separate tracker domain (or subdomain) for each one, with its own rule.
+:::
 
 ## Reading the report
 
