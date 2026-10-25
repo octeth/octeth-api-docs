@@ -1,4 +1,34 @@
 import {defineConfig} from 'vitepress'
+import fs from 'node:fs'
+import path from 'node:path'
+import {fileURLToPath} from 'node:url'
+
+// Rolling window of built versions (Cem, 2026-10-25). Building every version
+// directory ran the VitePress build out of memory on the GitHub runner, so the
+// site builds only the newest BUILT_VERSIONS directories: the latest six
+// releases plus the version in development. Older directories stay in the
+// repository and leave the build, the version menu and the sidebar map
+// automatically, one per release. Raise the number to bring one back.
+const BUILT_VERSIONS = 7
+const DOCS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const versionParts = (dir) => dir.slice(1).split('.').map((part) => (part === 'x' ? 0 : Number(part)))
+const compareVersions = (a, b) => {
+    const [pa, pb] = [versionParts(a), versionParts(b)]
+    for (let i = 0; i < 3; i++) {
+        if (pa[i] !== pb[i]) return pa[i] - pb[i]
+    }
+    return 0
+}
+const versionDirs = fs.readdirSync(DOCS_ROOT)
+    .filter((name) => /^v\d+\.\d+\.(\d+|x)$/.test(name) && fs.statSync(path.join(DOCS_ROOT, name)).isDirectory())
+    .sort(compareVersions)
+const builtVersions = new Set(versionDirs.slice(-BUILT_VERSIONS))
+const excludedVersions = versionDirs.filter((dir) => !builtVersions.has(dir))
+// A link or sidebar prefix outside any version directory ('/', '/changelog') is always built.
+const isBuiltLink = (link) => {
+    const match = /^\/(v[^/]+)\//.exec(link || '')
+    return !match || !versionDirs.includes(match[1]) || builtVersions.has(match[1])
+}
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -10,6 +40,8 @@ export default defineConfig({
     ignoreDeadLinks: true,
 
     cleanUrls: true,
+
+    srcExclude: excludedVersions.map((dir) => `${dir}/**`),
 
     appearance: false,
 
@@ -82,7 +114,7 @@ export default defineConfig({
                     {text: 'v5.6.x', link: '/v5.6.x/'},
                     {text: 'v5.5.x', link: '/v5.5.x/'},
                     {text: 'Changelog', link: '/changelog'}
-                ]
+                ].filter((item) => isBuiltLink(item.link))
             },
             {
                 text: "Add-Ons",
@@ -1840,7 +1872,7 @@ export default defineConfig({
             ]
 
             // Return sidebar config with shared reference
-            return {
+            return Object.fromEntries(Object.entries({
                 '/': v6_0_5_sidebar,  // Root pages use latest version sidebar
                 '/v6.0.5/': v6_0_5_sidebar,  // Reference same config
                 '/v6.0.4/': v6_0_4_sidebar,  // Reference same config
@@ -2843,7 +2875,7 @@ export default defineConfig({
                     }
 
                 ]
-            }
+            }).filter(([prefix]) => isBuiltLink(prefix)))
         })(),
 
         socialLinks: [
