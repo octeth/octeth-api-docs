@@ -1821,7 +1821,9 @@ Every parameter that is expected to be a string is rejected when it is not one, 
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-The gateways this account may send through, with the capabilities a composer needs: how many parts each will concatenate, and which sender ids are available.
+The active gateways this account may send through: the shared ones and those assigned to the account, with what a composer needs to offer them. Gateway settings hold credentials and are never returned.
+
+`SenderNumbers` is the gateway's list of sender ids as stored, a JSON array encoded as a string (`"[\"+15550100000\",\"ACME\"]"`), so decode it before use. `DefaultSender`, returned only with `IncludeDefaultSender`, is what a campaign with no `SenderID` goes out from, as the gateway's connector works it out from its settings. It may be written differently from the matching entry in `SenderNumbers` (Xeebi reports `15550100000` for `+15550100000`), and it is an empty string when the gateway has no fallback.
 
 **Request Body Parameters:**
 
@@ -1829,25 +1831,33 @@ The gateways this account may send through, with the capabilities a composer nee
 |-----------|------|----------|-------------|
 | Command | String | Yes | API command: `sms.gateways.get` |
 | SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| IncludeDefaultSender | Boolean | No | <Badge type="tip" text="New in v6.0.4" /> Add `DefaultSender` to each gateway. Defaults to `false`, which returns the response unchanged |
 
 ::: code-group
 
 ```bash [Example Request]
 curl -X GET https://example.com/api/v1/sms.gateways.get \
   -H "Content-Type: application/json" \
-  -d '{ "Command": "sms.gateways.get", "SessionID": "your-session-id" }'
+  -d '{
+    "Command": "sms.gateways.get",
+    "SessionID": "your-session-id",
+    "IncludeDefaultSender": true
+  }'
 ```
 
 ```json [Success Response]
 {
   "Success": true,
-  "ErrorCode": 0,
-  "Gateways": [
+  "SMSGateways": [
     {
       "GatewayID": 3,
       "GatewayName": "Primary",
+      "GatewayType": "xeebi",
+      "SenderNumbers": "[\"+15550100000\",\"+15550100001\"]",
       "MessageConcatenation": 5,
-      "SenderNumbers": ["+15550100000", "ACME"]
+      "IsGlobal": false,
+      "DefaultSender": "15550100000"
     }
   ]
 }
@@ -1856,8 +1866,8 @@ curl -X GET https://example.com/api/v1/sms.gateways.get \
 ```json [Error Response]
 {
   "Success": false,
-  "Errors": [{ "Code": 1, "Message": "The gateway list could not be read." }],
-  "ErrorCode": 1
+  "ErrorCode": 1,
+  "ErrorMessage": { "Code": 1, "Message": "The gateway list could not be read." }
 }
 ```
 
