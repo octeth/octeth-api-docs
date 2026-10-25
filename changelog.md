@@ -12,27 +12,55 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Changelog will be updated upon release.
+Octeth v6.0.4 connects SMS campaigns to the Keitaro tracker, lets users send a test SMS to their own verified numbers, adds an API reference with a live playground to the new interface, and tightens account, session and API security in several places. This release changes how the API answers some requests, so read the Upgrade Notes and the [API behavior changes in v6.0.4](/v6.0.4/api-reference/behavior-changes) before upgrading an installation that other systems call.
 
 ### New Features
 
-- (To be documented)
+- **Keitaro for SMS campaigns** - Each account can connect its own Keitaro tracker. A link with the <code v-pre>{{ SMS:TrackingCode }}</code> tag carries each recipient's own code, and the campaign report shows Keitaro clicks, conversions, conversion statuses and revenue per campaign and per link. Segments can target contacts who clicked or converted in Keitaro, optionally by conversion status. See [Keitaro for SMS Campaigns](/v6.0.4/new-user-interface/sms-keitaro) (#3720)
+- **Test sends for SMS campaigns** - The SMS composer has a Send a test button that shows the message as it will arrive and its price, then sends one copy to a number the user verified with a six-digit code. Each account can keep up to five test numbers, and administrators set the daily test limit and the time between tests in the SMS settings. See [Sending a test](/v6.0.4/new-user-interface/sms-campaigns#sending-a-test) (#3734)
+- **API reference and playground** - The API page of the new interface lists every command a user API key can call, with its parameters and examples, and sends real requests with the user's own key. Commands that only read data run in one click, and commands that change data ask for the command name first (#3236)
+- **Abuse lookup for the email gateway** - Gateway messages carry a signed abuse identifier, so staff can trace a forwarded abuse report to the sending account, and an administrator can turn off link tracking redirects for one account (#3086)
 
 ### Enhancements
 
-- (To be documented)
+- **Campaigns pause during upgrades** - The upgrade offers to pause campaigns that are sending, waits for their current batches, and resumes exactly those campaigns when it finishes (#2995)
+- **Journey enrollees per campaign** - A campaign can include, exclude or follow each list's setting for contacts who are in a journey, and multi-list campaigns now apply each list's setting to that list only (#3251)
+- **Tracking links on sender domains without a tracking record** - Campaigns sent from a sender domain whose verified records do not include the tracking host now put their links on the fallback tracking host, so every link resolves. The new interface warns about such domains, and the upgrade check lists them (#3657, #3658)
+- **Suppression dates** - The new interface shows when each address was added to a suppression list (#3658)
+- **Subscriber activity** - A subscriber's Activity tab lists campaign sends and hard and soft bounces (#3675)
+- **SMS composer** - The merge tag picker is grouped and works before a list is chosen, saved drafts show links as typed, a draft can be deleted from the composer, the sender ID list offers the gateway's numbers and its default, one-time codes are entered in one box per digit, and the composer explains that links with the tracking code tag are sent exactly as written (#3720, #3734)
+- **Email gateway tag statistics** - Tag statistics and tag filters read from an index, so they stay fast as the gateway queue grows (#2267)
+- **Salt rotation** - Operators can rotate each install salt on its own, and links that contain ids made with the previous salt keep working (#2922)
 
 ### Bug Fixes
 
-- (To be documented)
+- **Import wizard** - CSV files saved by Excel in Windows-1252 or UTF-16 are accepted instead of failing at the column step (#3685)
+- **Soft-bounced subscribers** - They are shown as Active with a Soft bounce badge, included in segment browsing and exports, and receive journey emails and SMS, as campaigns already did (#3674)
+- **Campaign recipients** - Saving the Recipients step no longer turns off server-to-server conversion tracking, and removing autoresponder enrollees no longer skips matches beyond the first 10,000 (#3251)
+- **Upgrade and install checks** - A quoted admin API key in the configuration no longer causes a false authentication failure in the health checks (#3680)
+- **New interface after an update** - Pages no longer fail to render when a compiled view was left owned by the wrong system user (#3683)
 
 ### Security Patches
 
-- (To be documented)
+- **API parameter shapes** - Every API command refuses an array or object sent for a parameter that takes a single value, before the request is authenticated (#2954)
+- **Object ids** - API commands check ownership and act on the same plain numeric id, and ids written with an exponent, a decimal point or a sign are refused (#2957, #2996)
+- **Sub-administrator scope** - `admin.email.get`, the admin email preview, `smssuppression.add` and `smssuppression.patterns.add` respect a sub-administrator's allowed user groups (#3512, #3561)
+- **Remember me** - The classic user area remembers a browser with a random, server-side token that expires after 14 days and is revoked on sign-out, password change, enabling two-factor authentication and account deactivation (#3230)
+- **Revoked sessions** - Signing out or revoking a session in the new interface also ends the session in the API and the classic user area, and switching between saved accounts no longer signs a revoked account back in (#3439)
+- **Single sign-on** - SSO tokens can be used once, are valid for at most 300 seconds, and are checked against the server's clock (#3541)
+- **Administrator password reminder** - The reminder gives the same answer for known and unknown addresses (#3437)
+- **Stored secrets** - Settings pages, including plugin settings, no longer display stored API keys, passwords, secrets or webhook URLs. A kept SMTP password is only reused for the same host, port and username (#3440)
 
 ### Upgrade Notes
 
-- (To be documented)
+- **API requests with array values** - After the upgrade, a request that sends an array or object for a single-value parameter is refused with HTTP 400 and error code 100017. The upgrade adds `API_SCALAR_PARAMETER_CHECK=enforce` to `.oempro_env`. If an integration cannot be corrected first, set `API_SCALAR_PARAMETER_CHECK=log` in `.oempro_env` before upgrading: requests then go through and each one is logged (#2954)
+- **SMS test sends through the API** - `smscampaign.test` now sends only to numbers the account has verified with `sms.testnumber.add` and `sms.testnumber.verify`, at most 10 tests a day and 30 seconds apart by default. There is no setting that restores the old behaviour. An integration that sends test messages must verify its numbers first (#3734)
+- **Single sign-on brokers** - Each SSO token now works once, and `ValidForSeconds` above 300 is refused. A broker that reused a token or created long-lived tokens must create one token per sign-in (#3541)
+- **Remember me** - Users of the classic user area are asked to sign in again once after the upgrade, because existing remember-me cookies are replaced (#3230)
+- **Journeys and soft bounces** - Journey email and SMS actions now include soft-bounced subscribers, the same as campaigns (#3674)
+- **Email gateway tag migration** - The upgrade copies existing email gateway tags into a new index table. On installations with a large gateway queue, the database migration step takes longer than usual (#2267)
+- **Retired file** - The unused ClickBank server-to-server postback address now answers 404. Run `./cli/octeth.sh upgrade:remove-retired-files` after the upgrade to remove its file (#3590)
+- **Other API changes** - Revoked sessions, plain numeric ids, sub-administrator scope, the administrator password reminder and Keitaro segment rules each change an API answer. See [API behavior changes in v6.0.4](/v6.0.4/api-reference/behavior-changes) for the full list.
 
 ### Deprecations
 
