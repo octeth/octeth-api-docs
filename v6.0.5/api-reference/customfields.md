@@ -415,6 +415,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
+- Required admin privilege: `CustomFields`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it) <Badge type="warning" text="Changed in v6.0.5" />
 - v1 REST alias: `POST /api/v1/global.customfield.create`. Legacy access via `/api.php` is also supported
 :::
 
@@ -494,6 +495,7 @@ curl -X POST https://example.com/api.php \
 1000: Merge tag alias code has been set for another custom field
 1001: Merge tag alias code includes invalid characters
 1002: Merge tag alias cannot use a reserved subscriber field name
+99999: Not enough privileges (the admin account does not hold CustomFields)
 ```
 
 :::
@@ -504,7 +506,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Required admin privilege: `CustomFields`
+- Required admin privilege: `CustomFields`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it) <Badge type="warning" text="Changed in v6.0.5" />
 - v1 REST alias: `POST /api/v1/global.customfield.update`. Legacy access via `/api.php` is also supported
 - Only system-global fields are updated (`RelOwnerUserID = 0`, `RelListID = 0`, `IsGlobal = Yes`), as `global.customfield.get` and `global.customfields.delete` read them. Any other id answers error 6 <Badge type="warning" text="Changed in v6.0.2" />
 :::
@@ -585,6 +587,7 @@ curl -X POST https://example.com/api.php \
 1000: Merge tag alias code has been set for another custom field
 1001: Merge tag alias code includes invalid characters
 1002: Merge tag alias cannot use a reserved subscriber field name
+99999: Not enough privileges (the admin account does not hold CustomFields)
 ```
 
 :::
@@ -595,6 +598,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
+- Required admin privilege: `CustomFields`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it) <Badge type="warning" text="Changed in v6.0.5" />
 - v1 REST alias: `POST /api/v1/global.customfields.delete`. Legacy access via `/api.php` is also supported
 - Every id in `CustomFields` must name a system-global custom field (`RelOwnerUserID = 0`, `RelListID = 0`, `IsGlobal = Yes`). The call is all-or-nothing: if any id is not numeric, does not exist, or names a user-owned or list-local field, the whole request is refused with `ErrorCode 2` and nothing is deleted (changed in v5.9.6, issue #2768).
 :::
@@ -648,6 +652,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Custom field ids are missing
 2: Invalid custom field id
+99999: Not enough privileges (the admin account does not hold CustomFields)
 ```
 
 :::
@@ -658,6 +663,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
+- Required admin privilege: `CustomFields`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it) <Badge type="warning" text="Changed in v6.0.5" />
 - v1 REST alias: `GET /api/v1/global.customfields.get`. Legacy access via `/api.php` is also supported
 - `TotalFieldCount` is the real number of global fields matching `SearchKeyword`. Before v5.9.6 it was computed from variables that do not exist under admin auth, so it was wrong. `TotalCustomFields` carries the same number; `RecordsFrom` and `RecordsPerRequest` echo the paging in effect.
 :::
@@ -724,6 +730,7 @@ curl -X POST https://example.com/api.php \
 
 ```txt [Error Codes]
 0: Success
+99999: Not enough privileges (the admin account does not hold CustomFields)
 ```
 
 :::
@@ -734,7 +741,7 @@ curl -X POST https://example.com/api.php \
 
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
-- Required admin privilege: `CustomFields`
+- Required admin privilege: `CustomFields`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it) <Badge type="warning" text="Changed in v6.0.5" />
 - v1 REST alias: `GET /api/v1/global.customfield.get`. Legacy access via `/api.php` is also supported
 - Only system-global fields are returned (`RelOwnerUserID = 0`, `RelListID = 0`, `IsGlobal = Yes`). A tenant-owned field id returns error 2.
 - `Options` and `SelectedOptions` are the two view fields the admin edit screen derives: `FieldOptions` with the selected-marker asterisks stripped, and the comma list of selected option indexes in `ArrayOptions`.
@@ -803,6 +810,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing CustomFieldID
 2: Global custom field not found
+99999: Not enough privileges (the admin account does not hold CustomFields)
 ```
 
 :::
