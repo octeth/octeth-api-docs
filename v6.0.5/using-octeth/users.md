@@ -787,7 +787,12 @@ An **Untrusted** account can log in and prepare its work, but it cannot send unt
 - Email already queued when the account is moved to **Untrusted** is not sent. Its status becomes **Failed** with the message `Sending blocked: account pending approval`. Marking the account **Trusted** again does not resend it.
 - Links in email it already sent keep working.
 
-When an **Untrusted** account tries to send through the Email Gateway API, Octeth emails the address in **Send Alerts To** (**Settings > Admin Account**, **Email addresses** tab), at most once per account every 24 hours. In the new user interface, an **Untrusted** user sees an **Account is waiting review** banner.
+Octeth emails the address in **Send Alerts To** (**Settings > Admin Account**, **Email addresses** tab) about accounts that cannot send yet, with a link to the account:
+
+- **When an account tries to send.** An **Untrusted** account tries to send through the Email Gateway HTTP API or the SMTP relay, or a send is refused because the account has not verified its phone number while `PHONE_VERIFICATION_REQUIRED_TO_SEND_EG_EMAILS` is on. The email names the channel (HTTP API or SMTP relay) and is sent at most once per account every 24 hours, across both channels.
+- **When an account signs up.** A self-signup (the sign-up page, single sign-on or the new user interface's registration page) creates an account that is **Untrusted**, including one held by signup screening, or that has not verified its phone number while `PHONE_VERIFICATION_REQUIRED_TO_SEND_EG_EMAILS` is on. The email arrives within about five minutes, once per account, and at most 30 are sent per hour. An account whose reputation an administrator chose is not reported.
+
+In the new user interface, an **Untrusted** user sees an **Account is waiting review** banner.
 
 To let the account send, set **Reputation** to **Trusted** and click **Update user account**. Nothing else needs to change, and queued email is checked again for each message.
 
