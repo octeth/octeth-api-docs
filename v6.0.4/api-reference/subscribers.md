@@ -1808,6 +1808,140 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## Get Subscriber Activity Timeline
+
+<Badge type="info" text="POST" /> `/api.php` <Badge type="tip" text="New in v6.0.4" />
+
+Returns one subscriber's complete activity history, newest first, in pages. It covers campaign, journey, transactional and auto responder sends, opens, clicks, hard and soft bounces, spam complaints, subscription changes, journey enrolments and exits, purchases, SMS sends and clicks, tag changes and custom field updates. Every source is merged before filtering and paging, so `TotalActivities` and the page boundaries count all of them.
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Subscribers.Get`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Campaign sends are read from campaigns that started sending in the last 3 months.
+- The timeline is cached for 5 minutes per subscriber, so a new event can take up to 5 minutes to appear.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `subscriber.activity.timeline` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| ListID | Integer | Yes | ID of the subscriber list. The list must belong to the authenticated user. |
+| SubscriberID | Integer | Yes | ID of the subscriber in that list |
+| ActivityType | String | No | `all` (default), one category or type, or a comma-separated list of them. Categories: `subscription`, `email`, `sms`, `journey`, `purchase`, `bounce`, `tag`, `custom_field`. Types are listed below. |
+| DateFrom | String | No | First day to include, `YYYY-MM-DD` |
+| DateTo | String | No | Last day to include, `YYYY-MM-DD` |
+| Page | Integer | No | Page number, starting at 1 (default 1, at most 100000) |
+| Limit | Integer | No | Rows per page, 1 to 100 (default 20) |
+
+**Activity types:**
+
+| Type | Subtype | Meaning |
+|------|---------|---------|
+| `subscribed` | | Subscribed to the list |
+| `unsubscribed` | | Unsubscribed from the list |
+| `double_optin` | | Confirmed a double opt-in subscription |
+| `email_sent` | `campaign`, `journey`, `transactional`, `auto_responder` | An email was sent, by the source in `Subtype` |
+| `email_opened` | | Opened an email. Repeated and automated opens of one email are grouped into a summary row. |
+| `link_clicked` | | Clicked a link in an email |
+| `email_bounced` | `hard`, `soft` | An email bounced, permanently (`hard`) or temporarily (`soft`) |
+| `spam_complaint` | | Reported an email as spam |
+| `journey_enrolled` | | Entered a journey |
+| `journey_exited` | | Left a journey through an exit action |
+| `conversion` | | Made a purchase |
+| `sms_sent`, `sms_delivered`, `sms_clicked` | | An SMS was sent, delivered, or a link in it was clicked |
+| `tagged`, `untagged` | | A tag was added or removed |
+| `custom_field_updated` | | A custom field value changed |
+
+**Response fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Activities | Array | One page of rows, newest first. Each row has `Type`, `Subtype` (string or null), `Date` (`YYYY-MM-DD HH:MM:SS`), `Title`, `Description` and `Parameters` (an object of details that depends on the type). |
+| TotalActivities | Integer | Number of rows matching the filters across all pages |
+| Page | Integer | The page returned |
+| Limit | Integer | Rows per page |
+| HasMore | Boolean | Whether a later page exists |
+| Incomplete | Boolean | `true` when the tag, custom field and journey exit events could not be read, or more than 5000 of them exist and only the newest 5000 are included |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "subscriber.activity.timeline",
+    "SessionID": "your-session-id",
+    "ListID": 123,
+    "SubscriberID": 456,
+    "ActivityType": "email_sent,email_bounced",
+    "Page": 1,
+    "Limit": 20
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Activities": [
+    {
+      "Type": "email_bounced",
+      "Subtype": "soft",
+      "Date": "2026-10-20 11:02:00",
+      "Title": "Soft Bounce",
+      "Description": "Email bounced from campaign \"October Newsletter\"",
+      "Parameters": {
+        "Campaign": "October Newsletter",
+        "Bounce Type": "Soft Bounce"
+      }
+    },
+    {
+      "Type": "email_sent",
+      "Subtype": "campaign",
+      "Date": "2026-10-20 11:00:00",
+      "Title": "Campaign Email Sent",
+      "Description": "Sent campaign \"October Newsletter\"",
+      "Parameters": {
+        "Campaign": "October Newsletter",
+        "Status": "Sent",
+        "Campaign Started": "2026-10-20 10:55:00"
+      }
+    }
+  ],
+  "TotalActivities": 2,
+  "Page": 1,
+  "Limit": 20,
+  "HasMore": false,
+  "Incomplete": false
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [7]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing or invalid ListID parameter
+2: Missing or invalid SubscriberID parameter
+3: Unknown ActivityType value
+4: Invalid DateFrom or DateTo (must be YYYY-MM-DD, DateFrom not after DateTo)
+5: Invalid Page parameter (1 to 100000)
+6: Invalid Limit parameter (1 to 100)
+7: List not found or not owned by the authenticated user
+8: Subscriber not found in the list
+```
+
+:::
+
 ## Check if Subscriber Exists
 
 <Badge type="info" text="POST" /> `/api.php`
