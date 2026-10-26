@@ -49,7 +49,7 @@ A command the role does not allow is refused with HTTP status `403` and error `1
 | Author | Create and edit content: campaign drafts, emails, templates, segments, SMS drafts, media. Cannot send, schedule, import, export or delete | `Account.Read`, `Content.Edit` |
 | Viewer | Read-only, reports included | `Account.Read` |
 
-An invitation can grant Admin, Manager, Author or Viewer. The account owner is always the account's own sign-in.
+An invitation can grant Admin, Manager, Author or Viewer. The account owner is always the account's own sign-in. The account owner manages members and invitations at every role. An Admin member manages Manager, Author and Viewer members and invitations only: it cannot invite or promote anyone to Admin, and cannot change, suspend, remove, resend or revoke anything at Admin, itself included.
 
 ### Role permissions
 
@@ -88,13 +88,14 @@ A command marked (read) changes nothing. Commands authorized only for administra
 | Automation.Manage | `autoresponder.create`, `autoresponder.update`, `autoresponder.duplicate`, `autoresponder.sendtest`, `autoresponders.copy`, `autoresponders.delete`, `journey.create`, `journey.clone`, `journey.update`, `journey.actions.update`, `journey.actions.published`, `journey.delete`, `journey.disable`, `journeys.delete`, `journeys.disable`, `journeys.clone`, `subscriber.journey.remove`, `subscriber.journey.exit` |
 | Audience.Manage | `suppression.delete`, `suppression.import`, `smssuppression.add`, `smssuppression.delete`, `smssuppression.patterns.add`, `smssuppression.patterns.delete`, `list.create`, `list.clone`, `list.update`, `list.archive`, `list.unarchive`, `lists.delete`, `list.sms.settings.update`, `customfield.create`, `customfield.update`, `customfields.copy`, `customfields.delete`, `listintegration.addurl`, `listintegration.deleteurls`, `listintegration.testurl`, `subscriber.create`, `subscriber.update`, `subscriber.unsubscribe`, `subscribers.delete`, `subscribers.delete.all`, `subscribers.import`, `subscribers.import.post`, `subscribers.import.prepare`, `subscriber.tags.create`, `subscriber.tags.update`, `subscriber.tags.delete`, `subscriber.tag`, `subscriber.untag`, `event.track` |
 | Data.Export | `emailgateway.exportevents`, `subscribers.export.post`, `subscribers.export.get` (read), `campaigns.export.post`, `campaigns.export.get` (read), `journey.export.submit`, `journey.export.get` (read), `smscampaign.events.export.post`, `smscampaign.events.export.get` (read) |
+| Team.Manage | `team.member.list` (read), `team.invitation.list` (read), `team.member.invite`, `team.member.update`, `team.member.remove`, `team.invitation.resend`, `team.invitation.revoke` |
 | Account.Settings | `user.emailcontent.update`, `user.integrations.keitaro.get` (read), `user.integrations.keitaro.update`, `user.integrations.keitaro.test`, `user.integrations.keitaro.disconnect`, `user.integrations.keitaro.token.regenerate`, `automated_reports.create`, `automated_reports.update`, `automated_reports.delete`, `automated_reports.toggle` |
 | ApiKeys.Manage | `user.apikey.list` (read), `user.apikey.create`, `user.apikey.update`, `user.apikey.delete`, `emailgateway.getapis` (read), `emailgateway.getsmtps` (read), `emailgateway.addapi`, `emailgateway.deleteapi`, `emailgateway.replaceapi`, `emailgateway.addsmtp`, `emailgateway.deletesmtp`, `emailgateway.resetsmtppassword` |
 | SenderDomains.Manage | `user.senderdomain.create`, `user.senderdomain.update`, `user.senderdomain.delete`, `user.senderdomain.verify`, `user.senderdomain.sendtest`, `dns.authorize`, `dns.set`, `emailgateway.adddomain`, `emailgateway.updatedomain`, `emailgateway.verifydomain`, `emailgateway.deletedomain`, `emailgateway.cleardomainqueue` |
 | Webhooks.Manage | `user.webhook.list` (read), `user.webhook.get` (read), `user.webhook.stats` (read), `user.webhook.create`, `user.webhook.update`, `user.webhook.delete`, `emailgateway.getwebhooks` (read), `emailgateway.addwebhook`, `emailgateway.deletewebhook`, `emailgateway.regeneratesigningkey`, `emailgateway.testwebhook` |
 | (session) | `user.current`, `user.logout` |
 | (owner) | `user.update` |
-| (public) | `user.login`, `admin.login`, `admin.passwordremind`, `admin.passwordreset`, `member.login`, `member.memberships`, `member.switch`, `member.logout`, `member.passwordremind`, `member.passwordreset`, `member.2fa.enrol`, `member.2fa.verify`, `member.2fa.disable`, `system.health.check`, `inbound.relay.domain.check`, `process_pmta_log_file`, `internal.bounce.register`, `internal.s2spostback.register`, `emailgateway.sendemail`, `emailgateway.getevents.public`, `emailgateway.addwebhook.public`, `emailgateway.getwebhooks.public`, `emailgateway.deletewebhook.public`, `subscriber.subscribe`, `subscriber.optin`, `subscriber.login`, `subscriber.getlists` |
+| (public) | `user.login`, `admin.login`, `admin.passwordremind`, `admin.passwordreset`, `member.login`, `member.memberships`, `member.switch`, `member.logout`, `member.passwordremind`, `member.passwordreset`, `member.2fa.enrol`, `member.2fa.verify`, `member.2fa.disable`, `team.invitation.get`, `team.invitation.accept`, `system.health.check`, `inbound.relay.domain.check`, `process_pmta_log_file`, `internal.bounce.register`, `internal.s2spostback.register`, `emailgateway.sendemail`, `emailgateway.getevents.public`, `emailgateway.addwebhook.public`, `emailgateway.getwebhooks.public`, `emailgateway.deletewebhook.public`, `subscriber.subscribe`, `subscriber.optin`, `subscriber.login`, `subscriber.getlists` |
 
 ## Member Sign In
 
@@ -691,6 +692,617 @@ curl -X POST https://example.com/api.php \
 7: Team members are not available on this installation
 99998: No person or member session
 429: Too many failed attempts. Try again later
+```
+
+:::
+
+## Team Seats and Invitations
+
+<Badge type="tip" text="New in v6.0.5" />
+
+The account owner (the account's own session or a user API key the owner created) and members whose role holds `Team.Manage` (Admin) manage the team with the commands below. AI agent keys cannot call them.
+
+**Seats.** The account's user group sets how many team members it can have (`LimitTeamMembers`). Every member counts, **suspended members included**, plus every pending invitation. An expired or revoked invitation frees its seat. When `LimitTeamMembers` is `0`, no invitation can be sent. Lowering the limit removes nobody, but an invitation accepted after the limit was reached is refused.
+
+**Invitations.** An invitation is emailed to the address with a link to the new user interface, `https://<your app URL>/user/team/invitation?token=...` (the `user` part follows `UI_CUSTOMER_PREFIX`). The link works once and expires after 7 days. An account can send at most 50 invitations (including resends) in any 24 hours. Only one invitation per address can be pending: send it again with `team.invitation.resend`.
+
+**Accepting.** The invited person opens the link. A person who is new to team members chooses a password. A person who already signs in as a team member, for another account, accepts with their existing password, or while signed in. The email address of the person and of the invitation must be the same (case does not matter). When the account requires two-factor authentication from members, the person is asked to set it up on their first switch into the account.
+
+## List Team Members
+
+<Badge type="info" text="GET" /> `/api/v1/team.member.list`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- Authentication required: User API Key, or a session of the account owner or of a member whose role holds `Team.Manage`
+- v1 REST alias: `GET /api/v1/team.member.list`. Legacy access via `/api.php` is also supported
+:::
+
+Lists the account's team members and its seat usage.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `team.member.list` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/team.member.list" \
+  -H "Content-Type: application/json" \
+  -d '{"SessionID": "your-session-id"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Members": [
+    {
+      "MembershipID": 31,
+      "PersonID": 12,
+      "EmailAddress": "alex@agency.example",
+      "Role": "Admin",
+      "Status": "Active",
+      "PersonStatus": "Active",
+      "TwoFactorEnabled": true,
+      "InvitedByPersonID": null,
+      "CreatedAt": "2026-10-20 09:12:44",
+      "UpdatedAt": "2026-10-20 09:12:44",
+      "LastLoginAt": "2026-10-26 15:00:00"
+    }
+  ],
+  "Seats": {
+    "Used": 3,
+    "Limit": 5
+  }
+}
+```
+
+```txt [Error Codes]
+0: Success
+7: Team members are not available on this installation
+100021: The member's role does not allow this command
+```
+
+:::
+
+`InvitedByPersonID` is `null` when the account owner invited. `Seats.Used` counts members of every status and pending invitations.
+
+## Invite a Team Member
+
+<Badge type="info" text="POST" /> `/api/v1/team.member.invite`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- Authentication required: User API Key, or a session of the account owner or of a member whose role holds `Team.Manage`
+- v1 REST alias: `POST /api/v1/team.member.invite`. Legacy access via `/api.php` is also supported
+- At most 50 invitations per account in any 24 hours
+:::
+
+Invites a person by email with a role and emails them the invitation link. The link is only in the email: no response carries it.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `team.member.invite` |
+| EmailAddress | String | Yes | The address to invite |
+| Role | String | Yes | `Admin`, `Manager`, `Author` or `Viewer`. An Admin member can grant `Manager`, `Author` or `Viewer` only |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/team.member.invite \
+  -H "Content-Type: application/json" \
+  -d '{
+    "SessionID": "your-session-id",
+    "EmailAddress": "sam@agency.example",
+    "Role": "Author"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Invitation": {
+    "InvitationID": 88,
+    "EmailAddress": "sam@agency.example",
+    "Role": "Author",
+    "State": "pending",
+    "InvitedByPersonID": null,
+    "CreatedAt": "2026-10-26 15:00:00",
+    "ExpiresAt": "2026-11-02 15:00:00",
+    "AcceptedAt": null,
+    "RevokedAt": null
+  },
+  "EmailSent": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 9,
+  "ErrorText": "All 5 team member seats of this account are taken (members, suspended members and pending invitations count)"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: EmailAddress is missing
+2: Role is missing
+3: EmailAddress is not valid
+4: Role is not Admin, Manager, Author or Viewer
+5: Your role cannot invite at this role
+6: This address already has a pending invitation (use team.invitation.resend)
+7: Team members are not available on this installation
+8: This address is already a member of the account
+9: Every team member seat of the account is taken
+10: The account sent 50 invitations in the last 24 hours
+11: Team members are not available for this account (its user group allows none)
+14: Another change to the team is in progress, try again
+100021: The member's role does not allow this command
+```
+
+:::
+
+## Change a Team Member
+
+<Badge type="info" text="POST" /> `/api/v1/team.member.update`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- Authentication required: User API Key, or a session of the account owner or of a member whose role holds `Team.Manage`
+- v1 REST alias: `POST /api/v1/team.member.update`. Legacy access via `/api.php` is also supported
+:::
+
+Changes a member's role, or suspends or reactivates the member. Either change ends every session the member has open in this account at once (error `99998` with `MemberSessionEnded` `membership_changed` or `membership_suspended`), and applies to the API keys the member created. A suspended member cannot switch into the account and keeps a seat.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `team.member.update` |
+| MembershipID | Integer | Yes | The member, from `team.member.list` |
+| Role | String | Conditional | `Admin`, `Manager`, `Author` or `Viewer`. Send Role, Status or both |
+| Status | String | Conditional | `Active` or `Suspended` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/team.member.update \
+  -H "Content-Type: application/json" \
+  -d '{
+    "SessionID": "your-session-id",
+    "MembershipID": 31,
+    "Status": "Suspended"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Member": {
+    "MembershipID": 31,
+    "PersonID": 12,
+    "EmailAddress": "alex@agency.example",
+    "Role": "Manager",
+    "Status": "Suspended",
+    "PersonStatus": "Active",
+    "TwoFactorEnabled": true,
+    "InvitedByPersonID": null,
+    "CreatedAt": "2026-10-20 09:12:44",
+    "UpdatedAt": "2026-10-26 15:10:00",
+    "LastLoginAt": "2026-10-26 15:00:00"
+  }
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: MembershipID is missing
+2: Neither Role nor Status was sent
+3: No member with this MembershipID in this account
+4: Role is not Admin, Manager, Author or Viewer
+5: Your role cannot manage this member or grant this role
+6: Status is not Active or Suspended
+7: Team members are not available on this installation
+15: The member was changed by another request after it was read: read it again and retry
+100021: The member's role does not allow this command
+```
+
+:::
+
+## Remove a Team Member
+
+<Badge type="info" text="POST" /> `/api/v1/team.member.remove`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- Authentication required: User API Key, or a session of the account owner or of a member whose role holds `Team.Manage`
+- v1 REST alias: `POST /api/v1/team.member.remove`. Legacy access via `/api.php` is also supported
+:::
+
+Removes a member from the account and ends their sessions in it at once. The person keeps their sign-in for any other account they belong to, and gets an email that they were removed.
+
+The response lists the user API keys and AI agent keys the member created, without their values. Choose what happens to each: `revoke` deletes the key, `keep` hands it to the account, so it acts as the account owner's key from then on. Only the account owner can choose `keep`, because a kept key can do everything the owner can and the removed person may still have it: an Admin member can revoke keys or leave them refused. A key with no choice is left in place and every call with it keeps being refused (error `100021`, `RequiredMemberPermission` `ActiveMembership`) until you delete it with `user.apikey.delete`. Send `Preview` first to see the keys without removing anything.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `team.member.remove` |
+| MembershipID | Integer | Yes | The member, from `team.member.list` |
+| Preview | Boolean | No | `true` lists the member's keys and removes nothing |
+| APIKeyAction | String | No | `revoke` or `keep`, for every key the member created |
+| APIKeyActions | Object | No | `{"<APIKeyID>": "revoke" or "keep"}`, per key. Overrides `APIKeyAction` for the keys it names |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/team.member.remove \
+  -H "Content-Type: application/json" \
+  -d '{
+    "SessionID": "your-session-id",
+    "MembershipID": 31,
+    "APIKeyActions": {"501": "revoke", "502": "keep"}
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Removed": true,
+  "Member": {
+    "MembershipID": 31,
+    "PersonID": 12,
+    "EmailAddress": "alex@agency.example",
+    "Role": "Manager",
+    "Status": "Active",
+    "PersonStatus": "Active",
+    "TwoFactorEnabled": true,
+    "InvitedByPersonID": null,
+    "CreatedAt": "2026-10-20 09:12:44",
+    "UpdatedAt": "2026-10-26 15:10:00",
+    "LastLoginAt": "2026-10-26 15:00:00"
+  },
+  "APIKeys": [
+    {"APIKeyID": 501, "Note": "Zapier", "IsAgentKey": false, "CreatedAt": "2026-10-21 10:00:00", "LastUsedAt": "2026-10-26 09:00:00", "Action": "revoked"},
+    {"APIKeyID": 502, "Note": "Reporting", "IsAgentKey": false, "CreatedAt": "2026-10-22 10:00:00", "LastUsedAt": null, "Action": "kept"},
+    {"APIKeyID": 503, "Note": "Claude", "IsAgentKey": true, "CreatedAt": "2026-10-23 10:00:00", "LastUsedAt": null, "Action": "left_refused"}
+  ],
+  "Notice": "1 API key(s) the member created were neither revoked nor kept: they stay and are refused every command. Delete them with user.apikey.delete."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: MembershipID is missing
+3: No member with this MembershipID in this account
+5: Your role cannot manage this member, or an Admin member chose keep
+6: APIKeyAction or APIKeyActions is not valid, or names a key the member did not create
+7: Team members are not available on this installation
+15: The member was changed by another request after it was read (nothing was removed or revoked): read it again and retry
+100021: The member's role does not allow this command
+```
+
+:::
+
+`Action` is `revoked`, `kept` or `left_refused`, and `pending_choice` in a preview without a choice.
+
+## List Team Invitations
+
+<Badge type="info" text="GET" /> `/api/v1/team.invitation.list`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- Authentication required: User API Key, or a session of the account owner or of a member whose role holds `Team.Manage`
+- v1 REST alias: `GET /api/v1/team.invitation.list`. Legacy access via `/api.php` is also supported
+:::
+
+Lists the account's invitations, newest first (at most 500), with their state.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `team.invitation.list` |
+| PendingOnly | Boolean | No | `true` returns pending invitations only |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Invitations": [
+    {
+      "InvitationID": 88,
+      "EmailAddress": "sam@agency.example",
+      "Role": "Author",
+      "State": "pending",
+      "InvitedByPersonID": 12,
+      "CreatedAt": "2026-10-26 15:00:00",
+      "ExpiresAt": "2026-11-02 15:00:00",
+      "AcceptedAt": null,
+      "RevokedAt": null
+    }
+  ],
+  "Seats": {
+    "Used": 3,
+    "Limit": 5
+  }
+}
+```
+
+```txt [Error Codes]
+0: Success
+7: Team members are not available on this installation
+100021: The member's role does not allow this command
+```
+
+:::
+
+`State` is `pending`, `accepted`, `revoked` or `expired`.
+
+## Resend a Team Invitation
+
+<Badge type="info" text="POST" /> `/api/v1/team.invitation.resend`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- Authentication required: User API Key, or a session of the account owner or of a member whose role holds `Team.Manage`
+- v1 REST alias: `POST /api/v1/team.invitation.resend`. Legacy access via `/api.php` is also supported
+- Counts against the 50 invitations per 24 hours
+:::
+
+Emails a pending or expired invitation again with a new link and a new 7-day expiry. The old link stops working: the old invitation is revoked and replaced by a new one, so the response carries a new `InvitationID`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `team.invitation.resend` |
+| InvitationID | Integer | Yes | The invitation, from `team.invitation.list` |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Invitation": {
+    "InvitationID": 91,
+    "EmailAddress": "sam@agency.example",
+    "Role": "Author",
+    "State": "pending",
+    "InvitedByPersonID": null,
+    "CreatedAt": "2026-10-27 08:00:00",
+    "ExpiresAt": "2026-11-03 08:00:00",
+    "AcceptedAt": null,
+    "RevokedAt": null
+  },
+  "EmailSent": true,
+  "ReplacedInvitationID": 88
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: InvitationID is missing
+3: No invitation with this InvitationID in this account
+4: The invitation was accepted or revoked (invite the address again with team.member.invite)
+5: Your role cannot manage this invitation
+7: Team members are not available on this installation
+8: The address has become a member of the account
+9: Every team member seat of the account is taken (an expired invitation held no seat)
+10: The account sent 50 invitations in the last 24 hours
+11: Team members are not available for this account
+14: Another change to the team is in progress, try again
+100021: The member's role does not allow this command
+```
+
+:::
+
+## Revoke a Team Invitation
+
+<Badge type="info" text="POST" /> `/api/v1/team.invitation.revoke`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- Authentication required: User API Key, or a session of the account owner or of a member whose role holds `Team.Manage`
+- v1 REST alias: `POST /api/v1/team.invitation.revoke`. Legacy access via `/api.php` is also supported
+:::
+
+Withdraws a pending invitation. Its link stops working and its seat is freed.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `team.invitation.revoke` |
+| InvitationID | Integer | Yes | The invitation, from `team.invitation.list` |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Invitation": {
+    "InvitationID": 88,
+    "EmailAddress": "sam@agency.example",
+    "Role": "Author",
+    "State": "revoked",
+    "InvitedByPersonID": null,
+    "CreatedAt": "2026-10-26 15:00:00",
+    "ExpiresAt": "2026-11-02 15:00:00",
+    "AcceptedAt": null,
+    "RevokedAt": "2026-10-26 16:00:00"
+  }
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: InvitationID is missing
+3: No invitation with this InvitationID in this account
+4: The invitation is not pending
+5: Your role cannot manage this invitation
+7: Team members are not available on this installation
+100021: The member's role does not allow this command
+```
+
+:::
+
+## Get a Team Invitation
+
+<Badge type="info" text="GET" /> `/api/v1/team.invitation.get`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- No authentication required: the token from the invitation link is the credential
+- v1 REST alias: `GET /api/v1/team.invitation.get`. Legacy access via `/api.php` is also supported
+:::
+
+Shows what an invitation link offers: the account name, the role and the invited address. It never says whether a team member with that address already exists.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `team.invitation.get` |
+| Token | String | Yes | The `token` value of the invitation link |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Invitation": {
+    "AccountName": "Acme Coffee",
+    "Role": "Author",
+    "EmailAddress": "sam@agency.example"
+  }
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Token is missing
+2: The invitation link is not valid
+3: The invitation expired
+4: The invitation was withdrawn
+5: The invitation was already accepted
+6: The account is not available to team members
+7: Team members are not available on this installation
+```
+
+:::
+
+## Accept a Team Invitation
+
+<Badge type="info" text="POST" /> `/api/v1/team.invitation.accept`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- No authentication required: the token from the invitation link is the credential. A person or member `SessionID` is used when sent
+- v1 REST alias: `POST /api/v1/team.invitation.accept`. Legacy access via `/api.php` is also supported
+- Repeated wrong passwords for an existing team member are refused with error `429` for a while, as for `member.login`
+:::
+
+Accepts an invitation and adds the membership. The person's email address must be the invited address (case does not matter). Three ways to accept:
+
+1. **Signed in.** Send the `SessionID` of a person session (`member.login`) or a member session. A person with a different address is refused with error `10`.
+2. **New person.** Without a session, send a `Password` (8 characters to 72 bytes): the team member is created with it.
+3. **Existing person.** Without a session, send the person's current `Password`. A person with two-factor authentication on answers error `15`: sign in with `member.login` first and send that `SessionID`.
+
+Accepting does not sign the person in: sign in with `member.login` (or `member.switch` from an existing session) next. When the account requires two-factor authentication from members, `TwoFactorRequired` is `true` and `member.switch` asks the person to enrol first. The inviting member, or the account owner when the owner invited, gets an email that the invitation was accepted.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `team.invitation.accept` |
+| Token | String | Yes | The `token` value of the invitation link |
+| Password | String | Conditional | Required without a `SessionID`: a new password for a new team member, or the current password of an existing one |
+| SessionID | String | No | A person or member session of the invited person |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/team.invitation.accept \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Token": "3f9c...e1",
+    "Password": "a-new-password"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "PersonCreated": true,
+  "Person": {
+    "PersonID": "19",
+    "EmailAddress": "sam@agency.example",
+    "2FA_Enabled": "No",
+    "Status": "Active",
+    "CreatedAt": "2026-10-26 15:20:00",
+    "LastLoginAt": null
+  },
+  "Membership": {
+    "MembershipID": 40,
+    "AccountID": 1042,
+    "AccountName": "Acme Coffee",
+    "Role": "Author",
+    "TwoFactorRequired": false
+  }
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Token is missing
+2: The invitation link is not valid
+3: The invitation expired, or the password of the existing team member is wrong
+4: The invitation was withdrawn
+5: The invitation was already accepted
+6: The account is not available to team members
+7: Team members are not available on this installation
+9: Password is missing, or too short or too long for a new team member
+10: The signed-in person's address is not the invited address
+11: Every team member seat of the account is taken
+12: The person is already a member of this account
+13: The team member could not be created, try again
+14: Another change to the team is in progress, try again
+15: The person has two-factor authentication on: sign in with member.login and send its SessionID
+429: Too many failed attempts
 ```
 
 :::
