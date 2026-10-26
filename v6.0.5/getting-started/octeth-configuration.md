@@ -1745,6 +1745,16 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     Introduced in v6.0.2 (issue #3154).
 
+58. **Account Audit Log Retention**
+
+    ```bash
+    AUDIT_LOG_RETENTION_DAYS=365    # Days to keep account audit log rows (default: 365)
+    ```
+
+    Number of days to keep account audit log rows: sign-ins and changes made through the API, with the acting owner, team member, API key, agent key or staff member (see [Team Member API](/v6.0.5/api-reference/team-members#account-audit-log)). The nightly `cli/account_audit_log_prune.php` cron job (04:15 UTC) deletes older rows in batches of 5000. A missing, zero or non-numeric value means 365.
+
+    Introduced in v6.0.5 (issue #3691).
+
 
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.

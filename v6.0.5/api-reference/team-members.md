@@ -93,6 +93,7 @@ A command marked (read) changes nothing. Commands authorized only for administra
 | ApiKeys.Manage | `user.apikey.list` (read), `user.apikey.create`, `user.apikey.update`, `user.apikey.delete`, `emailgateway.getapis` (read), `emailgateway.getsmtps` (read), `emailgateway.addapi`, `emailgateway.deleteapi`, `emailgateway.replaceapi`, `emailgateway.addsmtp`, `emailgateway.deletesmtp`, `emailgateway.resetsmtppassword` |
 | SenderDomains.Manage | `user.senderdomain.create`, `user.senderdomain.update`, `user.senderdomain.delete`, `user.senderdomain.verify`, `user.senderdomain.sendtest`, `dns.authorize`, `dns.set`, `emailgateway.adddomain`, `emailgateway.updatedomain`, `emailgateway.verifydomain`, `emailgateway.deletedomain`, `emailgateway.cleardomainqueue` |
 | Webhooks.Manage | `user.webhook.list` (read), `user.webhook.get` (read), `user.webhook.stats` (read), `user.webhook.create`, `user.webhook.update`, `user.webhook.delete`, `emailgateway.getwebhooks` (read), `emailgateway.addwebhook`, `emailgateway.deletewebhook`, `emailgateway.regeneratesigningkey`, `emailgateway.testwebhook` |
+| AuditLog.View | `team.auditlog.list` (read) |
 | (session) | `user.current`, `user.logout` |
 | (owner) | `user.update` |
 | (public) | `user.login`, `admin.login`, `admin.passwordremind`, `admin.passwordreset`, `member.login`, `member.memberships`, `member.switch`, `member.logout`, `member.passwordremind`, `member.passwordreset`, `member.2fa.enrol`, `member.2fa.verify`, `member.2fa.disable`, `team.invitation.get`, `team.invitation.accept`, `system.health.check`, `inbound.relay.domain.check`, `process_pmta_log_file`, `internal.bounce.register`, `internal.s2spostback.register`, `emailgateway.sendemail`, `emailgateway.getevents.public`, `emailgateway.addwebhook.public`, `emailgateway.getwebhooks.public`, `emailgateway.deletewebhook.public`, `subscriber.subscribe`, `subscriber.optin`, `subscriber.login`, `subscriber.getlists` |
@@ -1306,3 +1307,118 @@ curl -X POST https://example.com/api/v1/team.invitation.accept \
 ```
 
 :::
+
+## Account Audit Log
+
+Every account keeps an audit log of sign-ins and changes. A row is written for:
+
+- Every API command that changes something (the commands this page lists without "(read)", plug-in commands that do not declare themselves read-only, and `user.logout`), whether it succeeds or is refused. Reads write nothing. A command is one row, also when it changes many subscribers.
+- Sign-in events: the account owner's `User.Login` (success, wrong password, wrong two-factor or recovery code), member sign-in and its failures, account switch, sign-out, a member session ended because the membership changed, password resets and two-factor changes. An event of the person alone, such as `member.login`, is written in every account the person is a member of. A sign-in attempt for an unknown username or email address is not written.
+
+Each row names the actor:
+
+| ActorType | Who | IDs |
+|---|---|---|
+| `owner` | The account credential (`User.Login`) | none |
+| `member` | A team member session, or a member sign-in event | `ActorPersonID` |
+| `api_key` | A user API key, or a session opened with one | `ActorAPIKeyID`, and `ActorPersonID` when a member created the key |
+| `agent_key` | An AI agent key | `ActorAPIKeyID`, and `ActorPersonID` when a member created the key |
+| `staff_impersonation` | A session an administrator opened with `user.switch` | `ActorAdminID` |
+
+A row stores the command, one target (the list, campaign, subscriber, journey, email, segment, membership, invitation or API key the command names by ID, or the ID a create returned), the outcome (`success` or the error code), the client IP address and the user agent. It never stores request parameters, content or secrets. Rows are kept for `AUDIT_LOG_RETENTION_DAYS` days (default 365) and deleted nightly.
+
+## List Audit Log Entries
+
+<Badge type="info" text="GET" /> `/api/v1/team.auditlog.list`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- Authentication required: User API Key, or a session of the account owner or of a member whose role holds `AuditLog.View`
+- v1 REST alias: `GET /api/v1/team.auditlog.list`. Legacy access via `/api.php` is also supported
+:::
+
+Returns the account's audit log, newest first, one page at a time.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `team.auditlog.list` |
+| ActorType | String | No | `owner`, `member`, `api_key`, `agent_key` or `staff_impersonation` |
+| ActorID | Integer | No | With `ActorType`: the PersonID (`member`), APIKeyID (`api_key`, `agent_key`) or AdminID (`staff_impersonation`) |
+| FilterCommand | String | No | Only rows of this command, for example `list.create` or `member.login.failed` |
+| TargetType | String | No | Only rows with this target type, for example `list`, `campaign` or `membership` |
+| TargetID | String | No | With `TargetType`: only rows with this target ID |
+| DateFrom | String | No | UTC, `YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS`. A date alone starts at 00:00:00 |
+| DateTo | String | No | UTC, `YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS`. A date alone ends at 23:59:59 |
+| Limit | Integer | No | Rows per page, 1 to 200. Default 50 |
+| Cursor | String | No | The `NextCursor` of the previous page |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/team.auditlog.list" \
+  -H "Content-Type: application/json" \
+  -d '{"SessionID": "your-session-id", "ActorType": "member", "Limit": 50}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Entries": [
+    {
+      "LogID": 9112,
+      "ActorType": "member",
+      "ActorPersonID": 41,
+      "ActorEmailAddress": "sam@agency.example",
+      "ActorAPIKeyID": null,
+      "ActorAdminID": null,
+      "Command": "list.create",
+      "TargetType": "list",
+      "TargetID": "318",
+      "Outcome": "success",
+      "IPAddress": "203.0.113.7",
+      "UserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6)",
+      "CreatedAt": "2026-10-26 15:04:11"
+    },
+    {
+      "LogID": 9108,
+      "ActorType": "member",
+      "ActorPersonID": 41,
+      "ActorEmailAddress": "sam@agency.example",
+      "ActorAPIKeyID": null,
+      "ActorAdminID": null,
+      "Command": "member.switch",
+      "TargetType": "membership",
+      "TargetID": "77",
+      "Outcome": "success",
+      "IPAddress": "203.0.113.7",
+      "UserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6)",
+      "CreatedAt": "2026-10-26 15:02:40"
+    }
+  ],
+  "NextCursor": "20261026150240-9108",
+  "RetentionDays": 365
+}
+```
+
+```txt [Error Codes]
+0: Success
+3: ActorType is not valid
+4: ActorID is not valid, or is sent without ActorType or with ActorType owner
+5: FilterCommand is not a command name
+6: TargetType is not valid, or TargetID is not valid or sent without TargetType
+7: Team members are not available on this installation
+8: DateFrom or DateTo is not a valid UTC date, or DateFrom is after DateTo
+9: Limit is not between 1 and 200
+10: Cursor is not valid
+99: The audit log could not be read
+100021: The member's role does not allow this command
+```
+
+:::
+
+`NextCursor` is `null` on the last page. `Outcome` is `success`, `dry_run` for an agent key preflight (`AgentDryRun`) that did not run the command, or the command's error code (several codes are joined with commas). `ActorEmailAddress` is the member's email address when the row has a person.
