@@ -293,7 +293,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     `EMAILGATEWAY_SMTP_HOST` is the SMTP host your customers connect to for the Email Gateway. It is shown in the user area and returned by `emailgateway.getsmtps` and `emailgateway.addsmtp`. Give the host only, with no scheme or port, for example `smtp.mydomain.com`. It is also the name the inbound SMTP server announces in its greeting (`220 smtp.mydomain.com Mail ESMTP Service ready`) and in its EHLO reply, so the greeting does not reveal your application domain. A fresh install sets it from `--smtp-host`, or to `smtp.` followed by the `APP_URL` host when no host is given, and writes it into `_dockerfiles/inbound-smtp-server/config.json`. After changing it, run `./cli/octeth.sh smtp:sync-config`, which updates that file and restarts `oempro_emailgateway_inbound_smtp`. The upgrade runs the same step. The example value `smtp.example.com` is a placeholder: it is never written into the greeting, so an install that has not set a real host keeps its current greeting. The same step replaces the old product name `Oempro SMTP Server` in the greeting with `Mail`, and keeps any other name you set in `AppName` (issue #3313). When the key is absent, the code default is also `smtp.example.com` (issue #3154).
 
-    `EMAILGATEWAY_SMTP_PORTS` is the comma-separated list of ports shown next to `EMAILGATEWAY_SMTP_HOST` in the user area and returned in `SMTPPorts` by `emailgateway.getsmtps` and `emailgateway.addsmtp`. It only changes what customers are told. It does not open or close a port on the inbound SMTP server.
+    `EMAILGATEWAY_SMTP_PORTS` is the comma-separated list of ports shown next to `EMAILGATEWAY_SMTP_HOST` in the user area and returned in `SMTPPorts` by `emailgateway.getsmtps` and `emailgateway.addsmtp`. It only changes what customers are told. It does not open or close a port on the inbound SMTP server. To open an extra port such as 2525, see [Adding another submission port](#adding-another-submission-port-for-example-2525).
 
 16. **Caddy Link Proxy (On-Demand TLS)**
 
@@ -2441,6 +2441,40 @@ Use a leading dot (`.`) for project directories to keep them hidden from casual 
 - `.engage` instead of `engage`
 - `.acme-corp` instead of `acme-corp`
 :::
+
+### Inbound SMTP server: requiring STARTTLS on submission ports
+
+The Email Gateway's inbound SMTP server (`oempro_emailgateway_inbound_smtp`) reads `_dockerfiles/inbound-smtp-server/config.json`. The `TLSRequiredPorts` key lists the ports on which a client must switch to an encrypted connection with `STARTTLS` before it can log in or send:
+
+```json
+"TLSRequiredPorts": [587, 2525]
+```
+
+On those ports, before `STARTTLS`:
+
+- The EHLO reply lists `STARTTLS` but not `AUTH`.
+- `AUTH`, `MAIL`, `RCPT` and `DATA` are answered with `530 5.7.0 Must issue a STARTTLS command first`. The server does not ask for or read a username or password, so credentials never cross the network unencrypted.
+
+After `STARTTLS`, login works as before. Port 25 is not in the list and keeps accepting a login without TLS, because servers that deliver mail to it may not support `STARTTLS`.
+
+- **Key absent:** the default `[587, 2525]` applies. An upgrade does not rewrite an existing `config.json`, so this default is what protects upgraded installations.
+- **`[]`:** turns the requirement off on every port.
+- **No certificate:** when `Certificate` and `PrivateKey` are empty (or the key pair cannot be loaded), the server cannot offer `STARTTLS`, so the listed ports are not enforced and logins keep working without TLS. The server prints a warning at startup saying so. Set a certificate to enforce the requirement.
+
+The port is the one the client connected to on your server. HAProxy forwards 25 and 587 to the inbound SMTP server and passes that port along in the PROXY protocol header, so no HAProxy change is needed. After editing `config.json`, restart the service: `docker restart oempro_emailgateway_inbound_smtp`.
+
+### Adding another submission port (for example 2525)
+
+Some networks block outgoing port 587. To offer 2525 as well, without editing `_dockerfiles/haproxy.cfg` (an upgrade replaces it), map the new port to HAProxy's 587 listener in `docker-compose.override.yml` in the Octeth directory. An upgrade keeps this file.
+
+```yaml
+services:
+  haproxy:
+    ports:
+      - "2525:587"
+```
+
+Then run `./cli/octeth.sh docker:up`. A client on 2525 reaches the same listener as 587, so `STARTTLS` is required on it automatically. If you also want customers to see the port in the user area, add it to `EMAILGATEWAY_SMTP_PORTS` in `.oempro_env`.
 
 ### Best Practices for Configuration Files
 

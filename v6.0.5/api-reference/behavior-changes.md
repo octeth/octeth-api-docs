@@ -36,6 +36,16 @@ The legacy admin **Rebranding** page (`/app/admin/rebranding/`), an item of the 
 
 **The old URL keeps working.** A GET to `/app/admin/rebranding/` answers with a 302 to the new section. A POST, including the old save form, is refused: nothing is written, and the answer is a short page that links to the new section. `settings.get` and `settings.update` are unchanged.
 
+### Email Gateway SMTP relay
+
+#### Login on port 587 requires `STARTTLS` first
+
+On an installation whose inbound SMTP server has a TLS certificate, a client that sends `AUTH` on port 587 (or 2525) without first issuing `STARTTLS` is now answered with `530 5.7.0 Must issue a STARTTLS command first`, and the EHLO reply on those ports no longer lists `AUTH` until the connection is encrypted (octeth/oempro#3601). `MAIL`, `RCPT` and `DATA` get the same answer before `STARTTLS`. Before this change the server read the username and password over the unencrypted connection.
+
+**Not affected:** port 25, installations with no certificate set in `config.json` (they print a startup warning instead), and every client that already uses `STARTTLS`, which is the default in common mail libraries and clients.
+
+**Who needs to act:** an SMTP client configured for port 587 with encryption turned off. Turn on STARTTLS (often labelled "TLS" or "STARTTLS" in the client's settings). To keep the old behaviour, set `"TLSRequiredPorts": []` in `_dockerfiles/inbound-smtp-server/config.json` and restart `oempro_emailgateway_inbound_smtp`, which is not recommended. See [requiring STARTTLS on submission ports](/v6.0.5/getting-started/octeth-configuration#inbound-smtp-server-requiring-starttls-on-submission-ports).
+
 ## Tier 2: shape and value changes
 
 None recorded yet.
@@ -43,6 +53,7 @@ None recorded yet.
 ## Upgrade checklist
 
 - [ ] If `ADMIN_API_ENFORCE_PRIVILEGES` is off, check that every sub-admin key or session calling a `global.customfield*` command holds `CustomFields`, or it now receives `99999`.
+- [ ] Check that every SMTP client sending through the Email Gateway on port 587 or 2525 uses `STARTTLS`, or it now receives `530 5.7.0` on installations with a certificate.
 
 ---
 
