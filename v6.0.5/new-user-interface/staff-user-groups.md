@@ -65,7 +65,7 @@ exists.
 
 ## Edit a user group
 
-Choose a group in the list. The Edit page has five sections in the menu on the left. Each one has
+Choose a group in the list. The Edit page has six sections in the menu on the left. Each one has
 its own save button, for example **Save general settings**, and changes nothing outside it, so an
 unsaved change in another section is not sent.
 
@@ -85,6 +85,8 @@ unsaved change in another section is not sent.
   only, read and change data, or also send), sends per day, recipients per send and the size above
   which a send must be confirmed. Under **Sender screening**, the threshold (0 to 100) and action
   for sign-ups, imports and campaign content.
+- **Team members.** How many people each account of the group can invite to sign in with their own
+  email address and role, and whether every one of them must use two-factor authentication.
 
 ### Send method
 
@@ -101,6 +103,27 @@ The Edit page edits two send methods: **System** and **Custom SMTP server**.
   settings read-only, and the send method reads **Keep current**. Saving the section with **Keep
   current** leaves the method as it is. To change it, switch to System or Custom SMTP server.
   Other methods can still be set with the API.
+
+### Team members
+
+**Seats per account** is how many team members each account of the group can have. Suspended
+members and invitations that are still pending count as seats. The account owner does not.
+
+- **0** turns team members off for the group. The account owner cannot send invitations, and every
+  member who is signed in to an account of the group is signed out the next time they do anything.
+  Their memberships are kept, so raising the number again lets them back in.
+- **Lowering the number** below the seats already in use removes no one. It only stops new
+  invitations until members are removed or invitations expire.
+
+**Require two-factor authentication from every member** signs out every member who has not set up
+two-factor authentication. They must set it up before they can open the account again. Members who
+already use it are not affected, and neither is the account owner's own sign-in.
+
+When billing is on, a plan's seats come from the user group the plan puts the account in, so set
+them here on that group.
+
+The section shows a short notice instead of the fields until the database migrations of this
+version have run.
 
 ### Not carried over from the classic screen
 

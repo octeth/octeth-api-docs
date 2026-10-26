@@ -709,6 +709,8 @@ The account owner (the account's own session or a user API key the owner created
 
 **Accepting.** The invited person opens the link. A person who is new to team members chooses a password. A person who already signs in as a team member, for another account, accepts with their existing password, or while signed in. The email address of the person and of the invitation must be the same (case does not matter). When the account requires two-factor authentication from members, the person is asked to set it up on their first switch into the account.
 
+Seats per account come from the user group (`LimitTeamMembers` on `usergroup.create`, `usergroup.update` and `usergroup.patch`), and a group can require two-factor authentication from every member (`RequireMemberTwoFactor`). Staff can list, suspend and remove the members of any customer account with the admin commands in [Team Members (Staff)](/v6.0.5/api-reference/admin#team-members-staff).
+
 ## List Team Members
 
 <Badge type="info" text="GET" /> `/api/v1/team.member.list`

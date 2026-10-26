@@ -233,6 +233,62 @@ saved after the account itself.
 - If a plug-in fails while saving, a warning names the field. The account changes are saved, and
   other plug-in values may already be saved too, so check them before you try again.
 
+## Team members of a customer
+
+The **Team members** tab of a customer's page lists the people who can sign in to that account
+with their own email address, and the invitations the account has sent. You need the **Edit users**
+privilege to see it, and **Update user settings** to change anything. A sub-admin limited to some user
+groups sees only customers in those groups.
+
+The card at the top says how many seats are used out of the limit the customer's user group allows,
+and whether the group requires two-factor authentication. When the group's limit is 0, team
+members are off for this customer and its members cannot sign in to the account.
+
+For each member you see:
+
+- the email address
+- the role (Admin, Manager, Author or Viewer)
+- the status: **Active** or **Suspended**, and **Sign-in disabled** when the person's own sign-in is
+  turned off
+- whether two-factor authentication is on
+- the last time the person signed in
+
+The **Invitations** card lists every invitation with its role and state (pending, accepted, revoked
+or expired). A pending invitation holds a seat until it is accepted, revoked or expires.
+
+### Suspending a member
+
+Use this when you need to cut someone off quickly, for example during an abuse or security
+investigation.
+
+1. Open the customer and choose the **Team members** tab.
+2. Select the suspend icon on the member's row.
+3. Confirm with **Suspend member**.
+
+The member is signed out of this account at once and cannot open it again. API keys and AI
+assistant keys the member created stop working too. The member keeps their seat, their role and
+their access to any other account. To let them back in, select the reactivate icon on the same
+row and confirm with **Reactivate member**.
+
+### Removing a member
+
+1. Select the remove icon on the member's row.
+2. The dialog says how many API keys the member created in this account. Confirm with **Remove
+   member**.
+
+The member is signed out of this account at once and loses access to it, and the seat is freed.
+**Every API key and AI assistant key the member created in this account is revoked**, so a key the
+person copied somewhere stops working too. The person keeps their sign-in for other accounts and
+receives an email saying they were removed. Removing cannot be undone: to give the person access
+again, the account owner sends a new invitation.
+
+### What is recorded
+
+Every suspend, reactivate and remove is recorded twice: in the staff activity log, with your name,
+and in the customer's own audit log, where the account owner and Admin members see it as a staff
+action. When you open a customer's account to act as them, the customer's audit log also names you,
+not the main administrator account.
+
 ## Troubleshooting
 
 | Message or symptom | What to do |

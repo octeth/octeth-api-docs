@@ -850,6 +850,7 @@ The response is the merge of two payloads: a stat-strip header (the overall fiel
 | APIKey    | String | No       | API key for authentication            |
 | UserID    | Integer | Yes | User ID to switch to |
 | PrivilegeType | String | No | `Default` (or empty) logs in with the user group's permissions. `Full` lets the admin act as the user with every user permission, whatever the user group allows. Full applies only to the session `user.switch` returns, while it is logged in as this user: another lookup of the same user (for example `user.get`) and any account the session later switches to keep the group's real permissions. Changed in v6.0.2 |
+| ActingAdminID | Integer | No | The administrator acting through this call, for the customer's account audit log. Honoured only when the call is authenticated with the master admin API key and only for an existing administrator that may reach this account; otherwise the caller's own AdminID is recorded (AdminID 1 for the master key). It changes nothing else: the session and the response are the same. The new interface's staff area sends the signed-in staff member here. Added in v6.0.5 |
 
 The target account must be enabled. `user.switch` refuses an account whose status is not `Enabled` with `ErrorCode 4` and creates no session, because a session for a disabled account cannot authenticate any user command. Enable the account first, or read it through admin commands such as `user.get`. (Changed in v6.0.1.)
 
@@ -1800,6 +1801,8 @@ curl -X GET https://example.com/api/v1/users.status \
 | ScreeningImportMode | String | No | Possible values: `off` (no import is screened), `flag` (default), `hold` (campaigns to the list need approval until the operator releases the import). Added in v6.0.2 |
 | ScreeningContentThreshold | Integer | No | Campaign content screening threshold (0 to 100), `0` turns it off. Default `50`. Added in v6.0.2 |
 | ScreeningContentMode | String | No | Possible values: `off` (default, no campaign is screened and SpamAssassin never runs), `flag` (record only), `hold` (the campaign goes to Pending Approval, and an email a sending campaign uses cannot be edited). Content screening stays off until you set `flag` or `hold`. An unknown value is stored as the default. See [Sender Screening](/v6.0.5/api-reference/admin#sender-screening). Added in v6.0.2 |
+| LimitTeamMembers | Integer | No | Team member seats per account of the group: members of every status plus pending invitations, a whole number from `0` to `2147483647`. `0` (the default) turns team members off for the group: invitations are refused and every member session of its accounts ends on its next request. A limit lower than the seats in use removes no one, it only blocks new invitations until enough seats are free. When billing is enabled, a plan's team seats come from the user group the plan places the account in: set `LimitTeamMembers` on that group. Omit to keep the stored value. Added in v6.0.5 |
+| RequireMemberTwoFactor | String | No | `Yes` requires two-factor authentication from every team member of the group's accounts: a member without it is signed out on its next request and must enrol before opening the account again. `No` (the default) leaves it to each person. The account owner's own sign-in is not affected. Omit to keep the stored value. Added in v6.0.5 |
 
 ::: warning Options (v5.9.6)
 Before v5.9.6 this command JSON-encoded whatever it was handed, unconditionally. A JSON string was therefore **double-encoded**: the column ended up holding a JSON *string* instead of an object, so nothing could read the options back. It now accepts an object or a JSON string of one and refuses anything else with `ErrorCode 28`, matching `usergroup.patch`.
@@ -1863,6 +1866,9 @@ curl -X POST https://example.com/api.php \
 34: Another user group is already the default for this subscription plan (see
     ConflictingUserGroupID). Also returned when a concurrent request made another
     group the plan's default first (changed in v6.0.2)
+38: LimitTeamMembers is not a whole number from 0 to 2147483647 (ErrorField limitteammembers)
+39: RequireMemberTwoFactor is not Yes or No (ErrorField requiremembertwofactor)
+40: LimitTeamMembers or RequireMemberTwoFactor was sent before the database migrations of this version have run
 5003: An admin limited to some user groups cannot create user groups
 ```
 
@@ -1876,6 +1882,7 @@ curl -X POST https://example.com/api.php \
 - Authentication required: Admin API Key
 - v1 REST alias: `POST /api/v1/usergroup.update`. Legacy access via `/api.php` is also supported
 - Sub-admins limited to some user groups (changed in v6.0.2): a restricted sub-admin can only name a group in its allowed list. Any other `UserGroupID`, including one that does not exist, answers `ErrorCode 5003` and nothing is read or written. The master admin API key and admins without user group limits are unaffected.
+- `LimitTeamMembers` and `RequireMemberTwoFactor` are written only when sent, so an existing caller that does not know them keeps the stored values. Added in v6.0.5.
 :::
 
 **Request Body Parameters:**
@@ -1913,6 +1920,8 @@ curl -X POST https://example.com/api.php \
 | ScreeningImportMode | String | No | Possible values: `off` (no import is screened), `flag` (default), `hold` (campaigns to the list need approval until the operator releases the import). Added in v6.0.2 |
 | ScreeningContentThreshold | Integer | No | Campaign content screening threshold (0 to 100), `0` turns it off. Default `50`. Added in v6.0.2 |
 | ScreeningContentMode | String | No | Possible values: `off` (default, no campaign is screened and SpamAssassin never runs), `flag` (record only), `hold` (the campaign goes to Pending Approval, and an email a sending campaign uses cannot be edited). Content screening stays off until you set `flag` or `hold`. An unknown value is stored as the default. See [Sender Screening](/v6.0.5/api-reference/admin#sender-screening). Added in v6.0.2 |
+| LimitTeamMembers | Integer | No | Team member seats per account of the group: members of every status plus pending invitations, a whole number from `0` to `2147483647`. `0` (the default) turns team members off for the group: invitations are refused and every member session of its accounts ends on its next request. A limit lower than the seats in use removes no one, it only blocks new invitations until enough seats are free. When billing is enabled, a plan's team seats come from the user group the plan places the account in: set `LimitTeamMembers` on that group. Omit to keep the stored value. Added in v6.0.5 |
+| RequireMemberTwoFactor | String | No | `Yes` requires two-factor authentication from every team member of the group's accounts: a member without it is signed out on its next request and must enrol before opening the account again. `No` (the default) leaves it to each person. The account owner's own sign-in is not affected. Omit to keep the stored value. Added in v6.0.5 |
 
 ::: warning One default group per plan (v6.0.2)
 This command cannot set `SubscriptionPlanIsDefault`, but it can move a group that is a plan's default onto another plan. When that plan already has a default, the update is refused with `ErrorCode 34`, the same answer `usergroup.create` and `usergroup.patch` give, and nothing is written. Before v6.0.2 the update succeeded and left the plan with two default groups. A parameter sent as an array or object, where a single value is expected, is refused with `ErrorCode 36` and `ErrorField` naming it.
@@ -1980,6 +1989,9 @@ curl -X POST https://example.com/api.php \
     default (see ConflictingUserGroupID). Added in v6.0.2
 36: A parameter was sent as an array or object where a single value is expected
     (ErrorField names it). Added in v6.0.2
+38: LimitTeamMembers is not a whole number from 0 to 2147483647 (ErrorField limitteammembers)
+39: RequireMemberTwoFactor is not Yes or No (ErrorField requiremembertwofactor)
+40: LimitTeamMembers or RequireMemberTwoFactor was sent before the database migrations of this version have run
 5003: User group is outside the user groups this admin account may access
 ```
 
@@ -2078,6 +2090,8 @@ The only safe way to change a single value through `usergroup.update` is to read
 | ScreeningImportMode | String | No | Possible values: `off` (no import is screened), `flag` (default), `hold` (campaigns to the list need approval until the operator releases the import). Added in v6.0.2 |
 | ScreeningContentThreshold | Integer | No | Campaign content screening threshold (0 to 100), `0` turns it off. Default `50`. Added in v6.0.2 |
 | ScreeningContentMode | String | No | Possible values: `off` (default, no campaign is screened and SpamAssassin never runs), `flag` (record only), `hold` (the campaign goes to Pending Approval, and an email a sending campaign uses cannot be edited). Content screening stays off until you set `flag` or `hold`. An unknown value is stored as the default. See [Sender Screening](/v6.0.5/api-reference/admin#sender-screening). Added in v6.0.2 |
+| LimitTeamMembers | Integer | No | Team member seats per account of the group: members of every status plus pending invitations, a whole number from `0` to `2147483647`. `0` (the default) turns team members off for the group: invitations are refused and every member session of its accounts ends on its next request. A limit lower than the seats in use removes no one, it only blocks new invitations until enough seats are free. When billing is enabled, a plan's team seats come from the user group the plan places the account in: set `LimitTeamMembers` on that group. Omit to keep the stored value. Added in v6.0.5 |
+| RequireMemberTwoFactor | String | No | `Yes` requires two-factor authentication from every team member of the group's accounts: a member without it is signed out on its next request and must enrol before opening the account again. `No` (the default) leaves it to each person. The account owner's own sign-in is not affected. Omit to keep the stored value. Added in v6.0.5 |
 
 Parameter names are matched case-insensitively, as everywhere on `/api.php`.
 
@@ -2190,6 +2204,9 @@ curl -X POST https://example.com/api.php \
     ConflictingUserGroupID). Also returned when a concurrent request made another
     group the plan's default first (changed in v6.0.2)
 37: AddPermissions or RemovePermissions sent together with Permissions (added in v6.0.2)
+38: LimitTeamMembers is not a whole number from 0 to 2147483647 (ErrorField limitteammembers)
+39: RequireMemberTwoFactor is not Yes or No (ErrorField requiremembertwofactor)
+40: LimitTeamMembers or RequireMemberTwoFactor was sent before the database migrations of this version have run
 5003: User group is outside the user groups this admin account may access
 ```
 
@@ -2324,6 +2341,10 @@ The group fields are an allow-list: every other existing field is returned as be
 
 ::: tip New fields (v6.0.2)
 The `UserGroup` object now also carries the AI agent policy (`AgentAccess`, `AgentMaxSendsPerDay`, `AgentMaxRecipientsPerSend`, `AgentConfirmAbove`) and the sender screening policy (`ScreeningSignupThreshold`, `ScreeningSignupMode`, `ScreeningImportThreshold`, `ScreeningImportMode`, `ScreeningContentThreshold`, `ScreeningContentMode`) that `usergroup.create` and `usergroup.patch` write. Every other field is unchanged. `usergroups.get` returns the same ten fields for each group, and never the SMTP username.
+:::
+
+::: tip New fields (v6.0.5)
+The `UserGroup` object also carries `LimitTeamMembers` (integer as a string, `"0"` when team members are off) and `RequireMemberTwoFactor` (`Yes` or `No`), the team member settings `usergroup.create`, `usergroup.update` and `usergroup.patch` write. `usergroups.get` returns the same two fields for each group. They are present once the database migrations of v6.0.5 have run. Every other field is unchanged.
 :::
 
 ::: code-group
@@ -2691,6 +2712,8 @@ curl -X POST https://example.com/api.php \
 | DeliveryServerAssignments | Object | Delivery server assignments per channel type. Contains three keys: `Marketing`, `Transactional`, and `AutoResponder`. Each contains `DeliveryServerID` (0 if not assigned) and `DeliveryServerName` (empty string if not assigned) |
 
 Each group carries the ten `Agent*` and `Screening*` fields described under [Get User Group](#get-user-group) (added in v6.0.2). The SMTP username is never returned here.
+
+Each group also carries `LimitTeamMembers` and `RequireMemberTwoFactor`, described under [Get User Group](#get-user-group) (added in v6.0.5). They are present once the database migrations of v6.0.5 have run.
 
 ## Get User Group Editor Lists
 

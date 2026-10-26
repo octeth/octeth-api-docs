@@ -3270,6 +3270,299 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## Team Members (Staff)
+
+Staff can see who has access to a customer account and cut a person off during an abuse or security incident. These commands act on the team members of one customer account (see [Team Members](/v6.0.5/api-reference/team-members)). Every command takes the customer's `UserID`. An administrator limited to some user groups reaches only customers in those groups: any other customer answers `ErrorCode 5003` and nothing is read or changed.
+
+Suspend and remove are written to the customer's [account audit log](/v6.0.5/api-reference/team-members#account-audit-log) with actor type `staff_impersonation`, the acting administrator's `ActorAdminID`, the command name, the membership as the target and the outcome, so the account owner can see what staff did.
+
+## List a Customer's Team Members
+
+<Badge type="info" text="GET" /> `/api/v1/admin.user.members.list`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privilege: `User.Edit`
+- v1 REST alias: `GET /api/v1/admin.user.members.list`. Legacy access via `/api.php` is also supported
+:::
+
+Returns every team member of the customer account with role, membership status, sign-in status, last sign-in and whether two-factor authentication is on, every invitation (pending, accepted, revoked and expired, newest first, at most 500), the seats in use and the user group's team settings. Passwords, two-factor secrets, recovery keys and invitation tokens are never returned.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.members.list` |
+| AdminAPIKey | String | Yes | Admin API key |
+| UserID | Integer | Yes | The customer account |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.user.members.list",
+    "AdminAPIKey": "your-admin-api-key",
+    "UserID": 42
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "UserID": 42,
+  "TeamMembersEnabled": true,
+  "RequireMemberTwoFactor": false,
+  "Seats": { "Used": 3, "Limit": 5 },
+  "Members": [
+    {
+      "MembershipID": 7,
+      "PersonID": 3,
+      "EmailAddress": "ada@example.com",
+      "Role": "Admin",
+      "Status": "Active",
+      "PersonStatus": "Active",
+      "TwoFactorEnabled": true,
+      "InvitedByPersonID": null,
+      "CreatedAt": "2026-10-01 10:00:00",
+      "UpdatedAt": "2026-10-01 10:00:00",
+      "LastLoginAt": "2026-10-20 09:30:00"
+    }
+  ],
+  "Invitations": [
+    {
+      "InvitationID": 21,
+      "EmailAddress": "cy@example.com",
+      "Role": "Author",
+      "State": "pending",
+      "InvitedByPersonID": null,
+      "CreatedAt": "2026-10-24 10:00:00",
+      "ExpiresAt": "2026-10-31 10:00:00",
+      "AcceptedAt": null,
+      "RevokedAt": null
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 5003,
+  "ErrorText": "User is outside the user groups this admin account may access"
+}
+```
+
+```txt [Error Codes]
+0: Success
+7: Team members are not available on this installation (the database migrations have not run)
+99: The team members could not be read
+5001: UserID is missing
+5002: User not found
+5003: The user is outside the user groups this admin account may access
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
+
+`Seats.Used` counts members of every status plus pending invitations. `Seats.Limit` is the user group's `LimitTeamMembers`, and `TeamMembersEnabled` is `false` when it is `0`. Times are UTC. `LastLoginAt` is the person's last sign-in to any account.
+
+## Suspend a Customer's Team Member
+
+<Badge type="info" text="POST" /> `/api/v1/admin.user.member.suspend`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privilege: `User.Update`
+- v1 REST alias: `POST /api/v1/admin.user.member.suspend`. Legacy access via `/api.php` is also supported
+:::
+
+Suspends one team member of the customer account, or reactivates a suspended one with `Status` `Active`. Either change ends every session the member holds in this account on its next request (the API answers it with error 99998), including API keys the member created, which are refused while the membership is suspended. A suspended member keeps its seat and its role, and keeps signing in to any other account it belongs to. An `Owner` membership is never changed (error 5).
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.member.suspend` |
+| AdminAPIKey | String | Yes | Admin API key |
+| UserID | Integer | Yes | The customer account |
+| MembershipID | Integer | Yes | The member, from `admin.user.members.list` |
+| Status | String | No | `Suspended` (default) or `Active` to reactivate |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.user.member.suspend",
+    "AdminAPIKey": "your-admin-api-key",
+    "UserID": 42,
+    "MembershipID": 7
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Member": {
+    "MembershipID": 7,
+    "PersonID": 3,
+    "EmailAddress": "ada@example.com",
+    "Role": "Admin",
+    "Status": "Suspended",
+    "PersonStatus": "Active",
+    "TwoFactorEnabled": true,
+    "InvitedByPersonID": null,
+    "CreatedAt": "2026-10-01 10:00:00",
+    "UpdatedAt": "2026-10-26 11:02:13",
+    "LastLoginAt": "2026-10-20 09:30:00"
+  },
+  "PreviousStatus": "Active",
+  "Changed": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "No team member with this MembershipID in this account"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: MembershipID is missing
+3: No team member with this MembershipID in this account
+5: The membership is the account Owner and cannot be changed
+6: Status must be Active or Suspended
+7: Team members are not available on this installation
+15: The member was changed by another request after it was read. Nothing was changed: read it again and retry
+99: The change could not be saved
+5001: UserID is missing
+5002: User not found
+5003: The user is outside the user groups this admin account may access
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
+
+## Remove a Customer's Team Member
+
+<Badge type="info" text="POST" /> `/api/v1/admin.user.member.remove`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privilege: `User.Update`
+- v1 REST alias: `POST /api/v1/admin.user.member.remove`. Legacy access via `/api.php` is also supported
+:::
+
+Removes one team member from the customer account. Every session the member holds in this account ends on its next request, and the seat is freed. The person keeps their sign-in and any other account they belong to, and is emailed the same removal notice as for `team.member.remove`.
+
+::: warning Keys are revoked by default
+Unlike `team.member.remove`, where a key with no choice stays and is refused, this command **revokes every API key and AI agent key the member created** in the account unless told otherwise, because staff act in an incident and a key the removed person still holds is the access to cut. Send `APIKeyAction` `keep` to hand the keys to the account instead (they then act as the owner's), or `APIKeyActions` to choose per key. Send `Preview` `true` first to see the keys without removing anything; a preview is not written to the audit log.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.user.member.remove` |
+| AdminAPIKey | String | Yes | Admin API key |
+| UserID | Integer | Yes | The customer account |
+| MembershipID | Integer | Yes | The member, from `admin.user.members.list` |
+| Preview | Boolean | No | `true` lists the member's keys and the action that would apply, and removes nothing |
+| APIKeyAction | String | No | `revoke` (default) or `keep`, for every key the member created |
+| APIKeyActions | Object | No | `{"<APIKeyID>": "revoke" \| "keep"}`, overrides `APIKeyAction` per key |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.user.member.remove",
+    "AdminAPIKey": "your-admin-api-key",
+    "UserID": 42,
+    "MembershipID": 8
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Removed": true,
+  "Member": {
+    "MembershipID": 8,
+    "PersonID": 4,
+    "EmailAddress": "bob@example.com",
+    "Role": "Viewer",
+    "Status": "Active",
+    "PersonStatus": "Active",
+    "TwoFactorEnabled": false,
+    "InvitedByPersonID": 3,
+    "CreatedAt": "2026-10-02 10:00:00",
+    "UpdatedAt": "2026-10-02 10:00:00",
+    "LastLoginAt": null
+  },
+  "APIKeys": [
+    {
+      "APIKeyID": 31,
+      "Note": "Zapier",
+      "IsAgentKey": false,
+      "CreatedAt": "2026-10-05 08:00:00",
+      "LastUsedAt": "2026-10-25 17:44:02",
+      "Action": "revoked"
+    }
+  ],
+  "Notice": ""
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 6,
+  "ErrorText": "APIKeyAction must be revoke or keep"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: MembershipID is missing
+3: No team member with this MembershipID in this account
+5: The membership is the account Owner and cannot be removed
+6: APIKeyAction or APIKeyActions is not valid
+7: Team members are not available on this installation
+15: The member was changed by another request after it was read. Nothing was removed or revoked: read it again and retry
+99: The removal could not be saved
+5001: UserID is missing
+5002: User not found
+5003: The user is outside the user groups this admin account may access
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
+
+`APIKeys[].Action` is `revoked` or `kept`. In a preview it is the action that would apply.
+
 ## Provision Two-Factor Authentication
 
 <Badge type="info" text="POST" /> `/api/v1/admin.2fa.provision`
