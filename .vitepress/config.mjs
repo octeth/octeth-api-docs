@@ -1285,6 +1285,7 @@ export default defineConfig({
                                 {text: 'System', link: '/v6.0.5/api-reference/system'},
                                 {text: 'Monitoring', link: '/v6.0.5/api-reference/monitoring'},
                                 {text: 'Users', link: '/v6.0.5/api-reference/users'},
+                                {text: 'Team Members', link: '/v6.0.5/api-reference/team-members'},
                                 {text: 'Segments', link: '/v6.0.5/api-reference/segments'},
                                 {text: 'Subscribers', link: '/v6.0.5/api-reference/subscribers'},
                                 {text: 'Internal', link: '/v6.0.5/api-reference/internal'}
