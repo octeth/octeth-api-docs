@@ -1183,6 +1183,7 @@ export default defineConfig({
                         {text: 'SMS Campaigns', link: '/v6.0.5/new-user-interface/sms-campaigns'},
                         {text: 'Keitaro for SMS', link: '/v6.0.5/new-user-interface/sms-keitaro'},
                         {text: 'Connect Claude or ChatGPT', link: '/v6.0.5/new-user-interface/ai-assistants'},
+                        {text: 'Team Members', link: '/v6.0.5/new-user-interface/team-members'},
                         {text: 'Configuration Reference', link: '/v6.0.5/new-user-interface/configuration-reference'},
                         {text: 'Troubleshooting', link: '/v6.0.5/new-user-interface/troubleshooting'}
                     ]
