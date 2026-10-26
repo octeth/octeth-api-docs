@@ -36,6 +36,7 @@ Error codes can be single values or arrays:
 |------|-------------|-----|
 | 99998 | Invalid API key or session, or a user session used from an address outside the user-area IP allow-list (`ErrorText` "Access from this IP address is not allowed") | Check your authentication credentials, or call from an allowed address |
 | 99999 | Session expired | Re-authenticate to get a new session |
+| 100021 | The command is not allowed for the team member's role (HTTP 403). `MemberRole` and `RequiredMemberPermission` say which role and which role permission | Use an account or a role that allows the command, see [Team Member Roles](./team-members.md#roles) |
 | 3 | Invalid login credentials | Verify username and password |
 | 6 | Invalid 2FA code | Check your authenticator app |
 | 101 | 2FA required | Include `tfacode` parameter |

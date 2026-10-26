@@ -348,6 +348,8 @@ curl -X POST https://example.com/api.php \
 `MFA_QRCode` and `MFA_SecretKey` are returned only while `2FA_Enabled` is `No`, for enrolment. A secret is generated on the first call if the account has none. Once two-factor authentication is enabled, `user.current` returns no two-factor value at all. Before v6.0.1 it returned `MFA_RecoveryCode` while two-factor authentication was enabled. The recovery code is now returned once, in the `user.update` response that enables two-factor authentication. See [Update User](#update-user).
 :::
 
+For a team member session the two-factor enrolment values `MFA_SecretKey` and `MFA_QRCode` are not returned, and no secret is created: they belong to the account owner. Every other field is the same as for the account's own session.
+
 ### `UserInfo.GroupInfo`
 
 An explicit, user-safe projection of the authenticated user's **user group**. It intentionally exposes only capability flags and plan quotas the user is already subject to.
