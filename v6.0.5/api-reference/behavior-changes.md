@@ -28,6 +28,14 @@ The staff Global segments screen is unaffected: it reads the custom fields a rul
 
 **Who needs to act:** an integration that calls one of these commands with the key or session of a sub-admin who does not hold `CustomFields`, on an install with `ADMIN_API_ENFORCE_PRIVILEGES` off. Grant that account `CustomFields`, or use a key that has it.
 
+### Admin area
+
+#### The legacy admin Rebranding page is removed
+
+The legacy admin **Rebranding** page (`/app/admin/rebranding/`), an item of the classic **Settings** sidebar, is removed. Its settings (the product name, the header and footer URLs of the forward to a friend, report abuse and sign-up pages, and the subscriber area logout URL) are in the **Subscriber pages** section of the [Branding](/v6.0.5/new-user-interface/staff-branding#subscriber-pages) screen of the staff **Settings** group (`/<UI_STAFF_PREFIX>/staff/settings/branding?section=subscriber-pages`) (octeth/oempro#3583). That screen is open to administrators with full access only. The old page also admitted a sub-admin holding `Settings`, who can still change the same keys with `settings.update`. The classic sidebar item now opens the new section, and only for administrators with full access.
+
+**The old URL keeps working.** A GET to `/app/admin/rebranding/` answers with a 302 to the new section. A POST, including the old save form, is refused: nothing is written, and the answer is a short page that links to the new section. `settings.get` and `settings.update` are unchanged.
+
 ## Tier 2: shape and value changes
 
 None recorded yet.

@@ -1,6 +1,6 @@
 # Branding the New User Interface from the Staff Area
 
-The **Branding** screen of the staff **Settings** group changes how the new interface presents itself: its name, logos, browser tab icon, colours, support and legal links, the sender name and footer of the emails it sends, and which sections customers see. A value saved here applies on the next page load, with no file to edit and no restart.
+The **Branding** screen of the staff **Settings** group changes how the new interface presents itself: its name, logos, browser tab icon, colours, support and legal links, the sender name and footer of the emails it sends, and which sections customers see. It also holds the product name and the header, footer and logout addresses of the classic subscriber pages. A value saved here applies on the next page load, with no file to edit and no restart.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
@@ -72,6 +72,20 @@ The interface sends a few emails itself: welcome, password reset and billing not
 
 The sender address stays the `UI_MAIL_FROM_ADDRESS` setting in `.oempro_env`.
 
+## Subscriber pages
+
+The **Subscriber pages** section holds the settings of the pages your subscribers and their contacts open from an email. These pages are part of the classic application, not of the new interface, so Octeth stores the values itself: they do not come from `.oempro_env`, show no source label and have no **Reset**. They replace the classic **Settings > Rebranding** page.
+
+- **Product name**: the name the classic pages and Octeth's own emails use, for example in the page titles of the subscriber area when the user group's theme sets none. Required. It is separate from the **Name** under **Identity**, which names the new interface.
+- **Forward to a friend: header URL** and **footer URL**: the addresses of HTML snippets shown above and below the forward to a friend page.
+- **Report abuse: header URL** and **footer URL**: the same for the report abuse page.
+- **Sign-up page: header URL** and **footer URL**: the same for the classic sign-up page (`signup.php`).
+- **Subscriber area: logout URL**: where the subscriber area sends a subscriber who logs out or opens it without a valid link, for example your website.
+
+Each header and footer address must start with `https://` or `http://`, and Octeth fetches the snippet from it when the page is shown. Leave a field empty to use the built-in header or footer. A snippet holds only the HTML of that part of the page, not a whole document with `<html>` and `<body>` tags. A value saved before this screen existed that is not such an address is kept as it is until you change that field.
+
+Click **Save subscriber pages** to save. Only the fields you changed are sent to Octeth, and a value that differs only by surrounding spaces counts as no change. Each save writes a staff audit row naming the settings it changed, with the old and new value of each.
+
 ## Features
 
 One switch per customer section: **Dashboard**, **Campaigns**, **Journeys**, **Transactional**, **SMS**, **Lists**, **Suppressions**, **Templates**, **Header & footer**, **Analytics**, **Deliverability**, **Senders & domains**, **API** and **Account webhooks**. A section switched off leaves the customer sidebar and its pages answer "not found". Staff pages are not affected.
@@ -95,7 +109,7 @@ Click **Save branding** at the foot of the page. Only the fields you changed are
 
 ## What is recorded
 
-Every save, reset and logo change writes a staff audit row naming the settings it changed, with the old and new value of each text field, colour and feature switch, and the old and new file name of each logo.
+Every save, reset and logo change writes a staff audit row naming the settings it changed, with the old and new value of each text field, colour and feature switch, and the old and new file name of each logo. A save of the **Subscriber pages** section writes a `settings.update` audit row instead, with the same old and new values.
 
 ## Demo mode
 
@@ -106,3 +120,4 @@ With demo mode on, the screen is read-only.
 - [Branding the New User Interface](./branding)
 - [The new user interface](./index)
 - [Octeth configuration](/v6.0.5/getting-started/octeth-configuration)
+- [Octeth configuration: Rebranding](/v6.0.5/getting-started/octeth-configuration#rebranding)

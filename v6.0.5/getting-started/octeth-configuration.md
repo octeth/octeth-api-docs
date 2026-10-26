@@ -6128,7 +6128,7 @@ Click **Update Preferences** to save. The three settings are saved together, and
 
 Rebranding allows you to customize Octeth's user-facing pages and elements with your own branding. This is particularly useful when offering Octeth as a white-label service to your clients or when you want to maintain consistent branding across your subscriber-facing communications.
 
-To access rebranding settings, navigate to **Preferences** → **System Settings** → **Rebranding** in the administrator dashboard.
+To change these settings, open the new interface's staff area and click **Settings**, then **Branding**, then **Subscriber pages** (`/<UI_STAFF_PREFIX>/staff/settings/branding?section=subscriber-pages`). Only an administrator with full access can open it. See [Branding the New User Interface from the Staff Area](/v6.0.5/new-user-interface/staff-branding#subscriber-pages). The field names below are the ones on that screen. The classic **Settings > Rebranding** page was removed in v6.0.5.
 
 ::: warning Rebranding the interface is only half of a whitelabel deployment
 Everything on this page changes what your **users** see when they log in. It changes nothing about what their **recipients** see. The `X-Mailer`, `X-Complaints-To` and `X-Report-Abuse` headers, the `utm_source` on every tracked link, the envelope sender, the `Message-ID` domain and the tracking hostname are all configured elsewhere, and every one of them reaches recipients regardless of how the interface looks.
@@ -6150,6 +6150,8 @@ This name appears in:
 
 For example, if you set the product name to "AwesomeMail", subscribers will see "Powered by AwesomeMail" instead of "Powered by Octeth" in their emails.
 
+The **Name** under **Identity** on the same screen names the new interface and is a separate setting.
+
 ::: tip White Label Strategy
 Changing the product name is essential for white-label deployments where you're offering email marketing services under your own brand. Choose a name that represents your business and resonates with your target audience.
 :::
@@ -6158,10 +6160,10 @@ Changing the product name is essential for white-label deployments where you're 
 
 The Forward To Friend feature allows your email recipients to share interesting emails with their contacts. You can customize the header and footer of this page to match your branding.
 
-**Header URL**
+**Forward to a friend: header URL**
 URL to an HTML file or web page that will be displayed at the top of the Forward To Friend page. This typically includes your logo, navigation, and branding elements.
 
-**Footer URL**
+**Forward to a friend: footer URL**
 URL to an HTML file or web page that will be displayed at the bottom of the Forward To Friend page. This typically includes copyright information, links, and contact details.
 
 Both URLs must start with `http://` or `https://`. For example: `https://yourdomain.com/header.html`
@@ -6174,10 +6176,10 @@ Your header and footer files should contain only the HTML/CSS you want to inject
 
 The Report Abuse page allows email recipients to report unwanted or inappropriate emails. Customize this page to maintain your branding and provide appropriate contact information for abuse reports.
 
-**Header URL**
+**Report abuse: header URL**
 URL to an HTML file or web page for the top section of the Report Abuse page.
 
-**Footer URL**
+**Report abuse: footer URL**
 URL to an HTML file or web page for the bottom section of the Report Abuse page.
 
 Enter the complete URL starting with `http://` or `https://`, for example: `https://yourdomain.com/abuse-header.html`
@@ -6190,10 +6192,10 @@ Even if you customize the Report Abuse page branding, ensure you monitor and res
 
 When new users register for accounts on your Octeth installation, they see a sign-up page. You can add custom header and footer sections to this page to match your company branding and provide additional information.
 
-**Header URL**
+**Sign-up page: header URL**
 URL to an HTML file or web page displayed at the top of the user registration page.
 
-**Footer URL**
+**Sign-up page: footer URL**
 URL to an HTML file or web page displayed at the bottom of the user registration page.
 
 Both URLs must be complete web addresses starting with `http://` or `https://`.
@@ -6206,7 +6208,7 @@ Use the sign-up page header to welcome new users, explain your service benefits,
 
 The Subscriber Area is where your email recipients can manage their subscription preferences, update their information, and unsubscribe from your mailing lists.
 
-**Logout URL**
+**Subscriber area: logout URL**
 When subscribers click the logout link in the Subscriber Area, they'll be redirected to this URL. This is typically your main website homepage or a custom thank you page.
 
 Enter the full URL starting with `http://` or `https://`, for example: `https://yourdomain.com/logout-success.html`
