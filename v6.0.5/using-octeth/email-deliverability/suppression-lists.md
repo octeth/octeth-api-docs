@@ -252,6 +252,10 @@ The suppression list view shows:
 
 [[SCREENSHOT: The User Dashboard Global Suppression List page showing the total count, search field, and list of suppressed email addresses with their sources]]
 
+**To export the suppression list:**
+
+Click **Export CSV** above the list. The account-wide page exports the whole account, and a list's Suppression List page exports that list only. The export applies the search term and source filter currently on screen, so clear them to export everything. The file is named `suppression-list-YYYY-MM-DD.csv` (`suppression-list-<list-id>-YYYY-MM-DD.csv` for a list) and has the columns EmailAddress, SuppressionSource, Reason, Scope and CreatedOn (UTC). It holds at most 10,000 rows, so narrow the filters for a larger set. Cells that start with a formula character are escaped so a spreadsheet does not run them.
+
 ::: tip
 Use the `%` character as a wildcard when searching. For example, searching for `%@example.com` finds all suppressed addresses at the example.com domain.
 :::
