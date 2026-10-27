@@ -55,6 +55,24 @@ Some changes stay in the app, because they could import, send or break live cont
 - Renaming a custom field's merge tag, because every email that uses the old tag would stop personalizing.
 - Creating an account-wide (global) custom field, or a field with a custom validation rule.
 
+### Email campaigns
+
+These tools never send email. Sending a campaign still needs the send permission and `send_campaign_now` or `schedule_campaign`.
+
+| Tool | Permission | What it does |
+|---|---|---|
+| `get_campaign_counts` | Read | How many campaigns the account has in each status, optionally for some tags or a send date range |
+| `get_campaign_recipients` | Read | How many subscribed recipients a campaign that has not been sent yet would reach, when its audience is built from rules |
+| `get_campaign_recipient_activity` | Read | Who opened, clicked, bounced, unsubscribed, forwarded or converted on a sent campaign, optionally for one A/B variation |
+| `get_campaign_link_clicks` | Read | Clicks per link, or who clicked and how often |
+| `get_campaign_abtest_results` | Read | Each A/B variation's figures and the winner, and the figures of an auto-resend to non-openers |
+| `copy_campaign` | Change data | Copies a campaign with its content and recipients into a new unscheduled draft named "Copy of ..." |
+| `delete_campaigns` | Change data, always confirmed | Deletes up to 20 campaigns with their reports |
+
+**Deleting always asks you first.** The preview names each campaign, its status, how many recipients it was sent to and any auto-resend campaign that is deleted with it. A campaign that is sending cannot be deleted by an assistant: pause it first, or wait until it finishes.
+
+Exporting a campaign report and the public archive link stay in the app, because both hand out a link that works without the connection.
+
 ### Journeys
 
 | Tool | Permission | What it does |
@@ -260,7 +278,9 @@ Agents that do not use MCP, such as scheduled scripts or bots that call HTTP API
 
 Neither file contains anything from any account. An agent that calls the API directly authenticates with an agent key you create under **API & webhooks** > **Connected AI assistants**, and is bound by the same permissions, limits and confirmation step as a connector.
 
-Commands that delete data, such as `lists.delete` (at most 10 list IDs), `customfields.delete` (at most 20 field IDs) and `journeys.delete` (at most 10 journey IDs, none of them turned on), always answer an agent key with ErrorCode 100012, a `Preview` and a `ConfirmToken` first, and delete nothing. Repeat the identical call with `ConfirmToken` after the person approves. Other API keys are unaffected.
+Commands that delete data, such as `lists.delete` (at most 10 list IDs), `customfields.delete` (at most 20 field IDs), `campaigns.delete` (at most 20 campaign IDs, none of them sending) and `journeys.delete` (at most 10 journey IDs, none of them turned on), always answer an agent key with ErrorCode 100012, a `Preview` and a `ConfirmToken` first, and delete nothing. Repeat the identical call with `ConfirmToken` after the person approves. Other API keys are unaffected.
+
+For campaigns, `campaign.copy` accepts only `CampaignID`, `campaign.recipients.get` needs `OnlyTotal=true`, and `campaigns.delete` refuses a campaign that is sending with ErrorCode 100016.
 
 For journeys, `subscribers.journey.bulk` accepts only `Mode=enroll` with `ListID`, `JourneyID` and an optional `SegmentID`, and `subscriber.journey.exit` needs the send permission because finishing a journey can start another. `journey.create`, `journey.update`, `journey.actions.update`, `journey.actions.published`, `journey.copytouser` and `journey.export.*` are refused to agent keys.
 
