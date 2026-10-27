@@ -10,9 +10,9 @@ The connection uses one web address, the **connector URL**, and your normal Octe
 
 ## What the assistant can do
 
-In this release the connection is **read-only**. The assistant can read your data, but it cannot send email, and it cannot create, change or delete anything.
+What an assistant may do depends on the permissions you gave its connection: **read**, **change data** and **send**. A connection with only the read permission can read your data, but it cannot send email, and it cannot create, change or delete anything.
 
-It has these tools:
+Its read tools include:
 
 | Tool | What it reads |
 |---|---|
@@ -27,6 +27,33 @@ It has these tools:
 | `list_journeys` | Your journeys with their trigger and status |
 | `get_journey` | One journey with its actions and statistics |
 | `list_email_templates` | Your saved email templates (name, subject and sender, without the HTML) |
+
+### Lists and custom fields
+
+These tools never send email or SMS.
+
+| Tool | Permission | What it does |
+|---|---|---|
+| `get_lists_overview` | Read | Every list at once, optionally with each list's custom fields, segments, tags and engagement rates |
+| `get_list_analytics` | Read | One report for one list: daily activity, bounce trend, click-through by cohort, engagement tiers, mailbox providers, best send times, subscriber sources, subscriber statuses or how long subscribers have been on the list |
+| `get_list_sms_settings` | Read | A list's SMS settings: the phone number field, the carrier field and whether it holds phone-only contacts |
+| `clone_list` | Change data | Creates an empty copy of a list with its settings and, by default, its custom fields |
+| `archive_list`, `unarchive_list` | Change data | Hides a list from the default list views, or brings it back. Nothing is deleted |
+| `create_custom_field` | Change data | Adds a field to one list: text, long text, number, date, date and time, time, timestamp, dropdown or checkboxes |
+| `update_custom_field` | Change data | Renames a field or changes its default value, visibility, required and unique flags, validation or options |
+| `copy_custom_fields` | Change data | Copies every field of one list to another list |
+| `update_list_sms_settings` | Change data | Sets the phone number field (only on a list that has none yet), the carrier field or the SMS-only flag |
+| `delete_list` | Change data, always confirmed | Deletes a list with all its subscribers |
+| `delete_custom_fields` | Change data, always confirmed | Deletes up to 20 fields with every subscriber's value in them |
+
+**Deleting always asks you first.** When the assistant deletes a list or custom fields, Octeth first answers with a preview of what would be deleted (the list's name and how many subscribers it holds, or the field names and their lists) and deletes nothing. The assistant shows you that preview, and the delete happens only if you approve it. Each approval works once and expires after ten minutes. Deleting does not count against the connection's daily send limit.
+
+Some changes stay in the app, because they could import, send or break live content:
+
+- Copying a list that imports subscribers from an external database on a schedule.
+- Changing the phone number field of a list that already has one, because it changes which number a live SMS campaign texts.
+- Renaming a custom field's merge tag, because every email that uses the old tag would stop personalizing.
+- Creating an account-wide (global) custom field, or a field with a custom validation rule.
 
 The assistant reaches your data through the same rules as the rest of Octeth, so it only ever sees your own account.
 
@@ -214,6 +241,8 @@ Agents that do not use MCP, such as scheduled scripts or bots that call HTTP API
 - `https://<your app domain>/agents/openapi.json` is an OpenAPI 3.1 description of every API command an AI agent key may call, with the permission each one needs and the error codes an agent can receive (100010 to 100016). It is generated from Octeth's own list of agent commands, so it always matches what the API allows.
 
 Neither file contains anything from any account. An agent that calls the API directly authenticates with an agent key you create under **API & webhooks** > **Connected AI assistants**, and is bound by the same permissions, limits and confirmation step as a connector.
+
+Commands that delete data, such as `lists.delete` (at most 10 list IDs) and `customfields.delete` (at most 20 field IDs), always answer an agent key with ErrorCode 100012, a `Preview` and a `ConfirmToken` first, and delete nothing. Repeat the identical call with `ConfirmToken` after the person approves. Other API keys are unaffected.
 
 Your Octeth administrator can turn both files off with `MCP_DISCOVERY_ENABLED=false`, for example when the app domain serves its own `llms.txt`, and can point `llms.txt` at their own help page with `MCP_DISCOVERY_HELP_URL`. The administrator can also turn the connector itself off with `MCP_ENABLED=false`. The connector address then answers "not found", `llms.txt` no longer lists it, and agent keys keep working against the HTTP API.
 
