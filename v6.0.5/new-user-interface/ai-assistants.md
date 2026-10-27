@@ -55,6 +55,25 @@ Some changes stay in the app, because they could import, send or break live cont
 - Renaming a custom field's merge tag, because every email that uses the old tag would stop personalizing.
 - Creating an account-wide (global) custom field, or a field with a custom validation rule.
 
+### Subscribers and tags
+
+| Tool | Permission | What it does |
+|---|---|---|
+| `get_subscriber` | Read | One subscriber by email address or ID: field values, status, tags, segments, journeys, revenue, and the other lists that hold the same address |
+| `search_subscribers` | Read | Finds an email address across all your lists, or the subscribers of one list that match segment-style rules |
+| `browse_subscribers` | Read | One page of a list's subscribers (at most 100): active, unsubscribed, bounced, pending confirmation, suppressed, or a segment's members |
+| `get_subscriber_activity` | Read | One subscriber's history: sends, opens, clicks, bounces, tags and journeys, their website events, or their SMS events |
+| `list_tags` | Read | A list's tags and how many subscribers carry each |
+| `create_tag`, `update_tag` | Change data | Creates tags on a list, or renames one |
+| `delete_tag` | Change data, always confirmed | Deletes a tag and removes it from every subscriber |
+| `delete_subscribers` | Change data, always confirmed | Deletes up to 100 subscribers of one list for good |
+| `tag_subscribers`, `untag_subscribers` | Send | Adds tags to or removes tags from up to 100 subscribers. Can start the journeys that begin on that tag |
+| `optin_subscriber` | Send | Confirms a subscription that is waiting for confirmation, which runs the list's welcome emails and other subscription actions |
+
+Tagging counts as sending because a tag change can start a journey that emails the subscriber. Each tagged subscriber counts as one recipient against the connection's limits, and above your confirmation threshold the assistant shows you a preview first. Deleting subscribers or a tag always asks you first, as for lists, and does not count against the daily send limit.
+
+Some subscriber work stays in the app: exporting subscribers, deleting every subscriber of a list or every subscriber that matches rules, and tagging every subscriber that matches rules.
+
 ### Email campaigns
 
 These tools never send email. Sending a campaign still needs the send permission and `send_campaign_now` or `schedule_campaign`.
@@ -278,7 +297,9 @@ Agents that do not use MCP, such as scheduled scripts or bots that call HTTP API
 
 Neither file contains anything from any account. An agent that calls the API directly authenticates with an agent key you create under **API & webhooks** > **Connected AI assistants**, and is bound by the same permissions, limits and confirmation step as a connector.
 
-Commands that delete data, such as `lists.delete` (at most 10 list IDs), `customfields.delete` (at most 20 field IDs), `campaigns.delete` (at most 20 campaign IDs, none of them sending) and `journeys.delete` (at most 10 journey IDs, none of them turned on), always answer an agent key with ErrorCode 100012, a `Preview` and a `ConfirmToken` first, and delete nothing. Repeat the identical call with `ConfirmToken` after the person approves. Other API keys are unaffected.
+Commands that delete data, such as `lists.delete` (at most 10 list IDs), `customfields.delete` (at most 20 field IDs), `subscribers.delete` (at most 100 subscriber IDs of one list), `subscriber.tags.delete` (at most 20 tag IDs), `campaigns.delete` (at most 20 campaign IDs, none of them sending) and `journeys.delete` (at most 10 journey IDs, none of them turned on), always answer an agent key with ErrorCode 100012, a `Preview` and a `ConfirmToken` first, and delete nothing. Repeat the identical call with `ConfirmToken` after the person approves. Other API keys are unaffected.
+
+For subscribers, `subscriber.tag`, `subscriber.untag` and `subscriber.optin` need the send permission and count one recipient per subscriber.
 
 For campaigns, `campaign.copy` accepts only `CampaignID`, `campaign.recipients.get` needs `OnlyTotal=true`, and `campaigns.delete` refuses a campaign that is sending with ErrorCode 100016.
 
