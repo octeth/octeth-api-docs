@@ -46,6 +46,23 @@ On an installation whose inbound SMTP server has a TLS certificate, a client tha
 
 **Who needs to act:** an SMTP client configured for port 587 with encryption turned off. Turn on STARTTLS (often labelled "TLS" or "STARTTLS" in the client's settings). To keep the old behaviour, set `"TLSRequiredPorts": []` in `_dockerfiles/inbound-smtp-server/config.json` and restart `oempro_emailgateway_inbound_smtp`, which is not recommended. See [requiring STARTTLS on submission ports](/v6.0.5/getting-started/octeth-configuration#inbound-smtp-server-requiring-starttls-on-submission-ports).
 
+### Journeys
+
+#### `journey.action.subscribers` refuses an unknown sort field, sort direction or filter operator
+
+`OrderField`, `OrderType` and `Operator` were placed into the query without a check for every caller except AI agent keys, so a value outside the documented ones produced a database error, or ran as part of the query. They are now checked before the query runs, for every key (octeth/oempro#3790):
+
+- `OrderField` must be a subscriber column (`SubscriberID`, `EmailAddress`, `EmailDomain`, `BounceType`, `SubscriptionStatus`, `SubscriptionDate`, `SubscriptionIP`, `UnsubscriptionDate`, `UnsubscriptionIP`, `OptInDate`, `SubscriptionSource`, `SubscriptionSourceRef`) or `CustomField<ID>`, otherwise error `8`.
+- `OrderType` must be `ASC` or `DESC`, otherwise error `9`.
+- `Operator` must be `AND` or `OR` whenever it is sent, also with a `Filter` array, otherwise error `7`. Before, it was checked only together with `FilterJSON`.
+- A `Filter` array sent instead of `FilterJSON` gets the same item check: an unrecognized item is error `6` (it used to be dropped silently), and a `Filter` that is not an array is error `5`.
+
+Each refusal is a `422` with the codes in the `ErrorCode` list, like the other validation errors of this command. Matching is case-insensitive, so `emailaddress` and `desc` still work.
+
+**Not affected:** every request that uses the documented values, and requests that leave these parameters out or empty. Their responses are unchanged.
+
+**Who needs to act:** an integration that sorts by a column of another table (for example a journey log column) or sends a `Filter` array with items outside the documented list. Use a subscriber column, or remove the unknown filter items.
+
 ## Tier 2: shape and value changes
 
 ### Email Gateway SMTP credentials
@@ -84,6 +101,7 @@ A team member whose role holds `ApiKeys.Manage` (Admin) now sees the value of an
 - [ ] Check that every SMTP client sending through the Email Gateway on port 587 or 2525 uses `STARTTLS`, or it now receives `530 5.7.0` on installations with a certificate.
 - [ ] Optional: reset the password of Email Gateway SMTP credentials created before v6.0.5 and update the clients that use them, since older passwords were derived from IDs and a timestamp.
 - [ ] If a team member with the Admin role was removed before v6.0.5, rotate the account's email gateway sender API keys and reset its SMTP passwords.
+- [ ] Check that calls to `journey.action.subscribers` send `OrderField` as a subscriber column and `Filter` items from the documented list, or they now receive error `8` or `6`.
 - [ ] If AI assistants may not text without a cap, set the SMS limits (`AgentMaxSmsPerDay`, `AgentMaxSmsRecipientsPerSend`, `AgentSmsConfirmAbove`) on each user group.
 
 ---

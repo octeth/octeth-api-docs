@@ -1390,11 +1390,12 @@ curl -X PATCH https://example.com/api/v1/journey.actions.published \
 | JourneyID | Integer | Yes      | ID of the journey                     |
 | ActionID  | Integer | Yes      | ID of the action                      |
 | FilterJSON | String | No       | JSON array of filter items. Each item should be one of: `opened`, `clicked`, `converted`, `browser_viewed`, `forwarded`, `unsubscribed`, `bounced`, `spam_complaint` |
-| Operator  | String  | No       | Filter operator. Possible values: `AND`, `OR`. Only used when `FilterJSON` is provided |
+| Filter    | Array   | No       | The filter items as an array instead of `FilterJSON`, with the same allowed values. Ignored when `FilterJSON` is sent (validated since v6.0.5) |
+| Operator  | String  | No       | Filter operator. Possible values: `AND`, `OR` (any case). Validated whenever it is sent, with `FilterJSON` or `Filter` (changed in v6.0.5) |
 | RecordsPerRequest | Integer | No | Number of records per page (default: 25) |
 | RecordsFrom | Integer | No     | Starting record offset (default: 0)   |
-| OrderField | String | No      | Field to order by (default: EmailAddress) |
-| OrderType | String  | No       | Order direction. Possible values: `ASC`, `DESC` (default: `ASC`) |
+| OrderField | String | No      | Field to order by (default: EmailAddress). One of `SubscriberID`, `EmailAddress`, `EmailDomain`, `BounceType`, `SubscriptionStatus`, `SubscriptionDate`, `SubscriptionIP`, `UnsubscriptionDate`, `UnsubscriptionIP`, `OptInDate`, `SubscriptionSource`, `SubscriptionSourceRef` or `CustomField<ID>`, in any case (allow-listed since v6.0.5) |
+| OrderType | String  | No       | Order direction. Possible values: `ASC`, `DESC` in any case (default: `ASC`, allow-listed since v6.0.5) |
 
 ::: warning `RecordsPerRequest: 0` is not supported here
 `0` is **not** interpreted as "all records" on this command, unlike the admin campaign endpoints. Always pass a positive page size and paginate with `RecordsFrom`.
@@ -1453,9 +1454,11 @@ curl -X GET https://example.com/api/v1/journey.action.subscribers \
 2: Missing ActionID parameter
 3: Invalid JourneyID parameter
 4: Invalid ActionID parameter
-5: Invalid FilterJSON parameter (invalid JSON)
-6: Invalid FilterJSON value (unrecognized filter item)
+5: Invalid FilterJSON parameter (invalid JSON), or Invalid Filter parameter (Filter is not an array)
+6: Invalid FilterJSON value, or Invalid Filter value (unrecognized filter item)
 7: Invalid Operator value
+8: Invalid OrderField value (since v6.0.5)
+9: Invalid OrderType value (since v6.0.5)
 ```
 
 ::: info
