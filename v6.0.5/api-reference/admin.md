@@ -3318,6 +3318,8 @@ curl -X POST https://example.com/api.php \
   "UserID": 42,
   "TeamMembersEnabled": true,
   "RequireMemberTwoFactor": false,
+  "AccountRequiresMemberTwoFactor": false,
+  "MemberTwoFactorRequired": false,
   "Seats": { "Used": 3, "Limit": 5 },
   "Members": [
     {
@@ -3372,6 +3374,8 @@ curl -X POST https://example.com/api.php \
 :::
 
 `Seats.Used` counts members of every status plus pending invitations. `Seats.Limit` is the user group's `LimitTeamMembers`, and `TeamMembersEnabled` is `false` when it is `0`. Times are UTC. `LastLoginAt` is the person's last sign-in to any account.
+
+`RequireMemberTwoFactor` is the user group's requirement for member two-factor authentication. `AccountRequiresMemberTwoFactor` is the account owner's own (set with [`team.settings.update`](/v6.0.5/api-reference/team-members#change-team-settings)), and `MemberTwoFactorRequired` is `true` when either one is. Both are `false` until the database migrations of v6.0.5 have run.
 
 ## Suspend a Customer's Team Member
 

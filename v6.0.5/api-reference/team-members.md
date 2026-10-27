@@ -11,7 +11,7 @@ A team member sign-in has two steps:
 1. `member.login` checks the person's credentials and returns a **person session**: a `SessionID` that can call only the `member.*` commands on this page, for 30 minutes. It cannot act on any account.
 2. `member.switch` picks one of the person's memberships and returns a **member session**: a new `SessionID` that acts as that account through the API, within what the member's role allows (see [Roles](#roles)). The `SessionID` sent to `member.switch` stops working.
 
-A member session is checked on every request. It ends at once, with error `99998` and a `MemberSessionEnded` reason, when the membership is removed, suspended or changed, the person is disabled or changes password, the account is disabled or changes its credentials, team members are turned off for the account's user group, or the user group starts requiring two-factor authentication from members who have none.
+A member session is checked on every request. It ends at once, with error `99998` and a `MemberSessionEnded` reason, when the membership is removed, suspended or changed, the person is disabled or changes password, the account is disabled or changes its credentials, team members are turned off for the account's user group, or the account or its user group starts requiring two-factor authentication from members who have none (see [Team Settings](#team-settings)).
 
 Team members are available for an account only when its user group allows them (`LimitTeamMembers` above 0). The account's own sign-in with `user.login` is not affected and keeps working as before. Team members cannot sign in to the legacy user area.
 
@@ -63,7 +63,7 @@ An invitation can grant Admin, Manager, Author or Viewer. The account owner is a
 | `Audience.Manage` | Lists, custom fields, list integrations, subscribers (create, update, unsubscribe, delete, import, tags), suppression lists |
 | `Data.Export` | Subscriber, campaign, journey, SMS and email gateway event exports |
 | `Plugins.Manage` | Plugin commands that do not declare a role permission of their own |
-| `Team.Manage` | Inviting, changing and removing team members |
+| `Team.Manage` | Inviting, changing and removing team members, and requiring two-factor authentication from them (only the account owner can stop requiring it) |
 | `Account.Settings` | Account settings, integrations, scheduled reports, and `user.logout` with `TargetSessionHashes` (signing out other sessions of the account) |
 | `ApiKeys.Manage` | User API keys and AI agent keys, email gateway sender API keys and SMTP credentials |
 | `SenderDomains.Manage` | Adding, changing, verifying and deleting sender domains, DNS provider setup |
@@ -88,7 +88,7 @@ A command marked (read) changes nothing. Commands authorized only for administra
 | Automation.Manage | `autoresponder.create`, `autoresponder.update`, `autoresponder.duplicate`, `autoresponder.sendtest`, `autoresponders.copy`, `autoresponders.delete`, `journey.create`, `journey.clone`, `journey.update`, `journey.actions.update`, `journey.actions.published`, `journey.delete`, `journey.disable`, `journeys.delete`, `journeys.disable`, `journeys.clone`, `subscriber.journey.remove`, `subscriber.journey.exit` |
 | Audience.Manage | `suppression.delete`, `suppression.import`, `smssuppression.add`, `smssuppression.delete`, `smssuppression.patterns.add`, `smssuppression.patterns.delete`, `list.create`, `list.clone`, `list.update`, `list.archive`, `list.unarchive`, `lists.delete`, `list.sms.settings.update`, `customfield.create`, `customfield.update`, `customfields.copy`, `customfields.delete`, `listintegration.addurl`, `listintegration.deleteurls`, `listintegration.testurl`, `subscriber.create`, `subscriber.update`, `subscriber.unsubscribe`, `subscribers.delete`, `subscribers.delete.all`, `subscribers.import`, `subscribers.import.post`, `subscribers.import.prepare`, `subscriber.tags.create`, `subscriber.tags.update`, `subscriber.tags.delete`, `subscriber.tag`, `subscriber.untag`, `event.track` |
 | Data.Export | `emailgateway.exportevents`, `subscribers.export.post`, `subscribers.export.get` (read), `campaigns.export.post`, `campaigns.export.get` (read), `journey.export.submit`, `journey.export.get` (read), `smscampaign.events.export.post`, `smscampaign.events.export.get` (read) |
-| Team.Manage | `team.member.list` (read), `team.invitation.list` (read), `team.member.invite`, `team.member.update`, `team.member.remove`, `team.invitation.resend`, `team.invitation.revoke` |
+| Team.Manage | `team.member.list` (read), `team.invitation.list` (read), `team.settings.get` (read), `team.member.invite`, `team.member.update`, `team.member.remove`, `team.invitation.resend`, `team.invitation.revoke`, `team.settings.update` |
 | Account.Settings | `user.emailcontent.update`, `user.integrations.keitaro.get` (read), `user.integrations.keitaro.update`, `user.integrations.keitaro.test`, `user.integrations.keitaro.disconnect`, `user.integrations.keitaro.token.regenerate`, `automated_reports.create`, `automated_reports.update`, `automated_reports.delete`, `automated_reports.toggle` |
 | ApiKeys.Manage | `user.apikey.list` (read), `user.apikey.create`, `user.apikey.update`, `user.apikey.delete`, `emailgateway.getapis` (read), `emailgateway.getsmtps` (read), `emailgateway.addapi`, `emailgateway.deleteapi`, `emailgateway.replaceapi`, `emailgateway.addsmtp`, `emailgateway.deletesmtp`, `emailgateway.resetsmtppassword` |
 | SenderDomains.Manage | `user.senderdomain.create`, `user.senderdomain.update`, `user.senderdomain.delete`, `user.senderdomain.verify`, `user.senderdomain.sendtest`, `dns.authorize`, `dns.set`, `emailgateway.adddomain`, `emailgateway.updatedomain`, `emailgateway.verifydomain`, `emailgateway.deletedomain`, `emailgateway.cleardomainqueue` |
@@ -193,7 +193,7 @@ curl -X POST https://example.com/api.php \
 
 :::
 
-`PersonSessionExpiresAt` is in UTC. `Memberships` lists only active memberships in accounts that allow team members. `CanSwitch` is `false` when the account requires two-factor authentication and the person has none yet. Dates in `Person` are UTC.
+`PersonSessionExpiresAt` is in UTC. `Memberships` lists only active memberships in accounts that allow team members. `TwoFactorRequired` is `true` when the account or its user group requires two-factor authentication from members (see [Team Settings](#team-settings)), and `CanSwitch` is then `false` until the person has it. Dates in `Person` are UTC.
 
 ## List Member Accounts
 
@@ -709,7 +709,7 @@ The account owner (the account's own session or a user API key the owner created
 
 **Accepting.** The invited person opens the link. A person who is new to team members chooses a password. A person who already signs in as a team member, for another account, accepts with their existing password, or while signed in. The email address of the person and of the invitation must be the same (case does not matter). When the account requires two-factor authentication from members, the person is asked to set it up on their first switch into the account.
 
-Seats per account come from the user group (`LimitTeamMembers` on `usergroup.create`, `usergroup.update` and `usergroup.patch`), and a group can require two-factor authentication from every member (`RequireMemberTwoFactor`). Staff can list, suspend and remove the members of any customer account with the admin commands in [Team Members (Staff)](/v6.0.5/api-reference/admin#team-members-staff).
+Seats per account come from the user group (`LimitTeamMembers` on `usergroup.create`, `usergroup.update` and `usergroup.patch`), and a group can require two-factor authentication from every member (`RequireMemberTwoFactor`). The account owner can require it for the account alone with `team.settings.update` (see [Team Settings](#team-settings)). Staff can list, suspend and remove the members of any customer account with the admin commands in [Team Members (Staff)](/v6.0.5/api-reference/admin#team-members-staff).
 
 ## List Team Members
 
@@ -1243,7 +1243,7 @@ Accepts an invitation and adds the membership. The person's email address must b
 2. **New person.** Without a session, send a `Password` (8 characters to 72 bytes): the team member is created with it.
 3. **Existing person.** Without a session, send the person's current `Password`. A person with two-factor authentication on answers error `15`: sign in with `member.login` first and send that `SessionID`.
 
-Accepting does not sign the person in: sign in with `member.login` (or `member.switch` from an existing session) next. When the account requires two-factor authentication from members, `TwoFactorRequired` is `true` and `member.switch` asks the person to enrol first. The inviting member, or the account owner when the owner invited, gets an email that the invitation was accepted.
+Accepting does not sign the person in: sign in with `member.login` (or `member.switch` from an existing session) next. When the account requires two-factor authentication from members (the account's or its user group's setting, see [Team Settings](#team-settings)), `TwoFactorRequired` is `true` and `member.switch` asks the person to enrol first. The inviting member, or the account owner when the owner invited, gets an email that the invitation was accepted.
 
 **Request Body Parameters:**
 
@@ -1309,6 +1309,130 @@ curl -X POST https://example.com/api/v1/team.invitation.accept \
 ```
 
 :::
+
+## Team Settings
+
+<Badge type="tip" text="New in v6.0.5" />
+
+The account owner can require two-factor authentication from every team member of the account. Members whose role holds `Team.Manage` (Admin) can turn the requirement on, but only the account owner can turn it off, so an Admin cannot weaken the owner's policy. The account's user group can require it too (`RequireMemberTwoFactor` on `usergroup.create`, `usergroup.update` and `usergroup.patch`): when the group requires it, members need two-factor authentication whatever the account setting says.
+
+While the requirement is on, a member without two-factor authentication is refused `member.switch` with error `100020` and is asked to enrol, and an open session of such a member ends on its next request with error `99998` and `MemberSessionEnded` `two_factor_required`. The account owner's own sign-in is not affected.
+
+## Get Team Settings
+
+<Badge type="info" text="GET" /> `/api/v1/team.settings.get`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- Authentication required: User API Key, or a session of the account owner or of a member whose role holds `Team.Manage`
+- v1 REST alias: `GET /api/v1/team.settings.get`. Legacy access via `/api.php` is also supported
+:::
+
+Returns whether team members of the account must use two-factor authentication, and why.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `team.settings.get` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET "https://example.com/api/v1/team.settings.get" \
+  -H "Content-Type: application/json" \
+  -d '{"SessionID": "your-session-id"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "AccountRequiresMemberTwoFactor": true,
+  "GroupRequiresMemberTwoFactor": false,
+  "MemberTwoFactorRequired": true
+}
+```
+
+```txt [Error Codes]
+0: Success
+7: Team members are not available on this installation
+8: Team settings are not available until the database migrations of this version have run
+100021: The member's role does not allow this command
+```
+
+:::
+
+`AccountRequiresMemberTwoFactor` is the account's own setting, `GroupRequiresMemberTwoFactor` is the user group's, and `MemberTwoFactorRequired` is `true` when either one is.
+
+## Change Team Settings
+
+<Badge type="info" text="POST" /> `/api/v1/team.settings.update`
+
+<Badge type="tip" text="New in v6.0.5" />
+
+::: tip API Usage Notes
+- Authentication required: User API Key, or a session of the account owner or of a member whose role holds `Team.Manage`
+- v1 REST alias: `POST /api/v1/team.settings.update`. Legacy access via `/api.php` is also supported
+- Only the account owner can send `RequireMemberTwoFactor` `No`
+:::
+
+Turns the account's requirement for team member two-factor authentication on or off. Turning it on signs out, on their next request, every member who has no two-factor authentication. The change is recorded in the [account audit log](#account-audit-log).
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `team.settings.update` |
+| RequireMemberTwoFactor | String | Yes | `Yes` requires two-factor authentication from every team member of the account. `No` stops requiring it (account owner only). When the user group requires it, `No` leaves the requirement in place |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/team.settings.update \
+  -H "Content-Type: application/json" \
+  -d '{
+    "SessionID": "your-session-id",
+    "RequireMemberTwoFactor": "Yes"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "AccountRequiresMemberTwoFactor": true,
+  "GroupRequiresMemberTwoFactor": false,
+  "MemberTwoFactorRequired": true,
+  "Changed": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Only the account owner can stop requiring two-factor authentication from team members"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: RequireMemberTwoFactor is missing
+2: RequireMemberTwoFactor is not Yes or No
+3: Only the account owner can turn the requirement off
+7: Team members are not available on this installation
+8: Team settings are not available until the database migrations of this version have run
+99: The team settings could not be saved
+100021: The member's role does not allow this command
+```
+
+:::
+
+The response carries the same fields as `team.settings.get`, plus `Changed`, which is `false` when the account already had the value sent.
 
 ## Account Audit Log
 

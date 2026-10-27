@@ -51,7 +51,7 @@ Sign in on the usual sign-in page with your email address and password.
 
 - If you belong to one account, it opens straight away.
 - If you belong to several, choose one from the list.
-- If the account requires two-factor authentication and you have not set it up, Octeth asks you to set it up first: scan the QR code with an authenticator app, save the recovery key, and enter the code.
+- If the account requires two-factor authentication (set by the account owner or by your plan) and you have not set it up, Octeth asks you to set it up first: scan the QR code with an authenticator app, save the recovery key, and enter the code.
 
 Forgot your password? Use **Forgot password?** on the sign-in page. We email you a link to choose a new one. If that page says password reset is turned off, click **Reset your team member password** below the notice: your team member password is yours, so you can always reset it.
 
@@ -82,6 +82,20 @@ When you remove a member who created API keys or AI assistant keys, the dialog l
 - **Revoke** deletes the key.
 - **Keep as my key** (account owner only) keeps the key working as the owner's own key. The removed person may still have it, so only keep a key you trust.
 - **Leave, refused** keeps the key but every call with it is refused until you delete it under **API & webhooks**.
+
+## Require two-factor authentication
+
+You can make two-factor authentication mandatory for every team member of the account.
+
+1. Open **Team**, then **Members** in the left menu.
+2. Under **Security**, turn on **Require two-factor authentication for every team member**.
+3. The dialog says how many active members do not use two-factor authentication yet. Click **Require it**.
+
+Members without two-factor authentication are signed out of the account at once. The next time they switch into it, Octeth asks them to set it up first. Members who already use it are not affected, and neither is the account owner's own sign-in.
+
+- The account owner and Admin members can turn the requirement on. Only the account owner can turn it off.
+- If your plan already requires two-factor authentication from team members, the switch stays on and cannot be turned off here.
+- The change is recorded in the audit log with the person who made it.
 
 ## The audit log
 
