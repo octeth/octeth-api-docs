@@ -55,6 +55,24 @@ Some changes stay in the app, because they could import, send or break live cont
 - Renaming a custom field's merge tag, because every email that uses the old tag would stop personalizing.
 - Creating an account-wide (global) custom field, or a field with a custom validation rule.
 
+### Journeys
+
+| Tool | Permission | What it does |
+|---|---|---|
+| `get_journey_stats` | Read | How a journey performs, per email step or per mailbox provider, over up to 366 days: sends, deliveries, opens, clicks, bounces, unsubscriptions, complaints and revenue |
+| `get_journey_action_subscribers` | Read | The subscribers an email step reached, optionally only those who opened, clicked, converted, unsubscribed, bounced or complained |
+| `list_subscriber_journeys` | Read | The journeys one subscriber has been enrolled in |
+| `clone_journey` | Change data | Copies a journey with its trigger and steps. The copy is always turned off |
+| `delete_journeys` | Change data, always confirmed | Deletes up to 10 journeys with their steps and history. A journey that is turned on is refused until the assistant turns it off with `disable_journey` |
+| `exit_subscriber_from_journey` | Send | Takes one subscriber out of a journey. Exit finishes the journey for them, which starts any journey that begins when this one is completed. Remove deletes their enrolment and starts nothing |
+| `trigger_subscribers_into_journey` | Send | Puts every subscriber of a list, or of one segment, into a journey that is turned on. Counts against the connection's send limits by the number of subscribers |
+
+**Deleting a journey always asks you first.** The preview names each journey, its status and trigger, and how many subscribers are still in it. Nothing is deleted until you approve.
+
+**Putting many subscribers into a journey is a send.** Octeth counts the list or segment before it starts, so the connection's per-send recipient limit and confirmation threshold apply to the whole audience.
+
+Building or changing a journey's steps, publishing steps, copying a journey to another account and exporting journey data stay in the app.
+
 The assistant reaches your data through the same rules as the rest of Octeth, so it only ever sees your own account.
 
 ## Before you start
@@ -242,7 +260,9 @@ Agents that do not use MCP, such as scheduled scripts or bots that call HTTP API
 
 Neither file contains anything from any account. An agent that calls the API directly authenticates with an agent key you create under **API & webhooks** > **Connected AI assistants**, and is bound by the same permissions, limits and confirmation step as a connector.
 
-Commands that delete data, such as `lists.delete` (at most 10 list IDs) and `customfields.delete` (at most 20 field IDs), always answer an agent key with ErrorCode 100012, a `Preview` and a `ConfirmToken` first, and delete nothing. Repeat the identical call with `ConfirmToken` after the person approves. Other API keys are unaffected.
+Commands that delete data, such as `lists.delete` (at most 10 list IDs), `customfields.delete` (at most 20 field IDs) and `journeys.delete` (at most 10 journey IDs, none of them turned on), always answer an agent key with ErrorCode 100012, a `Preview` and a `ConfirmToken` first, and delete nothing. Repeat the identical call with `ConfirmToken` after the person approves. Other API keys are unaffected.
+
+For journeys, `subscribers.journey.bulk` accepts only `Mode=enroll` with `ListID`, `JourneyID` and an optional `SegmentID`, and `subscriber.journey.exit` needs the send permission because finishing a journey can start another. `journey.create`, `journey.update`, `journey.actions.update`, `journey.actions.published`, `journey.copytouser` and `journey.export.*` are refused to agent keys.
 
 Your Octeth administrator can turn both files off with `MCP_DISCOVERY_ENABLED=false`, for example when the app domain serves its own `llms.txt`, and can point `llms.txt` at their own help page with `MCP_DISCOVERY_HELP_URL`. The administrator can also turn the connector itself off with `MCP_ENABLED=false`. The connector address then answers "not found", `llms.txt` no longer lists it, and agent keys keep working against the HTTP API.
 
