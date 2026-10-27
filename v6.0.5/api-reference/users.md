@@ -1063,6 +1063,9 @@ curl -X POST https://example.com/api.php \
 | AgentMaxRecipientsPerSend | Integer | No | Agent keys only. Recipients one send may reach. `0` means no key-level limit |
 | AgentMaxImportRows | Integer | No | Agent keys only. Rows one subscriber import may carry. `0` means no limit |
 | AgentConfirmAbove | Integer | No | Agent keys only. A send to more recipients than this returns a confirmation request first. `0` means no key-level confirm step |
+| AgentMaxSmsPerDay | Integer | No | Agent keys only. SMS recipients the key may reach per UTC day. `0` (default) means no key-level limit. Added in v6.0.5 |
+| AgentMaxSmsRecipientsPerSend | Integer | No | Agent keys only. SMS recipients one send may reach. `0` means no key-level limit. Added in v6.0.5 |
+| AgentSmsConfirmAbove | Integer | No | Agent keys only. An SMS send to more recipients than this returns a confirmation request first. `0` means no key-level confirm step. Added in v6.0.5 |
 
 ::: code-group
 
@@ -1120,7 +1123,7 @@ curl -X POST https://example.com/api/v1/user.apikey \
 | LastUsedIP     | String \| null   | Client IP recorded at last use, `null` if never used. |
 | RequestCount   | Integer          | Lifetime number of authentications with this key (always `0` for a freshly created key). |
 
-**Agent keys:** when `IsAgentKey` is `true`, the `APIKey` object also carries `"IsAgentKey": true` and an `Agent` object: `Scopes` (array), `SendsPerDay`, `MaxRecipientsPerSend`, `MaxImportRows` and `ConfirmAbove`. See [AI agent keys](#ai-agent-keys) for how they are enforced.
+**Agent keys:** when `IsAgentKey` is `true`, the `APIKey` object also carries `"IsAgentKey": true` and an `Agent` object: `Scopes` (array), `SendsPerDay`, `MaxRecipientsPerSend`, `MaxImportRows`, `ConfirmAbove`, and since v6.0.5 `SMSPerDay`, `SMSMaxRecipientsPerSend` and `SMSConfirmAbove`. See [AI agent keys](#ai-agent-keys) for how they are enforced.
 
 ::: info Counter semantics
 `RequestCount` and `LastUsedAt` are bumped each time the key is used to start a session via `User.Login` (with the `APIKey` parameter). They do **not** count every individual REST request made within a session. Once a client has a `SessionID`, subsequent calls authenticate with session credentials and do not re-touch the API key. Treat `RequestCount` as "how many times has this integration checked in?", which is what an operator cares about when answering "is this key still in use anywhere?".
@@ -1252,7 +1255,7 @@ No specific error codes for this endpoint
 | LastUsedIP     | String \| null   | Client IP recorded at last use (IPv4 or IPv6), `null` if never used. |
 | RequestCount   | Integer          | Lifetime number of authentications with this key. See counter semantics on the Create endpoint above. |
 | IsAgentKey     | Boolean          | Present, and `true`, only on AI agent keys. Added in v6.0.2 |
-| Agent          | Object           | Present only on AI agent keys: `Scopes`, `SendsPerDay`, `MaxRecipientsPerSend`, `MaxImportRows`, `ConfirmAbove`. Rows of ordinary keys are unchanged. Added in v6.0.2 |
+| Agent          | Object           | Present only on AI agent keys: `Scopes`, `SendsPerDay`, `MaxRecipientsPerSend`, `MaxImportRows`, `ConfirmAbove`, and since v6.0.5 `SMSPerDay`, `SMSMaxRecipientsPerSend`, `SMSConfirmAbove`. Rows of ordinary keys are unchanged. Added in v6.0.2 |
 
 :::
 
@@ -1283,6 +1286,9 @@ Changes the scopes and budgets of an AI agent key. Only agent keys have settings
 | AgentMaxRecipientsPerSend | Integer | No | Recipients per send, `0` for no key-level limit |
 | AgentMaxImportRows | Integer | No | Rows per import, `0` for no limit |
 | AgentConfirmAbove | Integer | No | Confirm sends above this many recipients, `0` for no key-level confirm step |
+| AgentMaxSmsPerDay | Integer | No | SMS recipients per UTC day, `0` for no key-level limit. Added in v6.0.5 |
+| AgentMaxSmsRecipientsPerSend | Integer | No | SMS recipients per send, `0` for no key-level limit. Added in v6.0.5 |
+| AgentSmsConfirmAbove | Integer | No | Confirm SMS sends above this many recipients, `0` for no key-level confirm step. Added in v6.0.5 |
 | MarkAsAgentKey | Boolean | No | `true` first turns an ordinary key into a read-only agent key, then applies any settings sent with it. It can only narrow a key. The built-in MCP connector uses it to convert keys it created before v6.0.2 |
 
 Omitted parameters keep their stored value.
@@ -1339,6 +1345,8 @@ curl -X POST https://example.com/api/v1/user.apikey.update \
 <Badge type="info" text="GET" /> `/api/v1/user.agentpolicy`
 
 Returns the AI agent policy the service provider set on the account's user group. Called with an AI agent key, it also returns that key's effective limits under `Effective`, so an agent can learn its limits before it reaches one. A limit of `0` means no limit.
+
+Since v6.0.5 the response also carries the group's SMS limits (`MaxSmsPerDay`, `MaxSmsRecipientsPerSend`, `SmsConfirmAbove`), and for an agent key `Effective` adds `SMSPerDay`, `SMSMaxRecipientsPerSend` and `SMSConfirmAbove`. SMS sends count against these and never against the email limits.
 
 ::: tip API Usage Notes
 - Authentication required: User API Key, SessionID or AI agent key
@@ -1408,8 +1416,10 @@ An API key created with `IsAgentKey` belongs to an AI agent: a connection approv
 - **Deleting an email.** An agent key can delete only an email it created itself with `Email.Create` in the last 15 minutes that no campaign (drafts included), A/B test, autoresponder, list opt-in confirmation or journey uses. Any other `Email.Delete` is refused with `ErrorCode 100010` and `RequiredScope: none`. It lets a tool that created an email and then failed remove what it left behind.
 - **Dry run.** Send `AgentDryRun=1` with any command to run every agent check above (allow-list, scope, refused parameters, ownership, import row cap) without running the command. A request that passes answers `Success: true` and `AgentDryRun: true` and changes nothing. The daily send budget, the recipients cap and the confirm step are not checked. Keys created without `IsAgentKey` ignore the parameter, so the command runs.
 - **One command per request.** When the `Command` parameter and the `/api/v1/<alias>` route name two different commands, an agent key is refused with `ErrorCode 100015` (HTTP 403).
-- **Effective policy.** The key's own settings capped by the user group's AI agent policy (`AgentAccess`, `AgentMaxSendsPerDay`, `AgentMaxRecipientsPerSend`, `AgentConfirmAbove`), taking the stricter non-zero limit of the two.
+- **Effective policy.** The key's own settings capped by the user group's AI agent policy (`AgentAccess`, `AgentMaxSendsPerDay`, `AgentMaxRecipientsPerSend`, `AgentConfirmAbove`, and the SMS limits `AgentMaxSmsPerDay`, `AgentMaxSmsRecipientsPerSend`, `AgentSmsConfirmAbove`), taking the stricter non-zero limit of the two.
 - **Budgets.** A send above the recipients cap, the daily send budget, or an import above the row cap is refused with `ErrorCode 100011` (HTTP 429), naming `Budget`, `Limit` and `Usage`. These are hard limits that no confirmation can exceed. Recipients are counted before the command runs and the count is an upper bound: for a campaign, the current size of every included list and segment, with exclusions ignored. When a count cannot be made (enabling a journey, or a list or segment count that fails) and a recipients cap or a confirm threshold applies, the command is refused with `ErrorCode 100011` and `Usage: null`, because neither limit could be honoured. `Campaign.Update` checks the audience it is about to set before it changes anything.
+- **SMS budget.** The SMS delivery commands (`SMSCampaign.Send`, `SMSCampaign.Schedule`, `SMSCampaign.Resume`, `SMSCampaign.Test`, `SMS.Send`, `SMS.TestNumber.Add`) count against separate SMS limits and never against the email ones: `SMSPerDay` (SMS recipients per UTC day, not sends), `SMSMaxRecipientsPerSend` and `SMSConfirmAbove`. A send is counted with its recipients: for `SMSCampaign.Send` and `.Schedule` the sendable recipients of the confirmed estimate, for `.Resume` the confirmed recipients not yet sent, and one for the others. Refusals answer `ErrorCode 100011` with `Budget` `SMSPerDay`, `SMSMaxRecipientsPerSend` or `SMSConfirmAbove`, and a send above `SMSConfirmAbove` answers `ErrorCode 100012` with a `Preview` that includes the projected cost. When the SMS recipients cannot be counted and any SMS limit applies, the send is refused with `Usage: null`. On the SMS commands that change data or deliver, only the parameters their tools use are accepted, and `AcknowledgeCost` on `SMSCampaign.Resume` is refused: a campaign paused because its cost drifted is resumed by a person in the app.
+- **Always confirmed.** `SMSCampaign.Delete` and `SMSTemplate.Delete` (write) and `SMSSuppression.Delete` (send, one `SuppressionID` at a time) always answer `ErrorCode 100012` with a `Preview` and a `ConfirmToken` first and change nothing. `SMSSuppression.Delete` spends no SMS budget.
 - **Confirm step.** A send to more recipients than the confirm threshold returns `ErrorCode 100012` (HTTP 409) with `ConfirmationRequired`, a `Preview` and a single-use `ConfirmToken` valid for ten minutes. Repeating the identical request with `ConfirmToken` runs it. A reused, expired or mismatched token (any changed parameter) answers `ErrorCode 100013`.
 - **One credential.** An agent key combined with a `SessionID` or an `AdminAPIKey` is refused with `ErrorCode 100014`.
 
@@ -1417,9 +1427,9 @@ Commands an AI agent key can call:
 
 | Scope | Commands |
 |---|---|
-| `read` | `User.Current`, `User.AgentPolicy.Get`, `Lists.Get`, `List.Get`, `CustomFields.Get`, `Subscriber.Get`, `Segments.Get`, `UserEmailTemplates.Get`, `UserEmailTemplate.Get`, `UserEmailTemplate.Preview`, `Email.Get`, `Email.SpamTest`, `Campaigns.Get`, `Campaign.Get`, `Journey.List`, `Journey.Get`, `EmailGateway.GetDomains`, `EmailGateway.GetDomain`, `EmailGateway.GetEvents`, `EmailGateway.GetWebhooks` (without `SigningKey`, URLs masked), `Suppression.Browse` |
-| `write` | `List.Create`, `List.Update`, `Segment.Create`, `Segment.Update`, `UserEmailTemplate.Create`, `UserEmailTemplate.Update`, `Email.Create`, `Email.Delete`, `Email.Update`, `Campaign.Create`, `Campaign.Update`, `Campaign.Pause`, `Campaign.Cancel`, `Journey.Disable`, `EmailGateway.AddDomain` (`DomainName` only), `EmailGateway.VerifyDomain`, `EmailGateway.AddWebhook`, `EmailGateway.DeleteWebhook`, `EmailGateway.TestWebhook` |
-| `send` | `Subscriber.Create`, `Subscriber.Update`, `Subscriber.Unsubscribe`, `Subscribers.Import`, `Subscribers.Import.Post`, `Email.EmailPreview` (sends a real test email to one address), `Campaign.Resume`, `Journey.Enable`, `Subscriber.Journey.Trigger`, `EmailGateway.SendEmail` (explicit recipients only; To, CC and BCC count as recipients), `Suppression.Delete` (one `EmailAddress` at a time; always asks for confirmation and does not count against the daily send budget) |
+| `read` | `User.Current`, `User.AgentPolicy.Get`, `Lists.Get`, `List.Get`, `CustomFields.Get`, `Subscriber.Get`, `Segments.Get`, `UserEmailTemplates.Get`, `UserEmailTemplate.Get`, `UserEmailTemplate.Preview`, `Email.Get`, `Email.SpamTest`, `Campaigns.Get`, `Campaign.Get`, `Journey.List`, `Journey.Get`, `EmailGateway.GetDomains`, `EmailGateway.GetDomain`, `EmailGateway.GetEvents`, `EmailGateway.GetWebhooks` (without `SigningKey`, URLs masked), `Suppression.Browse`, `SMSCampaign.Browse`, `SMSCampaign.Get`, `SMSCampaign.Summary.Get`, `SMSCampaign.Audience.Count`, `SMSCampaign.Estimate.Get`, `SMSCampaign.Test.Preview`, `SMSCampaign.Stats`, `SMSCampaign.Stats.Breakdown`, `SMSCampaign.Stats.Timeseries`, `SMSCampaign.LinkClicks.Get`, `SMSCampaign.Events.Browse`, `SMSCampaign.Recipients.Browse`, `SMSCampaign.Replies.Browse`, `SMSTemplate.Browse`, `SMSTemplate.Get`, `SMS.Stats.Account`, `SMS.MergeTags.Get`, `SMS.Replies.Browse`, `SMS.Gateways.Get`, `SMS.TestNumbers.Get`, `SMSSuppression.Browse`, `SMSSuppression.Stats` |
+| `write` | `List.Create`, `List.Update`, `Segment.Create`, `Segment.Update`, `UserEmailTemplate.Create`, `UserEmailTemplate.Update`, `Email.Create`, `Email.Delete`, `Email.Update`, `Campaign.Create`, `Campaign.Update`, `Campaign.Pause`, `Campaign.Cancel`, `Journey.Disable`, `EmailGateway.AddDomain` (`DomainName` only), `EmailGateway.VerifyDomain`, `EmailGateway.AddWebhook`, `EmailGateway.DeleteWebhook`, `EmailGateway.TestWebhook`, `SMSCampaign.Create`, `SMSCampaign.Update`, `SMSCampaign.Rename`, `SMSCampaign.Copy`, `SMSCampaign.Delete` (always confirmed), `SMSCampaign.Estimate`, `SMSCampaign.Pause`, `SMSCampaign.Cancel`, `SMSTemplate.Create`, `SMSTemplate.Update`, `SMSTemplate.Delete` (always confirmed), `SMS.TestNumber.Verify`, `SMSSuppression.Add` |
+| `send` | `Subscriber.Create`, `Subscriber.Update`, `Subscriber.Unsubscribe`, `Subscribers.Import`, `Subscribers.Import.Post`, `Email.EmailPreview` (sends a real test email to one address), `Campaign.Resume`, `Journey.Enable`, `Subscriber.Journey.Trigger`, `EmailGateway.SendEmail` (explicit recipients only; To, CC and BCC count as recipients), `Suppression.Delete` (one `EmailAddress` at a time; always asks for confirmation and does not count against the daily send budget), `SMSCampaign.Send`, `SMSCampaign.Schedule`, `SMSCampaign.Resume`, `SMSCampaign.Test`, `SMS.Send`, `SMS.TestNumber.Add` (each counted against the SMS budget), `SMSSuppression.Delete` (one `SuppressionID`; always confirmed, spends no SMS budget) |
 
 `UserEmailTemplate.Preview` renders a template without sending anything, and `Email.SpamTest` scores an email without delivering it. `Email.EmailPreview` delivers a real email, so it needs `send` and counts as one recipient.
 
@@ -1795,6 +1805,9 @@ curl -X GET https://example.com/api/v1/users.status \
 | AgentMaxSendsPerDay | Integer | No | Sends per UTC day for each AI agent key of the group, `0` for no limit. Added in v6.0.2 |
 | AgentMaxRecipientsPerSend | Integer | No | Recipients one AI agent send may reach, `0` for no limit. Added in v6.0.2 |
 | AgentConfirmAbove | Integer | No | An AI agent send to more recipients than this needs a confirm token, `0` for no group-level confirm step. Added in v6.0.2 |
+| AgentMaxSmsPerDay | Integer | No | SMS recipients per UTC day for each AI agent key of the group, `0` for no limit. Added in v6.0.5 |
+| AgentMaxSmsRecipientsPerSend | Integer | No | SMS recipients one send of an AI agent key may reach, `0` for no limit. Added in v6.0.5 |
+| AgentSmsConfirmAbove | Integer | No | An agent key's SMS send to more recipients than this needs a confirm token, `0` for no group-level confirm step. Added in v6.0.5 |
 | ScreeningSignupThreshold | Integer | No | Signup screening score (0 to 100) at or above which a new account is flagged or held, `0` turns signup screening off. Omit to keep the stored value (default `50`). Added in v6.0.2 |
 | ScreeningSignupMode | String | No | Possible values: `off` (no signup is screened), `flag` (default, record only), `hold` (an account that took the default reputation stays `Untrusted`). Added in v6.0.2 |
 | ScreeningImportThreshold | Integer | No | List import screening threshold (0 to 100), `0` turns it off. Default `50`. Added in v6.0.2 |
@@ -1914,6 +1927,9 @@ curl -X POST https://example.com/api.php \
 | AgentMaxSendsPerDay | Integer | No | Sends per UTC day for each AI agent key of the group, `0` for no limit. Added in v6.0.2 |
 | AgentMaxRecipientsPerSend | Integer | No | Recipients one AI agent send may reach, `0` for no limit. Added in v6.0.2 |
 | AgentConfirmAbove | Integer | No | An AI agent send to more recipients than this needs a confirm token, `0` for no group-level confirm step. Added in v6.0.2 |
+| AgentMaxSmsPerDay | Integer | No | SMS recipients per UTC day for each AI agent key of the group, `0` for no limit. Added in v6.0.5 |
+| AgentMaxSmsRecipientsPerSend | Integer | No | SMS recipients one send of an AI agent key may reach, `0` for no limit. Added in v6.0.5 |
+| AgentSmsConfirmAbove | Integer | No | An agent key's SMS send to more recipients than this needs a confirm token, `0` for no group-level confirm step. Added in v6.0.5 |
 | ScreeningSignupThreshold | Integer | No | Signup screening score (0 to 100) at or above which a new account is flagged or held, `0` turns signup screening off. Omit to keep the stored value (default `50`). Added in v6.0.2 |
 | ScreeningSignupMode | String | No | Possible values: `off` (no signup is screened), `flag` (default, record only), `hold` (an account that took the default reputation stays `Untrusted`). Added in v6.0.2 |
 | ScreeningImportThreshold | Integer | No | List import screening threshold (0 to 100), `0` turns it off. Default `50`. Added in v6.0.2 |
@@ -2084,6 +2100,9 @@ The only safe way to change a single value through `usergroup.update` is to read
 | AgentMaxSendsPerDay | Integer | No | Sends per UTC day for each AI agent key of the group, `0` for no limit. Added in v6.0.2 |
 | AgentMaxRecipientsPerSend | Integer | No | Recipients one AI agent send may reach, `0` for no limit. Added in v6.0.2 |
 | AgentConfirmAbove | Integer | No | An AI agent send to more recipients than this needs a confirm token, `0` for no group-level confirm step. Added in v6.0.2 |
+| AgentMaxSmsPerDay | Integer | No | SMS recipients per UTC day for each AI agent key of the group, `0` for no limit. Added in v6.0.5 |
+| AgentMaxSmsRecipientsPerSend | Integer | No | SMS recipients one send of an AI agent key may reach, `0` for no limit. Added in v6.0.5 |
+| AgentSmsConfirmAbove | Integer | No | An agent key's SMS send to more recipients than this needs a confirm token, `0` for no group-level confirm step. Added in v6.0.5 |
 | ScreeningSignupThreshold | Integer | No | Signup screening score (0 to 100) at or above which a new account is flagged or held, `0` turns signup screening off. Omit to keep the stored value (default `50`). Added in v6.0.2 |
 | ScreeningSignupMode | String | No | Possible values: `off` (no signup is screened), `flag` (default, record only), `hold` (an account that took the default reputation stays `Untrusted`). Added in v6.0.2 |
 | ScreeningImportThreshold | Integer | No | List import screening threshold (0 to 100), `0` turns it off. Default `50`. Added in v6.0.2 |
@@ -2340,7 +2359,7 @@ The group fields are an allow-list: every other existing field is returned as be
 :::
 
 ::: tip New fields (v6.0.2)
-The `UserGroup` object now also carries the AI agent policy (`AgentAccess`, `AgentMaxSendsPerDay`, `AgentMaxRecipientsPerSend`, `AgentConfirmAbove`) and the sender screening policy (`ScreeningSignupThreshold`, `ScreeningSignupMode`, `ScreeningImportThreshold`, `ScreeningImportMode`, `ScreeningContentThreshold`, `ScreeningContentMode`) that `usergroup.create` and `usergroup.patch` write. Every other field is unchanged. `usergroups.get` returns the same ten fields for each group, and never the SMTP username.
+The `UserGroup` object now also carries the AI agent policy (`AgentAccess`, `AgentMaxSendsPerDay`, `AgentMaxRecipientsPerSend`, `AgentConfirmAbove`, and since v6.0.5 `AgentMaxSmsPerDay`, `AgentMaxSmsRecipientsPerSend`, `AgentSmsConfirmAbove`) and the sender screening policy (`ScreeningSignupThreshold`, `ScreeningSignupMode`, `ScreeningImportThreshold`, `ScreeningImportMode`, `ScreeningContentThreshold`, `ScreeningContentMode`) that `usergroup.create` and `usergroup.patch` write. Every other field is unchanged. `usergroups.get` returns the same ten fields for each group, and never the SMTP username.
 :::
 
 ::: tip New fields (v6.0.5)

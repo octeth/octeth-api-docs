@@ -70,12 +70,21 @@ A team member whose role holds `ApiKeys.Manage` (Admin) now sees the value of an
 
 **Who needs to act:** nobody has to. If a team member was removed before this release, rotate the account's sender API keys (`emailgateway.replaceapi`) and reset its SMTP passwords, because a member could read them in full until now.
 
+## AI agent keys get SMS commands and a separate SMS budget
+
+**What changed:** AI agent keys can call the SMS campaign, template, suppression and single-send commands, and SMS sends count against separate SMS limits (`AgentMaxSmsPerDay`, `AgentMaxSmsRecipientsPerSend`, `AgentSmsConfirmAbove`) on the key and the user group, never against the email limits. `user.apikey.*`, `user.agentpolicy.get` and `usergroup.*` accept or return the three new fields.
+
+**Not affected:** API keys created without `IsAgentKey`. Every change to existing responses only adds fields, and the new request parameters are optional.
+
+**Who needs to act:** an existing agent key with the `send` permission can send SMS after the upgrade, and the new SMS limits default to `0` (no limit). To cap SMS spend by AI assistants, set the SMS limits on the user groups (or on each connection) right after upgrading.
+
 ## Upgrade checklist
 
 - [ ] If `ADMIN_API_ENFORCE_PRIVILEGES` is off, check that every sub-admin key or session calling a `global.customfield*` command holds `CustomFields`, or it now receives `99999`.
 - [ ] Check that every SMTP client sending through the Email Gateway on port 587 or 2525 uses `STARTTLS`, or it now receives `530 5.7.0` on installations with a certificate.
 - [ ] Optional: reset the password of Email Gateway SMTP credentials created before v6.0.5 and update the clients that use them, since older passwords were derived from IDs and a timestamp.
 - [ ] If a team member with the Admin role was removed before v6.0.5, rotate the account's email gateway sender API keys and reset its SMTP passwords.
+- [ ] If AI assistants may not text without a cap, set the SMS limits (`AgentMaxSmsPerDay`, `AgentMaxSmsRecipientsPerSend`, `AgentSmsConfirmAbove`) on each user group.
 
 ---
 

@@ -106,6 +106,39 @@ These tools never send email. Sending a campaign still needs the send permission
 
 Exporting a campaign report and the public archive link stay in the app, because both hand out a link that works without the connection.
 
+### SMS campaigns
+
+An assistant can plan, cost, test and send SMS campaigns, send a single text, and manage SMS templates, test numbers and SMS suppressions. Every SMS costs money per message part, so SMS sends count against their own limits, separate from the email ones (see [SMS limits](#sms-limits)).
+
+| Tool | Permission | What it does |
+|---|---|---|
+| `list_sms_campaigns`, `get_sms_campaign` | Read | Your SMS campaigns with their status, audience, confirmed cost and counters, optionally with the count per status and the totals per currency |
+| `get_sms_campaign_report` | Read | One campaign's report: the delivery funnel and cost, a breakdown by hour, day, carrier, country, error, link or sender, a time series, or clicks per link |
+| `list_sms_campaign_events`, `list_sms_campaign_recipients`, `list_sms_campaign_replies` | Read | A campaign's event log, its recipients with their delivery status, and the replies it received |
+| `preview_sms_test` | Read | The campaign's message as a test would send it, with its parts and cost |
+| `list_sms_templates`, `get_sms_template` | Read | Your saved SMS templates |
+| `get_sms_account_stats`, `list_sms_replies`, `list_sms_merge_tags` | Read | Account-wide SMS counters, every reply received, and the personalization tags a list offers |
+| `list_sms_gateways`, `list_sms_test_numbers`, `list_sms_suppressions` | Read | The gateways you may send through, your test numbers, and the numbers you never text |
+| `create_sms_campaign`, `update_sms_campaign`, `copy_sms_campaign` | Change data | Creates, edits or copies a draft SMS campaign. A draft texts nobody |
+| `estimate_sms_campaign` | Change data | Counts an audience, and costs a draft campaign: the sendable recipients, the message parts and the projected cost, the same figures the app shows |
+| `pause_sms_campaign`, `cancel_sms_campaign` | Change data | Stops a campaign that is sending, or cancels one that has not finished |
+| `create_sms_template`, `update_sms_template` | Change data | Saves or edits reusable SMS text. Campaigns keep their own copy of the text |
+| `verify_sms_test_number` | Change data | Verifies a test number with the code texted to it. The assistant asks you for the code |
+| `add_sms_suppression` | Change data | Stops texting one or more numbers, account-wide or on one list |
+| `delete_sms_campaign`, `delete_sms_template` | Change data, always confirmed | Deletes a draft or finished campaign, or a template |
+| `send_sms_test` | Send | Texts one test of a campaign to a verified test number |
+| `send_sms_campaign_now`, `schedule_sms_campaign` | Send | Sends a costed draft campaign now, or at a set time, at the cost of its estimate |
+| `resume_sms_campaign` | Send | Resumes a paused campaign |
+| `send_sms` | Send | Texts one message to one number, exactly as written |
+| `add_sms_test_number` | Send | Adds a test number and texts it a verification code |
+| `remove_sms_suppression` | Send, always confirmed | Lets texts reach a suppressed number again |
+
+A typical SMS campaign: the assistant creates a draft, costs it with `estimate_sms_campaign`, sends a test to your verified number, and then sends or schedules it with the estimate it showed you. Editing the draft afterwards voids the estimate, so it costs the campaign again before sending.
+
+**Removing an SMS suppression always asks you first,** like removing an email suppression: the number was suppressed because it opted out, complained, bounced or was added by hand, so the assistant shows you the number and the reason and removes it only after you approve. Deleting an SMS campaign or template asks you first too.
+
+Some SMS actions stay in the app: SMS gateways and their settings, the account's SMS settings, suppression patterns, exports of campaign events, and resuming a campaign that Octeth paused because its cost changed from the confirmed cost.
+
 ### Journeys
 
 | Tool | Permission | What it does |
@@ -259,6 +292,16 @@ The **Recent activity** table lists the last 25 tool calls made by your assistan
 
 The assistant loses access immediately. To use it again, connect it again from the assistant.
 
+### SMS limits
+
+Each connection has separate limits for email and SMS. Open **API & webhooks** > **Connected AI assistants**, click the settings icon on the assistant's row, and fill in:
+
+- **SMS per day**: how many text messages the assistant may send per day (UTC). A campaign to 500 numbers uses 500.
+- **SMS recipients per send**: the most numbers one SMS send may reach. A confirmation cannot raise it.
+- **Confirm SMS sends above**: an SMS send to more numbers than this first shows you a preview with the cost, and goes ahead only after you approve it.
+
+Leave a field empty for no limit. Email sends never count against the SMS limits, and SMS sends never count against the email ones. Your service provider can set the same three limits for every connection on your account, and the stricter of the two applies.
+
 ### The API key behind each connection
 
 Each connection gets its own API key, created when you click **Allow**. You can see it on your API keys page with the note `AI connector: <assistant name>`, for example `AI connector: Claude`.
@@ -295,7 +338,7 @@ These resources are read-only and show only your own account:
 
 | Resource | What it holds |
 |---|---|
-| `account://policy` | Your account, your plan limits and sending usage, and what this connection may do: its permissions, daily sends, recipients per send and the confirmation threshold |
+| `account://policy` | Your account, your plan limits and sending usage, and what this connection may do: its permissions, daily sends, recipients per send and the confirmation threshold, and its SMS limits |
 | `account://lists` | Your subscriber lists with their IDs and subscriber counts |
 | `account://lists/<list ID>/segments` | The segments of one list |
 | `account://campaigns/recent` | Your last 10 sent campaigns, which the assistant uses as a baseline for comparisons |
@@ -311,7 +354,9 @@ Agents that do not use MCP, such as scheduled scripts or bots that call HTTP API
 
 Neither file contains anything from any account. An agent that calls the API directly authenticates with an agent key you create under **API & webhooks** > **Connected AI assistants**, and is bound by the same permissions, limits and confirmation step as a connector.
 
-Commands that delete data, such as `lists.delete` (at most 10 list IDs), `customfields.delete` (at most 20 field IDs), `subscribers.delete` (at most 100 subscriber IDs of one list), `subscriber.tags.delete` (at most 20 tag IDs), `segments.delete` (at most 20 segment IDs, none of them in live use), `campaigns.delete` (at most 20 campaign IDs, none of them sending) and `journeys.delete` (at most 10 journey IDs, none of them turned on), always answer an agent key with ErrorCode 100012, a `Preview` and a `ConfirmToken` first, and delete nothing. Repeat the identical call with `ConfirmToken` after the person approves. Other API keys are unaffected.
+Commands that delete data, such as `lists.delete` (at most 10 list IDs), `customfields.delete` (at most 20 field IDs), `subscribers.delete` (at most 100 subscriber IDs of one list), `subscriber.tags.delete` (at most 20 tag IDs), `segments.delete` (at most 20 segment IDs, none of them in live use), `campaigns.delete` (at most 20 campaign IDs, none of them sending) and `journeys.delete` (at most 10 journey IDs, none of them turned on), `smscampaign.delete` and `smstemplate.delete`, always answer an agent key with ErrorCode 100012, a `Preview` and a `ConfirmToken` first, and delete nothing. Repeat the identical call with `ConfirmToken` after the person approves. So does `smssuppression.delete` (one `SuppressionID` at a time). Other API keys are unaffected.
+
+For SMS, the delivery commands (`smscampaign.send`, `smscampaign.schedule`, `smscampaign.resume`, `smscampaign.test`, `sms.send`, `sms.testnumber.add`) count against the key's SMS limits, not its email ones, and refuse with ErrorCode 100011 and `Budget` `SMSPerDay`, `SMSMaxRecipientsPerSend` or `SMSConfirmAbove`.
 
 For subscribers, `subscriber.tag`, `subscriber.untag` and `subscriber.optin` need the send permission and count one recipient per subscriber.
 
