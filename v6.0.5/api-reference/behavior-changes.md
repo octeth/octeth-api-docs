@@ -48,12 +48,23 @@ On an installation whose inbound SMTP server has a TLS certificate, a client tha
 
 ## Tier 2: shape and value changes
 
-None recorded yet.
+### Email Gateway SMTP credentials
+
+#### New SMTP usernames and passwords are generated from a secure random source
+
+`emailgateway.addsmtp` and `emailgateway.resetsmtppassword` now generate the SMTP username and password from a cryptographically secure random source (octeth/oempro#3772). Before this change both values were an MD5 hash of the account and domain IDs and the creation time, so someone who knew the IDs and roughly when a credential was created could narrow it down to a searchable set of candidates. Gateway API keys received the same fix in an earlier release.
+
+The format is unchanged: both values are still 32 uppercase hexadecimal characters, and the SMTP relay accepts them exactly as before.
+
+**Not affected:** every existing SMTP credential keeps working unchanged. Nothing is rotated at upgrade.
+
+**Who needs to act:** nobody has to. We recommend resetting the password of SMTP credentials created before this release (`emailgateway.resetsmtppassword`, or Reset password on the SMTP credentials screen) and updating the client that uses them, starting with credentials on accounts whose IDs are visible to other people. A reset keeps the username. A credential whose username you also want replaced is deleted and created again.
 
 ## Upgrade checklist
 
 - [ ] If `ADMIN_API_ENFORCE_PRIVILEGES` is off, check that every sub-admin key or session calling a `global.customfield*` command holds `CustomFields`, or it now receives `99999`.
 - [ ] Check that every SMTP client sending through the Email Gateway on port 587 or 2525 uses `STARTTLS`, or it now receives `530 5.7.0` on installations with a certificate.
+- [ ] Optional: reset the password of Email Gateway SMTP credentials created before v6.0.5 and update the clients that use them, since older passwords were derived from IDs and a timestamp.
 
 ---
 
