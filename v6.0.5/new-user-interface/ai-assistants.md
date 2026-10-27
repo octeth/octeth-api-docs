@@ -74,6 +74,20 @@ Tagging counts as sending because a tag change can start a journey that emails t
 
 Some subscriber work stays in the app: exporting subscribers, deleting every subscriber of a list or every subscriber that matches rules, and tagging every subscriber that matches rules.
 
+### Segments
+
+| Tool | Permission | What it does |
+|---|---|---|
+| `get_segment_rule_vocabulary` | Read | The fields and operators segment rules accept, and with a list ID that list's custom fields, so the assistant builds valid rules on the first try |
+| `copy_segments` | Change data | Copies every segment of one list to another list, with the same names and rules |
+| `delete_segments` | Change data, always confirmed | Deletes up to 20 segments. Subscribers are not deleted |
+
+**Deleting always asks you first.** The preview names each segment, its list and whether something live uses it. The delete happens only if you approve it.
+
+A segment that a scheduled, sending or paused campaign, an active SMS campaign, an autoresponder or a journey uses (directly, as an exclusion or nested in another segment) cannot be deleted or have its rules changed by an assistant, because that would change who receives a send nobody re-checked. Delete or change it in the app.
+
+A copied rule that uses a custom field of the source list does not work on the target list. Check each copy's size with `get_segment_count` and rebuild such rules with `update_segment`.
+
 ### Email campaigns
 
 These tools never send email. Sending a campaign still needs the send permission and `send_campaign_now` or `schedule_campaign`.
@@ -297,9 +311,11 @@ Agents that do not use MCP, such as scheduled scripts or bots that call HTTP API
 
 Neither file contains anything from any account. An agent that calls the API directly authenticates with an agent key you create under **API & webhooks** > **Connected AI assistants**, and is bound by the same permissions, limits and confirmation step as a connector.
 
-Commands that delete data, such as `lists.delete` (at most 10 list IDs), `customfields.delete` (at most 20 field IDs), `subscribers.delete` (at most 100 subscriber IDs of one list), `subscriber.tags.delete` (at most 20 tag IDs), `campaigns.delete` (at most 20 campaign IDs, none of them sending) and `journeys.delete` (at most 10 journey IDs, none of them turned on), always answer an agent key with ErrorCode 100012, a `Preview` and a `ConfirmToken` first, and delete nothing. Repeat the identical call with `ConfirmToken` after the person approves. Other API keys are unaffected.
+Commands that delete data, such as `lists.delete` (at most 10 list IDs), `customfields.delete` (at most 20 field IDs), `subscribers.delete` (at most 100 subscriber IDs of one list), `subscriber.tags.delete` (at most 20 tag IDs), `segments.delete` (at most 20 segment IDs, none of them in live use), `campaigns.delete` (at most 20 campaign IDs, none of them sending) and `journeys.delete` (at most 10 journey IDs, none of them turned on), always answer an agent key with ErrorCode 100012, a `Preview` and a `ConfirmToken` first, and delete nothing. Repeat the identical call with `ConfirmToken` after the person approves. Other API keys are unaffected.
 
 For subscribers, `subscriber.tag`, `subscriber.untag` and `subscriber.optin` need the send permission and count one recipient per subscriber.
+
+For segments, `segments.delete` refuses a segment that a live send or automation uses with ErrorCode 100016, and an agent key's `segments.copy` keeps each segment's JSON rules and random-subset options.
 
 For campaigns, `campaign.copy` accepts only `CampaignID`, `campaign.recipients.get` needs `OnlyTotal=true`, and `campaigns.delete` refuses a campaign that is sending with ErrorCode 100016.
 
