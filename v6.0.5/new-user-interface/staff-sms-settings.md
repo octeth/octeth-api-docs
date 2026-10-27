@@ -56,9 +56,9 @@ Saving a value equal to the one already in force stores nothing, so the setting 
 | **Cost per message part** | 0.01 | Used for the cost estimate and the per-campaign cost. One message can be several parts. |
 | **Cost currency** | USD | The currency of the cost figures. |
 | **Cost drift tolerance** | 0.05 | A fraction from 0 to 1. A campaign is held when its real cost exceeds the estimate by more than this. |
-| **Quiet hours start** | 21:00 | In the campaign's timezone. Sending pauses at this time. |
+| **Quiet hours start** | 21:00 | In the campaign's timezone. Sending pauses at this time. A campaign can set its own quiet hours instead. |
 | **Quiet hours end** | 09:00 | Sending resumes at this time. |
-| **Default send rate per minute** | 0 | 0 means no cap other than the gateway's own rate limit. |
+| **Default send rate per minute** | 0 | The speed new campaigns start with, which the sender can change on the campaign. 0 means no cap other than the gateway's own rate limit. |
 | **Journey capacity reserve (%)** | 10 | The share of gateway capacity kept for journey and transactional messages, at most 50. |
 | **Append an opt-out footer by default** | On | Whether new campaigns start with the opt-out footer. |
 | **Default opt-out footer** | ` Reply STOP to opt out.` | Leading and trailing spaces are kept. The shipped text starts with a space so it separates from the message. |

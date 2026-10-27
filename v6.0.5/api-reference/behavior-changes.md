@@ -87,6 +87,16 @@ A team member whose role holds `ApiKeys.Manage` (Admin) now sees the value of an
 
 **Who needs to act:** nobody has to. If a team member was removed before this release, rotate the account's sender API keys (`emailgateway.replaceapi`) and reset its SMTP passwords, because a member could read them in full until now.
 
+### SMS campaigns
+
+#### New SMS campaigns start at the install's default send rate
+
+`smscampaign.create` now stores the install's default send rate (`SMS_CAMPAIGN_DEFAULT_SEND_RATE_PER_MINUTE`, the **Default send rate per minute** SMS setting) as a new campaign's `SendRatePerMinute` when the request does not send one (octeth/oempro#3795). The setting was documented as the rate new campaigns start with, but it was never applied, so every campaign ran at the gateway's full rate. `smscampaign.update` also accepts `SendRatePerMinute`, `QuietHoursStart` and `QuietHoursEnd` on their own while a campaign is `Scheduled`, `Queueing`, `Sending` or `Paused`, where that request used to answer error `3`.
+
+**Not affected:** installs that left the default at `0`, which is the shipped value, see no change. Campaigns created before the upgrade keep their stored rate. Every other `smscampaign.update` request is answered as before.
+
+**Who needs to act:** if your install set a non-zero default send rate, new campaigns are now paced at it. Pass `SendRatePerMinute=0` on `smscampaign.create` for a campaign that must not be limited.
+
 ## AI agent keys get SMS commands and a separate SMS budget
 
 **What changed:** AI agent keys can call the SMS campaign, template, suppression and single-send commands, and SMS sends count against separate SMS limits (`AgentMaxSmsPerDay`, `AgentMaxSmsRecipientsPerSend`, `AgentSmsConfirmAbove`) on the key and the user group, never against the email limits. `user.apikey.*`, `user.agentpolicy.get` and `usergroup.*` accept or return the three new fields.
@@ -102,6 +112,7 @@ A team member whose role holds `ApiKeys.Manage` (Admin) now sees the value of an
 - [ ] Optional: reset the password of Email Gateway SMTP credentials created before v6.0.5 and update the clients that use them, since older passwords were derived from IDs and a timestamp.
 - [ ] If a team member with the Admin role was removed before v6.0.5, rotate the account's email gateway sender API keys and reset its SMTP passwords.
 - [ ] Check that calls to `journey.action.subscribers` send `OrderField` as a subscriber column and `Filter` items from the documented list, or they now receive error `8` or `6`.
+- [ ] If the install's SMS **Default send rate per minute** is not `0`, expect new SMS campaigns to be paced at it, or send `SendRatePerMinute=0` on `smscampaign.create`.
 - [ ] If AI assistants may not text without a cap, set the SMS limits (`AgentMaxSmsPerDay`, `AgentMaxSmsRecipientsPerSend`, `AgentSmsConfirmAbove`) on each user group.
 
 ---

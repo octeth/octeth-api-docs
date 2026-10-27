@@ -63,6 +63,9 @@ The message is measured with the gateway's longest short URL domain, because eac
 | OptOutFooterText | String | No | Override the footer text for this campaign |
 | Timezone | String | No | The timezone quiet hours and the schedule are evaluated in, as an IANA name such as `Europe/Istanbul`. Defaults to the account's own timezone. An unknown name is refused |
 | LinkExpiryHours | Integer | No | <Badge type="tip" text="New in v6.0.1" /> How long the message's links work after each message is sent, in whole hours, from `0` to the install maximum (`SMS_LINK_EXPIRY_HOURS_MAX`, 8760 by default). `0` uses the install default (`SMS_LINK_EXPIRY_HOURS_DEFAULT`, 72 by default), read when a link is clicked. After it, the link answers HTTP 410. A value outside the range is refused rather than capped. Defaults to `0` |
+| SendRatePerMinute | Integer | No | <Badge type="tip" text="New in v6.0.5" /> The most messages this campaign sends per minute, from `0` to `10000000`. `0` means no campaign limit. The gateway's rate limit and the account's send-rate limits still apply on top. A value outside the range is refused rather than capped. Defaults to the install default (`SMS_CAMPAIGN_DEFAULT_SEND_RATE_PER_MINUTE`, `0` out of the box) |
+| QuietHoursStart | String | No | <Badge type="tip" text="New in v6.0.5" /> When quiet hours begin, `HH:MM`, in the campaign's `Timezone`. No message is sent between `QuietHoursStart` and `QuietHoursEnd`, and the window may cross midnight. Equal times are refused: quiet hours can be moved but not turned off. Send both or neither. Neither uses the install's quiet hours |
+| QuietHoursEnd | String | No | <Badge type="tip" text="New in v6.0.5" /> When quiet hours end, `HH:MM`. See `QuietHoursStart` |
 
 ::: code-group
 
@@ -121,6 +124,8 @@ curl -X POST https://example.com/api/v1/smscampaign.create \
 17: Timezone is not a known timezone
 21: LinkExpiryHours is not a whole number from 0 to the install maximum
 22: The {{ SMS:TrackingCode }} tag is used outside a link. It can only be used inside a link's URL (new in v6.0.4)
+23: SendRatePerMinute is not a whole number from 0 to 10000000 (new in v6.0.5)
+24: QuietHoursStart and QuietHoursEnd are not both set, are not HH:MM times, or are the same time (new in v6.0.5)
 ```
 
 :::
@@ -159,7 +164,7 @@ Conditions that could not be applied in full are refused rather than read as "ev
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-**Only a `Draft` campaign can be updated.** To rename a campaign in any other status, use `smscampaign.rename`. Every update bumps the campaign's modification time and changes its content fingerprint, which invalidates any estimate taken before it: after updating, run the estimate again before sending.
+**Only a `Draft` campaign can be updated, with one exception.** To rename a campaign in any other status, use `smscampaign.rename`. Every update bumps the campaign's modification time and changes its content fingerprint, which invalidates any estimate taken before it: after updating, run the estimate again before sending.
 
 **The audience can be changed too, while the campaign is a `Draft`.** Only what you send changes, with two rules:
 
@@ -167,6 +172,8 @@ Conditions that could not be applied in full are refused rather than read as "ev
 - Changing `ListID` without sending either of them resets the audience to the whole new list, because a segment and a set of conditions each belong to the old list.
 
 The audience is part of the content fingerprint, so an audience change invalidates an earlier estimate like any other edit.
+
+**Send speed and quiet hours can change until the campaign stops sending.** <Badge type="tip" text="New in v6.0.5" /> A request that carries only `SendRatePerMinute`, `QuietHoursStart` and `QuietHoursEnd` is accepted while the campaign is `Draft`, `Scheduled`, `Queueing`, `Sending` or `Paused`, and answers `{"Success": true}` with no `Measurement`. Neither changes the cost, so such a request does not change the campaign's modification time and does not invalidate an estimate. The release worker applies a new speed on its next pass, and messages already handed to the senders, about a minute's worth, still go out at the old speed. A request that mixes these with any other field follows the `Draft` rule.
 
 The message is measured with the gateway's longest short URL domain, because each recipient is sent links on one of the gateway's **URL Shortening Domains**. On a gateway with several domains of different lengths, a message that fits on the shortest domain but not on the longest is refused with error `9`. With one domain or none, nothing changed. Changed in v6.0.2.
 
@@ -177,7 +184,7 @@ The message is measured with the gateway's longest short URL domain, because eac
 | Command | String | Yes | API command: `smscampaign.update` |
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
-| SMSCampaignID | Integer | Yes | The campaign to update. Must be in `Draft` |
+| SMSCampaignID | Integer | Yes | The campaign to update. Must be in `Draft`, except for a speed and quiet-hours change |
 | CampaignName | String | No | A new name |
 | ListID | Integer | No | Move the campaign to another list. Must belong to the caller and have a phone field |
 | SegmentID | Integer | No | Narrow the audience to a saved segment of the list. `0` clears it. Cannot be combined with `RulesJsonBundle` |
@@ -189,6 +196,9 @@ The message is measured with the gateway's longest short URL domain, because eac
 | OptOutFooterText | String | No | Override the footer text |
 | Timezone | String | No | The quiet-hours timezone, as an IANA name. An unknown name is refused |
 | LinkExpiryHours | Integer | No | <Badge type="tip" text="New in v6.0.1" /> How long the message's links work after each message is sent, in whole hours, from `0` to the install maximum (`SMS_LINK_EXPIRY_HOURS_MAX`, 8760 by default). `0` uses the install default (`SMS_LINK_EXPIRY_HOURS_DEFAULT`, 72 by default), read when a link is clicked. After it, the link answers HTTP 410. A value outside the range is refused rather than capped |
+| SendRatePerMinute | Integer | No | <Badge type="tip" text="New in v6.0.5" /> The most messages this campaign sends per minute, from `0` to `10000000`. `0` means no campaign limit. The gateway's rate limit and the account's send-rate limits still apply on top. A value outside the range is refused rather than capped. See the speed and quiet-hours exception above |
+| QuietHoursStart | String | No | <Badge type="tip" text="New in v6.0.5" /> When quiet hours begin, `HH:MM`, in the campaign's `Timezone`. No message is sent between `QuietHoursStart` and `QuietHoursEnd`, and the window may cross midnight. Equal times are refused: quiet hours can be moved but not turned off. Send both keys, or neither. Both empty puts the campaign back on the install's quiet hours |
+| QuietHoursEnd | String | No | <Badge type="tip" text="New in v6.0.5" /> When quiet hours end, `HH:MM`. See `QuietHoursStart` |
 
 ::: code-group
 
@@ -242,6 +252,9 @@ curl -X POST https://example.com/api/v1/smscampaign.update \
 20: Timezone is not a known timezone
 21: LinkExpiryHours is not a whole number from 0 to the install maximum
 22: The {{ SMS:TrackingCode }} tag is used outside a link. It can only be used inside a link's URL (new in v6.0.4)
+23: SendRatePerMinute is not a whole number from 0 to 10000000 (new in v6.0.5)
+24: Only one of QuietHoursStart and QuietHoursEnd was sent, they are not HH:MM times, or they are the same time (new in v6.0.5)
+25: The campaign is past Paused (Cancelling, Sent, Cancelled or Failed), so its speed and quiet hours can no longer change (new in v6.0.5)
 ```
 
 :::
@@ -406,6 +419,8 @@ curl -X POST https://example.com/api/v1/smscampaign.audience.count \
 
 `QuietHours` says whether the campaign's quiet hours are holding it right now. While `Active` is true a Sending campaign sends nothing, and `ResumesAt` (UTC) is when it starts again. `Start` and `End` are in the campaign's `Timezone`, and both are null when the campaign has no quiet hours.
 
+<Badge type="tip" text="New in v6.0.5" /> `SendRatePerMinute` in `SMSCampaign` is the campaign's speed limit in messages per minute, `0` for none. `QuietHoursStart` and `QuietHoursEnd` in `SMSCampaign` are the campaign's own window, `null` when it follows the install's. The `QuietHours` block gives the window in force either way.
+
 The campaign's audience is `RelListID`, narrowed by at most one of `RelSegmentID` (a saved segment) and `RulesJsonBundle` (conditions, as the JSON string it was saved as). Both are `null` when the campaign goes to the whole list.
 
 **Request Body Parameters:**
@@ -444,6 +459,9 @@ curl -X GET https://example.com/api/v1/smscampaign.get \
     "MessageContent": "Hi {{ Subscriber:FirstName | \"there\" }}, 20% off this week only.",
     "Timezone": "America/New_York",
     "LinkExpiryHours": 0,
+    "SendRatePerMinute": 600,
+    "QuietHoursStart": null,
+    "QuietHoursEnd": null,
     "TotalAudience": 400318,
     "ConfirmedCost": "4315.66000",
     "CostCurrency": "USD"
@@ -1527,7 +1545,7 @@ curl -X GET https://example.com/api/v1/smscampaign.estimate \
 | `TotalParts` | Message parts across every sendable recipient |
 | `Encodings` | Sendable recipients by message encoding, `GSM7` and `UCS2` |
 | `ProjectedCost` | `TotalParts` multiplied by `CostPerPart` |
-| `ProjectedCompletionAt` | When the campaign would finish at the account's current send-rate limits. `null` when there is nothing to project from, which includes an account with no configured limit and a send-rate counter that could not be read: an unknown schedule is reported as unknown rather than as immediate |
+| `ProjectedCompletionAt` | When the campaign would finish if sent now: the later of the account's current send-rate limits and the campaign's own `SendRatePerMinute`, with the campaign's quiet hours left out of the sending time (<Badge type="tip" text="New in v6.0.5" />). `null` when there is nothing to project from, which includes an account with no configured limit and a send-rate counter that could not be read: an unknown schedule is reported as unknown rather than as immediate |
 | `CampaignFingerprint` | A fingerprint of the campaign content that was measured. Used to decide staleness; see below |
 
 

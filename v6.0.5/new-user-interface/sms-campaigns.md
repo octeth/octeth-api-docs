@@ -141,11 +141,18 @@ Once a current estimate is shown, the send controls appear:
 
 Both open the campaign report.
 
-### Quiet hours
+### Send speed and quiet hours <Badge type="tip" text="New in v6.0.5" />
 
-Octeth does not send campaign messages during quiet hours. By default these run from **21:00 to 09:00** in the campaign's timezone. Messages due during quiet hours wait and go out when the quiet hours end. The campaign stays in **Sending**, and its report shows **Paused for quiet hours** with the time sending resumes.
+The **Send speed** card on the composer and on the campaign report shows how fast the campaign sends and when it pauses. Click **Change** to set:
 
-Quiet hours are set for the whole installation by your administrator. See [Bulk SMS Settings for administrators](#bulk-sms-settings-for-administrators).
+- **Maximum speed**: messages per second or per minute. Leave it blank for no limit, and the campaign sends as fast as the gateway and your account's limits allow. Mobile carriers can filter large bursts of messages, so a lower speed can help delivery.
+- **Quiet hours**: a start and end time in the campaign's timezone. No messages go out in this window, which can cross midnight. Clear both times to use your installation's quiet hours, which are **21:00 to 09:00** unless your administrator changed them. Quiet hours can be moved but not turned off.
+
+Neither setting changes the cost, so you can change both while the campaign is scheduled, sending or paused. A new speed applies within about a minute: messages already handed to the senders still go out at the old speed.
+
+The cost estimate shows **Expected to finish by**, worked out from the speed, the quiet hours and your account's sending limits. If you change the speed or quiet hours of a draft after estimating, run the estimate again to see the new finish time.
+
+While quiet hours hold a sending campaign it stays in **Sending**, and its report shows **Paused for quiet hours** with the time sending resumes.
 
 ## Managing campaigns
 
@@ -267,9 +274,9 @@ Each value is saved on that screen, taken from `.oempro_env`, or the shipped def
 | **Cost per message part** | 0.0100 | Used for the cost estimate. |
 | **Cost currency** | USD | |
 | **Cost drift tolerance** | 0.05 | A campaign is held when its real cost exceeds the estimate by more than this fraction. |
-| **Quiet hours start** | 21:00 | Applied in each campaign's timezone. |
-| **Quiet hours end** | 09:00 | Set start and end to the same time for no quiet hours. |
-| **Default send rate per minute** | 0 | 0 means no cap other than the gateway's own rate limit. |
+| **Quiet hours start** | 21:00 | Applied in each campaign's timezone, for campaigns that do not set their own. |
+| **Quiet hours end** | 09:00 | Set start and end to the same time for no default quiet hours. |
+| **Default send rate per minute** | 0 | The speed new campaigns start with, which the sender can change. 0 means no cap other than the gateway's own rate limit. |
 | **Journey capacity reserve** | 10 | Percentage of gateway capacity kept for journey and transactional messages, so a bulk campaign cannot starve them (0 to 50). |
 | **Append an opt-out footer by default** | On | |
 | **Default opt-out footer** | ` Reply STOP to opt out.` | Starts with a space so it separates from the message. |
