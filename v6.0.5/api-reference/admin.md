@@ -3481,6 +3481,8 @@ Removes one team member from the customer account. Every session the member hold
 Unlike `team.member.remove`, where a key with no choice stays and is refused, this command **revokes every API key and AI agent key the member created** in the account unless told otherwise, because staff act in an incident and a key the removed person still holds is the access to cut. Send `APIKeyAction` `keep` to hand the keys to the account instead (they then act as the owner's), or `APIKeyActions` to choose per key. Send `Preview` `true` first to see the keys without removing anything; a preview is not written to the audit log.
 :::
 
+Staff removal revokes the member's email gateway sender API keys and SMTP credentials by default too. `APIKeyAction` `keep` keeps them, and `GatewayAPIKeyActions` and `SMTPCredentialActions` choose per item. The response carries `GatewayAPIKeys` and `SMTPCredentials` as in `team.member.remove`.
+
 **Request Body Parameters:**
 
 | Parameter | Type | Required | Description |
@@ -3492,6 +3494,8 @@ Unlike `team.member.remove`, where a key with no choice stays and is refused, th
 | Preview | Boolean | No | `true` lists the member's keys and the action that would apply, and removes nothing |
 | APIKeyAction | String | No | `revoke` (default) or `keep`, for every key the member created |
 | APIKeyActions | Object | No | `{"<APIKeyID>": "revoke" \| "keep"}`, overrides `APIKeyAction` per key |
+| GatewayAPIKeyActions | Object | No | `{"<APIKeyID>": "revoke" \| "keep"}` for the email gateway sender API keys in `GatewayAPIKeys`, overrides `APIKeyAction` per key |
+| SMTPCredentialActions | Object | No | `{"<SMTPID>": "revoke" \| "keep"}` for the SMTP credentials in `SMTPCredentials`, overrides `APIKeyAction` per credential |
 
 ::: code-group
 

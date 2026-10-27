@@ -75,6 +75,8 @@ Every member can call `user.current` and end their own session with `user.logout
 
 An API key or agent key created from a member session (including the agent key an MCP connection creates) records the member who created it and acts for that member: every call it makes is held to the creating member's current role, exactly like the member's own session, so it can never run owner-only commands such as `user.update` (error `100021`, `RequiredMemberPermission` `Owner`), and a role change applies to the key at once. Once the member no longer has an Active membership in the account (removed or suspended, sign-in disabled, or team members turned off for the account), every call with the key is refused with error `100021` and `RequiredMemberPermission` `ActiveMembership`. Such a key cannot be exchanged for a session with `User.Login`, and `user.current` leaves out `MFA_SecretKey` and `MFA_QRCode` for it as for a member session. For a member, `user.apikey.list` returns the value of a key only when that member created it: every other key value is masked (`********` and its last four characters).
 
+A member with `ApiKeys.Manage` sees the value of an email gateway sender API key (`emailgateway.getapis`) or SMTP password (`emailgateway.getsmtps`) only for the credentials that member created, replaced or reset. Every other value is masked as `********` followed by its last four characters, like `user.apikey.list`. A gateway credential a member created stops sending while that member is suspended or removed, the person is disabled, or team members are turned off for the account, exactly like the member's user API keys.
+
 ### Commands by role permission
 
 A command marked (read) changes nothing. Commands authorized only for administrators are not listed: a member session never runs them.
@@ -941,6 +943,8 @@ Removes a member from the account and ends their sessions in it at once. The per
 
 The response lists the user API keys and AI agent keys the member created, without their values. Choose what happens to each: `revoke` deletes the key, `keep` hands it to the account, so it acts as the account owner's key from then on. Only the account owner can choose `keep`, because a kept key can do everything the owner can and the removed person may still have it: an Admin member can revoke keys or leave them refused. A key with no choice is left in place and every call with it keeps being refused (error `100021`, `RequiredMemberPermission` `ActiveMembership`) until you delete it with `user.apikey.delete`. Send `Preview` first to see the keys without removing anything.
 
+The response also lists the email gateway sender API keys and SMTP credentials the member created, replaced or last reset, in `GatewayAPIKeys` and `SMTPCredentials`, without their secrets. The same choices apply: `revoke` deletes the credential, `keep` (account owner only) hands it to the account, so it sends as the account's own from then on, and a credential with no choice stays in place but cannot send (`emailgateway.sendemail` and the public gateway commands answer `Invalid SenderAPIKey`, the SMTP relay answers `535 5.7.8 Authentication credentials invalid`) until you delete it with `emailgateway.deleteapi` or `emailgateway.deletesmtp`. `APIKeyAction` applies to user keys and gateway credentials alike. Gateway credentials have their own ID sequences, so choose per item with `GatewayAPIKeyActions` and `SMTPCredentialActions`, never `APIKeyActions`.
+
 **Request Body Parameters:**
 
 | Parameter | Type | Required | Description |
@@ -950,6 +954,10 @@ The response lists the user API keys and AI agent keys the member created, witho
 | Preview | Boolean | No | `true` lists the member's keys and removes nothing |
 | APIKeyAction | String | No | `revoke` or `keep`, for every key the member created |
 | APIKeyActions | Object | No | `{"<APIKeyID>": "revoke" or "keep"}`, per key. Overrides `APIKeyAction` for the keys it names |
+| GatewayAPIKeyActions | Object | No | `{"<APIKeyID>": "revoke" or "keep"}` for the email gateway sender API keys in `GatewayAPIKeys`. Overrides `APIKeyAction` for the keys it names |
+| SMTPCredentialActions | Object | No | `{"<SMTPID>": "revoke" or "keep"}` for the SMTP credentials in `SMTPCredentials`. Overrides `APIKeyAction` for the credentials it names |
+
+`GatewayAPIKeyActions` and `SMTPCredentialActions` may be sent as a JSON object, as form fields such as `GatewayAPIKeyActions[77]=revoke`, or as a JSON-encoded string.
 
 ::: code-group
 
@@ -987,6 +995,12 @@ curl -X POST https://example.com/api/v1/team.member.remove \
     {"APIKeyID": 502, "Note": "Reporting", "IsAgentKey": false, "CreatedAt": "2026-10-22 10:00:00", "LastUsedAt": null, "Action": "kept"},
     {"APIKeyID": 503, "Note": "Claude", "IsAgentKey": true, "CreatedAt": "2026-10-23 10:00:00", "LastUsedAt": null, "Action": "left_refused"}
   ],
+  "GatewayAPIKeys": [
+    {"APIKeyID": 77, "DomainID": 3, "SenderDomain": "mail.agency.example", "Description": "Billing", "Status": "Enabled", "CreatedAt": "2026-10-21 10:00:00", "Action": "revoked"}
+  ],
+  "SMTPCredentials": [
+    {"SMTPID": 41, "DomainID": 3, "SenderDomain": "mail.agency.example", "SMTPUsername": "3F2A9C...", "Status": "Enabled", "CreatedAt": "2026-10-21 10:05:00", "Action": "kept"}
+  ],
   "Notice": "1 API key(s) the member created were neither revoked nor kept: they stay and are refused every command. Delete them with user.apikey.delete."
 }
 ```
@@ -995,8 +1009,8 @@ curl -X POST https://example.com/api/v1/team.member.remove \
 0: Success
 1: MembershipID is missing
 3: No member with this MembershipID in this account
-5: Your role cannot manage this member, or an Admin member chose keep
-6: APIKeyAction or APIKeyActions is not valid, or names a key the member did not create
+5: Your role cannot manage this member, or an Admin member chose keep for a key or gateway credential
+6: APIKeyAction, APIKeyActions, GatewayAPIKeyActions or SMTPCredentialActions is not valid, or names an item the member did not create
 7: Team members are not available on this installation
 15: The member was changed by another request after it was read (nothing was removed or revoked): read it again and retry
 100021: The member's role does not allow this command

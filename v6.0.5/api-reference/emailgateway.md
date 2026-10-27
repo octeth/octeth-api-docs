@@ -790,6 +790,7 @@ curl -X POST https://example.com/api.php \
 1: Missing required parameter (Description)
 2: Missing required parameter (DomainID)
 3: Domain not found or access denied
+4: The key could not be recorded for the team member who created it (the v6.0.5 database migration has not run). Nothing was created.
 ```
 
 :::
@@ -803,6 +804,8 @@ curl -X POST https://example.com/api.php \
 - Required permissions: `EmailGateway.ManageDomain`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
+
+For a team member caller, an email gateway sender API key value is returned only for the credentials that member created, replaced or reset. Every other value is masked as `********` followed by its last four characters, like `user.apikey.list`. The account owner, and API keys the owner created, see every value, unchanged.
 
 **Request Body Parameters:**
 
@@ -965,6 +968,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing required parameter (DomainID)
 2: Domain not found or access denied
+3: The credential could not be recorded for the team member who created it (the v6.0.5 database migration has not run). Nothing was created.
 ```
 
 :::
@@ -978,6 +982,8 @@ curl -X POST https://example.com/api.php \
 - Required permissions: `EmailGateway.ManageDomain`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
+
+For a team member caller, an email gateway SMTP password value is returned only for the credentials that member created, replaced or reset. Every other value is masked as `********` followed by its last four characters, like `user.apikey.list`. The account owner, and API keys the owner created, see every value, unchanged.
 
 **Request Body Parameters:**
 
@@ -1093,6 +1099,8 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
+A reset moves the credential to the person who reset it: a team member's reset makes it theirs, a reset by the account owner or an API key hands it back to the account.
+
 **Request Body Parameters:**
 
 | Parameter | Type    | Required | Description                                  |
@@ -1137,6 +1145,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: Missing required parameter (SMTPID)
 2: SMTP credentials not found or access denied
+3: The credential could not be recorded for the team member who reset it (the v6.0.5 database migration has not run), or the new password could not be saved, or (team member callers) another reset of the same credential replaced it at the same moment. Nothing was changed. Retry.
 ```
 
 :::
@@ -1409,6 +1418,8 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
+A sender API key or SMTP credential a team member created is refused like an unknown one while that member is suspended or removed.
+
 **Request Body Parameters:**
 
 Like the private [`emailgateway.addwebhook`](#create-webhook) endpoint, the public endpoint validates `WebhookURL` to prevent SSRF: the scheme must be `http` or `https`, and the host must resolve to a publicly routable address (v6.0.0; previously a four-literal host check). (Since v5.9.3 and #2349: the public endpoint previously accepted any well-formed URL, and it now enforces the same restrictions as the private endpoint.)
@@ -1467,6 +1478,8 @@ curl -X POST https://example.com/api/v1/webhooks \
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
+A sender API key or SMTP credential a team member created is refused like an unknown one while that member is suspended or removed.
+
 **Request Body Parameters:**
 
 | Parameter    | Type   | Required | Description                                |
@@ -1517,6 +1530,8 @@ curl -X GET https://example.com/api/v1/webhooks \
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
+
+A sender API key or SMTP credential a team member created is refused like an unknown one while that member is suspended or removed.
 
 **Request Body Parameters:**
 
@@ -1664,6 +1679,8 @@ curl -X POST https://example.com/api.php \
 - Rate limit: 100 requests per 60 seconds
 - Legacy endpoint access via `/api.php` is also supported
 :::
+
+A sender API key or SMTP credential a team member created is refused like an unknown one while that member is suspended or removed.
 
 **Request Body Parameters:**
 
@@ -1878,6 +1895,8 @@ curl -X POST https://example.com/api.php \
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
+A sender API key or SMTP credential a team member created is refused like an unknown one while that member is suspended or removed.
+
 **Request Body Parameters:**
 
 | Parameter     | Type    | Required | Description                                                |
@@ -2045,6 +2064,8 @@ By default a list send resolves and delivers to **at most the first 250 recipien
 - v1 REST alias: `POST /api/v1/emailgateway.smtprelay`. Legacy access via `/api.php` is also supported
 - This is an internal endpoint used by the SMTP relay server
 :::
+
+A sender API key or SMTP credential a team member created is refused like an unknown one while that member is suspended or removed.
 
 **Request Body Parameters:**
 
@@ -2665,7 +2686,7 @@ curl -X POST https://example.com/api.php \
 1: Missing required parameter (Description)
 2: Missing required parameter (DomainID)
 3: Domain not found or not owned by the caller
-4: Atomic rotate failed — the transaction rolled back; no key was persisted. Safe to retry.
+4: Atomic rotate failed — the transaction rolled back; no key was persisted. Safe to retry. Also returned when the key could not be recorded for the team member who created it (the v6.0.5 database migration has not run). Nothing was created.
 ```
 
 :::

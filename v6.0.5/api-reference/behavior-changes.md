@@ -60,11 +60,22 @@ The format is unchanged: both values are still 32 uppercase hexadecimal characte
 
 **Who needs to act:** nobody has to. We recommend resetting the password of SMTP credentials created before this release (`emailgateway.resetsmtppassword`, or Reset password on the SMTP credentials screen) and updating the client that uses them, starting with credentials on accounts whose IDs are visible to other people. A reset keeps the username. A credential whose username you also want replaced is deleted and created again.
 
+### Email Gateway credentials of team members
+
+#### Team members see only the gateway credentials they created, and those stop sending when the member loses access
+
+A team member whose role holds `ApiKeys.Manage` (Admin) now sees the value of an email gateway sender API key in `emailgateway.getapis`, and of an SMTP password in `emailgateway.getsmtps`, only for the credentials that member created, replaced or reset (octeth/oempro#3768). Every other value comes back masked as `********` followed by its last four characters, like `user.apikey.list`. Sender API keys and SMTP credentials now record the team member who created them, and the gateway refuses them while that member is suspended or removed: `emailgateway.sendemail` and the public gateway commands answer HTTP 401 `Invalid SenderAPIKey`, and the SMTP relay answers `535 5.7.8 Authentication credentials invalid`. Removing a member lists these credentials so you can revoke or keep them.
+
+**Not affected:** the account owner's responses, and those of API keys the owner created, are byte-identical. Every credential that exists at upgrade was created by the owner, an administrator or an integration, keeps working, and costs no extra check per send.
+
+**Who needs to act:** nobody has to. If a team member was removed before this release, rotate the account's sender API keys (`emailgateway.replaceapi`) and reset its SMTP passwords, because a member could read them in full until now.
+
 ## Upgrade checklist
 
 - [ ] If `ADMIN_API_ENFORCE_PRIVILEGES` is off, check that every sub-admin key or session calling a `global.customfield*` command holds `CustomFields`, or it now receives `99999`.
 - [ ] Check that every SMTP client sending through the Email Gateway on port 587 or 2525 uses `STARTTLS`, or it now receives `530 5.7.0` on installations with a certificate.
 - [ ] Optional: reset the password of Email Gateway SMTP credentials created before v6.0.5 and update the clients that use them, since older passwords were derived from IDs and a timestamp.
+- [ ] If a team member with the Admin role was removed before v6.0.5, rotate the account's email gateway sender API keys and reset its SMTP passwords.
 
 ---
 

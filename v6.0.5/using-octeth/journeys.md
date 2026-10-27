@@ -319,6 +319,10 @@ You must have at least one email template created before configuring the Send Em
 The Send Email action sends through the Email Gateway API, so it fails while the account is disabled or **Untrusted**. The subscriber is held at the action and retried, by default after 15 minutes, 30 minutes, 1 hour, 2 hours and 4 hours, and then leaves the journey with the failure recorded in the journey log. If an administrator enables the account or marks it **Trusted** before the retries run out, the email is sent. See [Reputation Levels](/v6.0.5/using-octeth/users#reputation-levels).
 :::
 
+::: warning Sender API keys created by team members
+A Send email action is skipped, with the reason in the journey log, when its sender domain's API key was created by a team member who is now suspended or removed (the gateway refuses that key). Octeth does not replace the key for you, because it works again when the member is reactivated and an integration may rely on it. Replace the domain's API key, or decide on it when you remove the member, to send from that domain again.
+:::
+
 #### Send SMS
 
 | Field | Description |

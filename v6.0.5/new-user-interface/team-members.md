@@ -77,11 +77,11 @@ On **Team** > **Members**, open the menu at the end of a member's row.
 - **Suspend** signs the member out of this account at once and keeps them out until you choose **Reactivate**. A suspended member keeps their seat.
 - **Remove from account** signs them out at once and emails them. Their sign-in keeps working for any other account they belong to.
 
-When you remove a member who created API keys or AI assistant keys, the dialog lists those keys and asks what happens to each one:
+When you remove a member who created API keys, AI assistant keys or email gateway credentials (sender API keys and SMTP credentials of a transactional domain), the dialog lists them and asks what happens to each one:
 
 - **Revoke** deletes the key.
 - **Keep as my key** (account owner only) keeps the key working as the owner's own key. The removed person may still have it, so only keep a key you trust.
-- **Leave, refused** keeps the key but every call with it is refused until you delete it under **API & webhooks**.
+- **Leave, refused** keeps the key but every call with it is refused, and a gateway credential cannot send, until you delete it under **API & webhooks** or on the transactional domain's **API keys** and **SMTP** tabs.
 
 ## Require two-factor authentication
 
@@ -106,6 +106,8 @@ Filter by person, by action (for example `list.create`) or by date. Times are in
 ## AI assistants and API keys
 
 The account owner and Admin members can create API keys. A key a member creates acts with that member's role, and stops working when the member is removed or suspended.
+
+The same holds for email gateway sender API keys and SMTP credentials: one a member created stops sending while the member is suspended or removed. A member sees only the gateway credentials they created. The others show the last four characters and the note "Only the person who created this key or the account owner can see it."
 
 Only the account owner can connect an AI assistant such as Claude or ChatGPT in this release. A team member who opens a connector link is asked to have the owner connect it.
 
