@@ -136,7 +136,7 @@ curl -X POST https://example.com/api.php \
 ::: tip Status After Cancelling
 A cancelled campaign is stored as `Ready` with `ScheduleType` `Not Scheduled`. A campaign in `Pending Approval` is withdrawn to `Draft` instead, because only an administrator releases a campaign from `Pending Approval`. If the internal status update is refused, `campaign.cancel` returns that failure instead of `Success: true`. Changed in v6.0.2.
 
-Cancelling keeps the campaign's conversion tracking setting (`Options.S2SEnabled`) as it was. Before v6.0.5, a cancel turned conversion tracking off. Changed in v6.0.5.
+Cancelling keeps the campaign's conversion tracking setting (`Options.S2SEnabled`) and its excluded lists and segments as they were. Before v6.0.5, a cancel turned conversion tracking off and removed the exclusions. Changed in v6.0.5.
 :::
 
 ## Copy a Campaign
@@ -400,6 +400,10 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+::: tip Settings Kept on Pause
+Pausing keeps the campaign's conversion tracking setting (`Options.S2SEnabled`) and its excluded lists and segments as they were. Before v6.0.5, a pause turned conversion tracking off and removed the exclusions. Changed in v6.0.5.
+:::
+
 ## Get Campaign Recipients
 
 <Badge type="info" text="GET" /> `/api/v1/campaign.recipients.get`
@@ -545,6 +549,10 @@ curl -X POST https://example.com/api.php \
 3: Campaign status is not Paused (only Paused campaigns can be resumed)
 ```
 
+:::
+
+::: tip Settings Kept on Resume
+Resuming keeps the campaign's conversion tracking setting (`Options.S2SEnabled`) and its excluded lists and segments as they were. Before v6.0.5, a resume turned conversion tracking off and removed the exclusions. Changed in v6.0.5.
 :::
 
 ::: warning Untrusted Accounts
