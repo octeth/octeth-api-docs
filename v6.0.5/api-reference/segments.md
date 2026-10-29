@@ -791,6 +791,7 @@ Returns what a form for a global segment needs: the user groups it can route, th
 |-----------|------|----------|-------------|
 | Command | String | Yes | API command: `global.segment.options.get` |
 | AdminAPIKey | String | Yes | Admin API key |
+| ArchiveFilter | String | No | <Badge type="tip" text="New in v6.0.5" /> `Active` leaves archived delivery servers out of `DeliveryServers`, `Archived` lists only them, `All` or absent lists every server as before |
 
 ::: code-group
 

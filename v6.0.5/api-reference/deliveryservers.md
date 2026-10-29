@@ -421,6 +421,7 @@ curl -X POST https://example.com/api.php \
 - Authentication required: Admin API Key
 - v1 REST alias: `GET /api/v1/deliveryservers.get`. Legacy access via `/api.php` is also supported
 - The filter, ordering and paging parameters are all optional. The defaults reproduce the previous response: every server, `Name ASC`, unpaged.
+- ArchiveFilter is optional. Without it the response is unchanged: every server, archived ones included, and no IsArchived field.
 :::
 
 ::: warning The SMTP password is not returned (changed in v6.0.1)
@@ -439,6 +440,7 @@ curl -X POST https://example.com/api.php \
 | OrderType | String | No | `ASC` (default) or `DESC` |
 | RecordsFrom | Integer | No | Offset (default 0) |
 | RecordsPerRequest | Integer | No | Page size (default 0 = all, max 1000) |
+| ArchiveFilter | String | No | <Badge type="tip" text="New in v6.0.5" /> `Active` (servers that are not archived), `Archived` or `All`. When set, `TotalDeliveryServerCount` counts the filtered list and each server carries `IsArchived`. Any other value is ignored |
 
 ::: code-group
 
@@ -542,6 +544,7 @@ curl -X POST https://example.com/api.php \
 | VerificationLastCheckedAt | String | Timestamp of last verification check |
 | UserGroupAssignments | Array | List of user groups assigned to this delivery server. Each entry contains `UserGroupID`, `GroupName`, and `Channels` (array of channel names: `Marketing`, `Transactional`, `AutoResponder`) |
 | IsAllocated | Boolean | Whether the delivery server is assigned to at least one user group channel |
+| IsArchived | Boolean | Only when `ArchiveFilter` is sent: whether the server is archived |
 
 ## Get a Delivery Server
 
@@ -827,3 +830,117 @@ curl -X POST https://example.com/api.php \
 | IPAddresses | Array | IP addresses of the IP pool plug-in bound to the server, each with `IPID` and `IPAddress`. Empty when the plug-in is not installed |
 
 Error `3` means a query failed or a stored user group, user or segment holds settings that cannot be decoded. The command does not guess: treat the server as possibly in use.
+
+## Archive a Delivery Server <Badge type="tip" text="New in v6.0.5" />
+
+<Badge type="info" text="POST" /> `/api/v1/admin.deliveryserver.archive`
+
+Archives a delivery server you no longer use. An archived server is hidden from the Delivery servers list (it has its own Archived view), is left out of every screen that picks a delivery server, and is never selected for sending. Restore it with `admin.deliveryserver.restore`.
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
+- v1 REST alias: `POST /api/v1/admin.deliveryserver.archive`. Legacy access via `/api.php` is also supported
+- Refused with error `4` while anything still sends through the server: a user group channel, a user's own delivery server, a global segment, a recipient domain route, or (with the IP pool plug-in) an IP pool or IP address. `ErrorText` names them, the same references `admin.deliveryserver.references.get` lists. Move them to another server first.
+- The check covers the whole install. A sub-admin limited to some user groups sees only those groups and their users by name; the others are counted.
+- Archiving an archived server succeeds and changes nothing.
+- Once archived, `usergroup.options.patch` (error `7`), `global.segment.create` and `global.segment.update` (error `7`) and `deliveryroutes.update` refuse the server as a target, as they refuse a server that does not exist.
+- Admin agent keys (AI assistants) cannot call this command.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.deliveryserver.archive` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| DeliveryServerID | Integer | Yes | ID of the delivery server |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.deliveryserver.archive",
+    "SessionID": "admin-session-id",
+    "DeliveryServerID": 3
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "DeliveryServerID": 3,
+  "IsArchived": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [4],
+  "ErrorText": ["The delivery server is still in use by user group Growth; delivery route gmail-smtp-in.l.google.com. Move them to another delivery server first."]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing DeliveryServerID
+2: Delivery server not found
+3: What uses this delivery server could not be read, so it was not archived
+4: The delivery server is still in use (ErrorText names what uses it)
+5: Archiving needs the database migration of this version. Run the upgrade first
+6: The delivery server could not be archived. Try again
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
+```
+
+:::
+
+## Restore a Delivery Server <Badge type="tip" text="New in v6.0.5" />
+
+<Badge type="info" text="POST" /> `/api/v1/admin.deliveryserver.restore`
+
+Restores an archived delivery server. It shows on the Delivery servers list and in every screen that picks a server again, and can be assigned and used for sending. Nothing is reassigned to it.
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
+- v1 REST alias: `POST /api/v1/admin.deliveryserver.restore`. Legacy access via `/api.php` is also supported
+- Restoring an active server succeeds and changes nothing.
+- Admin agent keys (AI assistants) cannot call this command.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.deliveryserver.restore` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| DeliveryServerID | Integer | Yes | ID of the delivery server |
+
+::: code-group
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "DeliveryServerID": 3,
+  "IsArchived": false
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing DeliveryServerID
+2: Delivery server not found
+3: The delivery server could not be restored. Try again
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
+```
+
+:::

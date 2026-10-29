@@ -2779,6 +2779,7 @@ Each group also carries `LimitTeamMembers` and `RequireMemberTwoFactor`, describ
 |---|---|---|---|
 | Command | String | Yes | API command: `admin.usergroup.editor.get` |
 | AdminAPIKey | String | No | Admin API key, or use an admin `SessionID` |
+| ArchiveFilter | String | No | <Badge type="tip" text="New in v6.0.5" /> `Active` leaves archived delivery servers out of `DeliveryServers`, `Archived` lists only them, `All` or absent lists every server as before |
 
 **Response Fields:**
 

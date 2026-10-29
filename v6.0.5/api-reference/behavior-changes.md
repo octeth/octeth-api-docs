@@ -117,6 +117,16 @@ Every path that creates a sender domain (`user.senderdomain.create` without `Lin
 
 **Who needs to act:** an integration that creates sender domains for accounts in a group where an administrator turned either option to `Disabled`, and relies on tracking being on: send `LinkTracking=true` / `OpenTracking=true` explicitly, or turn tracking on per domain with `user.senderdomain.update`. `usergroup.get` and the other commands that return group `Options` show the two keys once a group stores them.
 
+### Delivery servers
+
+#### Delivery servers can be archived
+
+`admin.deliveryserver.archive` and `admin.deliveryserver.restore` are new. An archived server is refused as a target by `usergroup.options.patch` (error 7), `global.segment.create` and `global.segment.update` (error 7) and `deliveryroutes.update` (error 5), the same answers as for a server that does not exist. The delivery workers skip an archived server that a user's own delivery server setting or a recipient domain route still names, and fall back to the user group's server (octeth/oempro#872).
+
+**Not affected:** existing responses. `deliveryservers.get`, `admin.usergroup.editor.get` and `global.segment.options.get` still list every server unless the request sends `ArchiveFilter`.
+
+**Who needs to act:** nobody, unless an integration relies on assigning a server that an administrator archived.
+
 ## AI agent keys get SMS commands and a separate SMS budget
 
 **What changed:** AI agent keys can call the SMS campaign, template, suppression and single-send commands, and SMS sends count against separate SMS limits (`AgentMaxSmsPerDay`, `AgentMaxSmsRecipientsPerSend`, `AgentSmsConfirmAbove`) on the key and the user group, never against the email limits. `user.apikey.*`, `user.agentpolicy.get` and `usergroup.*` accept or return the three new fields.
