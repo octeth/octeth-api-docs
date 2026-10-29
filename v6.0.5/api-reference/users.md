@@ -508,6 +508,7 @@ To compute a hash, take the SHA-256 of the `SessionID` string exactly as `user.l
 | UserID    | Integer | Conditional | User ID (required if EmailAddress not provided) |
 | EmailAddress | String | Conditional | Email address (required if UserID not provided) |
 | LimitAvailability | Boolean | No | Set to `1` to add `LimitUtilizationAvailable` to the response: `false` when the limit utilization could not be calculated (the error is logged). `LimitUtilization` is `null` both then and when the user has no limits, so read this field to tell the two apart. Without the parameter the response is unchanged. Added in v6.0.2 |
+| IncludeForcedFrom | Boolean | No | Set to `1` to add `GroupInformation.ForcedFromEnabled` to the response: one boolean per email type (`Campaign`, `AutoResponder`, `Transactional`) that is `true` when the user group's delivery server for that type forces the From address. Such an email is sent with the forced address even when the email and its list have none. The address itself is never returned. Without the parameter the response is unchanged. Added in v6.0.5 |
 
 ::: code-group
 
@@ -541,6 +542,27 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Success Response with IncludeForcedFrom]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "UserInformation": {
+    "UserID": 123,
+    "RelUserGroupID": 1,
+    "EmailAddress": "user@example.com",
+    "GroupInformation": {
+      "UserGroupID": 1,
+      "ForcedFromEnabled": {
+        "Campaign": false,
+        "AutoResponder": true,
+        "Transactional": false
+      }
+    }
+  },
+  "LimitUtilization": null
+}
+```
+
 ```json [Error Response]
 {
   "Success": false,
@@ -555,6 +577,8 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+`ForcedFromEnabled.Campaign` reflects the group's marketing delivery server. A type with no delivery server assigned, or with no forced From address, reads `false`. The key is added only when the user has a user group.
 
 ## Update User
 
