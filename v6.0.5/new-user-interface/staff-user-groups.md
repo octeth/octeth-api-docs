@@ -77,7 +77,8 @@ unsaved change in another section is not sent.
   responders, the X-Mailer header, the plain text and HTML headers and footers, the sender domain
   options, the default sender domain with its monthly limit, the email gateway and campaign DNS
   templates (a template once chosen can be changed but not cleared here), the email gateway
-  options, and the custom email headers as JSON.
+  options (including **Track opens on new sender domains** and **Track clicks on new sender
+  domains**), and the custom email headers as JSON.
 - **Limits.** The same fields as on the Create page.
 - **Permissions.** Only the permissions you turn on or off are changed. A permission of a plug-in
   that is disabled today is kept.
@@ -87,6 +88,20 @@ unsaved change in another section is not sent.
   for sign-ups, imports and campaign content.
 - **Team members.** How many people each account of the group can invite to sign in with their own
   email address and role, and whether every one of them must use two-factor authentication.
+
+### Tracking on new sender domains
+
+Open and click tracking are set per sender domain. Under **Email gateway** in the Sending
+section, **Track opens on new sender domains** and **Track clicks on new sender domains** set what
+a sender domain starts with when an account of the group adds it. Both are on for every group
+that has never changed them, which is how Octeth has always created domains.
+
+Turn them off for a group that sends transactional email, such as password resets and
+invitations, so new domains do not add a tracking pixel or rewrite links. The setting applies to
+domains added from then on, by the account in the new interface or the classic user area, with
+the API, or when the default sender domain is used. Domains that already exist keep their own
+setting, and the account can still turn tracking on or off for each domain. An API call that
+sends `LinkTracking` or `OpenTracking` when it creates a domain uses that value instead.
 
 ### Send method
 

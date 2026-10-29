@@ -16,6 +16,7 @@ Gateway messages carry `X-Report-Abuse: <https://<tracking or app host>/report_a
 - Authentication required: User API Key
 - Required permissions: `EmailGateway.AddDomain`
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- The new domain's `Options.LinkTracking` and `Options.OpenTracking` start from the user group's `EmailGatewayDefaultLinkTracking` and `EmailGatewayDefaultOpenTracking` (on unless the group sets them to `Disabled`). Changed in v6.0.5: both were always on.
 :::
 
 **Request Body Parameters:**

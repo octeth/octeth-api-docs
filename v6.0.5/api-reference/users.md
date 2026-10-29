@@ -2291,11 +2291,13 @@ curl -X POST https://example.com/api.php \
 |---|---|---|
 | TargetDeliveryServerID_Marketing, TargetDeliveryServerID_Transactional, TargetDeliveryServerID_AutoResponder | Delivery server ID, or `0` for the system default. The server must exist | Digit string, as the screen's `<select>` posts it |
 | ShowEmailThroughput, PreventEmailCampaignCreateIfSpamAssassinScoreIsNotZero, SimplifiedCampaignCreateUI, SenderDomainManagement, EnableSenderInfo, ForcedSenderInfo, DefaultSenderDomainActivate, EmailGatewayApplyHeaderFooter | `Enabled` / `Disabled` (also `true` / `false`) | `"Enabled"` when on, boolean `false` when off. This is what the screen stores for a ticked or unticked checkbox, and `DefaultSenderDomainActivate` is read by truthiness, so `Disabled` is never stored |
-| DisableSESPlugins, EmailGatewayNewDomainManualApproval | `Enabled` / `Disabled` | `"Enabled"` / `"Disabled"` |
+| DisableSESPlugins, EmailGatewayNewDomainManualApproval, EmailGatewayDefaultOpenTracking, EmailGatewayDefaultLinkTracking | `Enabled` / `Disabled` | `"Enabled"` / `"Disabled"` |
 | DisableListUnsubscribeHeader | `true` / `false` | Boolean |
 | DefaultSenderDomain, UserAreaLogoutURL | String | String (trimmed) |
 | DefaultSenderDomainMonthlyLimit | Non-negative integer | Integer |
 | EmailGatewayDNSTemplate, EmailCampaignDNSTemplate | A template name from `EMAILGATEWAY_DNS_TEMPLATES` / `EMAILCAMPAIGN_DNS_TEMPLATES` (case-sensitive; `Default` always exists) | String |
+
+<Badge type="tip" text="New in v6.0.5" /> `EmailGatewayDefaultOpenTracking` and `EmailGatewayDefaultLinkTracking` set the open and click tracking a sender domain starts with when an account of the group creates one. A group that has never stored them behaves as `Enabled`, and the keys appear in returned group `Options` only once a group stores them. Existing sender domains are not changed when they are set.
 
 Any key outside this list is refused with `ErrorCode 4`; the response lists the offending keys in `UnknownKeys` under the spelling the request used. Note that `/api.php` lowercases nested request keys, so a key sent inside a JSON request body is reported lowercase, while a key sent inside a form-encoded `Options` JSON string keeps its original case.
 

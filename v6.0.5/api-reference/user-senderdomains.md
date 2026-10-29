@@ -227,8 +227,8 @@ If a `(SenderDomain, UserID)` pair already exists (e.g. it was previously soft-d
 | SessionID         | String  | No       | Session ID obtained from login                                                                               |
 | APIKey            | String  | No       | API key for authentication                                                                                   |
 | SenderDomain      | String  | Yes      | The domain name to register (e.g. `example.com`). Cannot be `localhost`                                      |
-| LinkTracking      | Boolean | No       | Whether to enable click tracking on links sent from this domain. Default: `true`                            |
-| OpenTracking      | Boolean | No       | Whether to enable open tracking. Default: `true`                                                             |
+| LinkTracking      | Boolean | No       | Whether to enable click tracking on links sent from this domain. Default: the user group's `EmailGatewayDefaultLinkTracking`, on unless the group sets it to `Disabled` (changed in v6.0.5, was always `true`) |
+| OpenTracking      | Boolean | No       | Whether to enable open tracking. Default: the user group's `EmailGatewayDefaultOpenTracking`, on unless the group sets it to `Disabled` (changed in v6.0.5, was always `true`) |
 | UnsubscribeLink   | Boolean | No       | Whether to inject the unsubscribe link automatically. Default: `false`                                       |
 | CustomSubdomain   | String  | No       | Override the default MFROM/return-path subdomain. Letters, digits, and hyphens only; max 32 chars; no leading/trailing hyphens |
 | CustomTrackPrefix | String  | No       | Override the default click-tracking subdomain prefix. Same character rules as `CustomSubdomain`             |

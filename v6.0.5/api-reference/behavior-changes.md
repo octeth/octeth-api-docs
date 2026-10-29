@@ -107,6 +107,16 @@ A team member whose role holds `ApiKeys.Manage` (Admin) now sees the value of an
 
 **Who needs to act:** nobody. An integration that re-enabled conversion tracking after every cancel can drop that call.
 
+### Sender domains
+
+#### New sender domains take open and click tracking from the user group
+
+Every path that creates a sender domain (`user.senderdomain.create` without `LinkTracking` / `OpenTracking`, `emailgateway.adddomain`, the sender domain wizard of the new interface, the classic user area, the domain created on the fly from a journey's From address, and the group's default sender domain) used to turn open and click tracking on. They now start from two new user group options, `EmailGatewayDefaultOpenTracking` and `EmailGatewayDefaultLinkTracking`, set with `usergroup.options.patch` or under **Email gateway** in the staff user group screen (octeth/oempro#3608).
+
+**Not affected:** a group that never sets the options behaves as before, because a missing option reads as `Enabled`. Existing sender domains keep their stored values. A `user.senderdomain.create` call that sends `LinkTracking` or `OpenTracking` gets the value it sent.
+
+**Who needs to act:** an integration that creates sender domains for accounts in a group where an administrator turned either option to `Disabled`, and relies on tracking being on: send `LinkTracking=true` / `OpenTracking=true` explicitly, or turn tracking on per domain with `user.senderdomain.update`. `usergroup.get` and the other commands that return group `Options` show the two keys once a group stores them.
+
 ## AI agent keys get SMS commands and a separate SMS budget
 
 **What changed:** AI agent keys can call the SMS campaign, template, suppression and single-send commands, and SMS sends count against separate SMS limits (`AgentMaxSmsPerDay`, `AgentMaxSmsRecipientsPerSend`, `AgentSmsConfirmAbove`) on the key and the user group, never against the email limits. `user.apikey.*`, `user.agentpolicy.get` and `usergroup.*` accept or return the three new fields.
