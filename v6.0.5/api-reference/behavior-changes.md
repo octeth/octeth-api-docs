@@ -97,6 +97,16 @@ A team member whose role holds `ApiKeys.Manage` (Admin) now sees the value of an
 
 **Who needs to act:** if your install set a non-zero default send rate, new campaigns are now paced at it. Pass `SendRatePerMinute=0` on `smscampaign.create` for a campaign that must not be limited.
 
+### Email campaigns
+
+#### `campaign.cancel` keeps conversion tracking
+
+`campaign.cancel` used to turn a campaign's conversion tracking off as a side effect: it unschedules the campaign through an internal `campaign.update` call that omitted `s2senabled`, which `campaign.update` stores as off. It now passes the campaign's current setting through, so `Options.S2SEnabled` is left as it was (octeth/oempro#3823). The request and the response are unchanged, and the A/B test reset on cancel is unchanged.
+
+**Not affected:** campaigns without conversion tracking. Campaigns cancelled on an earlier version keep the setting they were left with.
+
+**Who needs to act:** nobody. An integration that re-enabled conversion tracking after every cancel can drop that call.
+
 ## AI agent keys get SMS commands and a separate SMS budget
 
 **What changed:** AI agent keys can call the SMS campaign, template, suppression and single-send commands, and SMS sends count against separate SMS limits (`AgentMaxSmsPerDay`, `AgentMaxSmsRecipientsPerSend`, `AgentSmsConfirmAbove`) on the key and the user group, never against the email limits. `user.apikey.*`, `user.agentpolicy.get` and `usergroup.*` accept or return the three new fields.
