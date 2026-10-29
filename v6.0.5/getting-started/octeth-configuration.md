@@ -1095,7 +1095,9 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     UI_BRAND_MAIL_FOOTER=
     ```
 
-    Leaving a URL or an address empty is correct rather than incomplete: the interface hides the link instead of pointing it somewhere wrong. That includes "Contact support" on the password reset page, which is hidden while both `UI_BRAND_SUPPORT_URL` and `UI_BRAND_SUPPORT_EMAIL` are empty. `UI_BRAND_LEGAL_NAME` falls back to `UI_BRAND_NAME` when empty.
+    Leaving a URL or an address empty is correct rather than incomplete: the interface hides the link instead of pointing it somewhere wrong. `UI_BRAND_LEGAL_NAME` falls back to `UI_BRAND_NAME` when empty.
+
+    `UI_BRAND_SUPPORT_EMAIL` is where the in-app support form sends customer requests (from v6.0.5, issue #3316). The form is a page in the new user interface that every "Contact support" link opens while `UI_BRAND_SUPPORT_URL` is empty: the "Account is waiting review" banner, the user menu and the sidebar Support item. Each request arrives with Reply-To set to the customer, so you answer from your own inbox, and carries the account details you would otherwise ask for: user ID, account name and email, reputation level, user group and plan, interface mode and the page the customer came from. The customer gets an email confirming the request arrived, without the text they typed. A customer can send 5 requests an hour, and a message is capped at 5,000 characters. Nothing is stored. The form sends through the `UI_MAIL_*` settings, so under `UI_MAIL_MAILER=log` it tells the customer that outgoing email is not set up and shows this address instead of appearing to succeed. When both `UI_BRAND_SUPPORT_EMAIL` and `UI_BRAND_SUPPORT_URL` are empty, every "Contact support" link and the sidebar Support item are hidden, including the one on the password reset page.
 
     Quote any value containing a space or a `#`, for example `UI_BRAND_NAME="Acme Mail"` and
     `UI_BRAND_TERMS_URL="https://acmemail.com/legal#terms"`. An unquoted space stops Octeth reading
@@ -1111,6 +1113,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     UI_BRAND_STATUS_URL=
     UI_BRAND_AUP_URL=
     UI_BRAND_SUPPORT_URL=
+    UI_BRAND_DOCS_URL=
     UI_BRAND_TAGLINE=
     UI_BRAND_TRUST_STATS=
     ```
@@ -1119,7 +1122,8 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     - `UI_BRAND_STATUS_URL`: your status page, linked as "Status" in the footer of every signed-out page, next to Privacy and Terms.
     - `UI_BRAND_AUP_URL`: your Acceptable Use Policy. When set, the sign-up consent sentence reads "I agree to &lt;brand&gt;'s Terms of Service, Privacy Policy and Acceptable Use Policy, and to receive account-related emails." with the policy linked in a new tab, the consent error names all three policies, and the footer of every signed-out page links it as "Acceptable Use". When empty, the sentence, the error and the footer are unchanged. Acceptance is checked at sign-up but not recorded.
-    - `UI_BRAND_SUPPORT_URL`: your help desk or contact page, linked as "Contact support" on the password reset page, opened in a new tab. It wins over `UI_BRAND_SUPPORT_EMAIL`, which is used as a `mailto:` link when this is empty. With neither set, the link is hidden.
+    - `UI_BRAND_SUPPORT_URL`: your help desk or contact page. When set, every "Contact support" link opens it in a new tab: the password reset page, the "Account is waiting review" banner, the user menu and the sidebar Support item, and the in-app support form is not offered. When empty, those links open the support form, which mails `UI_BRAND_SUPPORT_EMAIL` (the password reset page uses a `mailto:` link to it), or are hidden when that is empty too.
+    - `UI_BRAND_DOCS_URL`: your documentation site, linked as "Documentation" in the customer user menu and opened in a new tab. The item is hidden while this is empty (new in v6.0.5, issue #3316). It can also be set from the staff area, **Settings > Branding > Links**.
     - `UI_BRAND_TAGLINE`: one short line at the top of the brand panel, for example `UI_BRAND_TAGLINE="Email and SMS for growing teams"`.
     - `UI_BRAND_TRUST_STATS`: figures at the bottom of the sign-in brand panel, written as `value|label` pairs separated by semicolons, for example `UI_BRAND_TRUST_STATS="10M+|Emails sent per month;99.9%|Uptime"`. An entry missing its value or its label is skipped. Show only figures you can back.
 
