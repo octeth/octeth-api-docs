@@ -8,12 +8,6 @@ description: Deliberate API behavior changes in Octeth v6.0.5 that an existing i
 
 This page lists every deliberate change in v6.0.5 that an existing integration can observe, so you can check your code against it before upgrading.
 
-::: info Release in progress
-This page is written as changes merge during the release cycle, not at release time. A deliberate contract change reads as an ordinary bug fix in the commit log, so a page assembled from commit subjects at the end of a cycle will miss it.
-
-If this notice is still here when the release ships, there were no observable API behavior changes in v6.0.5.
-:::
-
 ## Tier 1: changes that can break an integration
 
 ### Global custom fields (privilege check)
@@ -106,6 +100,14 @@ A team member whose role holds `ApiKeys.Manage` (Admin) now sees the value of an
 **Not affected:** campaigns without conversion tracking. Campaigns cancelled on an earlier version keep the setting they were left with.
 
 **Who needs to act:** nobody. An integration that re-enabled conversion tracking after every cancel can drop that call.
+
+#### `campaign.pause`, `campaign.resume` and `campaign.cancel` keep exclusions, and pause and resume keep conversion tracking
+
+`campaign.pause` and `campaign.resume` turned a campaign's conversion tracking (`Options.S2SEnabled`) off in the same way, and all three commands deleted the campaign's excluded lists and segments, so a later send could reach recipients the user had excluded. All three now leave both as they were (octeth/oempro#3833, octeth/oempro#3834). `campaign.update` also checks the include and exclude lists and segments it receives before it replaces the stored ones, and replaces them in one step (octeth/oempro#3840). Requests and responses of all four commands are unchanged.
+
+**Not affected:** campaigns without exclusions or conversion tracking. Campaigns paused, resumed or cancelled on an earlier version keep what they were left with.
+
+**Who needs to act:** nobody. An integration that re-sent the exclusions or re-enabled conversion tracking after a pause, resume or cancel can drop that call. A campaign changed that way on an earlier version may need its exclusions set again.
 
 ### Sender domains
 

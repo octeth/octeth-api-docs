@@ -12,27 +12,62 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Changelog will be updated upon release.
+Octeth v6.0.5 lets an account owner invite team members with their own sign-in and a role, keeps an audit log of every sign-in and change on each account, gives AI assistants the tools to manage lists, subscribers, segments, campaigns, journeys and SMS, and makes campaign editing in the new interface faster with merge tag menus, saved segments and a pre-filled sender. It also requires encryption before sign-in on the email gateway's SMTP submission ports. This release changes how the API and the SMTP relay answer some requests, so read the Upgrade Notes and the [API behavior changes in v6.0.5](/v6.0.5/api-reference/behavior-changes) before upgrading an installation that other systems call.
 
 ### New Features
 
-- (To be documented)
+- **Team members** - An account owner can invite people to the account. Each person signs in with their own email address, password and two-factor authentication, can switch between the accounts they belong to, and works under one of five roles: Owner, Admin, Manager, Author or Viewer. The owner can require two-factor authentication from every member, and administrators set the number of seats and the two-factor requirement per user group and can suspend or remove a member. See [Team Members](/v6.0.5/new-user-interface/team-members) (#3686)
+- **Account audit log** - Every account keeps a log of sign-ins and changes, with the person or API key that made each one, the outcome, the IP address and the browser. The owner and Admin members read it in the new interface, and entries older than one year are removed (#3691)
+- **More tools for AI assistants** - The built-in AI assistant connector can now administer lists and custom fields, look up, tag and delete subscribers, copy and delete segments, report on and copy email campaigns, clone and bulk-enrol journeys, and create and send SMS campaigns. Every delete asks for confirmation, and SMS sends count against their own daily and per-send limits, separate from email. See [AI Assistants](/v6.0.5/new-user-interface/ai-assistants) (#3777)
+- **SMS send speed and quiet hours** - Senders can set how many messages per minute an SMS campaign sends and the hours it stays quiet, and change both while the campaign is sending (#3795)
+- **Archived delivery servers** - Administrators can archive a delivery server they no longer use and restore it later with its settings. An archived server is hidden from every picker and never used for sending (#872)
+- **Support form in the new interface** - Contact support links open the operator's help desk when one is configured, or an in-app form that emails the support address. The Documentation link follows a new setting (#3316)
+- **Suppression list export** - The suppression list screens of the new interface download the list as CSV, with the current search and filter applied (#3182)
 
 ### Enhancements
 
-- (To be documented)
+- **Merge tags in every email editor** - The subject, preview text, HTML, plain-text and drag-and-drop editors have an Insert merge tag menu, and typing <code v-pre>{{</code> opens the tag list at the cursor (#3802, #3806)
+- **Saved segments as campaign recipients** - The Recipients step can target one of a list's saved segments directly (#3803)
+- **Pre-filled sender** - New campaigns, autoresponder emails and journey Send email steps suggest a sender from the last campaign, the list or the account default (#3804, #3815)
+- **Edit a scheduled campaign** - A scheduled campaign has an Edit action on its report and in the Scheduled list, with a choice to keep the schedule or pause it first (#3816)
+- **Journey Send email step** - The step explains that a journey email is an email template and offers to create one when none exists (#3817)
+- **Larger starter text** - New drag-and-drop emails start with 20px body text (#3818)
+- **Sender domain tracking defaults** - Administrators can set whether new sender domains of a user group start with open and click tracking on (#3608)
+- **Untrusted account notices** - The administrator is notified when an account that cannot send yet tries the SMTP relay or signs up, not only when it uses the HTTP API (#3600)
+- **Subscriber page texts** - The product name and the header, footer and logout URLs of the subscriber-facing pages are set in the staff Branding screen (#3583)
+- **Campaign dispatch reliability** - A campaign is handed to the sending queue only once the queue confirms it received the message (#2591)
 
 ### Bug Fixes
 
-- (To be documented)
+- **Excluded recipients** - Pausing, resuming or cancelling a campaign no longer removes its excluded lists and segments, so a later send cannot reach excluded recipients. These actions also keep conversion tracking on (#3823, #3833, #3834, #3840)
+- **Segment rules** - A "belongs to segment" audience rule now targets exactly the subscribers of that segment, also for segments built on open and click events and for randomized segments (#3810)
+- **Campaign duplicates** - Duplicating a sent campaign opens the copy, and copies of campaigns built in the classic interface keep their recipients (#3801)
+- **Schedule pickers** - The date and time pickers open in the campaign Send dialog (#3800)
+- **Autoresponder sender** - An autoresponder email with no sender can be saved on a group that manages sender domains, a sender on a domain that is no longer verified is kept on save, and no warning is shown when the administrator sets the sender (#3824, #3835, #3836)
+- **Keitaro events** - Conversions with long or non-Latin statuses and postbacks with a time far in the future are recorded correctly (#3728, #3729)
+- **API playground for team members** - The API reference playground offers a team member only the API keys they can use (#3776)
+- **Billing default** - The new interface's billing feature is off unless it is turned on (#2912)
 
 ### Security Patches
 
-- (To be documented)
+- **SMTP relay encryption** - On ports 587 and 2525 the email gateway's SMTP relay requires STARTTLS before a client signs in, and refuses sign-in, sender and recipient commands until the connection is encrypted. Port 25 is unchanged (#3601)
+- **SMTP credentials** - New email gateway SMTP usernames and passwords are generated from a secure random source. Existing credentials keep working (#3772)
+- **Team member credentials** - Team members see only the email gateway sender keys and SMTP passwords they created, and those stop working when the member loses access (#3768)
+- **`journey.action.subscribers`** - The sort field, sort direction and filter operator are validated for every caller before the query runs (#3790)
+- **Global custom fields** - The `global.customfield*` commands check the sub-administrator's Custom Fields privilege in every configuration (#3570)
+- **Client IP addresses** - Error reports, SMS click tracking and the classic interface use the client address resolved through the trusted proxy list, not a forwarded header (#2547)
 
 ### Upgrade Notes
 
-- (To be documented)
+- **SMTP clients on port 587** - On installations whose inbound SMTP server has a TLS certificate, a client that signs in on port 587 or 2525 without STARTTLS is refused with `530 5.7.0`. Turn on STARTTLS in the client before upgrading. Setting `"TLSRequiredPorts": []` in the inbound SMTP server configuration restores the old behaviour, which is not recommended (#3601)
+- **Sub-administrator keys** - With `ADMIN_API_ENFORCE_PRIVILEGES` off, a sub-administrator without the Custom Fields privilege now receives error `99999` from the `global.customfield*` commands. Grant the privilege or use another key (#3570)
+- **AI assistants and SMS** - Existing AI agent keys with the send permission can send SMS after the upgrade, and the new SMS limits start at 0, which means no limit. Set the SMS limits on each user group right after upgrading if assistants must not text without a cap (#3783)
+- **SMS default send rate** - If the SMS Default send rate per minute setting is not 0, new SMS campaigns are now paced at it, as the setting always described (#3795)
+- **Rebranding page** - The classic admin Rebranding page now redirects to the Subscriber pages section of the staff Branding screen, and saving through the old form is refused (#3583)
+- **Older SMTP passwords** - We recommend resetting the passwords of email gateway SMTP credentials created before this release, and rotating an account's gateway credentials if a team member with the Admin role was removed before it (#3768, #3772)
+- **New settings** - The upgrade adds `AUDIT_LOG_RETENTION_DAYS=365` and an empty `UI_BRAND_DOCS_URL` to `.oempro_env`. Both match the previous behaviour
+- **Database** - The upgrade adds the team member, audit log, AI agent SMS limit and delivery server archive tables and columns.
+- **Other API changes** - See [API behavior changes in v6.0.5](/v6.0.5/api-reference/behavior-changes) for the full list and an upgrade checklist.
 
 ### Deprecations
 
