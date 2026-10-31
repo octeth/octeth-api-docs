@@ -270,17 +270,20 @@ Coding agents can also install and upgrade Octeth itself. See [Let an AI coding 
 Before anything is connected, Octeth shows a consent screen. It tells you:
 
 - The name of the assistant asking to connect.
-- What it will be able to do: read your lists, segments and subscriber counts, your campaigns and their reports, and your journeys and email templates.
-- What it will not be able to do: send email, or create, change or delete anything.
+- What it can do. **Read** is always on: your lists, segments and subscriber counts, your campaigns and their reports, and your journeys and email templates. Tick **Change data** to let it create and edit lists, segments, subscribers, templates and draft campaigns, and **Send** to let it schedule and send campaigns and email.
 - The account you are signed in as, and the site you return to after you approve.
 
+Your service provider decides which permissions assistants may have on your account. A permission it does not allow is shown greyed out with "Not allowed by your service provider", and cannot be ticked. If your service provider has turned AI assistants off for your account, the consent screen says so and offers only **Cancel**.
+
 Click **Allow** to connect, or **Cancel** to stop. If the assistant's name or the return site looks wrong, click **Cancel**.
+
+The connection keeps only the permissions your service provider allowed when you approved it. If your service provider allows more later, the connection does not gain them by itself: open its settings on **Connected AI assistants** and tick them there.
 
 ## Manage connected assistants
 
 Open **API & webhooks** > **Connected AI assistants** to see every assistant connected to your account.
 
-The **Connected assistants** table shows each assistant's name, when it was connected, when it was last used, and its status (**Active** or **Revoked**).
+The **Connected assistants** table shows each assistant's name, what it can do, when it was connected, when it was last used, and its status (**Active** or **Revoked**). A permission your service provider no longer allows is struck through: the assistant cannot use it until your service provider allows it again.
 
 The **Recent activity** table lists the last 25 tool calls made by your assistants: when, which assistant, which tool, the result (**OK**, **Denied** or **Error**) and how long it took. Use it to check what an assistant looked at.
 
