@@ -32,11 +32,18 @@ Every success response also carries the new `PreviousSubscriptionStatus` field: 
 
 ## Tier 2: shape and value changes
 
-None recorded yet.
+### Subscribers
+
+#### `subscriber.subscribe` returns the status code instead of `ErrorCode 7` for a contact's own unique value
+
+Before v6.0.6 the uniqueness check of a unique custom field counted the contact's own stored value, so a call for an address already on the list that carried its own unique value failed with `ErrorCode 7`, and so did an address joining a second list with a global unique value it already held (octeth/oempro#3883). The check now ignores the contact's own record. Such a call returns `ErrorCode 9` (already on the list) or `ErrorCode 12` (unsubscribed), or succeeds for a new list or with `UpdateIfUnsubscribed=true`. A value held by a different subscriber still returns `ErrorCode 7`.
+
+**Who needs to act:** an integration that treats `ErrorCode 7` from `subscriber.subscribe` as "this contact already exists". Handle `ErrorCode 9` and `ErrorCode 12` for that case.
 
 ## Upgrade checklist
 
 - [ ] If you call `subscriber.subscribe`, handle `ErrorCode 12` (the contact unsubscribed from the list, nothing changed). Send `UpdateIfUnsubscribed=true` only for a contact who asked to subscribe again.
+- [ ] If you call `subscriber.subscribe` with unique custom fields, `ErrorCode 7` now means another subscriber holds the value. An existing contact resubmitting its own value gets `ErrorCode 9` or `ErrorCode 12`.
 
 ---
 

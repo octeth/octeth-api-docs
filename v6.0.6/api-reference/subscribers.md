@@ -196,6 +196,8 @@ The public signup form (`subscribe.php`), the re-subscribe action on the subscri
 An address that is already on the list (subscribed, pending confirmation or pending opt-out) returns `ErrorCode 9` and **nothing is changed**, including the custom field values in the request. This endpoint is not an upsert. To update an existing subscriber use [`subscriber.update`](#update-a-subscriber), or [`subscriber.create`](#create-a-subscriber) with `UpdateIfDuplicate=true`.
 :::
 
+<Badge type="tip" text="Fixed in v6.0.6" /> A unique custom field (`IsUnique = Yes`) no longer counts the contact's own stored value as a duplicate. Before v6.0.6 an address already on the list that resubmitted its own unique value got `ErrorCode 7`, and an address joining a new list with a global unique value it already holds on another list was refused the same way. Now `ErrorCode 7` means a **different** subscriber holds the value. An address already on the list gets the code for its status: `ErrorCode 9` when it is subscribed or pending, `ErrorCode 12` when it has unsubscribed (or success with `UpdateIfUnsubscribed=true`).
+
 ::: warning Required custom fields are only fully enforced on request
 By default this endpoint validates `IsRequired` custom fields **only when the caller submits the field's key**. A required field that is omitted entirely is not checked, and the subscriber is created without it. Set `EnforceRequiredFields=true` to validate every required field on the list.
 
@@ -286,7 +288,8 @@ curl -X POST https://example.com/api.php \
 5: Invalid EmailAddress
 6: Required custom field missing (returned with ErrorCustomFieldID and
    ErrorCustomFieldTitle)
-7: Custom field value is not unique
+7: Custom field value is not unique (another subscriber holds it;
+   returned with ErrorCustomFieldID and ErrorCustomFieldTitle)
 8: Invalid custom field value
 9: Email address is already on the list, nothing changed
 10: Subscription failed
