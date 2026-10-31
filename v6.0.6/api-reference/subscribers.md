@@ -1407,7 +1407,7 @@ curl -X POST https://example.com/api.php \
 | APIKey    | String | No       | API key for authentication            |
 | SubscriberID | Integer | Yes   | ID of the subscriber                  |
 | SubscriberListID | Integer | Yes | ID of the subscriber list           |
-| EmailAddress | String | No    | New email address                     |
+| EmailAddress | String | No    | New email address. <Badge type="tip" text="Fixed in v6.0.6" /> Sending the stored address back, in any letter case, is not an address change: the other lists and global field values are left as they are. |
 | SubscriptionStatus | String | No | New status: Opt-In Pending, Subscribed, Opt-Out Pending, Unsubscribed |
 | UnsubscriptionIP | String | No | IP address for unsubscription        |
 | UnsubscriptionDate | String | No | Date for unsubscription (Y-m-d H:i:s) |
@@ -1459,6 +1459,8 @@ No new error codes are introduced. Two consequences worth calling out:
 
 ::: tip Removing the subscriber from suppression
 <Badge type="tip" text="New in v6.0.1" /> Setting `SubscriptionStatus` to `Subscribed` or `Opt-In Pending`, or `BounceType` to `Soft` or `Not Bounced`, runs an unsuppress step that removes only the list owner's own suppression row for this list. Account-wide rows, system-wide rows, a list row recorded without an owner and suppression patterns stay in place. When the step runs, the response carries `StillSuppressed`, with the same shape as in [`suppression.delete`](./suppression.md#delete-from-suppression-list), for the subscriber's address on this list: an empty array when nothing suppresses it any more, or `null` when the lookup failed. `Success` is unchanged. Before v6.0.1 the step also deleted a list row recorded without an owner.
+
+<Badge type="tip" text="Fixed in v6.0.6" /> Before v6.0.6 a request carrying the contact's current address was treated as an address change, and on an account that owns a list whose subscriber table no longer exists it failed with `ErrorCode 8008` ("The new address could not be written to every list holding this contact, so nothing was changed."). That made it impossible to re-subscribe a contact by sending the whole subscriber object back. An unchanged address now updates the status and fields directly, and a real address change skips lists that have no subscriber table, since they hold no contacts (issue #3882).
 :::
 
 ::: code-group
