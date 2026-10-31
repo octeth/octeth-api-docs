@@ -184,6 +184,17 @@ curl -X POST https://example.com/api/v1/subscriber.create \
 | EnforceRequiredFields | Boolean | No | <Badge type="tip" text="New in v5.9.3" /> When `true`, every custom field the list marks `IsRequired = Yes` is validated, **including fields whose `CustomFieldN` key is not present in the request at all**. Omitting a required field then returns `ErrorCode 6` with `ErrorCustomFieldID` / `ErrorCustomFieldTitle`. Defaults to `false`, which keeps the historical behaviour where a required field is only checked when its key is submitted. <Badge type="warning" text="Changed in v6.0.1" /> The flag no longer changes how a submitted value is tested for emptiness: that test is always the corrected one (see below). |
 | Source    | String | No       | Acquisition source bucket persisted on the subscriber row. Possible values: `CSVImport`, `API`, `Webhook`, `Manual`, `Other`, `Unknown`. Defaults to `API` for this endpoint. Anything outside this set is coerced to `Unknown`. |
 | SourceRef | String | No       | Optional free-text source reference (e.g., a custom label or integration id). Truncated server-side to 64 characters. |
+| UpdateIfUnsubscribed | Boolean | No | <Badge type="tip" text="New in v6.0.6" /> When `true`, an email address that has **unsubscribed** from the list is subscribed again: its status returns to `Subscribed` (or `Opt-In Pending` on a double opt-in list, which sends the confirmation email) and its list suppression entry is deleted. Defaults to `false`, which refuses the call with `ErrorCode 12` and changes nothing. Pass `true` only when you hold fresh consent from the contact. Applies to the first list in `ListID`; the other lists never re-subscribe an unsubscribed address. |
+
+::: danger Unsubscribed contacts are no longer re-subscribed by default
+<Badge type="warning" text="Changed in v6.0.6" /> Before v6.0.6 this endpoint always re-subscribed an address that had unsubscribed from the list, deleted its list suppression entry and answered exactly as for a new subscription. A contact sync could therefore undo every opt-out it touched. The call is now refused with `ErrorCode 12` and `PreviousSubscriptionStatus: "Unsubscribed"`, and the subscriber row and its suppression entry are left as they were. To keep the old behaviour for a contact who has asked to subscribe again, send `UpdateIfUnsubscribed=true`. See [API Behavior Changes in v6.0.6](/v6.0.6/api-reference/behavior-changes#subscriber-subscribe-no-longer-re-subscribes-an-unsubscribed-contact).
+
+The public signup form (`subscribe.php`), the re-subscribe action on the subscriber page of the user area and subscribe requests sent by email pass `UpdateIfUnsubscribed=true`, so a person who subscribes again through them is re-subscribed as before. The journey **Subscribe to list** action and incoming subscription webhooks do not, so a contact who unsubscribed from the target list is skipped.
+:::
+
+::: info ErrorCode 9 is not an update
+An address that is already on the list (subscribed, pending confirmation or pending opt-out) returns `ErrorCode 9` and **nothing is changed**, including the custom field values in the request. This endpoint is not an upsert. To update an existing subscriber use [`subscriber.update`](#update-a-subscriber), or [`subscriber.create`](#create-a-subscriber) with `UpdateIfDuplicate=true`.
+:::
 
 ::: warning Required custom fields are only fully enforced on request
 By default this endpoint validates `IsRequired` custom fields **only when the caller submits the field's key**. A required field that is omitted entirely is not checked, and the subscriber is created without it. Set `EnforceRequiredFields=true` to validate every required field on the list.
@@ -237,7 +248,16 @@ curl -X POST https://example.com/api.php \
     "SubscriberID": 456,
     "EmailAddress": "subscriber@example.com",
     "SubscriptionStatus": "Opt-In Pending"
-  }
+  },
+  "PreviousSubscriptionStatus": ""
+}
+```
+
+```json [Error Response (unsubscribed contact)]
+{
+  "Success": false,
+  "ErrorCode": 12,
+  "PreviousSubscriptionStatus": "Unsubscribed"
 }
 ```
 
@@ -268,13 +288,22 @@ curl -X POST https://example.com/api.php \
    ErrorCustomFieldTitle)
 7: Custom field value is not unique
 8: Invalid custom field value
-9: Duplicate email address
+9: Email address is already on the list, nothing changed
 10: Subscription failed
 11: Invalid user information
+12: Email address has unsubscribed from the list and
+    UpdateIfUnsubscribed is not true, nothing changed (returned with
+    PreviousSubscriptionStatus)
 101: Plugin validation failed
 ```
 
 :::
+
+**Response fields:**
+
+| Field | Description |
+|-------|-------------|
+| PreviousSubscriptionStatus | <Badge type="tip" text="New in v6.0.6" /> The address's status on the list before the call. On success it is empty for a new contact and `Unsubscribed` when `UpdateIfUnsubscribed=true` re-subscribed it. Returned as `Unsubscribed` with `ErrorCode 12`. |
 
 ## Unsubscribe from a List
 
