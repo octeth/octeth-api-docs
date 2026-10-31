@@ -844,7 +844,7 @@ Archives a delivery server you no longer use. An archived server is hidden from 
 - Refused with error `4` while anything still sends through the server: a user group channel, a user's own delivery server, a global segment, a recipient domain route, or (with the IP pool plug-in) an IP pool or IP address. `ErrorText` names them, the same references `admin.deliveryserver.references.get` lists. Move them to another server first.
 - The check covers the whole install. A sub-admin limited to some user groups sees only those groups and their users by name; the others are counted.
 - Archiving an archived server succeeds and changes nothing.
-- Once archived, `usergroup.options.patch` (error `7`), `global.segment.create` and `global.segment.update` (error `7`) and `deliveryroutes.update` refuse the server as a target, as they refuse a server that does not exist.
+- Once archived, `usergroup.options.patch` (error `7`), `usergroup.update` (error `37`) and `usergroup.patch` (error `41`) (changed in v6.0.6), `global.segment.create` and `global.segment.update` (error `7`) and `deliveryroutes.update` refuse the server as a target, as they refuse a server that does not exist.
 - Admin agent keys (AI assistants) cannot call this command.
 :::
 

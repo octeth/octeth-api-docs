@@ -40,10 +40,21 @@ Before v6.0.6 the uniqueness check of a unique custom field counted the contact'
 
 **Who needs to act:** an integration that treats `ErrorCode 7` from `subscriber.subscribe` as "this contact already exists". Handle `ErrorCode 9` and `ErrorCode 12` for that case.
 
+### User groups
+
+#### `usergroup.update` and `usergroup.patch` refuse an archived or missing delivery server
+
+Before v6.0.6 both commands stored any `TargetDeliveryServerID_*` value in `Options` and answered success, even for a delivery server that does not exist or is archived. Sending then fell back to the system default without telling the admin (octeth/oempro#3847). Such a value is now refused with `ErrorCode 37` (`usergroup.update`) or `ErrorCode 41` (`usergroup.patch`), with `ErrorField` naming the key, and nothing is written. This is the rule `usergroup.options.patch` already applied as `ErrorCode 7`.
+
+**Not affected:** `0` (system default), an active delivery server, and calls that do not send `Options`.
+
+**Who needs to act:** an integration that sets a group's delivery servers through these commands. Handle `ErrorCode 37` or `41`, and pick an active server or `0`.
+
 ## Upgrade checklist
 
 - [ ] If you call `subscriber.subscribe`, handle `ErrorCode 12` (the contact unsubscribed from the list, nothing changed). Send `UpdateIfUnsubscribed=true` only for a contact who asked to subscribe again.
 - [ ] If you call `subscriber.subscribe` with unique custom fields, `ErrorCode 7` now means another subscriber holds the value. An existing contact resubmitting its own value gets `ErrorCode 9` or `ErrorCode 12`.
+- [ ] If you set `TargetDeliveryServerID_*` through `usergroup.update` or `usergroup.patch`, handle `ErrorCode 37` or `ErrorCode 41` (the server is archived or does not exist, nothing changed).
 
 ---
 

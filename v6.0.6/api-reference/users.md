@@ -1967,6 +1967,10 @@ curl -X POST https://example.com/api.php \
 This command cannot set `SubscriptionPlanIsDefault`, but it can move a group that is a plan's default onto another plan. When that plan already has a default, the update is refused with `ErrorCode 34`, the same answer `usergroup.create` and `usergroup.patch` give, and nothing is written. Before v6.0.2 the update succeeded and left the plan with two default groups. A parameter sent as an array or object, where a single value is expected, is refused with `ErrorCode 36` and `ErrorField` naming it.
 :::
 
+::: warning Archived or missing delivery servers are refused (v6.0.6)
+When `Options` carries `TargetDeliveryServerID_Marketing`, `TargetDeliveryServerID_Transactional` or `TargetDeliveryServerID_AutoResponder` above `0`, the server must exist and must not be archived. Otherwise the call is refused with `ErrorCode 37` (`usergroup.patch`: `ErrorCode 41`), `ErrorField` names the key and `ErrorText` says why, for example `TargetDeliveryServerID_Marketing: delivery server 12 is archived`. This is the rule `usergroup.options.patch` applies as `ErrorCode 7`. `0` selects the system default and is always accepted, and keys match in any case. Before v6.0.6 the call succeeded and stored the ID, and sending fell back to the system default.
+:::
+
 ::: tip Stored SMTP credentials are kept when omitted (v6.0.1)
 `usergroup.get` and `usergroups.get` no longer return the group's SMTP username or password, so an integration cannot read them back and resend them. `usergroup.update` therefore keeps the stored `SendMethodSMTPUsername` and `SendMethodSMTPPassword` when the request omits them, and the send-method test email uses the stored values. Before v6.0.1 an omitted value was stored as empty, which broke the group's sending.
 :::
@@ -2029,6 +2033,9 @@ curl -X POST https://example.com/api.php \
     default (see ConflictingUserGroupID). Added in v6.0.2
 36: A parameter was sent as an array or object where a single value is expected
     (ErrorField names it). Added in v6.0.2
+37: Options names a TargetDeliveryServerID_* above 0 that is not a delivery server ID, or a
+    delivery server that does not exist or is archived (ErrorField names the key). Nothing
+    is written and no test email is sent. Added in v6.0.6
 38: LimitTeamMembers is not a whole number from 0 to 2147483647 (ErrorField limitteammembers)
 39: RequireMemberTwoFactor is not Yes or No (ErrorField requiremembertwofactor)
 40: LimitTeamMembers or RequireMemberTwoFactor was sent before the database migrations of this version have run
@@ -2250,6 +2257,9 @@ curl -X POST https://example.com/api.php \
 38: LimitTeamMembers is not a whole number from 0 to 2147483647 (ErrorField limitteammembers)
 39: RequireMemberTwoFactor is not Yes or No (ErrorField requiremembertwofactor)
 40: LimitTeamMembers or RequireMemberTwoFactor was sent before the database migrations of this version have run
+41: Options names a TargetDeliveryServerID_* above 0 that is not a delivery server ID, or a
+    delivery server that does not exist or is archived (ErrorField names the key). Nothing
+    is written. Added in v6.0.6
 5003: User group is outside the user groups this admin account may access
 ```
 
