@@ -115,6 +115,17 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
    **Email gateway webhook signatures.** The signing key of email gateway webhooks for a sender domain without its own key (the `SigningKey` that `emailgateway.getwebhooks` returns) used to be derived from `LICENSE_KEY`. It is now fixed the first time it is used, and the installer, the upgrade and the license page fix it before they change the key, so replacing a short key with the signed license key does not change it and webhook receivers keep verifying. Setting the key through one of the three places above is the supported way. If you edit `LICENSE_KEY` by hand on an installation that has never sent a gateway webhook, the signing key is fixed from the new value.
 
+   **Latest updates on the staff dashboard.** Two keys control the Latest updates section of the staff dashboard, which shows release announcements, product updates, offers and notices for this installation, published in the Octeth client area:
+
+   ```bash
+   ADMIN_NEWS_FEED_ENABLED=true                            # true (default): read the feed and show the section. false: no request at all, section hidden
+   ADMIN_NEWS_FEED_URL=https://my.octeth.com/api/news      # Feed address. Change it only for a staging or development client area
+   ```
+
+   While `ADMIN_NEWS_FEED_ENABLED` is true, the installation requests `ADMIN_NEWS_FEED_URL` at most about four times a day: a result is cached for 6 hours, and a failed request for 30 minutes. Each request sends the installed version (`PRODUCT_VERSION`) in the query string and, when the feed URL is `https://` and a signed license key is configured (the key pasted on Settings > License, or `LICENSE_KEY`), the license key as an `Authorization: Bearer` header. The key identifies the license, the licensed domain, the plan and its limits, which lets the client area show notices meant for this license, such as a renewal offer. Without a key the installation receives the public items only. The key is never sent to an `http://` address. The client area stores nothing about the request apart from a one-hour per-IP rate-limit counter.
+
+   Every item is checked before it is shown: plain text only, links only to `https://` addresses. An installation without internet access shows "cannot be reached right now" in the section and tries again every 30 minutes. Set `ADMIN_NEWS_FEED_ENABLED=false` to make no request at all.
+
 4. **Debugging & Logging**
    ```bash
    OEMPRO_DEBUG=true                        # Enable/disable debug mode

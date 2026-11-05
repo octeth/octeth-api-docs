@@ -1423,6 +1423,76 @@ curl -X POST https://example.com/api.php \
 
 :::
 
+## Get Latest Updates
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (sub-admins need the `Dashboard` privilege)
+- Rate limit: 60 requests per 60 seconds
+- Added in v6.0.6
+:::
+
+The Latest updates the staff dashboard shows: release announcements, product updates, offers and notices published for Octeth installations in the client area. The installation reads the feed at `ADMIN_NEWS_FEED_URL` with its signed license key and keeps the result for 6 hours, or for 30 minutes after a failed read, so this command answers from that copy and waits on the client area at most once per period, for up to 5 seconds. The license key is never part of the response. With `ADMIN_NEWS_FEED_ENABLED=false` the command answers `Enabled: false` and makes no request. See [Octeth Configuration](../getting-started/octeth-configuration.md).
+
+Every item is validated before it is returned: `Title`, `Summary` and `URLLabel` are plain text (tags and control characters removed), `URL` is an `https://` address or empty, and an item with an unknown `Kind`, a missing title or an invalid date is left out. Items are newest first, at most 10, and an item past its `ExpiresAt` is not returned.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.news.get` |
+| AdminAPIKey | String | Yes | Admin API key |
+
+**Response Fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| Enabled | Boolean | `false` when `ADMIN_NEWS_FEED_ENABLED` is off |
+| Available | Boolean | `false` when the last read of the feed failed. `Items` is then empty |
+| FetchedAt | String | When the feed was read, `YYYY-MM-DD HH:MM:SS` UTC. Empty when `Enabled` is `false` |
+| Items | Array | `ID`, `Title` (at most 120 characters), `Summary` (at most 300), `URL`, `URLLabel` (at most 40), `Kind` (`release`, `update`, `offer` or `notice`), `Level` (`info` or `warning`), `PublishedAt` and `ExpiresAt` (ISO 8601 UTC, `ExpiresAt` may be `null`) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  --data-urlencode "Command=admin.news.get" \
+  --data-urlencode "AdminAPIKey=your-admin-api-key" \
+  --data-urlencode "ResponseFormat=JSON"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "Enabled": true,
+  "Available": true,
+  "FetchedAt": "2026-11-05 10:00:00",
+  "Items": [
+    {
+      "ID": "01m6j9cyng5bqq69s4meq3n5z4",
+      "Title": "Octeth 6 is available",
+      "Summary": "Read the upgrade notes before you update.",
+      "URL": "https://octeth.com/blog",
+      "URLLabel": "Read more",
+      "Kind": "release",
+      "Level": "info",
+      "PublishedAt": "2026-11-04T09:00:00Z",
+      "ExpiresAt": null
+    }
+  ]
+}
+```
+
+```txt [Error Codes]
+99998: Authentication failed
+99999: Not enough privileges (sub-admin without Dashboard)
+```
+
+:::
+
 ## Get Delivery Forecast
 
 <Badge type="info" text="POST" /> `/api.php`
