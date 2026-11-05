@@ -10,6 +10,10 @@ import {fileURLToPath} from 'node:url'
 // repository and leave the build, the version menu and the sidebar map
 // automatically, one per release. Raise the number to bring one back.
 const BUILT_VERSIONS = 7
+// The released version the menu marks "(Current)" and purged pages redirect to.
+// Move it to the new version on release day, not when its directory is created.
+const CURRENT_VERSION = 'v6.0.5'
+const DEV_REPO_BLOB = 'https://github.com/octeth/octeth-api-docs/blob/main'
 const DOCS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const versionParts = (dir) => dir.slice(1).split('.').map((part) => (part === 'x' ? 0 : Number(part)))
 const compareVersions = (a, b) => {
@@ -90,9 +94,9 @@ export default defineConfig({
 
         nav: [
             {
-                text: "v6.0.6",
+                text: CURRENT_VERSION,
                 items: [
-                    {text: 'v6.0.6 (Current)', link: '/v6.0.6/'},
+                    {text: 'v6.0.6 (In development)', link: '/v6.0.6/'},
                     {text: 'v6.0.5', link: '/v6.0.5/'},
                     {text: 'v6.0.4', link: '/v6.0.4/'},
                     {text: 'v6.0.3', link: '/v6.0.3/'},
@@ -116,6 +120,7 @@ export default defineConfig({
                     {text: 'v5.5.x', link: '/v5.5.x/'},
                     {text: 'Changelog', link: '/changelog'}
                 ].filter((item) => isBuiltLink(item.link))
+                    .map((item) => item.link === `/${CURRENT_VERSION}/` ? {...item, text: `${CURRENT_VERSION} (Current)`} : item)
             },
             {
                 text: "Add-Ons",
@@ -3084,5 +3089,57 @@ export default defineConfig({
             message: 'Any questions? <a href="https://octeth.com/contact/" target="_blank" rel="dofollow">Contact us</a>.',
             copyright: "&copy;Copyright 50SAAS LLC. All rights reserved."
         }
+    },
+
+    // GitHub Pages cannot send a 301, so every page of a version that left the
+    // build window gets a static redirect stub at its old URL. A page that also
+    // exists in CURRENT_VERSION redirects there. A behavior-changes page describes
+    // one release only, so it redirects to its source on GitHub. Anything else
+    // redirects to the version's changelog entry.
+    buildEnd(siteConfig) {
+        const currentPages = new Set(listPages(CURRENT_VERSION))
+        let count = 0
+        for (const dir of excludedVersions) {
+            for (const page of listPages(dir)) {
+                let target
+                if (/(^|\/)behavior-changes$/.test(page)) {
+                    target = `${DEV_REPO_BLOB}/${dir}/${page}.md`
+                } else if (currentPages.has(page)) {
+                    target = `/${CURRENT_VERSION}/${page === 'index' ? '' : page}`
+                } else {
+                    target = dir.endsWith('.x') ? '/changelog' : `/changelog#${dir.replace(/\./g, '-')}`
+                }
+                const out = path.join(siteConfig.outDir, dir, `${page}.html`)
+                fs.mkdirSync(path.dirname(out), {recursive: true})
+                fs.writeFileSync(out, redirectStub(target))
+                count++
+            }
+        }
+        console.log(`wrote ${count} redirect stub(s) for ${excludedVersions.length} purged version(s)`)
     }
 })
+
+// Page paths of a version directory without the .md suffix, e.g. 'api-reference/behavior-changes'.
+function listPages(dir) {
+    const root = path.join(DOCS_ROOT, dir)
+    return fs.readdirSync(root, {recursive: true})
+        .filter((file) => file.endsWith('.md'))
+        .map((file) => file.slice(0, -3).split(path.sep).join('/'))
+}
+
+function redirectStub(target) {
+    const url = target.startsWith('/') ? `https://dev.octeth.com${target}` : target
+    return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moved</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="${url}">
+<meta http-equiv="refresh" content="0; url=${target}">
+<script>location.replace(${JSON.stringify(target)} + (location.hash && !${JSON.stringify(target)}.includes('#') ? location.hash : ''))</script>
+</head>
+<body><p>This page moved to <a href="${target}">${url}</a>.</p></body>
+</html>
+`
+}

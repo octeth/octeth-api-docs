@@ -19,11 +19,11 @@ Response time: Within 24 hours on business days
 
 ### 1. Check the Documentation
 
-- [Installation Guide](/v5.8.0/getting-started/server-requirements) - Server setup and installation
-- [Getting Started Guide](/v5.8.0/api-reference/getting-started) - Quick setup and first steps
-- [API Reference](/v5.8.0/api-reference/subscribers) - Complete endpoint documentation
-- [Error Handling](/v5.8.0/api-reference/error-handling) - Common error codes and solutions
-- [Authorization](/v5.8.0/api-reference/authorization) - Authentication methods and troubleshooting
+- [Installation Guide](/v6.0.5/getting-started/server-requirements) - Server setup and installation
+- [Getting Started Guide](/v6.0.5/api-reference/getting-started) - Quick setup and first steps
+- [API Reference](/v6.0.5/api-reference/subscribers) - Complete endpoint documentation
+- [Error Handling](/v6.0.5/api-reference/error-handling) - Common error codes and solutions
+- [Authorization](/v6.0.5/api-reference/authorization) - Authentication methods and troubleshooting
 
 ### 2. Verify Your Setup
 

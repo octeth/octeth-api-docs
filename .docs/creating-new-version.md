@@ -13,17 +13,22 @@ cp -r v5.6.x v5.7.x  # Replace with appropriate version numbers
 Edit `.vitepress/config.mjs`:
 
 ### Update Navigation (nav section):
-- Change the current version label to include "(Current)"
-- Remove "(Current)" from the previous version
-- Add the new version at the top of the version list
+- Add the new version at the top of the version list with the label "(In development)"
+- Leave `CURRENT_VERSION` at the top of the file on the released version. The menu adds "(Current)" to that version automatically
 
 ```javascript
 items: [
-    {text: 'v5.7.x (Current)', link: '/v5.7.x/'},
-    {text: 'v5.6.x', link: '/v5.6.x/'},
-    {text: 'v5.5.x', link: '/v5.5.x/'},
+    {text: 'v6.0.7 (In development)', link: '/v6.0.7/'},
+    {text: 'v6.0.6', link: '/v6.0.6/'},
 ]
 ```
+
+### On Release Day
+- Set `CURRENT_VERSION` in `.vitepress/config.mjs` to the released version
+- Remove "(In development)" from its menu item
+- Point the two hero links and the fallback path in `index.md` at the released version
+
+Versions that leave the `BUILT_VERSIONS` window get redirect stubs at build time (see `buildEnd` in `config.mjs`), so their old URLs keep working. Link to a released version's `behavior-changes` page from `changelog.md` only while it is built. After it leaves the window, the stub sends readers to the page's source on GitHub.
 
 ### Add Sidebar Configuration:
 - Copy the entire sidebar configuration from the previous version
