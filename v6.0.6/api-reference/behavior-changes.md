@@ -100,6 +100,20 @@ The `QuietHours` block carries the new `Source` field: `campaign` when the campa
 
 **Who needs to act:** nobody. A client that labels a campaign's quiet hours can read `Source` to mark the install default.
 
+### Journeys
+
+#### Journey emails skip the email API request limit and wait out throttles and account holds
+
+Before v6.0.6 a journey Send email spent the account's `POST /api/v1/email` request budget (100 requests a minute), shared with the account's own transactional API traffic, so a large enrolment failed most of its sends with HTTP 429 and could also refuse the account's own API sends (octeth/oempro#3944). A journey send signed by Octeth now skips that limiter. It is still bounded by the account's email gateway send rate limit, credits and daily cap, and unsigned requests are limited as before.
+
+A journey Send email refused with HTTP 429, or refused because of the account itself (codes 12, 32, 34 and 40: disabled account, inactive sender domain, unverified phone, pending approval), used to count as a failed attempt, so after six attempts subscribers who passed the step while the account was held never got the email (octeth/oempro#3951). These refusals now wait without spending an attempt: a throttle retries after the gateway's `Retry-After` (60 seconds when none is given) for up to 24 hours, and an account hold retries hourly for up to 7 days, then the entry is dead-ended with a reason naming the throttle or hold. A sender domain that is not Enabled when the step runs (Approval Pending, Suspended, Blocked or Disabled) used to skip that email and move the subscriber on. It is now the same domain hold and waits. A retry is never scheduled past a wait cap. The recorded `ErrorCode` on the action execution is now `Throttled` or `AccountHold:<reason>` instead of `SendFailed`, and retries after an ordinary failure carry up to 20 percent jitter.
+
+`journey.get` takes the new opt-in `IncludeSendHolds` parameter, which adds a `SendHolds` array listing the holds this journey's entries are waiting on.
+
+**Not affected:** entries already dead-ended before the upgrade, which are not revived, and `journey.get` calls without `IncludeSendHolds`.
+
+**Who needs to act:** an integration that reads journey action `ErrorCode` values. Expect `Throttled` and `AccountHold:<reason>` for these refusals.
+
 ### Segments
 
 #### Changing a segment's rules resets its count timestamp

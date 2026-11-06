@@ -355,6 +355,7 @@ curl -X POST https://example.com/api/v1/journey.copytouser \
 | StartDate | String  | No       | `YYYY-MM-DD` start of the stats window. Defaults to 30 days ago. Windows `JourneyStats.WindowedEmailActions`, `JourneyStats.AggregatedDaysEmailActions` and `JourneyStats.DaysRevenue`. It does **not** affect `JourneyStats.AggregatedEmailActions` or `JourneyStats.TotalRevenue`, which are always all-time. |
 | EndDate   | String  | No       | `YYYY-MM-DD` end of the stats window, inclusive. Defaults to today. Same fields as `StartDate`. |
 | IncludeActivityCounters | Boolean | No | When truthy (`1`, `true`, `yes`, `on`), the `JourneyStats` block also includes `LastTriggeredAt`, `LastActivityAt`, `TotalEnrolledLifetime`, `TotalEnrolledInRange` and `AggregatedDaysEnrolments`. Defaults to `false` so existing consumers see the same shape they do today. |
+| IncludeSendHolds | Boolean | No | When truthy (`1`, `true`, `yes`, `on`), the response also includes `SendHolds`, the account holds this journey's Send email steps are waiting on. Defaults to `false`, and the response is then unchanged (v6.0.6, #3951). |
 | EmailID | Integer | No | Scope `JourneyStats.AggregatedEmailActions` to a single `SendEmail` action on this journey (issue #2019). Must reference an action whose `Action='SendEmail'` and that belongs to this journey + caller. Reads the per-action ISP cache. Defaults to unset (journey-wide aggregate, unchanged). |
 | ISP | String | No | Scope `JourneyStats.AggregatedEmailActions` to a single ISP domain (issue #2019). Must match `/^[a-zA-Z0-9.-]+$/`. Defaults to unset. Combine with `EmailID` to intersect (one action × one ISP). |
 
@@ -391,6 +392,22 @@ curl -X GET https://example.com/api/v1/journey \
 ```
 
 ::: info Optional activity counters
+When `IncludeSendHolds=1` is passed, the response gains a top-level `SendHolds` array, empty when nothing is waiting. Each row is one hold reason:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `Reason` | string | `phone` (the phone number is not verified), `reputation` (the account is pending approval), `domain` (the sender domain is not active) or `account` (the account is disabled). |
+| `Description` | string | A sentence fragment naming the hold, for example `the account phone number is not verified yet`. |
+| `WaitingEntries` | int | Journey entries whose Send email is waiting for this hold to lift right now. |
+
+```json
+"SendHolds": [
+  { "Reason": "phone", "Description": "the account phone number is not verified yet", "WaitingEntries": 1200 }
+]
+```
+
+An entry is counted when its latest Send email attempt was refused for an account hold and its retry is still scheduled. The email goes out once the hold lifts. See `JOURNEY_ACTION_HOLD_SNOOZE_SECONDS` and `JOURNEY_ACTION_HOLD_MAX_WAIT_SECONDS` on the configuration page.
+
 When `IncludeActivityCounters=1` is passed, the `JourneyStats` block also includes:
 
 | Field | Type | Description |

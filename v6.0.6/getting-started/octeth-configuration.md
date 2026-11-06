@@ -814,6 +814,9 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     JOURNEY_ACTION_FAILURE_MAX_ATTEMPTS=6            # Attempts before an entry is dead-ended (default: 6)
     JOURNEY_ACTION_FAILURE_RETRY_BASE_SECONDS=900    # Delay before the first retry, doubles per failure (default: 900)
     JOURNEY_ACTION_FAILURE_RETRY_MAX_SECONDS=21600   # Ceiling for that doubling backoff (default: 21600)
+    JOURNEY_ACTION_THROTTLE_MAX_WAIT_SECONDS=86400   # Longest a journey email waits out send throttles (default: 86400, 24 hours)
+    JOURNEY_ACTION_HOLD_SNOOZE_SECONDS=3600          # How often a journey email held by an account hold tries again (default: 3600)
+    JOURNEY_ACTION_HOLD_MAX_WAIT_SECONDS=604800      # Longest a journey email waits for an account hold to lift (default: 604800, 7 days)
     ```
 
     A journey action that failed used to advance the subscriber to the next action anyway. The entry moved on as though the subscriber had been emailed, so they permanently missed that email even after the underlying fault was fixed, and nothing in the interface said so. A failing action now holds the entry in place, retries it on a doubling backoff, and dead-ends it with the reason recorded once the attempts run out.
@@ -825,6 +828,19 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     **What the shipped defaults buy you.** An entry is retried after 15 minutes, 30 minutes, 1 hour, 2 hours and 4 hours before it is given up on. That leaves most of a working day to fix a misconfigured sender domain or a gateway outage without losing the send.
 
     **Where failures are recorded.** On `oempro_journeys_action_executions` with `ExecutionStatus='Failed'`, plus `ErrorMessage`, `ErrorCode`, and for a pending retry `SnoozedUntil` and `SnoozeReason`. They also appear in the journey log.
+
+    **Throttles and account holds wait instead of failing.** Two kinds of Send email refusal do not count toward `JOURNEY_ACTION_FAILURE_MAX_ATTEMPTS`:
+
+    - **A send throttle.** The email gateway answered HTTP 429: the account's email gateway send rate limit, or its credit or daily cap. The entry tries again after the gateway's `Retry-After`, or after 60 seconds when it gave none, plus up to 20 percent jitter so a wave of entries does not come due in the same second.
+    - **An account hold.** The email gateway refused the account itself: the account is disabled (code 12), the sender domain is not active (code 32), the phone number is not verified while `PHONE_VERIFICATION_REQUIRED_TO_SEND_EG_EMAILS` is on (code 34), or the account is pending approval while `EMAILGATEWAY_REQUIRE_TRUSTED` is on (code 40). A sender domain that is not Enabled when the step runs (Approval Pending, Suspended, Blocked or Disabled) is the same domain hold: the step used to skip the email and move the subscriber on, and it now waits. The entry tries again every `JOURNEY_ACTION_HOLD_SNOOZE_SECONDS`, and the email goes out once the hold lifts. The journey page in the new interface shows a warning while entries are waiting on a hold.
+
+    - **`JOURNEY_ACTION_THROTTLE_MAX_WAIT_SECONDS`** is the longest an entry waits out throttles before it is dead-ended with a reason naming the throttle. Accepted range `300`–`604800`.
+    - **`JOURNEY_ACTION_HOLD_SNOOZE_SECONDS`** is how often an entry held by an account hold tries again. Accepted range `60`–`86400`.
+    - **`JOURNEY_ACTION_HOLD_MAX_WAIT_SECONDS`** is the longest an entry waits for an account hold to lift before it is dead-ended with a reason naming the hold. Accepted range `3600`–`2592000` (30 days). A long wait means a delayed email can arrive days late, for example a welcome email after a week, so lower it if late journey emails are worse than missed ones.
+
+    A retry is never scheduled past the cap: the last one runs at the deadline, and if the send is still refused then, the entry is dead-ended. Each kind of wait has its own budget, measured from its first refusal in the current run of waits, so a throttle that follows a long account hold still gets the full throttle wait. A successful send or an ordinary failure ends the run. A value outside its range falls back to the default. Waits are recorded with `ErrorCode` `Throttled` or `AccountHold:<reason>` (`account`, `domain`, `phone` or `reputation`) and a `SnoozeReason` of "Waiting out a send throttle" or "Waiting for the account hold to lift".
+
+    **Journey sends and the API request limit.** A journey Send email signed by Octeth no longer counts toward the per-account `POST /api/v1/email` request limit (100 requests a minute). That limit is for external callers. Journey sends are still bounded by the account's email gateway send rate limit, credits and daily cap.
 
 44. **Campaign Sender-Domain Auto Branding**
 
