@@ -1271,6 +1271,7 @@ The `Grid` response uses **Monday-first** ordering: `Grid[0]` is Monday, `Grid[6
 | ListID     | Integer | Yes      | Subscriber list to query. Must be owned by the authenticated user.                                                                           |
 | Days       | Integer | No       | Lookback window in days. Default `90`. Clamped to `[1, 365]`. Out-of-range or non-numeric values fall back to the default.                   |
 | Event      | String  | No       | Event to bucket. Default `open`. Possible values: `open`, `click`. Unrecognized values return a validation-error envelope.                   |
+| TimeZone   | String  | No       | Time zone the weekdays and hours are bucketed in. Possible values: `server` (the server clock, UTC on a standard installation) and `account` (the account's time zone setting, the zone campaign scheduling uses; a team member session uses the account owner's zone). When omitted, the grid is in the server clock and the response has no `TimeZone` field, exactly as before. An empty or unrecognized account time zone falls back to the server clock. Unrecognized values return a validation-error envelope (v6.0.6, #3948). |
 
 **Top-level response fields:**
 
@@ -1280,7 +1281,10 @@ The `Grid` response uses **Monday-first** ordering: `Grid[0]` is Monday, `Grid[6
 | `Days`   | Integer | The lookback window actually used (after clamping). Compare against the request to detect clamped values.                                                                |
 | `Event`  | String  | The event actually used (after lowercase normalization).                                                                                                                 |
 | `AsOf`   | String  | ISO-8601 timestamp (UTC) of when the underlying counts were computed. Frozen for the lifetime of the cache entry, so two calls within the cache TTL share an `AsOf`.     |
-| `Grid`   | Array   | 7×24 array of integers. `Grid[d][h]` is the count of events on day `d` (Monday=0..Sunday=6) at hour `h` (0..23, UTC). Empty buckets are `0`, never missing from the response. |
+| `Grid`   | Array   | 7×24 array of integers. `Grid[d][h]` is the count of events on day `d` (Monday=0..Sunday=6) at hour `h` (0..23) in the zone named by `TimeZone`, or in the server clock (UTC on a standard installation) when `TimeZone` was not requested. Empty buckets are `0`, never missing from the response. |
+| `TimeZone` | String | Returned only when the `TimeZone` request parameter is given. The IANA name of the zone the grid is in, for example `America/New_York` or `UTC`. |
+
+With `TimeZone=account`, each hour is converted to the account's local time on its own date, so a window that crosses a daylight saving change counts both sides by local wall-clock hour. In a zone with a half-hour or 45-minute offset (for example India or Newfoundland), each server hour is counted in the local hour its start falls in: 14:00 UTC is 19:30 in Kolkata and is counted at hour 19.
 
 ::: code-group
 
@@ -1303,6 +1307,17 @@ curl -X POST https://example.com/api.php \
     "ListID": 123,
     "Days": 30,
     "Event": "click"
+  }'
+```
+
+```bash [Example Request In the Account Time Zone]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.getsendtimeheatmap",
+    "SessionID": "your-session-id",
+    "ListID": 123,
+    "TimeZone": "account"
   }'
 ```
 
@@ -1339,6 +1354,7 @@ curl -X POST https://example.com/api.php \
 0: Success
 1: ListID is missing (returned in the ErrorCode array as [1] by the required-field validator)
 2: Unsupported Event value (returned in the ErrorCode array as [2]; the offending field name is also surfaced in ErrorText). Allowed values: open, click
+3: Unsupported TimeZone value (returned in the ErrorCode array as [3]; the offending field name is also surfaced in ErrorText). Allowed values: server, account
 99997: Subscriber list does not exist or is not owned by the authenticated user (also returned when ListID is non-numeric or non-positive)
 99998: Authentication failure or session expired
 99999: User does not have the required permission (List.Get)
