@@ -50,11 +50,24 @@ Before v6.0.6 both commands stored any `TargetDeliveryServerID_*` value in `Opti
 
 **Who needs to act:** an integration that sets a group's delivery servers through these commands. Handle `ErrorCode 37` or `41`, and pick an active server or `0`.
 
+### SMS reporting
+
+#### `smscampaign.stats.breakdown` counts each message once for `carrier` and `country`
+
+Before v6.0.6 the `carrier` and `country` dimensions grouped every event of the campaign by the raw column. A message's carrier and country come from its delivery report, so every message was counted under the empty value through its `queued`, `send_attempt` and `sent` events, and each message whose report named a network was counted a second time under that network. A 500-message campaign could report 501 messages with no carrier plus 22 under named networks (octeth/oempro#3920). Each message is now resolved to one value first, the one its latest delivery report (`delivered`, `undelivered` or `expired`) named, so the rows add up to the campaign's messages and are ordered by `Messages`. A click's geolocated country no longer counts toward the `country` breakdown. `Events` for these rows is the number of events of the messages in the row.
+
+Every response also carries the new `TotalMessages` field, the message count independent of `Limit`.
+
+**Not affected:** the `hour`, `day`, `gateway_status`, `error_code`, `link` and `sender_id` dimensions, which still count events per value.
+
+**Who needs to act:** an integration that reads `carrier` or `country` breakdowns. The empty row now holds only messages with no reported value, and the figures under each network no longer include a second count of the same message.
+
 ## Upgrade checklist
 
 - [ ] If you call `subscriber.subscribe`, handle `ErrorCode 12` (the contact unsubscribed from the list, nothing changed). Send `UpdateIfUnsubscribed=true` only for a contact who asked to subscribe again.
 - [ ] If you call `subscriber.subscribe` with unique custom fields, `ErrorCode 7` now means another subscriber holds the value. An existing contact resubmitting its own value gets `ErrorCode 9` or `ErrorCode 12`.
 - [ ] If you set `TargetDeliveryServerID_*` through `usergroup.update` or `usergroup.patch`, handle `ErrorCode 37` or `ErrorCode 41` (the server is archived or does not exist, nothing changed).
+- [ ] If you read `smscampaign.stats.breakdown` by `carrier` or `country`, expect each message in one row (the rows add up to `TotalMessages`) and a smaller empty `Dimension` row.
 
 ---
 

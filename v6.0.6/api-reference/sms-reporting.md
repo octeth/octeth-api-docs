@@ -242,6 +242,15 @@ curl -X GET https://example.com/api/v1/smscampaign.stats.timeseries \
 | IncludeBots | Boolean | No | Include bot clicks, and bot `integration_click` and `integration_conversion` events. Defaults to excluding them |
 | Limit | Integer | No | Rows to return, 1 to 500. Default 50 |
 
+**How rows are counted:** <Badge type="warning" text="Changed in v6.0.6" /> `hour`, `day`, `gateway_status`, `error_code`, `link` and `sender_id` group events, so one message can appear in more than one row (a retried message under two error codes, a message sent in one hour and delivered in the next). `carrier` and `country` describe the message: each message is counted once, under the carrier or country named by its latest delivery report (a `delivered`, `undelivered` or `expired` event), or under an empty `Dimension` when no report named one. The country a click is geolocated to never moves a message. These rows add up to `TotalMessages` and are ordered by `Messages`.
+
+**Response fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Breakdown | Array | One row per value: `Dimension`, `Events` (distinct events), `Messages` (distinct messages). For `carrier` and `country`, `Events` is the number of events of the messages in the row |
+| TotalMessages | Integer | <Badge type="tip" text="New in v6.0.6" /> The messages the filtered events belong to, independent of `Limit`. Use it as the base for a share, so rows past the limit do not change the percentages. The `queued` event, written before the message has a queue row, is not counted |
+
 ::: code-group
 
 ```bash [Example Request]
@@ -264,8 +273,10 @@ curl -X GET https://example.com/api/v1/smscampaign.stats.breakdown \
   "ExcludesBots": true,
   "Limit": 50,
   "Breakdown": [
-    {"Dimension": "Turkcell", "Events": 120, "Messages": 118}
-  ]
+    {"Dimension": "", "Events": 1102, "Messages": 382},
+    {"Dimension": "Turkcell", "Events": 354, "Messages": 118}
+  ],
+  "TotalMessages": 500
 }
 ```
 
