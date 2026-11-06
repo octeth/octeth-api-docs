@@ -48,6 +48,7 @@ Everything else reads the event store directly and is deduplicated at read time.
 | `Integrations.Statuses` | Every conversion status Keitaro reported, with `Count` and `Revenue`, including statuses a conversion later moved past (a lead that became a sale counts once as `lead` and once as `sale`) and `rejected` ones. Bots are excluded |
 | `Integrations.Links` | Per link ordinal (`LinkOrdinal` matches the campaign's links): `UniqueClicks`, `Conversions` and `Revenue`, with conversions and revenue counted from sales only |
 | `Integrations.LastPolledAt` | When Octeth last read clicks from Keitaro (UTC), or `null` when the account has no Keitaro connection |
+| `Integrations.Connection` | <Badge type="tip" text="New in v6.0.6" /> The account's Keitaro connection: `connected`, `failing` (Octeth's last attempt to read Keitaro failed) or `not_connected`. With `not_connected` no Keitaro clicks or conversions are collected, and connecting later does not import clicks made before the connection, so figures of zero mean nothing was collected rather than nobody clicked |
 
 ::: code-group
 
@@ -137,7 +138,8 @@ curl -X GET https://example.com/api/v1/smscampaign.stats \
   "Links": [
     {"LinkOrdinal": 1, "UniqueClicks": 120, "Conversions": 9, "Revenue": "315.0000"}
   ],
-  "LastPolledAt": "2026-10-24 12:00:00"
+  "LastPolledAt": "2026-10-24 12:00:00",
+  "Connection": "connected"
 }
 ```
 
