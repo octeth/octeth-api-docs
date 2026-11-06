@@ -62,6 +62,16 @@ Every response also carries the new `TotalMessages` field, the message count ind
 
 **Who needs to act:** an integration that reads `carrier` or `country` breakdowns. The empty row now holds only messages with no reported value, and the figures under each network no longer include a second count of the same message.
 
+### SMS campaigns
+
+#### `smscampaign.get` says whose quiet hours a campaign follows
+
+The `QuietHours` block carries the new `Source` field: `campaign` when the campaign sets both `QuietHoursStart` and `QuietHoursEnd`, `default` when it follows the install's quiet hours (octeth/oempro#3919). Before v6.0.6 the block gave only the window in force, so a client showed the install default as if the campaign had chosen it.
+
+**Not affected:** every other field of `smscampaign.get`, and when messages are held. The sender resolves quiet hours exactly as before.
+
+**Who needs to act:** nobody. A client that labels a campaign's quiet hours can read `Source` to mark the install default.
+
 ## Upgrade checklist
 
 - [ ] If you call `subscriber.subscribe`, handle `ErrorCode 12` (the contact unsubscribed from the list, nothing changed). Send `UpdateIfUnsubscribed=true` only for a contact who asked to subscribe again.

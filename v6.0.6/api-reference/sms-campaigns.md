@@ -417,7 +417,7 @@ curl -X POST https://example.com/api/v1/smscampaign.audience.count \
 
 <Badge type="tip" text="New in v6.0.1" /> `LinkExpiry` says how long the campaign's links work after each message is sent. `EffectiveHours` is the lifetime in force: the campaign's `LinkExpiryHours`, or `DefaultHours` when that is `0`, capped at `MaxHours`. `DefaultHours` and `MaxHours` are the install's settings.
 
-`QuietHours` says whether the campaign's quiet hours are holding it right now. While `Active` is true a Sending campaign sends nothing, and `ResumesAt` (UTC) is when it starts again. `Start` and `End` are in the campaign's `Timezone`, and both are null when the campaign has no quiet hours.
+`QuietHours` says whether the campaign's quiet hours are holding it right now. While `Active` is true a Sending campaign sends nothing, and `ResumesAt` (UTC) is when it starts again. `Start` and `End` are in the campaign's `Timezone`, and both are null when the campaign has no quiet hours. <Badge type="tip" text="New in v6.0.6" /> `Source` says whose window it is: `campaign` when the campaign sets both `QuietHoursStart` and `QuietHoursEnd`, `default` when it follows the install's quiet hours. An install default with the same start and end has no quiet window, so `Start` and `End` are null and `Source` is `default`.
 
 <Badge type="tip" text="New in v6.0.5" /> `SendRatePerMinute` in `SMSCampaign` is the campaign's speed limit in messages per minute, `0` for none. `QuietHoursStart` and `QuietHoursEnd` in `SMSCampaign` are the campaign's own window, `null` when it follows the install's. The `QuietHours` block gives the window in force either way.
 
@@ -473,7 +473,8 @@ curl -X GET https://example.com/api/v1/smscampaign.get \
     "Start": "21:00",
     "End": "09:00",
     "Timezone": "America/New_York",
-    "ResumesAt": "2026-09-23 13:00:00"
+    "ResumesAt": "2026-09-23 13:00:00",
+    "Source": "campaign"
   },
   "LinkExpiry": {
     "EffectiveHours": 72,
