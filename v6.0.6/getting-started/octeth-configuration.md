@@ -273,7 +273,10 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 13. **RabbitMQ Monitoring**
     ```bash
     RABBITMQ_QUEUE_BACKLOG_THRESHOLD=10000   # Queues with more messages_ready than this (and active consumers) trigger a WARNING
+    RABBITMQ_POLL_QUEUE_STALL_SECONDS=120    # Seconds a poll-based SMS queue may hold ready messages without being fetched before the health check reports it CRITICAL
     ```
+
+    The SMS workers for `sms_delivery_reports`, `sms_events`, `sms_inbound` and `sms_optout_unsubscribe` fetch messages one at a time, so RabbitMQ never shows a consumer on those queues. The health check judges them by whether messages are being fetched instead: while the worker keeps fetching, the queue is healthy, and it becomes CRITICAL (HTTP 503 from `system.health.check`) only after it has held ready messages for `RABBITMQ_POLL_QUEUE_STALL_SECONDS` without a single fetch. `0` reports a stall on the first check that sees no fetch. A dead-letter queue such as `sms_events_dead` is reported as a WARNING with its depth and does not change the HTTP status.
 
 14. **Admin Unsubscribe Behavior**
     ```bash
