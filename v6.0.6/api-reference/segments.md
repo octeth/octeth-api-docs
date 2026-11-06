@@ -158,8 +158,8 @@ The two converted operators take an optional `status` key:
 
 | `status` | Effect |
 |---|---|
-| absent, `null` or `""` | Any status except `rejected` |
-| text of 1 to 64 characters | Only conversions whose latest status is this value, compared without regard to case. `rejected` matches rejected conversions. |
+| absent, `null` or `""` | <Badge type="tip" text="Changed in v6.0.6" /> Only conversions whose latest status is `sale` |
+| text of 1 to 64 characters | Only conversions whose latest status is this value, compared without regard to case. `lead`, `rejected` or a custom status matches conversions with that status. |
 
 A conversion stores only its latest status, so a contact whose `lead` later became a `sale` matches `sale` and not `lead`.
 

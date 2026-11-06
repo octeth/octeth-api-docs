@@ -74,6 +74,14 @@ Every response also carries the new `TotalMessages` field, the message count ind
 
 **Who needs to act:** an integration that reads `carrier` or `country` breakdowns. The empty row now holds only messages with no reported value, and the figures under each network no longer include a second count of the same message.
 
+#### Keitaro conversions count status `sale` only
+
+Before v6.0.6 any latest status except `rejected` was a conversion, so `lead` and custom statuses such as `quiz_started` counted in `smscampaign.stats` `Integrations.Conversions`, `Integrations.Revenue` and `Integrations.Links`, in the `integration_conversion` series of `smscampaign.stats.timeseries`, and in the segment `integration converted` and `not integration converted` operators without a `status`. Now only `sale` counts (octeth/oempro#3925). The rule is applied when reading, so existing campaigns show fewer conversions and less revenue after the upgrade, with no data change.
+
+**Not affected:** every status is still stored, listed in `Integrations.Statuses` and returned by `smscampaign.events.browse`, and a segment rule that names a `status` still matches that status.
+
+**Who needs to act:** an integration that reads Keitaro conversions or revenue. Expect lower figures where Keitaro sends `lead` or custom statuses, and name `status` in a segment rule to target a status other than `sale`.
+
 ### SMS campaigns
 
 #### `smscampaign.get` says whose quiet hours a campaign follows
@@ -90,6 +98,7 @@ The `QuietHours` block carries the new `Source` field: `campaign` when the campa
 - [ ] If you call `subscriber.subscribe` with unique custom fields, `ErrorCode 7` now means another subscriber holds the value. An existing contact resubmitting its own value gets `ErrorCode 9` or `ErrorCode 12`.
 - [ ] If you set `TargetDeliveryServerID_*` through `usergroup.update` or `usergroup.patch`, handle `ErrorCode 37` or `ErrorCode 41` (the server is archived or does not exist, nothing changed).
 - [ ] If you read `smscampaign.stats.breakdown` by `carrier` or `country`, expect each message in one row (the rows add up to `TotalMessages`) and a smaller empty `Dimension` row.
+- [ ] If you read Keitaro `Conversions` or `Revenue`, expect sales only, and set `status` in a segment rule to match `lead` or a custom status.
 - [ ] If you forward <code v-pre>{{ SMS:TrackingCode }}</code> links through a Cloudflare redirect rule, change its length check to accept 6 as well as 21 before you send a campaign. Anything else that checks the tracking code must accept five characters.
 
 ---

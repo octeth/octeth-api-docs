@@ -172,8 +172,8 @@ Open the campaign's report. Campaigns whose message contains the tag get a **Kei
 | Tile | What it shows |
 |---|---|
 | **Keitaro clicks** | The number of contacts who clicked a Keitaro link. Below it, the share of delivered messages that led to a click. |
-| **Conversions** | The number of contacts who converted. |
-| **Revenue** | The total revenue of the conversions, in your revenue currency. Rejected conversions are not included. |
+| **Conversions** | The number of contacts whose conversion reached a sale. Leads, rejected conversions and custom statuses are not counted. |
+| **Revenue** | The revenue of those sales, in your revenue currency. Revenue reported with any other status is not included. |
 
 The section also shows when Octeth last read your Keitaro server, for example **Updated 3 minutes ago**. Before the first read it says **Not checked yet**.
 
@@ -181,7 +181,7 @@ The section also shows when Octeth last read your Keitaro server, for example **
 
 This table lists each conversion status Keitaro reported, how many times conversions reached it (**Times reached**), and the revenue reported with it.
 
-A contact who first becomes a lead and then a sale is counted once under **lead** and once under **sale**. So the rows can add up to more than the **Conversions** tile, which counts each contact once.
+A contact who first becomes a lead and then a sale is counted once under **lead** and once under **sale**. So the rows can add up to more than the **Conversions** tile, which counts each contact with a sale once. Statuses other than **sale** are listed here but are not conversions.
 
 ### Keitaro by link
 
@@ -189,7 +189,7 @@ This table shows the unique clicks, conversions and revenue for each Keitaro lin
 
 ### Contact activity
 
-A contact's SMS activity also lists **Clicked a Keitaro link** and **Converted in Keitaro**, with the time of each.
+A contact's SMS activity also lists **Clicked a Keitaro link** and **Keitaro status reported** (one entry for each status Keitaro sends), with the time of each.
 
 ::: info When figures appear
 - **Clicks appear with a delay of a few minutes**, because Octeth reads them from Keitaro on a schedule (every 5 minutes by default).
@@ -206,15 +206,16 @@ The **SMS activity** rule in the segment builder and in the SMS campaign conditi
 |---|---|
 | **Clicked a Keitaro link** | clicked a Keitaro link in an SMS |
 | **Did not click a Keitaro link** | did not click one |
-| **Converted in Keitaro** | converted after an SMS |
-| **Did not convert in Keitaro** | did not convert |
+| **Converted in Keitaro** | made a sale after an SMS |
+| **Did not convert in Keitaro** | did not make a sale |
 
 You choose **Any SMS** or one campaign, and a time filter, the same way as for the other SMS activities. With one campaign, the "did not" activities mean "received that campaign and did not click or convert".
 
 The two conversion activities have an extra **Status** box:
 
-- Leave it empty (**Any status**) to match every conversion except rejected ones.
-- Type a status, for example `sale`, to match only contacts whose conversion has that status now. Upper and lower case do not matter.
+- Leave it empty to match contacts whose conversion is a sale. Only a sale counts as a conversion.
+- Type another status, for example `lead`, `rejected` or a custom status, to match that status instead.
+- A typed status matches contacts whose conversion has that status now. Upper and lower case do not matter.
 - A conversion keeps only its latest status. A contact whose lead later became a sale matches `sale`, not `lead`.
 - The status box is only available for the two conversion activities.
 

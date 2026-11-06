@@ -43,10 +43,10 @@ Everything else reads the event store directly and is deduplicated at read time.
 | `Integrations` | <Badge type="tip" text="New in v6.0.4" /> Present only when `IncludeIntegrations` is set and the campaign has a tracking-tag link. `null` when the integration figures could not be read: the rest of the response is still correct, and the call does not fail |
 | `Integrations.UniqueClicks` | Contacts with at least one Keitaro click. Bot clicks are excluded. These clicks never count in `TotalClicks`, `TotalUniqueClicks` or `Rates.ClickRate`, which stay the figures of the tracked short links |
 | `Integrations.ClickRate` | `UniqueClicks` over delivered messages, a 0 to 1 ratio rounded to 6 decimals like `Rates.ClickRate` (so `0.048` means 4.8%). `null` when nothing was delivered |
-| `Integrations.Conversions` | Contacts with a conversion whose latest status is not `rejected`. Bots are excluded |
-| `Integrations.Revenue` | Revenue of those conversions by currency, as 4 decimal strings. Revenue never goes into `ActualCost` |
+| `Integrations.Conversions` | <Badge type="tip" text="Changed in v6.0.6" /> Contacts whose conversion's latest status is `sale`. `lead`, `rejected` and custom statuses are not conversions. Bots are excluded |
+| `Integrations.Revenue` | <Badge type="tip" text="Changed in v6.0.6" /> Revenue of those sales by currency, as 4 decimal strings. Revenue reported with any other status is not included. Revenue never goes into `ActualCost` |
 | `Integrations.Statuses` | Every conversion status Keitaro reported, with `Count` and `Revenue`, including statuses a conversion later moved past (a lead that became a sale counts once as `lead` and once as `sale`) and `rejected` ones. Bots are excluded |
-| `Integrations.Links` | Per link ordinal (`LinkOrdinal` matches the campaign's links): `UniqueClicks`, `Conversions` and `Revenue` |
+| `Integrations.Links` | Per link ordinal (`LinkOrdinal` matches the campaign's links): `UniqueClicks`, `Conversions` and `Revenue`, with conversions and revenue counted from sales only |
 | `Integrations.LastPolledAt` | When Octeth last read clicks from Keitaro (UTC), or `null` when the account has no Keitaro connection |
 
 ::: code-group
@@ -162,7 +162,7 @@ curl -X GET https://example.com/api/v1/smscampaign.stats \
 | APIKey | String | No | API key for authentication |
 | SMSCampaignID | Integer | Yes | The campaign to report on |
 | Granularity | String | No | Possible values: `minute`, `hour` (default), `day`. <Badge type="tip" text="New in v6.0.1" /> `minute` buckets each event by the minute it happened in, for a campaign that finished sending inside a single hour |
-| Events | String | No | Comma-separated event types to include. Possible values: `queued`, `skipped`, `send_attempt`, `sent`, `send_failed`, `delivered`, `undelivered`, `expired`, `clicked`, `replied`, `opted_out`. Defaults to all of them. An unrecognised value is an error, not an empty series. <Badge type="tip" text="New in v6.0.4" /> `integration_click` and `integration_conversion` (Keitaro activity) can be named too, and are never part of the default list |
+| Events | String | No | Comma-separated event types to include. Possible values: `queued`, `skipped`, `send_attempt`, `sent`, `send_failed`, `delivered`, `undelivered`, `expired`, `clicked`, `replied`, `opted_out`. Defaults to all of them. An unrecognised value is an error, not an empty series. <Badge type="tip" text="New in v6.0.4" /> `integration_click` and `integration_conversion` (Keitaro activity) can be named too, and are never part of the default list. <Badge type="tip" text="Changed in v6.0.6" /> `integration_conversion` counts conversion reports with status `sale` only, at every granularity |
 | IncludeBots | Boolean | No | Include bot clicks, and bot `integration_click` and `integration_conversion` events. Defaults to excluding them |
 
 ::: warning Events and Messages count different things
