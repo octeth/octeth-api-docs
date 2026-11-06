@@ -100,6 +100,18 @@ The `QuietHours` block carries the new `Source` field: `campaign` when the campa
 
 **Who needs to act:** nobody. A client that labels a campaign's quiet hours can read `Source` to mark the install default.
 
+### Segments
+
+#### Changing a segment's rules resets its count timestamp
+
+Before v6.0.6, `segment.update` and the legacy segment editor kept the stored count when a segment's rules changed, so `segments.get` served the old rules' count as fresh for up to 10 minutes (octeth/oempro#3939). When the rules or the match operator change, `SubscriberCountLastCalculatedOn` now becomes `0000-00-00 00:00:00` and the cached count is dropped. `SubscriberCount` keeps the last number until the recount. The legacy editor used to write a timestamp three days in the past instead. A count is now saved only while the segment still has the rules it was counted for, so a count that runs across a rule edit is dropped and the segment is counted again, and opening a segment in the legacy editor no longer stores 0 when its recount times out. Subscriber deletions and imports still mark every counted segment for a recount, but leave a never-counted segment never counted.
+
+`segments.get` also takes the new opt-in `ComputeMissingCount` parameter. With it and one `SegmentID`, a never-counted segment is counted during the request (up to `SEGMENT_COUNT_INLINE_TIMEOUT`, default 10 seconds). The AI connector's `get_segment_count`, `create_segment` and `list_segments` tools report `CountStatus` (`counted` or `pending`), and a segment still being counted has `SubscriberCount: null`, never 0 (octeth/oempro#3937).
+
+**Not affected:** a rename or an update that leaves the rules as they are, and `segments.get` calls without `ComputeMissingCount`.
+
+**Who needs to act:** an integration that reads `SubscriberCount` right after changing a segment's rules. Treat a zero `SubscriberCountLastCalculatedOn` as "not counted yet", or pass `ComputeMissingCount=true` with the `SegmentID`.
+
 ### Bounce and unsubscribe attribution
 
 #### Processed bounces record their email, and link unsubscribes record a channel

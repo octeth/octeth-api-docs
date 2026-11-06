@@ -375,10 +375,11 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     SEGMENT_COUNT_STALENESS_SECONDS=600     # Age (seconds) after which a persisted segment count is considered stale and queued for recompute (default 10 min)
     SEGMENT_COUNTER_WORKER_BATCH_SIZE=100   # Max segments drained from the recount pending-set per worker run
     SEGMENT_COUNTER_WORKER_TIMEOUT=120      # Inner HTTP timeout (seconds) for the background recompute call (CLI worker only)
+    SEGMENT_COUNT_INLINE_TIMEOUT=10         # Inner HTTP timeout (seconds) for counting a never-counted segment during a Segments.Get request with ComputeMissingCount=true (the AI connector uses it). Keep well under 30
     SEGMENT_COUNTER_WORKER_CONCURRENCY=4    # Parallel segment_counter.php workers per cron tick (via cli/segment_counter_parallel.sh). SPOP atomicity prevents double-processing; only shared cost is concurrent MySQL COUNT(*) load. 1 = single worker, clamped to 16
     ```
 
-    The `*/2 * * * *` cron entry runs `cli/segment_counter_parallel.sh`, which launches `SEGMENT_COUNTER_WORKER_CONCURRENCY` copies of the one-shot `cli/segment_counter.php` worker in parallel and uses an `flock` so overlapping ticks never stack beyond that count. The workers self-balance across the shared Redis pending-set.
+    The `*/2 * * * *` cron entry runs `cli/segment_counter_parallel.sh`, which launches `SEGMENT_COUNTER_WORKER_CONCURRENCY` copies of the one-shot `cli/segment_counter.php` worker in parallel and uses an `flock` so overlapping ticks never stack beyond that count. The workers self-balance across the shared Redis pending-set. A segment that was never counted (new, or its rules changed) is normally counted by that background worker. A `Segments.Get` request for one segment with `ComputeMissingCount=true` counts it on the spot instead, bounded by `SEGMENT_COUNT_INLINE_TIMEOUT`. If the count does not finish in time, the segment stays queued for the worker and the request returns the stale value.
 
 21. **Journey Decision Node**
     ```bash

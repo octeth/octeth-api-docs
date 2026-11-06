@@ -385,8 +385,13 @@ This command also accepts admin authentication. Pass `AdminAPIKey` (or an admin 
 | SubscriberListID | Integer | Yes | ID of the subscriber list |
 | SegmentID | Integer | No | ID of specific segment to retrieve |
 | IncludeTotals | Boolean | No | Include total counts (default: true) |
+| ComputeMissingCount | Boolean | No | When `true` and the request names one `SegmentID`, a segment whose count was never calculated (new, or its rules changed since the last count) is counted during the request, bounded by `SEGMENT_COUNT_INLINE_TIMEOUT` (default 10 seconds), and returned with `SubscriberCountIsStale: false`. If the count does not finish in time, the response is the same as without the parameter: the stored value with `SubscriberCountIsStale: true`, and the segment stays queued for the background counter. A count that is known but old is never recounted inline. Ignored without `SegmentID` or with `IncludeTotals=false`. Default `false` (v6.0.6, #3937) |
 | OrderField | String | No | Field to order by: `SegmentName`, `SegmentID`, `SegmentOperator`, `SubscriberCount`, `SubscriberCountLastCalculatedOn` (default: `SegmentName`) |
 | OrderType | String | No | Sort order: `ASC` or `DESC` (default: `DESC`) |
+
+::: tip Counts are calculated in the background
+`SubscriberCount` is the last count Octeth calculated. `SubscriberCountIsStale: true` means it is missing or older than `SEGMENT_COUNT_STALENESS_SECONDS`, and a recount is queued (the background counter runs every 2 minutes). A `SubscriberCountLastCalculatedOn` of `0000-00-00 00:00:00` or `2012-01-01 00:01:01` means the segment was never counted, so its `SubscriberCount` is not a real number yet. Since v6.0.6, changing a segment's rules resets `SubscriberCountLastCalculatedOn` to `0000-00-00 00:00:00`. To size a new segment in one call, pass `SegmentID` and `ComputeMissingCount=true`.
+:::
 
 ::: code-group
 
