@@ -92,6 +92,16 @@ The `QuietHours` block carries the new `Source` field: `campaign` when the campa
 
 **Who needs to act:** nobody. A client that labels a campaign's quiet hours can read `Source` to mark the install default.
 
+### Bounce and unsubscribe attribution
+
+#### Processed bounces record their email, and link unsubscribes record a channel
+
+Before v6.0.6 bounces processed from the bounce spool, `cli/bounce.php` and the internal bounce register call were stored with no email (A/B variant) and did not count toward the sender domain's bounce total, and unsubscribes through the unsubscribe link were stored with an empty channel (octeth/oempro#3947). Such a bounce now records the email it was sent from when that email belongs to the account, and counts toward its sender domain. Such an unsubscribe records `List-Unsubscribe one-click` for an RFC 8058 one-click request from a mailbox provider, or `Unsubscribe link` for a link confirmed on the unsubscribe page, next to the existing `List-Unsubscribe header` and `SPAM complaint` values in the subscriber's activity history.
+
+**Not affected:** rows recorded before the upgrade, and unsubscribes posted directly to a customer-hosted form, which keep an empty channel.
+
+**Who needs to act:** nobody. A report that reads the unsubscribe channel or per-email bounces will see the new values on new rows.
+
 ## Upgrade checklist
 
 - [ ] If you call `subscriber.subscribe`, handle `ErrorCode 12` (the contact unsubscribed from the list, nothing changed). Send `UpdateIfUnsubscribed=true` only for a contact who asked to subscribe again.
