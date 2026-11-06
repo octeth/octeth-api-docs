@@ -121,7 +121,7 @@ In the Cloudflare dashboard, open the domain's **DNS** records and make sure the
 
 ```
 (http.host eq "go.example.com"
- and len(http.request.uri.path) eq 21
+ and (len(http.request.uri.path) eq 6 or len(http.request.uri.path) eq 21)
  and trim(substring(http.request.uri.path, 1), "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz") eq "")
 ```
 
@@ -135,10 +135,14 @@ In the Cloudflare dashboard, open the domain's **DNS** records and make sure the
 
 5. Click **Deploy**.
 
-The expression matches only paths that look like a tracking code. Every code is exactly 20 letters and digits, and the path adds a slash, so its length is 21. Your other links on the same domain, such as other Keitaro campaign URLs, the Keitaro admin pages and its postback address, have a different length or contain other characters, so they pass through unchanged.
+The expression matches only paths that look like a tracking code. A tracking code is five letters and digits, so with the slash the path is 6 characters long. Messages sent before v6.0.6 carry 20-character codes (a 21-character path), and the rule keeps sending those to Keitaro too. Your other links on the same domain, such as other Keitaro campaign URLs, the Keitaro admin pages and its postback address, have a different length or contain other characters, so they pass through unchanged.
 
 ::: warning Keep the length check
-Without `len(http.request.uri.path) eq 21`, the rule also catches any other short path made of letters and digits, such as another campaign's URL `https://go.example.com/Xy7Kq2`, and sends those visitors to the wrong campaign.
+Without the length check, the rule also catches any other short path made of letters and digits, such as another campaign's URL `https://go.example.com/Xy7Kq2`, and sends those visitors to the wrong campaign. Do not use 6-character paths (a 5-character alias) for anything else on this domain.
+:::
+
+::: info Upgrading from v6.0.5 or earlier
+A rule that checks only `len(http.request.uri.path) eq 21` does not match the five-character codes sent from v6.0.6 on, so those links do not reach Keitaro. Change the expression as shown above before you send a campaign after the upgrade.
 :::
 
 ### 3. Use the short link in your SMS
@@ -147,12 +151,12 @@ Write the link with the tag as the whole path:
 
 <code v-pre>Our autumn sale is on: https://go.example.com/{{ SMS:TrackingCode }}</code>
 
-A recipient who taps `https://go.example.com/0aB3xY…` is sent to `https://go.example.com/HBRzZB?click=0aB3xY…`, Keitaro stores the code in your sub ID, and the click and its conversions reach Octeth as described above.
+A recipient who taps `https://go.example.com/aB3x9` is sent to `https://go.example.com/HBRzZB?click=aB3x9`, Keitaro stores the code in your sub ID, and the click and its conversions reach Octeth as described above.
 
-Every tracking code has the same length, so the message's character count and part count do not change from one recipient to another, and the cost estimate stays accurate.
+Every tracking code has the same length, five characters, so the message's character count and part count do not change from one recipient to another, and the cost estimate stays accurate. A code resolves for 90 days after the message is sent, or for the campaign's link expiry when that is longer. Clicks and conversions reported for an older code are not recorded.
 
 ::: tip Check it before you send
-Send yourself a test of the campaign. A test has no contact behind it, so its code is `00000000000000000000`. Tapping the link should land on your Keitaro campaign. To test the whole flow, including a click recorded in Octeth, send the campaign to a small list that contains your own number.
+Send yourself a test of the campaign. A test has no contact behind it, so its code is `00000`. Tapping the link should land on your Keitaro campaign. To test the whole flow, including a click recorded in Octeth, send the campaign to a small list that contains your own number.
 :::
 
 ::: info One campaign per domain

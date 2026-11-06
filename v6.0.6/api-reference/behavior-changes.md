@@ -30,6 +30,18 @@ Every success response also carries the new `PreviousSubscriptionStatus` field: 
 
 **Who needs to act:** an integration that calls `subscriber.subscribe` and expects an unsubscribed contact to come back. Handle `ErrorCode 12` as "skipped, the contact opted out". Send `UpdateIfUnsubscribed=true` only when the contact has given fresh consent, for example by submitting your own signup form.
 
+### SMS campaigns
+
+#### Tracked SMS links carry a five-character code
+
+Before v6.0.6 every tracked link in an SMS campaign carried a 20-character code, both in `/sc/` short links and where <code v-pre>{{ SMS:TrackingCode }}</code> is replaced in a passthrough link. Twenty characters often pushed a message into a second billed part. New messages now carry a five-character code of letters and digits, for example `https://go.example.com/sc/aB3x9` (octeth/oempro#3935). The cost estimate counts five characters per link, so it matches what is sent.
+
+A five-character code is case-sensitive and resolves for 90 days after the message is sent, or for the campaign's link expiry (`LinkExpiryHours`) when that is longer. After that its click and its Keitaro conversions are no longer attributed. Codes already sent keep their 20 characters and keep working. A test message carries the code `00000`, which never resolves.
+
+**Not affected:** the Keitaro postback URL, the poller and the postback parameters. Messages already queued before the upgrade are sent with five-character codes, so they can use fewer parts than were estimated, never more.
+
+**Who needs to act:** an account that forwards <code v-pre>{{ SMS:TrackingCode }}</code> links through a Cloudflare redirect rule with `len(http.request.uri.path) eq 21`. Change the rule before you send a campaign after the upgrade, as described in [shorter links with Cloudflare](/v6.0.6/new-user-interface/sms-keitaro#optional-shorter-links-with-cloudflare), or new links stop reaching Keitaro. Anything else that validates the code's length or pattern must accept five characters as well as 20.
+
 ## Tier 2: shape and value changes
 
 ### Subscribers
@@ -78,6 +90,7 @@ The `QuietHours` block carries the new `Source` field: `campaign` when the campa
 - [ ] If you call `subscriber.subscribe` with unique custom fields, `ErrorCode 7` now means another subscriber holds the value. An existing contact resubmitting its own value gets `ErrorCode 9` or `ErrorCode 12`.
 - [ ] If you set `TargetDeliveryServerID_*` through `usergroup.update` or `usergroup.patch`, handle `ErrorCode 37` or `ErrorCode 41` (the server is archived or does not exist, nothing changed).
 - [ ] If you read `smscampaign.stats.breakdown` by `carrier` or `country`, expect each message in one row (the rows add up to `TotalMessages`) and a smaller empty `Dimension` row.
+- [ ] If you forward <code v-pre>{{ SMS:TrackingCode }}</code> links through a Cloudflare redirect rule, change its length check to accept 6 as well as 21 before you send a campaign. Anything else that checks the tracking code must accept five characters.
 
 ---
 
