@@ -175,6 +175,8 @@ Open the campaign's report. Campaigns whose message contains the tag get a **Kei
 | **Conversions** | The number of contacts whose conversion reached a sale. Leads, rejected conversions and custom statuses are not counted. |
 | **Revenue** | The revenue of those sales, in your revenue currency. Revenue reported with any other status is not included. |
 
+Select the **Keitaro clicks** or **Conversions** tile to list those contacts in the **Recipients** table below, under the **Keitaro clicked** and **Converted** tabs. **Converted** shows each contact's latest sale with its revenue and time, and how many sales they made. **Keitaro clicked** shows each contact's first Keitaro click and how many times they clicked. The two tabs appear only on campaigns that show Keitaro figures.
+
 The section also shows when Octeth last read your Keitaro server, for example **Updated 3 minutes ago**. Before the first read it says **Not checked yet**.
 
 ### Statuses reached

@@ -323,7 +323,7 @@ curl -X GET https://example.com/api/v1/smscampaign.stats.breakdown \
 | RecordsFrom | Integer | No | <Badge type="tip" text="New in v6.0.1" /> Offset into the result set. Sending it switches this call from cursor paging to offset paging and implies `IncludeTotal` |
 | IncludeTotal | Boolean | No | <Badge type="tip" text="New in v6.0.1" /> Return `TotalRecipients`. Costs one extra `COUNT` over the same filters, so it is off unless asked for |
 | IncludeSkipped | Boolean | No | <Badge type="tip" text="New in v6.0.1" /> Also list the recipients that were skipped before anything was queued for them. Implies offset paging and `IncludeTotal`. Off by default |
-| Engagement | String | No | <Badge type="tip" text="New in v6.0.1" /> List only recipients who clicked a link, replied or opted out in this campaign. Combines with `Status`. Possible values: `clicked`, `replied`, `optedout` |
+| Engagement | String | No | <Badge type="tip" text="New in v6.0.1" /> List only recipients who clicked a link, replied or opted out in this campaign. Combines with `Status`. Possible values: `clicked`, `replied`, `optedout`, and <Badge type="tip" text="New in v6.0.6" /> `converted` and `integrationclicked` for Keitaro sales and Keitaro clicks |
 
 ::: tip Skipped recipients
 A recipient who is skipped when the campaign is queued (already suppressed, an invalid or duplicate number, a frequency cap, a message that could not be personalized, too long, or a blocked word) never gets a queue row, so by default this endpoint does not list them. A campaign of 7 with 1 suppressed returns 6 rows.
@@ -342,6 +342,14 @@ Send `IncludeSkipped` to list them after the queue rows, read from the campaign'
 `Engagement` filters on the queue row's `FirstClickedAt`, `RepliedAt` or `OptedOutAt`. Replies and opt-outs are recorded as they arrive. Clicks are copied onto the queue rows by the periodic rollup, so a new click can take about a minute to appear here.
 
 Skipped recipients were never sent anything, so an `Engagement` filter never lists them, even with `IncludeSkipped`. The response echoes the filter as `Engagement`, or `null` when none was sent. Without `Engagement` the response is unchanged.
+:::
+
+::: tip Keitaro sales and clicks <Badge type="tip" text="New in v6.0.6" />
+`converted` lists the recipients with a Keitaro conversion whose latest status is `sale`, the contacts the `Conversions` figure of `smscampaign.stats` counts. Each row gains `Conversion` (the latest sale's `Status`, `Revenue` as a 4 decimal string, `Currency` and `ConvertedAt`) and `ConversionCount` (a contact can convert more than once).
+
+`integrationclicked` lists the recipients who clicked a Keitaro link, the contacts of `Integrations.UniqueClicks`. Each row gains `IntegrationFirstClickedAt` and `IntegrationClickCount`.
+
+Both exclude clicks and conversions Keitaro marks as bots, and `TotalRecipients` counts with the same filter. Without these values the rows have none of these fields.
 :::
 
 ::: tip Two ways to page, and when each one is right
