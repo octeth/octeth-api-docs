@@ -52,6 +52,14 @@ Before v6.0.6 the uniqueness check of a unique custom field counted the contact'
 
 **Who needs to act:** an integration that treats `ErrorCode 7` from `subscriber.subscribe` as "this contact already exists". Handle `ErrorCode 9` and `ErrorCode 12` for that case.
 
+#### `subscribers.get` returns only a segment's members for a segment builder segment
+
+Before v6.0.6, `subscribers.get` with a numeric `SubscriberSegment` returned a page of the whole active list for a segment built with the segment builder, `segment.create` with `RulesJson` or the MCP `create_segment` tool, while `TotalSubscribers` counted only the segment. Legacy campaign recipient estimates and segment exports had the same fault (octeth/oempro#3943). These reads now return only the segment's members. With `SearchKeyword` and a numeric `SubscriberSegment`, the call now searches within the segment and `TotalSubscribers` counts the matches, where before it returned no subscribers. A segment of another account, or one whose `RulesJson` is malformed, reads as empty. When the segment cannot be resolved, the call returns the standard error envelope instead of a page of the wrong subscribers, and a segment export is marked failed.
+
+**Not affected:** segments with classic `SegmentRules`, and calls without `SubscriberSegment`.
+
+**Who needs to act:** an integration that pages a segment through `subscribers.get`. Expect fewer rows, matching `TotalSubscribers`, and handle the error envelope.
+
 ### User groups
 
 #### `usergroup.update` and `usergroup.patch` refuse an archived or missing delivery server
