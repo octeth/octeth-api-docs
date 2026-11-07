@@ -126,6 +126,12 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
    Every item is checked before it is shown: plain text only, links only to `https://` addresses. An installation without internet access shows "cannot be reached right now" in the section and tries again every 30 minutes. Set `ADMIN_NEWS_FEED_ENABLED=false` to make no request at all.
 
+   ```bash
+   EMAIL_VERIFICATION_API_URL=https://my.octeth.com/api/email-verification/v1   # Email verification API in the Octeth client area. Change it only for a staging or development client area
+   ```
+
+   Email verification sends its checks to `EMAIL_VERIFICATION_API_URL`, with the installation's signed license key (the key pasted on Settings > License, or `LICENSE_KEY`) as an `Authorization: Bearer` header. Nothing is sent until an administrator enables email verification (`verification.settings.update` with `Enabled` set to `true`), and a request is refused unless the address starts with `https://`, so the key never travels over plain HTTP. The installation must also be switched on in the client area (Email verification, Octeth installations). See [Set Up Email Verification](./email-verification).
+
 4. **Debugging & Logging**
    ```bash
    OEMPRO_DEBUG=true                        # Enable/disable debug mode
