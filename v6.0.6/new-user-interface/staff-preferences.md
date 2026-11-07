@@ -1,6 +1,6 @@
 # Staff Preferences
 
-**Preferences** holds the install-wide settings for the default language, password reset, notifications about account limits, the handling of failing customer webhooks and the List freshness thresholds. It replaces most of the classic admin **Settings > Preferences** page.
+**Preferences** holds the install-wide settings for the default language, password reset, notifications about account limits, the handling of failing customer webhooks, the List freshness thresholds, the forbidden From addresses and the default custom fields of a new list. It replaces the classic admin **Settings > Preferences** page except for the classic user area's footer.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
@@ -8,6 +8,7 @@
 | Preferences, Notifications section | `/user/staff/settings/preferences?section=notifications` | Settings |
 | Preferences, Customer webhooks section | `/user/staff/settings/preferences?section=customer-webhooks` | Settings |
 | Preferences, List freshness section | `/user/staff/settings/preferences?section=list-freshness` | Settings |
+| Preferences, Lists and senders section | `/user/staff/settings/preferences?section=lists-and-senders` | Settings |
 
 Open it from the staff sidebar: click **Settings**, then **Preferences**. The classic admin **Settings > Preferences** link and the **Preferences** item of the classic header's **Preferences** menu open the same screen.
 
@@ -17,7 +18,7 @@ Each section has its own **Save** button and saves only its own settings. When n
 Every save is recorded in the staff audit log, with the section and the names of the settings that changed. Values are never recorded.
 :::
 
-Three settings that only the classic user area uses stay on the classic admin page, now named **User area preferences** (`/app/admin/preferences/`): the forbidden From addresses, the user area footer and the default custom fields of a new list.
+The classic user area's footer stays on the classic admin page, now named **User area preferences** (`/app/admin/preferences/`). That page links to the **Lists and senders** section for the two settings that moved from it.
 
 ## General
 
@@ -66,3 +67,19 @@ These thresholds decide how the [List freshness report](./staff-list-freshness) 
 - **Stale within (days)**, default `90`. Must be more than Slowing down. Anything older is Dead.
 
 Click **Save thresholds**. The report uses the new thresholds the next time it is computed, within a minute.
+
+## Lists and senders
+
+### Forbidden From addresses
+
+From addresses no account may send as. The list applies to campaigns, auto responders, journeys, opt-in confirmation emails, list sender addresses and the email gateway: a save that sets a listed address is refused, and a send that would use one is stopped.
+
+Enter one address per line. Matching ignores case. A line without `*` must equal the whole address, and `*` matches any text, so `*@example.com` blocks every address at example.com. Leave the list empty to forbid nothing. Empty lines and the spaces around each line are removed when you save.
+
+### Default custom fields of a new list
+
+Custom fields every new list starts with. Enter one field name per line, with at most 250 characters per name. A name entered twice, in any case, is kept once.
+
+Each name becomes a single-line text field, optional and not unique, on every list created after you save, whether the list is created in the new interface or in the classic user area. Lists that already exist do not change. If a field cannot be added to a new list, the list is still created and the account is told how many fields are missing.
+
+Click **Save list and sender settings**.
