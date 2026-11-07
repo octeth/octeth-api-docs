@@ -404,6 +404,8 @@ curl -X GET https://example.com/api/v1/user.verificationcredits.get \
 
 Lists a user's verification credit entries, newest first: grants, purchases, charges, credit backs and adjustments. Every entry carries the change (`Delta`) and the balance it left (`BalanceAfter`). With user authentication it returns the caller's own history. With admin authentication pass `UserID`. Page with `Cursor`: pass the `NextCursor` of the previous page until it is `0`.
 
+The `Note` of a staff grant or adjustment (`SourceType` `admin`) is written by staff for staff. With user authentication it is returned as an empty string, and the entry keeps all its other fields. With admin authentication every note is returned.
+
 **Request Body Parameters:**
 
 | Parameter | Type | Required | Description |
