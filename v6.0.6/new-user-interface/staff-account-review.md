@@ -62,4 +62,23 @@ The first time an account submits its answers, Octeth emails the alert address (
 2. Click the **Account review** tab. It shows the status, the submission time, the checklist and every answer the account gave, including answers to questions you have turned off since.
 3. Click **Approve account**, then confirm. The account becomes **Trusted** and can send.
 
+Setting an account to **Trusted** anywhere else (the staff edit page, or `user.update` through the API) counts as approving it too.
+
+## The approval email
+
+When an account that submitted its review answers becomes **Trusted**, Octeth emails the customer within a minute or two. The email goes through the install's system email settings and template.
+
+An account that never submitted the review questions gets no email, so promoting existing accounts in bulk emails no one. Moving an account back to **Untrusted** sends nothing. Each account gets the approval email once.
+
+To change it, open **Settings > Account review** and use the **Approval email** card:
+
+1. Turn **Email the customer when their account is approved** off to send nothing, or leave it on.
+2. Change the **Subject**. It accepts `{brand}`, your brand name.
+3. Change the **Message**. It accepts `{first_name}` (the customer's first name), `{brand}` and `{dashboard_url}` (a link to their dashboard). It is sent as plain text with line breaks kept.
+4. Click **Save account review settings**.
+
+The default subject is "Your account is approved", and the default message says the account was reviewed, sending is enabled, and links to the dashboard.
+
+If the system email settings are wrong, the email is retried every minute for 24 hours and then dropped.
+
 To ask the customer for more information, or to decline an account, reply to them by email and disable the account if needed. The review page has no "needs information" or "declined" state.

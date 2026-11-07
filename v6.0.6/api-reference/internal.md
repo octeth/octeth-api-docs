@@ -193,3 +193,65 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+## Pull Approved Accounts for the Approval Email <Badge type="tip" text="New in v6.0.6" />
+
+<Badge type="info" text="POST" /> `/api.php` (legacy)
+
+Returns the accounts that moved from `Untrusted` to `Trusted` since the last call, oldest first, and removes them from the queue. `user.update` queues every such change. The new user interface calls it every minute and emails the accounts that submitted a review application. See [Reviewing New Accounts](../new-user-interface/staff-account-review#the-approval-email).
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privileges: `User.Edit`
+- Only the new user interface's own container may call it, because a returned entry is gone. A call from any other address is refused with error 4.
+- Not available to admin agent keys
+- Rate limit: 60 requests per 60 seconds
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description |
+|-----------|---------|----------|-------------|
+| Command   | String  | Yes      | API command: `admin.accountreview.approvals.pull` |
+| AdminAPIKey | String | Yes     | Admin API key |
+| Limit     | Integer | No       | How many entries to return, from 1 to 200. Default 50 |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  --data-urlencode "Command=admin.accountreview.approvals.pull" \
+  --data-urlencode "AdminAPIKey=your-admin-api-key" \
+  --data-urlencode "Limit=100"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Approvals": [
+    {
+      "UserID": 42,
+      "ApprovedAt": 1794571200
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Limit must be a whole number from 1 to 200"
+}
+```
+
+```txt [Error Codes]
+0: Success. ApprovedAt is a Unix timestamp
+1: Limit is not a whole number from 1 to 200
+4: Not called from the new user interface
+5: The approval queue could not be read
+```
+
+:::
