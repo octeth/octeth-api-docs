@@ -71,6 +71,10 @@ A five-character code is case-sensitive and resolves for 90 days after the messa
 
 **Who needs to act:** an account that forwards <code v-pre>{{ SMS:TrackingCode }}</code> links through a Cloudflare redirect rule with `len(http.request.uri.path) eq 21`. Change the rule before you send a campaign after the upgrade, as described in [shorter links with Cloudflare](/v6.0.6/new-user-interface/sms-keitaro#optional-shorter-links-with-cloudflare), or new links stop reaching Keitaro. Anything else that validates the code's length or pattern must accept five characters as well as 20.
 
+### Email Gateway
+
+- `EmailGateway.SendEmail` and the SMTP relay now refuse a send whose From address is on the administrator's forbidden From addresses list (Settings, User area preferences). `EmailGateway.SendEmail` answers HTTP `422` with `{"Errors": [{"Code": 45, "Message": "From email address is forbidden by the administrator"}]}`. The SMTP relay answers `550 5.7.1 From address is forbidden by the administrator` (`emailgateway.smtprelay` returns `ErrorCode [14]`). Nothing is queued and no credit is charged, and each refusal is recorded as a `rejected-by-oempro` event with the reason "The From address is forbidden by the administrator." and logged at warning level. The address is checked as the caller wrote it and as it is sent on the sender domain, and for the SMTP relay both the header From and the envelope `MAIL FROM` are checked. The rules are the ones the email editor uses: matching ignores case, a line without `&#42;` must equal the whole address, and `&#42;` matches any text. Before, the list did not apply to the email gateway, so an account refused an address in the email editor could still send as it through the gateway. Journey Send email steps and AI agent key sends go through `EmailGateway.SendEmail` and follow the same rule. Installs with an empty list see no change. There is no opt-in flag, because the old behavior let gateway senders bypass the operator's list (octeth/oempro#3623).
+
 ## Tier 2: shape and value changes
 
 ### Subscribers
@@ -189,6 +193,7 @@ A value outside both lists keeps the result it had before and writes a warning n
 - [ ] If you read `smscampaign.stats.breakdown` by `carrier` or `country`, expect each message in one row (the rows add up to `TotalMessages`) and a smaller empty `Dimension` row.
 - [ ] If you read Keitaro `Conversions` or `Revenue`, expect sales only, and set `status` in a segment rule to match `lead` or a custom status.
 - [ ] If you forward <code v-pre>{{ SMS:TrackingCode }}</code> links through a Cloudflare redirect rule, change its length check to accept 6 as well as 21 before you send a campaign. Anything else that checks the tracking code must accept five characters.
+- [ ] If your forbidden From addresses list (Settings, User area preferences) holds wildcard lines, check that none of them matches a From address your accounts send transactional email from through the email gateway. Such sends are refused after the upgrade (`Code 45` on `EmailGateway.SendEmail`, `550 5.7.1` on the SMTP relay).
 
 ---
 

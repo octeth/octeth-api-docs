@@ -2000,6 +2000,7 @@ curl -X POST https://example.com/api/v1/email \
 42: Invalid IdempotencyKey, or IdempotencyKey with TargetListID (HTTP 422)
 43: AI agent key only: the From address domain is not a sender domain of the account (HTTP 422)
 44: The IdempotencyKey could not be checked because Redis is unavailable, nothing was sent (HTTP 503)
+45: The From address is on the administrator's forbidden From addresses list, nothing was sent (HTTP 422)
 429: Email send rate limit exceeded (or the send-rate counters could not be read and EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED is true)
 ```
 
@@ -2012,7 +2013,7 @@ Every error is returned inside an `Errors` array, and the HTTP status depends on
 | `403` | `12` (the sender domain owner's account is disabled), `32`, `34`, `40` |
 | `404` | `2`, and `12` when the sender domain owner's account cannot be found |
 | `409` | `14` |
-| `422` | `3`, `8` to `11`, `15`, `16`, `18` to `31`, `35` to `38` |
+| `422` | `3`, `8` to `11`, `15`, `16`, `18` to `31`, `35` to `38`, `45` |
 | `429` | `17`, `429` |
 | `502` | `39` |
 :::
@@ -2039,6 +2040,10 @@ From v6.0.1, the sender domain owner's account must be `Trusted`. A request for 
 The same check runs when queued email is delivered: email already queued for an account that is moved to `Untrusted` is not sent, and its status becomes `Failed` with the message `Sending blocked: account pending approval`. Marking the account `Trusted` in the administration area allows sending again. A disabled account or an inactive sender domain is reported with its own error code (`12` or `32`) first.
 
 New accounts start at the reputation level set in **Settings > ESP Settings > New user reputation**, which is `Untrusted` on a default install, so an administrator approves each new account by marking it `Trusted`. To let `Untrusted` accounts send through this endpoint as before, set `EMAILGATEWAY_REQUIRE_TRUSTED=false`. See the [configuration guide](../getting-started/octeth-configuration.md). The SMTP relay requires a `Trusted` account either way.
+:::
+
+::: tip Forbidden From addresses
+From v6.0.6, a From address on the administrator's forbidden From addresses list (Settings, User area preferences) is refused with HTTP `422` and error code `45`, and nothing is queued or charged. The address is checked as you send it and as it is sent on the sender domain (`<local part>@<sender domain>`). The refusal is recorded as a `rejected-by-oempro` event. An empty list refuses nothing.
 :::
 
 ::: tip Send rate limits and the daily limit
@@ -2155,10 +2160,11 @@ curl -X POST https://example.com/api.php \
 11: Maximum number of BCC addresses exceeded
 12: Email send rate limit reached
 13: Email delivery limit reached (monthly, lifetime or daily limit of the user group)
+14: The header From or the envelope MAIL FROM is on the forbidden From addresses list (send)
 ```
 
 ::: tip Rejection reasons on the send path
-Error codes `9`-`13` are returned on the send (mail-fetch) path with `Success: false` and the corresponding `SMTPResponse` string. Previously these rejections returned an empty `ErrorCode: []`, so a caller could not tell why a relay attempt had been refused — the code now identifies the specific limit that was hit.
+Error codes `9`-`14` are returned on the send (mail-fetch) path with `Success: false` and the corresponding `SMTPResponse` string. Previously these rejections returned an empty `ErrorCode: []`, so a caller could not tell why a relay attempt had been refused — the code now identifies the specific limit that was hit. Code `14` (from v6.0.6) is answered with `550 5.7.1 From address is forbidden by the administrator`: the header From and the envelope `MAIL FROM` are checked against the administrator's forbidden From addresses list, each as the client sent it and as it is sent on the sender domain.
 :::
 
 ::: tip Phone verification gate
