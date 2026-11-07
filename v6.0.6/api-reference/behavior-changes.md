@@ -30,6 +30,22 @@ Every success response also carries the new `PreviousSubscriptionStatus` field: 
 
 **Who needs to act:** an integration that calls `subscriber.subscribe` and expects an unsubscribed contact to come back. Handle `ErrorCode 12` as "skipped, the contact opted out". Send `UpdateIfUnsubscribed=true` only when the contact has given fresh consent, for example by submitting your own signup form.
 
+### Campaigns
+
+#### `campaign.update` refuses to schedule a campaign whose email cannot be sent
+
+Before v6.0.6, `campaign.update` scheduled or resumed a campaign whose email had no subject, no content or no From address, and returned `Success: true`. The send engine then failed every recipient and the campaign still ended as `Sent` (octeth/oempro#3945).
+
+Such an update is now refused with the new `ErrorCode 32`, and the campaign is left unchanged. The `ErrorText` names each email and what it lacks, for example `The campaign cannot be sent: email 41 has no subject, no HTML or plain content.` The check runs when the update moves the campaign to a scheduled `Ready`, `Sending` or `Pending Approval`, or changes the email of a campaign that already is, and covers every A/B variation. An empty `FromEmail` is accepted when the delivery server (including a global routing segment's) enforces a From address or every target list has a sender email address. `campaign.resume` returns the same error.
+
+**Who needs to act:** an integration that creates an email and schedules its campaign in one flow. Check the `email.update` response before calling `campaign.update`, and handle `ErrorCode 32` by completing the email.
+
+#### A campaign whose recipients all failed ends as `Failed`
+
+Before v6.0.6, a campaign ended as `Sent` even when every recipient failed, and it was counted as a sent campaign for the account's payment period and statistics. Now a campaign that sent to no recipient and failed at least one (seed list emails are not counted) ends with `CampaignStatus` `Failed` and `CampaignStatusReason` `018`, and is not counted as sent. When the failed run belongs to a repeating campaign, the repeating campaign is set to `Failed` with the same reason too, so it stops instead of failing again every cycle. A campaign with at least one sent recipient still ends as `Sent`, with its failures in `TotalFailed`.
+
+**Who needs to act:** an integration that polls a campaign until it is `Sent`. Treat `Failed` as a final status too.
+
 ### SMS campaigns
 
 #### Tracked SMS links carry a five-character code

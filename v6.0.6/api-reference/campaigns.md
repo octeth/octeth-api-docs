@@ -547,6 +547,7 @@ curl -X POST https://example.com/api.php \
 1: Missing required parameter (CampaignID)
 2: Campaign not found or doesn't belong to user
 3: Campaign status is not Paused (only Paused campaigns can be resumed)
+32: The campaign's email cannot be sent (no subject, no HTML or plain content, or no From address). The campaign stays Paused. ErrorText names each email and what it lacks. Added in v6.0.6
 ```
 
 :::
@@ -651,6 +652,14 @@ Administrators receive at most one approval email per campaign per hour, so movi
 The API still returns `Success: true` when the update is held, and the response does **not** indicate that the status was changed from the one requested. Re-read the campaign with `campaign.get` to confirm the resulting status.
 :::
 
+::: warning Unsendable email
+`campaign.update` refuses an update that leaves the campaign on its way to a send when an email it would send cannot be sent. Such an update is one that leaves the campaign `Sending`, `Ready` with a `ScheduleType` other than `Not Scheduled`, or `Pending Approval` with a schedule, and that either moves it there from another state (scheduling it, resuming it with `campaign.resume`) or changes its email (`RelEmailID` or `ABTesting`). The refusal is `ErrorCode 32`, the `ErrorText` names each email and what it lacks, and the campaign is left unchanged. Added in v6.0.6.
+
+The email is checked as the send would use it: every A/B variation when the campaign keeps A/B settings (also when the request sets `RelEmailID` without clearing `ABTesting`), otherwise the email in `RelEmailID`. An email cannot be sent when it has no subject (a fetched email that takes its subject from the HTML `<title>` has one), when it has no HTML content, no plain content and no fetch URL, or when it has no From address. An empty `FromEmail` is accepted when the user group's delivery server, or the delivery server of a global routing segment set for the user group, enforces a From address, or when every target list has a sender email address (the `RulesJsonBundle` lists when the campaign has a bundle, otherwise `RecipientListsAndSegments`), because the send then uses that address. Other updates of a campaign that is already scheduled, such as a rename or a new send time, are not refused.
+
+A campaign whose recipients all failed (none sent, at least one failed, seed list emails not counted) ends with `CampaignStatus` `Failed` and `CampaignStatusReason` `018` instead of `Sent`. For a repeating (`Recursive`) campaign, the failed run and the repeating campaign it came from both end as `Failed`, so the next cycle does not run. Changed in v6.0.6.
+:::
+
 ::: code-group
 
 ```bash [Example Request]
@@ -713,6 +722,7 @@ curl -X POST https://example.com/api.php \
 29: RulesJsonBundle holds a list_id or segments rule value that is not a positive integer
 30: The campaign is in Pending Approval and the requested CampaignStatus is not Draft or Pending Approval (only campaign.approve releases it)
 31: Invalid JourneyEnrolleeHandling (must be list, include or exclude)
+32: The campaign's email cannot be sent (no subject, no HTML or plain content, or no From address). Nothing was changed. ErrorText names each email and what it lacks. Added in v6.0.6
 ```
 
 :::
