@@ -23,9 +23,15 @@ You need:
 - The installation switched on in the client area: sign in to my.octeth.com, open Email verification, then the Octeth installations tab, and turn on your installation. You can set a daily credit cap there too.
 - Credits in your client area balance.
 
+Every step below can be done in the staff area or through the API. In the staff area, open **Settings > Email verification**.
+
 ## Step 1: Turn on email verification
 
-Email verification is off on every installation until you turn it on. Call `verification.settings.update` with your admin API key:
+Email verification is off on every installation until you turn it on.
+
+In the staff area, **Upstream status** shows whether my.octeth.com accepts this installation, its client area balance and the credits your users hold. Choose the refresh button to check again. If the status says the installation is not switched on, choose **Switch it on at my.octeth.com** and enable it there. Then turn on **Offer email verification**.
+
+Through the API, call `verification.settings.update` with your admin API key:
 
 ```bash
 curl -X POST https://your-octeth-domain/api/v1/verification.settings.update \
@@ -41,7 +47,9 @@ Octeth then checks the connection to the client area once. Look at `Upstream` in
 
 ## Step 2: Choose who can verify
 
-By default every user group can use email verification. To allow only some groups, set `AllUserGroups` to `false` and list the groups:
+By default every user group can use email verification. In the staff area, turn off **Every user group** and choose the groups. **Reuse a result for** sets how long a cached result answers a repeat check.
+
+Through the API, to allow only some groups, set `AllUserGroups` to `false` and list the groups:
 
 ```bash
 curl -X POST https://your-octeth-domain/api/v1/verification.settings.update \
@@ -53,7 +61,11 @@ You can also set how many days a cached result answers a repeat check (`CacheDay
 
 ## Step 3: Give users credits
 
-Grant credits with `user.verificationcredits.add`:
+In the staff area, open the user in **Users**, then the **Email verification** tab. It shows the user's balance and history. Enter the credits and a note (only staff see it) and choose **Grant credits**.
+
+To sell credits, create a credit pack in **Billing > Catalog** with a verification credits entitlement. Users see its **Buy** button on the Credits card of their Billing page while it is live, and the credits are added as soon as the payment goes through.
+
+Through the API, grant credits with `user.verificationcredits.add`:
 
 ```bash
 curl -X POST https://your-octeth-domain/api/v1/user.verificationcredits.add \
@@ -65,20 +77,40 @@ Users see their balance with `user.verificationcredits.get` and every grant and 
 
 ## Step 4: Watch your client area balance
 
-All your users' checks are paid from one client area balance. If it runs out, users cannot verify even when they hold credits. Call `verification.status.get` to see the balance, the total credits your users hold and a warning:
+All your users' checks are paid from one client area balance. If it runs out, users cannot verify even when they hold credits. Call `verification.status.get` to see the balance, the total credits your users hold and a warning. The staff area shows the same warning on its Email verification page:
 
 - `below_user_balances`: your balance cannot cover the credits your users hold.
 - `below_threshold`: your balance is below the `LowBalanceThreshold` you set.
 
 Top up the client area balance before it runs out.
 
+## Your verification credits
+
+Users open **Email verification** in the sidebar. The page shows their credit balance and every change to it: single checks, list verifications, credits returned, purchases and grants. If a user does not see Email verification in the sidebar, it is not turned on for their user group.
+
 ## Check a single address
 
-A user can check one address at any time with `email.verify`. It costs one verification credit. If the check cannot finish (for example, it times out), the credit is returned and the user can try again later.
+1. Open **Email verification**.
+2. Type the address and choose **Check address**.
+
+The result is safe, risky, invalid or unknown (see [Read the results](#read-the-results)). When the address looks like a typing mistake, the result suggests a correction. Choose **Use this address** to check it.
+
+Each check costs one verification credit. If the check cannot finish (for example, it times out), the credit is returned and the user can try again later. Through the API, the same check is `email.verify`.
 
 ## Check new subscribers when they sign up
 
-Each list can check new subscribers before they are added. Turn it on per list with `list.verification.settings.update`:
+Each list can check new subscribers before they are added. To turn it on in the interface:
+
+1. Open the list, choose the **Settings** tab, then **Verification**.
+2. Turn on **Verify new subscribers**.
+3. Choose which results to refuse. Invalid is the default.
+4. Optionally refuse risky addresses for a reason, for example disposable addresses.
+5. Set how long a signup waits for the check (1 to 20 seconds) and an optional daily cap.
+6. Choose **Save verification settings**.
+
+The **Let in unchecked** column counts the signups that were added without a check.
+
+Through the API, turn it on with `list.verification.settings.update`:
 
 ```json
 {
@@ -116,7 +148,16 @@ You can check every subscriber of a list, or of one segment, in one run. Octeth 
 
 ### Start a run
 
-Call `list.verification.start` with the list, and a segment if you want only part of the list:
+In the interface:
+
+1. Open the list and choose the **Verification** tab.
+2. Choose **Verify subscribers**.
+3. Choose **Whole list** or **One segment**. The dialog shows the most credits the run can use against your balance.
+4. Choose **Start verification**.
+
+The page updates by itself while the run is in progress.
+
+Through the API, call `list.verification.start` with the list, and a segment if you want only part of the list:
 
 ```bash
 curl -X POST https://example.com/api/v1/list.verification.start \
@@ -138,11 +179,13 @@ Each subscriber gets one of these results:
 | unknown | The mail server did not give a clear answer |
 | skipped | The address was not checked, and its credit came back |
 
-`list.verification.results` lists the subscribers of a result, for example every invalid address, with paging.
+In the interface, the page shows how many addresses fell in each result and why risky addresses are risky, and the **Results** table lists each subscriber. Filter it by result or by risky reason.
+
+Through the API, `list.verification.results` lists the subscribers of a result, for example every invalid address, with paging.
 
 ### Clean the list
 
-Call `list.verification.apply` with the results to act on:
+In the interface, choose **Apply to subscribers**, tick the results to act on (Invalid is ticked for you), choose the action and choose **Apply**. Through the API, call `list.verification.apply` with the results to act on:
 
 - **Unsubscribe** (the default) marks those subscribers as unsubscribed on this list only.
 - **Suppress** adds their addresses to the list's suppression list, so they are never mailed even if they subscribe again.
@@ -153,11 +196,11 @@ curl -X POST https://example.com/api/v1/list.verification.apply \
   -d '{"Command": "list.verification.apply", "APIKey": "your-api-key", "RunID": 7, "Groups": ["invalid"], "Action": "unsubscribe"}'
 ```
 
-The action runs in the background. `list.verification.get` shows how many subscribers it changed.
+The action runs in the background. The Verification tab shows its progress, and `list.verification.get` shows how many subscribers it changed.
 
 ### Cancel a run
 
-`list.verification.cancel` stops a run. Addresses already sent still finish checking, and you get back the credits for the rest.
+Choose **Cancel** on the Verification tab, or call `list.verification.cancel`. Addresses already sent still finish checking, and you get back the credits for the rest.
 
 ### If a run fails
 
