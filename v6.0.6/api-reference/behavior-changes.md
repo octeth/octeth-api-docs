@@ -152,6 +152,22 @@ Before v6.0.6 bounces processed from the bounce spool, `cli/bounce.php` and the 
 
 **Who needs to act:** nobody. A report that reads the unsubscribe channel or per-email bounces will see the new values on new rows.
 
+### Tracking flags
+
+#### `OpenTracking` and `LinkTracking` accept more values on `email.update` and the sender-domain endpoints
+
+`email.update`, `user.senderdomain.create`, `user.senderdomain.update` and `emailgateway.updatedomain` now read `OpenTracking` and `LinkTracking` with one shared set of values (octeth/oempro#3950). On: `true`, `1`, `"true"`, `"1"`, `"yes"`, `"on"`, `"enabled"`. Off: `false`, `0`, `"false"`, `"0"`, `"no"`, `"off"`, `"disabled"`, `""`. Strings are case-insensitive and surrounding whitespace is ignored. Omitting the parameter or sending `null` keeps each endpoint's default, unchanged.
+
+What changes for existing callers:
+
+- `email.update`: `"yes"`, `"on"` and `"enabled"` (any case) turned tracking off before, and now turn it on.
+- `user.senderdomain.create` and `user.senderdomain.update`: `"enabled"` turned tracking off before, and now turns it on. `"yes"` and `"on"` already meant on.
+- `emailgateway.updatedomain`: `"true"`, `"yes"`, `"on"` and `"enabled"` turned tracking off before, and now turn it on.
+
+A value outside both lists keeps the result it had before and writes a warning naming the field to the application log. Send `StrictFlags=true` to have such a value refused instead, with a per-endpoint error code listed in the API reference. Without `StrictFlags` no request that succeeded before fails now. Other on/off parameters on these endpoints, such as `UnsubscribeLink` and `UseTrackingSubdomain`, are not changed.
+
+**Who needs to act:** an integration that sends one of these words expecting tracking off. Send `false` or `0` instead.
+
 ## Upgrade checklist
 
 - [ ] If you call `subscriber.subscribe`, handle `ErrorCode 12` (the contact unsubscribed from the list, nothing changed). Send `UpdateIfUnsubscribed=true` only for a contact who asked to subscribe again.

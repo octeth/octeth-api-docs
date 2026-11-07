@@ -247,8 +247,9 @@ curl -X POST https://example.com/api.php \
 | FetchPlainURL          | String  | No       | URL to fetch plain content from (for Import mode)             |
 | ImageEmbedding         | String  | No       | Image embedding setting                                       |
 | SenderDomain           | String  | No       | Sender domain. Only enforced when `ValidateScope=Campaign` and the user's group has `SenderDomainManagement=Enabled`; ignored for `OptIn` and `AutoResponder` scopes (transactional traffic). |
-| OpenTracking           | Boolean | No       | Enable open tracking. `true`, `1`, `"true"` and `"1"` (case-insensitive) turn it on. Any other value, including `false`, `0`, `"false"` and `"0"`, turns it off. Omit the parameter or send `null` to keep the default (true). |
+| OpenTracking           | Boolean | No       | Enable open tracking. On: `true`, `1`, `"true"`, `"1"`, `"yes"`, `"on"`, `"enabled"`. Off: `false`, `0`, `"false"`, `"0"`, `"no"`, `"off"`, `"disabled"`, `""`. Case-insensitive. Any other value keeps its earlier result and is logged, and with `StrictFlags=true` it is refused. Changed in v6.0.6. Omit the parameter or send `null` to keep the default (true). |
 | LinkTracking           | Boolean | No       | Enable link tracking. Accepts the same values as OpenTracking. Omit the parameter or send `null` to keep the default (true). |
+| StrictFlags <Badge type="tip" text="New in v6.0.6" /> | Boolean | No | `true` refuses an OpenTracking or LinkTracking value that is not in the accepted lists with error `24`, and the email is not changed. Default `false`: such a value is stored as off, as before. |
 | UTMTracking            | Boolean | No       | Enable UTM tracking                                           |
 | UTMSource              | String  | Conditional | UTM source (required if UTMTracking is true)               |
 | UTMMedium              | String  | Conditional | UTM medium (required if UTMTracking is true)               |
@@ -313,6 +314,7 @@ curl -X POST https://example.com/api.php \
 21: FromEmail cannot be sent: it has no domain and no sender domain is set (only raised when ValidateScope=Campaign; OptIn and AutoResponder scopes bypass this check). The email is not changed.
 22: The email cannot be changed while a campaign that uses it is sending (only raised when the user group's ScreeningContentMode is hold). ErrorText names the campaigns. Pause the campaign or wait until it is sent. The email is not changed. Added in v6.0.2
 23: FromEmail is on the administrator's forbidden From addresses list (Settings, Preferences). Raised for every ValidateScope. The email is not changed. Added in v6.0.2
+24: OpenTracking or LinkTracking has an unrecognised value (only with StrictFlags=true). ErrorText names the field. The email is not changed. Added in v6.0.6
 ```
 
 :::

@@ -164,8 +164,9 @@ curl -X POST https://example.com/api.php \
 | SessionID | String  | No       | Session ID obtained from login                 |
 | APIKey    | String  | No       | API key for authentication                     |
 | DomainID  | Integer | Yes      | Sender domain ID                               |
-| LinkTracking | Integer | No    | Enable link tracking (1 = enabled, 0 = disabled) |
-| OpenTracking | Integer | No    | Enable open tracking (1 = enabled, 0 = disabled) |
+| LinkTracking | Boolean | No    | Enable link tracking. On: `true`, `1`, `"true"`, `"1"`, `"yes"`, `"on"`, `"enabled"`. Off: `false`, `0`, `"false"`, `"0"`, `"no"`, `"off"`, `"disabled"`, `""`. Case-insensitive. Any other value keeps the earlier `== 1` reading (so `"1.0"` is still on) and is logged, and with `StrictFlags=true` it is refused. Changed in v6.0.6. `"true"` was off before v6.0.6. |
+| OpenTracking | Boolean | No    | Enable open tracking. Same values as LinkTracking. |
+| StrictFlags <Badge type="tip" text="New in v6.0.6" /> | Boolean | No | `true` refuses an unrecognised LinkTracking or OpenTracking value with error `7`, and the domain is not changed. |
 | UnsubscribeLink | Integer | No | Enable unsubscribe link (1 = enabled, 0 = disabled) |
 | HostingProvider | String | No   | Hosting provider name                          |
 | Subdomain | String | No        | Custom subdomain override (e.g., `outbound`). Only letters, numbers, and hyphens allowed (max 32 characters). Leave empty to reset to global default. |
@@ -222,6 +223,7 @@ curl -X POST https://example.com/api.php \
 1: Missing required parameter (DomainID)
 5: Domain not found or access denied
 6: Invalid subdomain or track prefix value
+7: LinkTracking or OpenTracking has an unrecognised value (only with StrictFlags=true). ErrorText names the field. The domain is not changed. Added in v6.0.6
 ```
 
 :::

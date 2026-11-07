@@ -227,8 +227,9 @@ If a `(SenderDomain, UserID)` pair already exists (e.g. it was previously soft-d
 | SessionID         | String  | No       | Session ID obtained from login                                                                               |
 | APIKey            | String  | No       | API key for authentication                                                                                   |
 | SenderDomain      | String  | Yes      | The domain name to register (e.g. `example.com`). Cannot be `localhost`                                      |
-| LinkTracking      | Boolean | No       | Whether to enable click tracking on links sent from this domain. Default: the user group's `EmailGatewayDefaultLinkTracking`, on unless the group sets it to `Disabled` (changed in v6.0.5, was always `true`) |
-| OpenTracking      | Boolean | No       | Whether to enable open tracking. Default: the user group's `EmailGatewayDefaultOpenTracking`, on unless the group sets it to `Disabled` (changed in v6.0.5, was always `true`) |
+| LinkTracking      | Boolean | No       | Whether to enable click tracking on links sent from this domain. On: `true`, `1`, `"true"`, `"1"`, `"yes"`, `"on"`, `"enabled"`. Off: `false`, `0`, `"false"`, `"0"`, `"no"`, `"off"`, `"disabled"`, `""`. Case-insensitive. Any other value keeps its earlier reading (so a float `1.0` is still on) and is logged, and with `StrictFlags=true` it is refused. Changed in v6.0.6. Default: the user group's `EmailGatewayDefaultLinkTracking`, on unless the group sets it to `Disabled` (changed in v6.0.5, was always `true`) |
+| OpenTracking      | Boolean | No       | Whether to enable open tracking. Same values as LinkTracking. Default: the user group's `EmailGatewayDefaultOpenTracking`, on unless the group sets it to `Disabled` (changed in v6.0.5, was always `true`) |
+| StrictFlags <Badge type="tip" text="New in v6.0.6" /> | Boolean | No | `true` refuses an unrecognised LinkTracking or OpenTracking value with error `9` (HTTP 422), one `Errors` entry per field, and no domain is created. |
 | UnsubscribeLink   | Boolean | No       | Whether to inject the unsubscribe link automatically. Default: `false`                                       |
 | CustomSubdomain   | String  | No       | Override the default MFROM/return-path subdomain. Letters, digits, and hyphens only; max 32 chars; no leading/trailing hyphens |
 | CustomTrackPrefix | String  | No       | Override the default click-tracking subdomain prefix. Same character rules as `CustomSubdomain`             |
@@ -315,6 +316,7 @@ curl -X POST https://example.com/api/v1/user.senderdomain \
 6: Invalid CustomSubdomain or CustomTrackPrefix (letters, digits, and hyphens only; max 32 chars; no leading/trailing hyphens)
 7: Sender domain create process failed (returned with HTTP 400)
 8: Sender domain could not be retrieved after creation (returned with HTTP 500)
+9: LinkTracking or OpenTracking has an unrecognised value (only with StrictFlags=true, HTTP 422). Message names the field. Added in v6.0.6
 ```
 
 :::
@@ -350,8 +352,9 @@ The user must then update their DNS zone with the new records and call `user.sen
 | SessionID            | String  | No       | Session ID obtained from login                                                                                              |
 | APIKey               | String  | No       | API key for authentication                                                                                                  |
 | DomainID             | Integer | Yes      | The ID of the sender domain to update. Must be owned by the calling user                                                    |
-| LinkTracking         | Boolean | No       | Toggle click tracking. Omitted: stored value preserved                                                                      |
-| OpenTracking         | Boolean | No       | Toggle open tracking. Omitted: stored value preserved                                                                       |
+| LinkTracking         | Boolean | No       | Toggle click tracking. On: `true`, `1`, `"true"`, `"1"`, `"yes"`, `"on"`, `"enabled"`. Off: `false`, `0`, `"false"`, `"0"`, `"no"`, `"off"`, `"disabled"`, `""`. Case-insensitive. Any other value keeps its earlier result and is logged, and with `StrictFlags=true` it is refused. Changed in v6.0.6. Omitted: stored value preserved |
+| OpenTracking         | Boolean | No       | Toggle open tracking. Same values as LinkTracking. Omitted: stored value preserved |
+| StrictFlags <Badge type="tip" text="New in v6.0.6" /> | Boolean | No | `true` refuses an unrecognised LinkTracking or OpenTracking value with error `13` (HTTP 422), one `Errors` entry per field, and the domain is not changed. |
 | UnsubscribeLink      | Boolean | No       | Toggle automatic unsubscribe-link injection. Omitted: stored value preserved                                                |
 | UseTrackingSubdomain | Boolean | No       | Whether to use a separate tracking subdomain. Internally stored as the inverse `TrackPrefixDisabled` flag                   |
 | CustomSubdomain      | String  | No       | New override for the MFROM/return-path subdomain. Letters, digits, and hyphens only; max 32 chars; no leading/trailing hyphens. **Triggers DNS regeneration** |
@@ -420,6 +423,7 @@ curl -X PATCH https://example.com/api/v1/user.senderdomain \
 10: Cannot enable an unverified domain: run user.senderdomain.verify first (issue #1890)
 11: The domain is Suspended or Blocked by an administrator; only an administrator can change its status (v6.0.1)
 12: Cannot disable an unverified (Approval Pending) domain: run user.senderdomain.verify first, or delete the domain (v6.0.1)
+13: LinkTracking or OpenTracking has an unrecognised value (only with StrictFlags=true, HTTP 422). Message names the field. Added in v6.0.6
 ```
 
 ::: tip Pausing vs deleting (issue #1890)
