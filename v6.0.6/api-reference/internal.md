@@ -70,6 +70,7 @@ curl -X POST https://example.com/api.php \
 - No authentication required
 - This endpoint is designed for server-to-server conversion tracking
 - Tracks conversions from external systems and updates campaign/autoresponder statistics
+- The OCRID may also be a journey identifier, minted for clicks in journeys with S2S postback tracking on. Its conversion is credited to the journey, the Send Email action and the email gateway queue row (`RelJourneyID`, `RelActionID`, `RelQueueID`, `AttributionSource` `gateway`), and journey identifiers are always signed
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
@@ -122,6 +123,10 @@ curl -X POST https://example.com/api.php \
 1: OCRID parameter is missing
 2: User is invalid or not found
 3: Campaign or autoresponder must be valid (both cannot be invalid)
+6: OCRID signature is invalid
+7: Conversion value is not a number within the accepted range
+8: Conversion could not be recorded
+9: Journey, action or queue record does not match the identifier
 ```
 
 :::

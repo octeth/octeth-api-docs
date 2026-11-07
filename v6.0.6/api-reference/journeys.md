@@ -383,6 +383,7 @@ curl -X GET https://example.com/api/v1/journey \
   },
   "Status": "Enabled",
   "Notes": "Onboarding journey",
+  "S2SEnabled": "0",
   "Actions": [],
   "JourneyStats": {
     "ActiveSubscribers": 150,
@@ -390,6 +391,8 @@ curl -X GET https://example.com/api/v1/journey \
   }
 }
 ```
+
+`S2SEnabled` is `"1"` when S2S postback tracking is on for the journey and `"0"` otherwise. `journey.list` returns it on each journey too. It is present once the v6.0.6 database migration has run.
 
 ::: info Optional activity counters
 When `IncludeSendHolds=1` is passed, the response gains a top-level `SendHolds` array, empty when nothing is waiting. Each row is one hold reason:
@@ -804,6 +807,7 @@ The endpoint joins to `oempro_emails` via the `EmailID` stored in the action's `
 | Run_Criteria_Operator | String | No | Updated run criteria operator. Possible values: `and`, `or` (default: `and`) |
 | Rate_Limit_Per_Hour | Integer | No | Updated hourly rate limit           |
 | Rate_Limit_Per_Day | Integer | No | Updated daily rate limit             |
+| S2SEnabled | Boolean | No | Opt-in. Turns S2S postback tracking on or off for the journey's Send Email actions. Accepted values: `true`, `false`, `1`, `0`, `"yes"`, `"no"`. When the parameter is omitted the stored setting is unchanged. Any other value returns error code 23. See [S2S postback for journeys](/v6.0.6/using-octeth/email-deliverability/email-tracking#s2s-postback-for-journeys). |
 | RemapDecisionFields | Boolean | No | Opt-in. When `true`, each Decision rule that references a custom field which is not on the journey's trigger list is pointed at the field on the trigger list with the same name and the same field type, when exactly one such field exists. Accepted true values: `true`, `1`, `"true"`, `"1"`, `"yes"`. Default: off, and the response is unchanged. See [Remapping Decision fields](#remapping-decision-fields). |
 
 ::: code-group

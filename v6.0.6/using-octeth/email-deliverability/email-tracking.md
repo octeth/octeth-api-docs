@@ -309,6 +309,16 @@ The S2S postback uses an attribution identifier that is passed through the track
 For details on the S2S postback API parameters and implementation, see the API reference documentation.
 :::
 
+#### S2S postback for journeys
+
+Journeys can report conversions server to server too. Open the journey in the journey builder, select the trigger, and turn on **S2S postback tracking**. From then on, every tracked link a contact clicks in that journey's emails carries a signed identifier under the Track parameter set on the staff [S2S postback](/v6.0.6/new-user-interface/staff-s2s-postback) screen (default `ocrid`).
+
+Post that identifier to the same postback address as for campaigns. Octeth credits the conversion and its value to the journey and to the Send Email step whose email was clicked, so it appears in the journey report and the per-step report, and it starts any journey whose trigger is a conversion on that email.
+
+Use one conversion method per website. A site that sends both a browser `oct.eventC` conversion and a server postback for the same order records it twice.
+
+Journey identifiers are always signed. Changing `OEMPRO_PASSWORD_SALT` or `ADMIN_API_KEY` invalidates the identifiers already handed out, the same way it does for campaigns.
+
 ### Attribution Window
 
 The default attribution window is **30 days**. If a subscriber clicks a tracked link and converts within 30 days, the conversion is attributed to that campaign. Conversions that occur after the 30-day window are not attributed.
