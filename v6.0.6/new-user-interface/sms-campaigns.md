@@ -156,7 +156,7 @@ While quiet hours hold a sending campaign it stays in **Sending**, and its repor
 
 ## Managing campaigns
 
-**SMS** > **Campaigns** shows totals for the selected date range (sent, delivery rate, click rate, opt-out rate and spend) and a table of campaigns. Filter by status in the left rail and by date with the date picker.
+**SMS** > **Campaigns** shows totals for the selected date range (sent, delivery rate, click rate, opt-out rate and spend) and a table of campaigns. Filter by status in the left rail and by date with the date picker. Use the search box to find a campaign by a word in its name or its message. Click the **Campaign**, **Sent**, **Delivered**, **Opt-outs** or **Cost** column heading to sort by it, and click it again to reverse the order. Without a sort, the newest campaign is first. <Badge type="tip" text="New in v6.0.6" />
 
 | Status | Meaning |
 |---|---|

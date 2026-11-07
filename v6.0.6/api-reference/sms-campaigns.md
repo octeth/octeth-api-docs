@@ -524,6 +524,9 @@ curl -X GET https://example.com/api/v1/smscampaign.get \
 | RecordsFrom | Integer | No | Offset, default 0 |
 | CreatedAfter | String | No | Only campaigns created at or after this point. `YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS`; a bare date means 00:00:00 |
 | CreatedBefore | String | No | Only campaigns created at or before this point. `YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS`; a bare date means 23:59:59, so the whole day is included |
+| SearchField <Badge type="tip" text="New in v6.0.6" /> | String | No | Only campaigns whose name or message text contains this term. Case-insensitive, and `%` and `_` match literally. An empty value is no filter |
+| OrderField <Badge type="tip" text="New in v6.0.6" /> | String | No | Sort column. Possible values: `SMSCampaignID` (default), `CampaignName`, `CreatedAt`, `TotalSent`, `TotalDelivered`, `TotalOptOuts`, `ActualCost`. Case-insensitive |
+| OrderType <Badge type="tip" text="New in v6.0.6" /> | String | No | Sort direction, `ASC` or `DESC` (default `DESC`). Case-insensitive |
 
 ::: code-group
 
@@ -562,11 +565,13 @@ curl -X GET https://example.com/api/v1/smscampaign.browse \
 1: Invalid Status value
 2: The campaign list could not be read
 3: Invalid CreatedAfter or CreatedBefore value
+4: Invalid OrderField value (added in v6.0.6)
+5: Invalid OrderType value (added in v6.0.6)
 ```
 
 :::
 
-Results are ordered newest first by `SMSCampaignID` and the order cannot be changed. A `CreatedAfter` or `CreatedBefore` value that cannot be parsed is refused with ErrorCode 3 rather than ignored, so a malformed date never silently widens the window.
+Results are ordered newest first by `SMSCampaignID` unless `OrderField` or `OrderType` is sent. `OrderType` on its own reverses the default order. Campaigns with an empty value in the sort column always come last, whichever direction is chosen, and campaigns with equal values are ordered newest first, so paging through a sorted list never repeats or skips a campaign. An `OrderField` outside the list above is refused with ErrorCode 4, and an `OrderType` other than `ASC` or `DESC` with ErrorCode 5, rather than falling back to the default order. `TotalCampaigns` counts the campaigns matching every filter, `SearchField` included, so it can drive pagination of a search. A call that sends none of `SearchField`, `OrderField` and `OrderType` behaves exactly as before they were added. Added in v6.0.6. A `CreatedAfter` or `CreatedBefore` value that cannot be parsed is refused with ErrorCode 3 rather than ignored, so a malformed date never silently widens the window.
 
 ### Get a Campaign Summary
 
