@@ -4,7 +4,7 @@ layout: doc
 
 # Email Verification API Documentation
 
-Email verification checks addresses through the Octeth client area (my.octeth.com) and bills each check to the user's own verification credits. These endpoints hold the installation settings, the upstream status and the per-user credit ledger, check a single address, and set up the check of new subscribers on each list.
+Email verification checks addresses through the Octeth client area (my.octeth.com) and bills each check to the user's own verification credits. These endpoints hold the installation settings, the upstream status and the per-user credit ledger, check a single address, set up the check of new subscribers on each list, and run, read and apply bulk verification of a whole list or segment.
 
 ## Get Email Verification Settings
 
@@ -743,3 +743,659 @@ curl -X POST https://example.com/api/v1/list.verification.settings \
 :::
 
 The `Counters` in the response cover the last 7 days.
+
+## Start a List Verification Run
+
+<Badge type="info" text="POST" /> `/api/v1/list.verification.start`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permission: `List.Update`
+- Team member role permission: `Audience.Manage`
+- Rate limit: 20 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Starts a bulk email verification run on one of your lists, or on one segment of it. The run covers subscribers that are subscribed and not bounced when it starts. Each unique address costs one verification credit, charged at once, all or nothing: when your balance is too small nothing is charged and the error states `Needed` and `Available`. Credits for addresses that end up not checked (removed from the list during the run, or not checkable) come back when the run ends. A list has one active run at a time. Follow the run with `list.verification.get`.
+
+**The run object** (returned by every `list.verification.*` command):
+
+| Field | Description |
+|-------|-------------|
+| RunID, ListID, SegmentID | The run, its list and its segment (`0` for the whole list) |
+| Status | `pending` (counting the audience), `submitting` (sending addresses), `processing` (waiting for results), `completed`, `failed`, `cancelled` |
+| CancelRequested | `true` once `list.verification.cancel` was called |
+| Progress | 0 to 100 |
+| TotalAddresses | Unique addresses the run was charged for |
+| TotalSubscribers | Subscribers covered. Subscribers that share an address share its result |
+| SubmittedAddresses | Addresses sent for checking so far |
+| Batches | Groups of up to 50,000 addresses sent so far |
+| CreditsCharged, CreditsReturned | Credits charged at start, and credits given back when the run ended |
+| Counts | Subscribers per result group (`safe`, `risky`, `invalid`, `unknown`, `skipped`) and per risky reason |
+| ErrorCode, ErrorMessage | Why a run failed, for example `upstream_credits` when the installation's my.octeth.com balance ran out |
+| CreatedAt, FinishedAt, ResultsPurgeAt | UTC. Results are deleted at `ResultsPurgeAt` (30 days after the run by default) |
+| ResultsAvailable | `false` once the results were deleted |
+| Apply | The last action queued with `list.verification.apply`: `Status` (`none`, `pending`, `processing`, `completed`, `failed`), `Action`, `Groups`, `Reasons`, `Matched`, `Applied`, `RequestedAt`, `FinishedAt` |
+
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `list.verification.start` |
+| APIKey | String | Yes | User API key |
+| ListID | Integer | Yes | The list to verify |
+| SegmentID | Integer | No | A segment of that list. Leave it out for the whole list |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.verification.start \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "list.verification.start", "APIKey": "your-api-key", "ListID": 12}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Run": {
+    "RunID": 7,
+    "ListID": 12,
+    "SegmentID": 0,
+    "Status": "pending",
+    "CancelRequested": false,
+    "Progress": 0,
+    "TotalAddresses": 120000,
+    "TotalSubscribers": 0,
+    "SubmittedAddresses": 0,
+    "Batches": 0,
+    "CreditsCharged": 120000,
+    "CreditsReturned": 0,
+    "Counts": {
+      "safe": 0,
+      "risky": 0,
+      "invalid": 0,
+      "unknown": 0,
+      "skipped": 0,
+      "reasons": {
+        "accept_all": 0,
+        "role": 0,
+        "disposable": 0,
+        "low_quality": 0
+      }
+    },
+    "ErrorCode": "",
+    "ErrorMessage": "",
+    "CreatedAt": "2026-11-07 16:00:00",
+    "FinishedAt": "",
+    "ResultsPurgeAt": "",
+    "ResultsAvailable": true,
+    "Apply": {
+      "Status": "none",
+      "Action": "",
+      "Groups": [],
+      "Reasons": [],
+      "Matched": 0,
+      "Applied": 0,
+      "RequestedAt": "",
+      "FinishedAt": ""
+    },
+    "Finished": false
+  },
+  "Balance": 880
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 8,
+  "ErrorText": "Not enough verification credits",
+  "Needed": 120000,
+  "Available": 500
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: ListID is missing or invalid
+2: SegmentID is invalid
+3: List not found
+4: Segment not found on this list
+5: Email verification is not available for this account
+6: The list already has an active run (ActiveRunID names it)
+7: No subscribed, not bounced subscribers to verify
+8: Not enough verification credits (Needed, Available)
+9: The segment could not be read
+10: The run could not be created
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
+
+## Get a List Verification Run
+
+<Badge type="info" text="GET" /> `/api/v1/list.verification.get`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permission: `List.Get`
+- Team member role permission: `Account.Read`
+- Rate limit: 240 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns one of your verification runs with its status, progress and result counts. Poll it every few seconds while `Finished` is `false`.
+
+**The run object** (returned by every `list.verification.*` command):
+
+| Field | Description |
+|-------|-------------|
+| RunID, ListID, SegmentID | The run, its list and its segment (`0` for the whole list) |
+| Status | `pending` (counting the audience), `submitting` (sending addresses), `processing` (waiting for results), `completed`, `failed`, `cancelled` |
+| CancelRequested | `true` once `list.verification.cancel` was called |
+| Progress | 0 to 100 |
+| TotalAddresses | Unique addresses the run was charged for |
+| TotalSubscribers | Subscribers covered. Subscribers that share an address share its result |
+| SubmittedAddresses | Addresses sent for checking so far |
+| Batches | Groups of up to 50,000 addresses sent so far |
+| CreditsCharged, CreditsReturned | Credits charged at start, and credits given back when the run ended |
+| Counts | Subscribers per result group (`safe`, `risky`, `invalid`, `unknown`, `skipped`) and per risky reason |
+| ErrorCode, ErrorMessage | Why a run failed, for example `upstream_credits` when the installation's my.octeth.com balance ran out |
+| CreatedAt, FinishedAt, ResultsPurgeAt | UTC. Results are deleted at `ResultsPurgeAt` (30 days after the run by default) |
+| ResultsAvailable | `false` once the results were deleted |
+| Apply | The last action queued with `list.verification.apply`: `Status` (`none`, `pending`, `processing`, `completed`, `failed`), `Action`, `Groups`, `Reasons`, `Matched`, `Applied`, `RequestedAt`, `FinishedAt` |
+
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `list.verification.get` |
+| APIKey | String | Yes | User API key |
+| RunID | Integer | Yes | The run |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET https://example.com/api/v1/list.verification.get \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "list.verification.get", "APIKey": "your-api-key", "RunID": 7}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Run": {
+    "RunID": 7,
+    "ListID": 12,
+    "SegmentID": 0,
+    "Status": "completed",
+    "CancelRequested": false,
+    "Progress": 100,
+    "TotalAddresses": 120000,
+    "TotalSubscribers": 120050,
+    "SubmittedAddresses": 120000,
+    "Batches": 3,
+    "CreditsCharged": 120000,
+    "CreditsReturned": 75,
+    "Counts": {
+      "safe": 96010,
+      "risky": 12010,
+      "invalid": 12005,
+      "unknown": 0,
+      "skipped": 75,
+      "reasons": {
+        "accept_all": 0,
+        "role": 12010,
+        "disposable": 6005,
+        "low_quality": 0
+      }
+    },
+    "ErrorCode": "",
+    "ErrorMessage": "",
+    "CreatedAt": "2026-11-07 16:00:00",
+    "FinishedAt": "2026-11-07 16:24:10",
+    "ResultsPurgeAt": "2026-12-07 16:24:10",
+    "ResultsAvailable": true,
+    "Apply": {
+      "Status": "none",
+      "Action": "",
+      "Groups": [],
+      "Reasons": [],
+      "Matched": 0,
+      "Applied": 0,
+      "RequestedAt": "",
+      "FinishedAt": ""
+    },
+    "Finished": true
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Verification run not found"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: RunID is missing or invalid
+2: Run not found
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
+
+## List Verification Runs
+
+<Badge type="info" text="GET" /> `/api/v1/list.verification.list`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permission: `List.Get`
+- Team member role permission: `Account.Read`
+- Rate limit: 120 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Lists your verification runs, newest first, for every list or for one. Page with `Cursor`: pass the `NextCursor` of the previous page until it is `0`. Each run has the shape described under `list.verification.get`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `list.verification.list` |
+| APIKey | String | Yes | User API key |
+| ListID | Integer | No | Only this list's runs |
+| Limit | Integer | No | Runs per page, 1 to 100 (default 25) |
+| Cursor | Integer | No | `NextCursor` of the previous page |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET https://example.com/api/v1/list.verification.list \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "list.verification.list", "APIKey": "your-api-key", "ListID": 12}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Runs": [
+    {
+      "RunID": 7,
+      "ListID": 12,
+      "SegmentID": 0,
+      "Status": "completed",
+      "CancelRequested": false,
+      "Progress": 100,
+      "TotalAddresses": 120000,
+      "TotalSubscribers": 120050,
+      "SubmittedAddresses": 120000,
+      "Batches": 3,
+      "CreditsCharged": 120000,
+      "CreditsReturned": 75,
+      "Counts": {
+        "safe": 96010,
+        "risky": 12010,
+        "invalid": 12005,
+        "unknown": 0,
+        "skipped": 75,
+        "reasons": {
+          "accept_all": 0,
+          "role": 12010,
+          "disposable": 6005,
+          "low_quality": 0
+        }
+      },
+      "ErrorCode": "",
+      "ErrorMessage": "",
+      "CreatedAt": "2026-11-07 16:00:00",
+      "FinishedAt": "2026-11-07 16:24:10",
+      "ResultsPurgeAt": "2026-12-07 16:24:10",
+      "ResultsAvailable": true,
+      "Apply": {
+        "Status": "none",
+        "Action": "",
+        "Groups": [],
+        "Reasons": [],
+        "Matched": 0,
+        "Applied": 0,
+        "RequestedAt": "",
+        "FinishedAt": ""
+      },
+      "Finished": true
+    }
+  ],
+  "NextCursor": 0
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Limit must be 1 to 100"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: ListID is invalid
+2: Limit is not 1 to 100
+3: Cursor is not a NextCursor value
+4: The runs could not be read
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
+
+## Get List Verification Results
+
+<Badge type="info" text="GET" /> `/api/v1/list.verification.results`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permission: `Subscribers.Get`
+- Team member role permission: `Account.Read`
+- Rate limit: 120 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns one page of a run's results, one row per subscriber in subscriber ID order. `EmailAddress` is the subscriber's current address, empty when the subscriber was deleted since. `Group` is `safe`, `risky`, `invalid`, `unknown` or `skipped` (not checked, see `Reason`: `not_sent`, `not_checked`, `changed` when the subscriber left the list or changed address during the run, `not_charged`, `list_deleted`). For a checked address `Reason` is the mail server outcome, for example `accepted` or `mailbox_not_found`. `Reasons` narrows the risky group only. Results are kept 30 days after the run ends by default (`EMAIL_VERIFICATION_RESULTS_RETENTION_DAYS`).
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `list.verification.results` |
+| APIKey | String | Yes | User API key |
+| RunID | Integer | Yes | The run |
+| Groups | Array or String | No | `safe`, `risky`, `invalid`, `unknown`, `skipped`, as an array or a comma list. Default: the first four |
+| Reasons | Array or String | No | `accept_all`, `role`, `disposable`, `low_quality`. Narrows the risky group |
+| Limit | Integer | No | Rows per page, 1 to 500 (default 100) |
+| Cursor | Integer | No | `NextCursor` of the previous page |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET https://example.com/api/v1/list.verification.results \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "list.verification.results", "APIKey": "your-api-key", "RunID": 7, "Groups": ["invalid", "risky"], "Reasons": ["role"], "Limit": 100}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "RunID": 7,
+  "Results": [
+    {
+      "SubscriberID": 41,
+      "EmailAddress": "info@example.com",
+      "Group": "risky",
+      "Reasons": [
+        "role"
+      ],
+      "Flags": {
+        "accept_all": false,
+        "role": true,
+        "disposable": false,
+        "free": false,
+        "mailbox_full": false,
+        "no_reply": false
+      },
+      "Reason": "accepted",
+      "Applied": false
+    }
+  ],
+  "NextCursor": 0
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 7,
+  "ErrorText": "The results of this run were deleted after the retention period"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: RunID is missing or invalid
+2: Run not found
+3: Groups are invalid
+4: Reasons are invalid
+5: Limit is not 1 to 500
+6: Cursor is not a NextCursor value
+7: The results were deleted after the retention period
+8: The results could not be read
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
+
+## Apply an Action to Verification Results
+
+<Badge type="info" text="POST" /> `/api/v1/list.verification.apply`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permission: `Subscriber.Update`
+- Team member role permission: `Audience.Manage`
+- Rate limit: 30 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Applies an action to the subscribers of a finished run whose result is in the chosen groups (and, for `risky`, reasons). The action runs in the background; follow it with `list.verification.get` (`Run.Apply`). `unsubscribe` (the default) unsubscribes the matching subscribers that are still subscribed, from this list only. `suppress` adds their addresses to this list's suppression list with a reason naming the result. `none` records the choice and changes nothing. One action runs at a time per run, and a later action can target other groups.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `list.verification.apply` |
+| APIKey | String | Yes | User API key |
+| RunID | Integer | Yes | A finished run |
+| Groups | Array or String | Yes | `safe`, `risky`, `invalid`, `unknown` |
+| Reasons | Array or String | No | `accept_all`, `role`, `disposable`, `low_quality`. Narrows the risky group |
+| Action | String | No | `unsubscribe` (default), `suppress` or `none` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.verification.apply \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "list.verification.apply", "APIKey": "your-api-key", "RunID": 7, "Groups": ["invalid"], "Action": "unsubscribe"}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Matched": 12005,
+  "Run": {
+    "RunID": 7,
+    "ListID": 12,
+    "SegmentID": 0,
+    "Status": "completed",
+    "CancelRequested": false,
+    "Progress": 100,
+    "TotalAddresses": 120000,
+    "TotalSubscribers": 120050,
+    "SubmittedAddresses": 120000,
+    "Batches": 3,
+    "CreditsCharged": 120000,
+    "CreditsReturned": 75,
+    "Counts": {
+      "safe": 96010,
+      "risky": 12010,
+      "invalid": 12005,
+      "unknown": 0,
+      "skipped": 75,
+      "reasons": {
+        "accept_all": 0,
+        "role": 12010,
+        "disposable": 6005,
+        "low_quality": 0
+      }
+    },
+    "ErrorCode": "",
+    "ErrorMessage": "",
+    "CreatedAt": "2026-11-07 16:00:00",
+    "FinishedAt": "2026-11-07 16:24:10",
+    "ResultsPurgeAt": "2026-12-07 16:24:10",
+    "ResultsAvailable": true,
+    "Apply": {
+      "Status": "pending",
+      "Action": "unsubscribe",
+      "Groups": [
+        "invalid"
+      ],
+      "Reasons": [],
+      "Matched": 12005,
+      "Applied": 0,
+      "RequestedAt": "2026-11-07 16:30:00",
+      "FinishedAt": ""
+    },
+    "Finished": true
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 8,
+  "ErrorText": "An action is already running on this verification run"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: RunID is missing or invalid
+2: Run not found
+3: Groups are missing or invalid
+4: Reasons are invalid
+5: Action is not unsubscribe, suppress or none
+6: The run has not finished
+7: The results were deleted after the retention period
+8: An action is already running on this run
+9: The action could not be queued
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::
+
+## Cancel a List Verification Run
+
+<Badge type="info" text="POST" /> `/api/v1/list.verification.cancel`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permission: `List.Update`
+- Team member role permission: `Audience.Manage`
+- Rate limit: 30 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Cancels an active run. No more addresses are sent. Addresses already sent finish checking and keep their results. When the run ends (`Status` `cancelled`) the credits for every address that was not checked come back.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `list.verification.cancel` |
+| APIKey | String | Yes | User API key |
+| RunID | Integer | Yes | An active run |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.verification.cancel \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "list.verification.cancel", "APIKey": "your-api-key", "RunID": 7}'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Run": {
+    "RunID": 7,
+    "ListID": 12,
+    "SegmentID": 0,
+    "Status": "submitting",
+    "CancelRequested": true,
+    "Progress": 30,
+    "TotalAddresses": 120000,
+    "TotalSubscribers": 120050,
+    "SubmittedAddresses": 120000,
+    "Batches": 3,
+    "CreditsCharged": 120000,
+    "CreditsReturned": 75,
+    "Counts": {
+      "safe": 96010,
+      "risky": 12010,
+      "invalid": 12005,
+      "unknown": 0,
+      "skipped": 75,
+      "reasons": {
+        "accept_all": 0,
+        "role": 12010,
+        "disposable": 6005,
+        "low_quality": 0
+      }
+    },
+    "ErrorCode": "",
+    "ErrorMessage": "",
+    "CreatedAt": "2026-11-07 16:00:00",
+    "FinishedAt": "",
+    "ResultsPurgeAt": "",
+    "ResultsAvailable": true,
+    "Apply": {
+      "Status": "none",
+      "Action": "",
+      "Groups": [],
+      "Reasons": [],
+      "Matched": 0,
+      "Applied": 0,
+      "RequestedAt": "",
+      "FinishedAt": ""
+    },
+    "Finished": false
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "The verification run is not active"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: RunID is missing or invalid
+2: Run not found
+3: The run is not active
+4: The run could not be cancelled
+99998: Authentication failure
+99999: Not enough privileges
+```
+
+:::

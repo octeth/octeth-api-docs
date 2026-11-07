@@ -102,6 +102,67 @@ Good to know:
 
 To check an address added through the API with `subscriber.create`, pass `Verify` set to `true`.
 
+## Verify a whole list or segment
+
+You can check every subscriber of a list, or of one segment, in one run. Octeth sends the addresses in the background and keeps the results for 30 days by default.
+
+### What a run covers and costs
+
+- A run covers subscribers who are subscribed and have not bounced when the run starts. Subscribers added later are not in it.
+- Each unique address costs one verification credit. Two subscribers with the same address are checked once and share the result.
+- All credits are charged when the run starts. If your balance is too small, nothing is charged and you see how many credits you need.
+- When the run ends, you get back the credits for every address that was not checked, for example a subscriber who unsubscribed during the run or an address the check could not reach.
+- A list has one run at a time.
+
+### Start a run
+
+Call `list.verification.start` with the list, and a segment if you want only part of the list:
+
+```bash
+curl -X POST https://example.com/api/v1/list.verification.start \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "list.verification.start", "APIKey": "your-api-key", "ListID": 12}'
+```
+
+Then check its progress with `list.verification.get` until `Finished` is `true`. A list of 100,000 subscribers usually takes a few minutes to half an hour.
+
+### Read the results
+
+Each subscriber gets one of these results:
+
+| Result | Meaning |
+|--------|---------|
+| safe | The address accepts mail |
+| risky | The address may work, but carries a risk: it accepts everything (`accept_all`), belongs to a role such as info@ (`role`), is a throwaway address (`disposable`) or looks low quality (`low_quality`) |
+| invalid | The address cannot receive mail |
+| unknown | The mail server did not give a clear answer |
+| skipped | The address was not checked, and its credit came back |
+
+`list.verification.results` lists the subscribers of a result, for example every invalid address, with paging.
+
+### Clean the list
+
+Call `list.verification.apply` with the results to act on:
+
+- **Unsubscribe** (the default) marks those subscribers as unsubscribed on this list only.
+- **Suppress** adds their addresses to the list's suppression list, so they are never mailed even if they subscribe again.
+
+```bash
+curl -X POST https://example.com/api/v1/list.verification.apply \
+  -H "Content-Type: application/json" \
+  -d '{"Command": "list.verification.apply", "APIKey": "your-api-key", "RunID": 7, "Groups": ["invalid"], "Action": "unsubscribe"}'
+```
+
+The action runs in the background. `list.verification.get` shows how many subscribers it changed.
+
+### Cancel a run
+
+`list.verification.cancel` stops a run. Addresses already sent still finish checking, and you get back the credits for the rest.
+
+### If a run fails
+
+A run fails when the installation's own verification balance in the Octeth client area runs out, or when the client area keeps refusing the installation for a day. Results already checked are kept, and the credits for every address not checked come back. Ask your administrator to top up the client area balance, then start a new run.
+
 ## Privacy
 
 Octeth never writes a checked address to a log file, and the result cache holds only a keyed hash of each address. Results that suggest a corrected address, and results of type unknown, are never cached.

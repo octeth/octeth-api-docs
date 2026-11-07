@@ -132,6 +132,12 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
    Email verification sends its checks to `EMAIL_VERIFICATION_API_URL`, with the installation's signed license key (the key pasted on Settings > License, or `LICENSE_KEY`) as an `Authorization: Bearer` header. Nothing is sent until an administrator enables email verification (`verification.settings.update` with `Enabled` set to `true`), and a request is refused unless the address starts with `https://`, so the key never travels over plain HTTP. The installation must also be switched on in the client area (Email verification, Octeth installations). See [Set Up Email Verification](./email-verification).
 
+   ```bash
+   EMAIL_VERIFICATION_RESULTS_RETENTION_DAYS=30   # Days the per-subscriber results of a finished list verification run are kept, 1 to 365
+   ```
+
+   A list verification run stores one result per subscriber. The daily `cli/verification_cleanup.php` cron job deletes them `EMAIL_VERIFICATION_RESULTS_RETENTION_DAYS` days after the run finished. The run itself, its counts and each subscriber's latest result stay. The same job also deletes local result cache entries older than the cache days set in the email verification settings.
+
 4. **Debugging & Logging**
    ```bash
    OEMPRO_DEBUG=true                        # Enable/disable debug mode
