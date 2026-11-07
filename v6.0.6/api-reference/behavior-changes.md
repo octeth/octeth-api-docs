@@ -30,6 +30,19 @@ Every success response also carries the new `PreviousSubscriptionStatus` field: 
 
 **Who needs to act:** an integration that calls `subscriber.subscribe` and expects an unsubscribed contact to come back. Handle `ErrorCode 12` as "skipped, the contact opted out". Send `UpdateIfUnsubscribed=true` only when the contact has given fresh consent, for example by submitting your own signup form.
 
+#### `subscriber.subscribe` refuses a `ListID` set that spans accounts, and every list honours double opt-in
+
+This is a security fix. `subscriber.subscribe` needs no authentication and accepts a comma-separated `ListID`. Before v6.0.6 only the first list was handled normally. Every other list in the set was written by ID alone: it could belong to any account on the install, and the address was always written as `Subscribed` with no confirmation email, even on a double opt-in list. Anyone could therefore add confirmed contacts to another account's lists through the public signup form or `api.php` (octeth/oempro#3956).
+
+Two changes:
+
+- When any list after the first belongs to a different account than the first list, the call is refused with the new `ErrorCode 13` and nothing is written to any list, the first one included. A list ID that does not exist is still skipped, as before.
+- Every list after the first now follows its own opt-in mode. A double opt-in list gets the address as `Opt-In Pending` and sends its own confirmation email. A single opt-in list gets it as `Subscribed`, as before.
+
+**Not affected:** a single `ListID`, and a set of lists that all belong to one account on single opt-in. The success response and `RedirectURL` (taken from the first list) are unchanged.
+
+**Who needs to act:** an integration or signup form that sends several lists of different accounts in one call. Send one call per account instead. A form that subscribes to several double opt-in lists of one account now sends one confirmation email per double opt-in list, and the contact is only `Subscribed` on each list after confirming it.
+
 ### Campaigns
 
 #### `campaign.update` refuses to schedule a campaign whose email cannot be sent

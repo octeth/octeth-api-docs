@@ -177,7 +177,7 @@ curl -X POST https://example.com/api/v1/subscriber.create \
 | Parameter | Type   | Required | Description                           |
 |-----------|--------|----------|---------------------------------------|
 | Command   | String | Yes      | API command: `subscriber.subscribe`   |
-| ListID    | String | Yes      | ID of the subscriber list (can be comma-separated for multiple lists) |
+| ListID    | String | Yes      | ID of the subscriber list. Can be a comma-separated set of lists; every list in the set must belong to the same account as the first one. <Badge type="warning" text="Changed in v6.0.6" /> A set that includes another account's list is refused with `ErrorCode 13` and nothing is written. Each list follows its own opt-in mode: a double opt-in list gets `Opt-In Pending` and sends its confirmation email. A list ID that does not exist is skipped. |
 | EmailAddress | String | Yes   | Email address of the subscriber       |
 | IPAddress | String | Yes      | IP address of the subscriber          |
 | CustomFieldN | String | No    | Custom field values (N = CustomFieldID) |
@@ -190,6 +190,10 @@ curl -X POST https://example.com/api/v1/subscriber.create \
 <Badge type="warning" text="Changed in v6.0.6" /> Before v6.0.6 this endpoint always re-subscribed an address that had unsubscribed from the list, deleted its list suppression entry and answered exactly as for a new subscription. A contact sync could therefore undo every opt-out it touched. The call is now refused with `ErrorCode 12` and `PreviousSubscriptionStatus: "Unsubscribed"`, and the subscriber row and its suppression entry are left as they were. To keep the old behaviour for a contact who has asked to subscribe again, send `UpdateIfUnsubscribed=true`. See [API Behavior Changes in v6.0.6](/v6.0.6/api-reference/behavior-changes#subscriber-subscribe-no-longer-re-subscribes-an-unsubscribed-contact).
 
 The public signup form (`subscribe.php`), the re-subscribe action on the subscriber page of the user area and subscribe requests sent by email pass `UpdateIfUnsubscribed=true`, so a person who subscribes again through them is re-subscribed as before. The journey **Subscribe to list** action and incoming subscription webhooks do not, so a contact who unsubscribed from the target list is skipped.
+:::
+
+::: danger Multiple lists must belong to one account
+<Badge type="warning" text="Changed in v6.0.6" /> Before v6.0.6 every list after the first in a comma-separated `ListID` was written as `Subscribed` with no confirmation email and no check of which account owned it. A request whose lists belong to more than one account is now refused with `ErrorCode 13`, before anything is written, and each list after the first follows its own opt-in mode. Custom field values and `UpdateIfUnsubscribed` still apply only to the first list. An address already on one of the other lists, or unsubscribed from it, is left as it is there. See [API Behavior Changes in v6.0.6](/v6.0.6/api-reference/behavior-changes#subscriber-subscribe-refuses-a-listid-set-that-spans-accounts-and-every-list-honours-double-opt-in).
 :::
 
 ::: info ErrorCode 9 is not an update
@@ -263,6 +267,13 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Error Response (lists of different accounts)]
+{
+  "Success": false,
+  "ErrorCode": 13
+}
+```
+
 ```json [Error Response]
 {
   "Success": false,
@@ -297,6 +308,8 @@ curl -X POST https://example.com/api.php \
 12: Email address has unsubscribed from the list and
     UpdateIfUnsubscribed is not true, nothing changed (returned with
     PreviousSubscriptionStatus)
+13: A list in ListID belongs to a different account than the first
+    list, nothing changed
 101: Plugin validation failed
 ```
 
