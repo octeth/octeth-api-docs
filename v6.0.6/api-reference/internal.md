@@ -130,3 +130,66 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+## Notify the Reviewer of a Submitted Account Review <Badge type="tip" text="New in v6.0.6" />
+
+<Badge type="info" text="POST" /> `/api.php` (legacy)
+
+Emails the alert address (`ALERT_RECIPIENT_EMAIL`) the answers an account gave in the account review questionnaire of the new user interface, with a link to the account, through the install's system email settings. The new user interface calls it when a customer first submits the questionnaire, and at most once a day after that. See [Reviewing New Accounts](../new-user-interface/staff-account-review).
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privileges: `User.Edit`
+- Only the new user interface's own container may call it. A call from any other address is refused with error 4.
+- Not available to admin agent keys
+- One notice per account per 24 hours. A call inside that window sends nothing and returns `Sent: false`.
+- Rate limit: 60 requests per 60 seconds
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description |
+|-----------|---------|----------|-------------|
+| Command   | String  | Yes      | API command: `admin.accountreview.notify` |
+| AdminAPIKey | String | Yes     | Admin API key |
+| UserID    | Integer | Yes      | The account that submitted its answers |
+| Answers   | String  | Yes      | A JSON-encoded list of at most 50 objects, each with a string `label` (at most 255 characters) and a string `value` (at most 5,000 characters). An empty list `[]` is accepted. Labels and values are plain text: they are HTML-escaped into the email |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  --data-urlencode "Command=admin.accountreview.notify" \
+  --data-urlencode "AdminAPIKey=your-admin-api-key" \
+  --data-urlencode "UserID=42" \
+  --data-urlencode 'Answers=[{"label":"Company or organization name","value":"Acme Inc."},{"label":"Industry","value":"Ecommerce and retail"}]'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Sent": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "This command is only available to the new user interface"
+}
+```
+
+```txt [Error Codes]
+0: Success. Sent is false when a notice for this account went out in the last 24 hours
+1: UserID missing or not a positive integer
+2: User not found
+3: Answers missing or not a valid list of label and value pairs
+4: Not called from the new user interface
+5: The notification email could not be sent
+5003: The account is outside the user groups this admin may access
+```
+
+:::

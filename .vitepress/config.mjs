@@ -1163,6 +1163,7 @@ export default defineConfig({
                         {text: 'The Staff SMS Settings Screen', link: '/v6.0.6/new-user-interface/staff-sms-settings'},
                         {text: 'The Staff SMS Suppression Screen', link: '/v6.0.6/new-user-interface/staff-sms-suppression'},
                         {text: 'Staff Preferences', link: '/v6.0.6/new-user-interface/staff-preferences'},
+                        {text: 'Reviewing New Accounts', link: '/v6.0.6/new-user-interface/staff-account-review'},
                         {text: 'Branding from the Staff Area', link: '/v6.0.6/new-user-interface/staff-branding'},
                         {text: 'Managing Delivery Servers in the Staff Area', link: '/v6.0.6/new-user-interface/staff-delivery-servers'},
                         {text: 'The Staff Email Delivery Screen', link: '/v6.0.6/new-user-interface/staff-email-delivery'},

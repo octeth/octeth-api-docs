@@ -345,6 +345,7 @@ The interface reads a few of Octeth's own settings rather than having its own co
 | `SESSION_LIFETIME_DAYS` | How long a sign-in lasts. |
 | `MYSQL_HOST`, `MYSQL_USERNAME`, `MYSQL_PASSWORD` | The MySQL server it connects to. |
 | `ADMIN_API_KEY` | How it authenticates to Octeth for sign-up, password reset and profile changes. |
+| `PHONE_VERIFICATION_REQUIRED_TO_SEND_EG_EMAILS` | Whether an account without a verified phone number sees the account review banner and a phone item on its review page. See [Reviewing New Accounts](./staff-account-review). |
 | `OEMPRO_UI_CPU_LIMIT`, `OEMPRO_UI_MEM_LIMIT`, `OEMPRO_UI_MEM_RESERVATION` | Its container resource caps. `0` means unlimited. |
 
 ## Command line tools
