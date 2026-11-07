@@ -4,7 +4,7 @@ layout: doc
 
 # Email Verification API Documentation
 
-Email verification checks addresses through the Octeth client area (my.octeth.com) and bills each check to the user's own verification credits. These endpoints hold the installation settings, the upstream status and the per-user credit ledger.
+Email verification checks addresses through the Octeth client area (my.octeth.com) and bills each check to the user's own verification credits. These endpoints hold the installation settings, the upstream status and the per-user credit ledger, check a single address, and set up the check of new subscribers on each list.
 
 ## Get Email Verification Settings
 
@@ -480,3 +480,266 @@ curl -X GET https://example.com/api/v1/user.verificationcredits.history \
 ```
 
 :::
+
+## Verify an Email Address
+
+<Badge type="info" text="POST" /> `/api/v1/email.verify`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Team member role permission: `Audience.Manage`
+- Rate limit: 60 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Checks one email address and spends one of the user's verification credits. The address is trimmed and lowercased before it is checked. When the same address was checked recently, Octeth answers from its own result cache (`Cached` is `true`) and still charges one credit. When the check gives no result (it did not finish in time, or verification is temporarily unavailable), the credit is returned at once and the call answers an error. Nothing is charged for an address that is not a valid email address.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `email.verify` |
+| APIKey | String | Yes | User API key |
+| EmailAddress | String | Yes | The address to check |
+
+**Result fields (`Verification`):**
+
+| Field | Description |
+|-------|-------------|
+| Group | `safe`, `risky`, `invalid` or `unknown` |
+| Reasons | Why a risky address is risky: `accept_all`, `role`, `disposable`, `low_quality`. Empty for other groups |
+| Flags | `accept_all`, `role`, `disposable`, `free`, `mailbox_full`, `no_reply`, each `true`, `false` or `null` when not reported |
+| DidYouMean | A suggested correction of the address, or `null` |
+| Reason | The mail server outcome: `accepted`, `mailbox_not_found`, `invalid_syntax`, `invalid_domain`, `smtp_error`, `smtp_unavailable`, `no_connection`, `timeout`, `low_deliverability`, `low_quality`, `unknown_error`, or `null` |
+| Domain | The address's domain |
+| MailServer | The mail server that answered, or `null` |
+| Duration | How long the check took, in seconds, or `null` for a cached result |
+| Cached | `true` when the result came from Octeth's result cache |
+| CheckedAt | When the result was obtained (UTC, `YYYY-MM-DD HH:MM:SS`) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/email.verify \
+  -H "Content-Type: application/json" \
+  -d '{
+      "Command": "email.verify",
+      "APIKey": "your-api-key",
+      "EmailAddress": "ayse@acme.com"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "EmailAddress": "ayse@acme.com",
+  "Verification": {
+    "Group": "safe",
+    "Reasons": [],
+    "Flags": {"accept_all": false, "role": false, "disposable": false, "free": false, "mailbox_full": false, "no_reply": false},
+    "DidYouMean": null,
+    "Reason": "accepted",
+    "Domain": "acme.com",
+    "MailServer": "mx1.acme.com",
+    "Duration": 1.2,
+    "Cached": false,
+    "CheckedAt": "2026-11-07 15:00:00"
+  },
+  "CreditsCharged": 1,
+  "Balance": 499
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "Not enough verification credits",
+  "Balance": 0
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: EmailAddress is missing
+2: EmailAddress is not a valid email address (nothing charged)
+3: Email verification is not available for this account
+4: Not enough verification credits (Balance is returned)
+5: The check did not finish in time and the credit was returned. Try again later
+6: Email verification is temporarily unavailable and the credit was returned. Try again later
+7: The verification credit could not be charged
+99998: Authentication failure
+```
+
+:::
+
+## Get a List's Verification Settings
+
+<Badge type="info" text="GET" /> `/api/v1/list.verification.settings`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permission: `List.Get`
+- Team member role permission: `Account.Read`
+- Rate limit: 120 requests per 60 seconds
+- Legacy endpoint access via `/api.php` (command `list.verification.settings.get`) is also supported
+:::
+
+Returns whether a list checks new subscribers with email verification, which results it refuses, and its daily counters. A list that never saved its settings returns the defaults (checking off, refuse `invalid`, 8 second timeout, no daily cap). `VerificationAvailable` is `true` when email verification is enabled, the user's group is allowed and the client area accepts the installation. This call never contacts my.octeth.com.
+
+The counters cover UTC days, newest first. `Checked` counts the signups that got a result (each cost one credit), `Rejected` the checked signups that were refused, and `FailedOpen` the signups that were let in unchecked because the check could not run (it timed out, verification was unavailable, the account had no credits, or the daily cap was reached).
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `list.verification.settings.get` |
+| APIKey | String | Yes | User API key |
+| ListID | Integer | Yes | One of the user's lists |
+| CounterDays | Integer | No | Days of counters, 1 to 90, today included. Default 7 |
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET https://example.com/api/v1/list.verification.settings \
+  -H "Content-Type: application/json" \
+  -d '{
+      "Command": "list.verification.settings.get",
+      "APIKey": "your-api-key",
+      "ListID": 12
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ListID": 12,
+  "VerificationAvailable": true,
+  "Settings": {
+    "VerifyOnSubscribe": true,
+    "VerifyRejectGroups": ["invalid"],
+    "VerifyRejectRiskyReasons": ["disposable"],
+    "VerifyTimeoutSeconds": 8,
+    "VerifyDailyCap": 0
+  },
+  "Counters": {
+    "Days": [
+      {"Date": "2026-11-07", "Checked": 42, "Rejected": 3, "FailedOpen": 1},
+      {"Date": "2026-11-06", "Checked": 0, "Rejected": 0, "FailedOpen": 0}
+    ],
+    "Totals": {"Checked": 42, "Rejected": 3, "FailedOpen": 1}
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Invalid ListID"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: ListID is missing
+2: Invalid ListID (not found or not the user's)
+3: CounterDays must be a whole number from 1 to 90
+9: The list verification settings could not be read
+99998: Authentication failure
+```
+
+:::
+
+## Update a List's Verification Settings
+
+<Badge type="info" text="POST" /> `/api/v1/list.verification.settings`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permission: `List.Update`
+- Team member role permission: `Audience.Manage`
+- Rate limit: 60 requests per 60 seconds
+- Legacy endpoint access via `/api.php` (command `list.verification.settings.update`) is also supported
+:::
+
+Changes one or more of a list's email verification settings. A setting you leave out keeps its value. With `VerifyOnSubscribe` on, `subscriber.subscribe` (subscription forms and API callers) checks each new address before adding it and refuses the ones whose result is in the list's reject set. Journey subscribe actions are never checked. The check never blocks a signup when it cannot run: the subscriber is let in and counted as failed open. You can save the settings before email verification is available to the account; the check runs only while it is.
+
+A safe address is never refused. A risky address is refused when `risky` is in `VerifyRejectGroups`, or when one of its reasons is in `VerifyRejectRiskyReasons`.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `list.verification.settings.update` |
+| APIKey | String | Yes | User API key |
+| ListID | Integer | Yes | One of the user's lists |
+| VerifyOnSubscribe | Boolean | No | Check new subscribers. `true`/`false` (also `1`/`0`, `yes`/`no`, `on`/`off`) |
+| VerifyRejectGroups | Array or String | No | Groups to refuse: `invalid`, `risky`, `unknown`, as an array or a comma-separated list. Empty refuses no group. Default `invalid` |
+| VerifyRejectRiskyReasons | Array or String | No | Risky reasons to refuse: `accept_all`, `role`, `disposable`, `low_quality`. Default none |
+| VerifyTimeoutSeconds | Integer | No | 1 to 20. How long a signup waits for the check before the subscriber is let in unchecked. Default 8 |
+| VerifyDailyCap | Integer | No | 0 to 1000000. The most checks the list runs per UTC day; past it new subscribers are let in unchecked. 0 means no cap (default) |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.verification.settings \
+  -H "Content-Type: application/json" \
+  -d '{
+      "Command": "list.verification.settings.update",
+      "APIKey": "your-api-key",
+      "ListID": 12,
+      "VerifyOnSubscribe": true,
+      "VerifyRejectGroups": ["invalid"],
+      "VerifyRejectRiskyReasons": ["disposable"],
+      "VerifyDailyCap": 500
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ListID": 12,
+  "VerificationAvailable": true,
+  "Settings": {
+    "VerifyOnSubscribe": true,
+    "VerifyRejectGroups": ["invalid"],
+    "VerifyRejectRiskyReasons": ["disposable"],
+    "VerifyTimeoutSeconds": 8,
+    "VerifyDailyCap": 500
+  },
+  "Counters": {
+    "Days": [{"Date": "2026-11-07", "Checked": 0, "Rejected": 0, "FailedOpen": 0}],
+    "Totals": {"Checked": 0, "Rejected": 0, "FailedOpen": 0}
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "VerifyRejectGroups accepts invalid, risky and unknown"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: ListID is missing
+2: Invalid ListID (not found or not the user's)
+3: VerifyOnSubscribe must be true or false
+4: VerifyRejectGroups accepts invalid, risky and unknown
+5: VerifyRejectRiskyReasons accepts accept_all, role, disposable and low_quality
+6: VerifyTimeoutSeconds must be a whole number from 1 to 20
+7: VerifyDailyCap must be a whole number from 0 to 1000000
+8: No setting given
+9: The list verification settings could not be read or saved
+99998: Authentication failure
+```
+
+:::
+
+The `Counters` in the response cover the last 7 days.

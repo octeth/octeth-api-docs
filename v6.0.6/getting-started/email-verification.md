@@ -72,6 +72,36 @@ All your users' checks are paid from one client area balance. If it runs out, us
 
 Top up the client area balance before it runs out.
 
+## Check a single address
+
+A user can check one address at any time with `email.verify`. It costs one verification credit. If the check cannot finish (for example, it times out), the credit is returned and the user can try again later.
+
+## Check new subscribers when they sign up
+
+Each list can check new subscribers before they are added. Turn it on per list with `list.verification.settings.update`:
+
+```json
+{
+  "Command": "list.verification.settings.update",
+  "APIKey": "your-api-key",
+  "ListID": 12,
+  "VerifyOnSubscribe": true
+}
+```
+
+From then on, every new signup through a subscription form or `subscriber.subscribe` is checked and costs the list owner one verification credit. By default only invalid addresses are refused. The visitor sees "Invalid Email Address", with a "Did you mean ...?" suggestion when the check has one.
+
+Good to know:
+
+- **Signups are never blocked by a problem with the check.** If the check takes longer than the list's timeout (8 seconds by default), verification is unavailable, or the owner has no credits left, the subscriber is added unchecked. These signups are counted as "failed open" in the list's counters.
+- **Existing subscribers are not checked again.** A signup for an address already on the list costs nothing.
+- **Journeys are not checked.** A journey's subscribe action adds the contact without a check or a charge.
+- **Refuse more than invalid addresses** with `VerifyRejectGroups` (add `risky` or `unknown`) or `VerifyRejectRiskyReasons` (for example `disposable` or `role`).
+- **Limit the spend** with `VerifyDailyCap`, the most checks a list runs per day. It protects the owner's credits from bots that post the form many times. Past the cap, signups are added unchecked.
+- **See what happened** with `list.verification.settings.get`: per day, how many signups were checked, refused, and let in unchecked.
+
+To check an address added through the API with `subscriber.create`, pass `Verify` set to `true`.
+
 ## Privacy
 
 Octeth never writes a checked address to a log file, and the result cache holds only a keyed hash of each address. Results that suggest a corrected address, and results of type unknown, are never cached.

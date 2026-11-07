@@ -46,6 +46,7 @@ Subscriber management endpoints for managing email list subscribers, including c
 | Source    | String | No       | Acquisition source bucket persisted on the subscriber row. Possible values: `CSVImport`, `API`, `Webhook`, `Manual`, `Other`, `Unknown`. Defaults to `API` for this endpoint. Anything outside this set is coerced to `Unknown`. |
 | SourceRef | String | No       | Optional free-text source reference (e.g., a custom label or integration id). Truncated server-side to 64 characters. |
 | SMSPhoneNumber | String | No | <Badge type="tip" text="New in v6.0.0" /> Mobile number of a **phone-only contact**, in place of `EmailAddress`. The normalized number is also written to the list's configured mobile phone custom field, so the field and the address always agree. The number is normalized to E.164 and the contact's address is derived from it as `<digits>@sms.invalid`, a domain RFC 2606 reserves so it can never receive email. Supplying both this and `EmailAddress` is an error (`8007`), and supplying a raw `@sms.invalid` address as `EmailAddress` is refused (`8001`). |
+| Verify | Boolean | No | <Badge type="tip" text="New in v6.0.6" /> `true` to check the address with email verification before it is created, spending one verification credit. Default `false`: no check and an unchanged response |
 
 ::: tip Phone-only contacts
 `SMSPhoneNumber` addresses a contact that has a mobile number and no email address, for SMS campaigns and SMS journey actions.
@@ -66,6 +67,8 @@ A required **list-specific** field that is omitted but has a non-empty default v
 
 Note that these error codes differ from the equivalents on `subscriber.subscribe` and `subscriber.update` (`6`/`7`/`8` and `8`/`9`/`10` respectively). `subscriber.create` already used `0`–`25` for other conditions, so its custom-field codes start at `26`.
 :::
+
+**Email verification before create:** <Badge type="warning" text="Changed in v6.0.6" /> with `Verify` set to `true`, the address is checked with the list's reject set (`VerifyRejectGroups` and `VerifyRejectRiskyReasons`, default: refuse `invalid`), whether or not the list checks its signups. A refused address answers HTTP 422 with `ErrorCode` 101 and is not created. When the check cannot run (it times out, verification is unavailable, the account has no credits or the list reached its daily cap), or the address is already on the list, the subscriber is created as usual. The success response then carries `Verification.Outcome`: `passed` (checked and accepted), `failed_open` (not checked, created anyway), `existing` (already on the list, not checked) or `off` (verification is not available for the account), and `Verification.Result` with the result fields of [`email.verify`](/v6.0.6/api-reference/email-verification#verify-an-email-address) when there was a check. Without `Verify` the response is unchanged.
 
 ::: code-group
 
@@ -104,6 +107,32 @@ curl -X POST https://example.com/api/v1/subscriber.create \
   "SubscriberSegments": [],
   "SubscriberJourneys": [],
   "SubscriberWebsiteEvents": []
+}
+```
+
+```json [Success Response with Verify]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "SubscriberInformation": {"SubscriberID": "1201", "EmailAddress": "ayse@acme.com"},
+  "Suppressed": false,
+  "SubscriberTags": [],
+  "SubscriberSegments": [],
+  "SubscriberJourneys": [],
+  "SubscriberWebsiteEvents": [],
+  "Verification": {
+    "Outcome": "passed",
+    "Result": {"Group": "safe", "Reasons": [], "Flags": {"accept_all": false, "role": false, "disposable": false, "free": false, "mailbox_full": false, "no_reply": false}, "DidYouMean": null, "Reason": "accepted", "Domain": "acme.com", "MailServer": "mx1.acme.com", "Duration": 1.2, "Cached": false, "CheckedAt": "2026-11-07 15:00:00"}
+  }
+}
+```
+
+```json [Rejected by Email Verification]
+{
+  "Success": false,
+  "ErrorCode": 101,
+  "Errors": [{"Code": 101, "Message": "The email address was rejected by email verification"}],
+  "Verification": {"Group": "invalid", "Reasons": [], "DidYouMean": ""}
 }
 ```
 
@@ -150,6 +179,7 @@ curl -X POST https://example.com/api/v1/subscriber.create \
 26: Required custom field is empty or was omitted (EnforceRequiredFields only)
 27: Unique custom field value already exists (EnforceRequiredFields only)
 28: Custom field value failed its validation method (EnforceRequiredFields only)
+101: The email address was rejected by email verification (only with Verify)
 8001: A sms.invalid address was supplied as EmailAddress. Use SMSPhoneNumber instead
 8002: Invalid SMSPhoneNumber (not E.164 or convertible to it, or outside 8 to 15 digits)
 8003: The list has no mobile phone number field configured in its SMS settings
@@ -185,6 +215,8 @@ curl -X POST https://example.com/api/v1/subscriber.create \
 | Source    | String | No       | Acquisition source bucket persisted on the subscriber row. Possible values: `CSVImport`, `API`, `Webhook`, `Manual`, `Other`, `Unknown`. Defaults to `API` for this endpoint. Anything outside this set is coerced to `Unknown`. |
 | SourceRef | String | No       | Optional free-text source reference (e.g., a custom label or integration id). Truncated server-side to 64 characters. |
 | UpdateIfUnsubscribed | Boolean | No | <Badge type="tip" text="New in v6.0.6" /> When `true`, an email address that has **unsubscribed** from the list is subscribed again: its status returns to `Subscribed` (or `Opt-In Pending` on a double opt-in list, which sends the confirmation email) and its list suppression entry is deleted. Defaults to `false`, which refuses the call with `ErrorCode 12` and changes nothing. Pass `true` only when you hold fresh consent from the contact. Applies to the first list in `ListID`; the other lists never re-subscribe an unsubscribed address. |
+
+<Badge type="warning" text="Changed in v6.0.6" /> **Email verification at signup:** when the list (or any list in a comma-separated `ListID`) has `VerifyOnSubscribe` on (see [`list.verification.settings.update`](/v6.0.6/api-reference/email-verification#update-a-list-s-verification-settings)) and email verification is available to the list owner, a new address is checked before it is added and costs the owner one verification credit. An address whose result is in the list's reject set is refused with `ErrorCode` 101 and is not added. `Verification` carries the result group, the risky reasons and a suggested correction (`DidYouMean`, empty when there is none), so a form can ask "Did you mean ...?". An address already on the list (for a comma-separated `ListID`, already on the first list or on every list that checks) is not checked again. When the check cannot run (it times out, verification is unavailable, the owner has no credits or the list reached its daily cap) the address is added as usual. Lists without the setting behave exactly as before.
 
 ::: danger Unsubscribed contacts are no longer re-subscribed by default
 <Badge type="warning" text="Changed in v6.0.6" /> Before v6.0.6 this endpoint always re-subscribed an address that had unsubscribed from the list, deleted its list suppression entry and answered exactly as for a new subscription. A contact sync could therefore undo every opt-out it touched. The call is now refused with `ErrorCode 12` and `PreviousSubscriptionStatus: "Unsubscribed"`, and the subscriber row and its suppression entry are left as they were. To keep the old behaviour for a contact who has asked to subscribe again, send `UpdateIfUnsubscribed=true`. See [API Behavior Changes in v6.0.6](/v6.0.6/api-reference/behavior-changes#subscriber-subscribe-no-longer-re-subscribes-an-unsubscribed-contact).
@@ -274,6 +306,20 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Rejected by Email Verification]
+{
+  "Success": false,
+  "ErrorCode": 101,
+  "ErrorText": "Rejected by email verification",
+  "EmailAddress": "Rejected by email verification",
+  "Verification": {
+    "Group": "invalid",
+    "Reasons": [],
+    "DidYouMean": "ayse@gmail.com"
+  }
+}
+```
+
 ```json [Error Response]
 {
   "Success": false,
@@ -310,7 +356,8 @@ curl -X POST https://example.com/api.php \
     PreviousSubscriptionStatus)
 13: A list in ListID belongs to a different account than the first
     list, nothing changed
-101: Plugin validation failed
+101: The email address was refused by email verification (Verification
+     is returned) or by a plugin's own check
 ```
 
 :::
