@@ -2039,7 +2039,7 @@ From v6.0.1, the sender domain owner's account must be `Trusted`. A request for 
 
 The same check runs when queued email is delivered: email already queued for an account that is moved to `Untrusted` is not sent, and its status becomes `Failed` with the message `Sending blocked: account pending approval`. Marking the account `Trusted` in the administration area allows sending again. A disabled account or an inactive sender domain is reported with its own error code (`12` or `32`) first.
 
-New accounts start at the reputation level set in **New account reputation** on the staff **Settings > Sign-up and payments** screen, which is `Untrusted` on a default install, so an administrator approves each new account by marking it `Trusted`. To let `Untrusted` accounts send through this endpoint as before, set `EMAILGATEWAY_REQUIRE_TRUSTED=false`. See the [configuration guide](../getting-started/octeth-configuration.md). The SMTP relay requires a `Trusted` account either way.
+New accounts start at the reputation level set in **New account reputation** on the staff **Settings > Sign-up** screen, which is `Untrusted` on a default install, so an administrator approves each new account by marking it `Trusted`. To let `Untrusted` accounts send through this endpoint as before, set `EMAILGATEWAY_REQUIRE_TRUSTED=false`. See the [configuration guide](../getting-started/octeth-configuration.md). The SMTP relay requires a `Trusted` account either way.
 :::
 
 ::: tip Forbidden From addresses

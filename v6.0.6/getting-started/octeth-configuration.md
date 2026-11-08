@@ -105,15 +105,15 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
    - `octeth.sh install:start`: the license key prompt, `--license-key`, `--license-key-file` or `OCTETH_LICENSE_KEY` (see [Octeth CLI Tool](./octeth-cli-tool.md)).
    - `octeth.sh upgrade <zip>`: `--license-key`, `--license-key-file` or `OCTETH_LICENSE_KEY`, or the prompt an interactive upgrade shows when no valid key is set (see [Upgrading Octeth](./upgrading-octeth.md)).
-   - The administrator area's Settings > License page: paste the key into the box and save. A key saved there is stored in the database and takes precedence over `LICENSE_KEY` while it is valid. The page shows which one is in use ("Pasted on this page" or "LICENSE_KEY in .oempro_env") and has a button to remove the pasted key, after which `LICENSE_KEY` decides again. If you later edit `LICENSE_KEY` by hand, remove the pasted key, or the pasted one keeps winning.
+   - The **License** section of the staff **Administration > System** screen in the new interface (see [The Staff System Screen](/v6.0.6/new-user-interface/staff-system#license)): paste the key into **License key** and click **Verify and save**. A key saved there is stored in the database and takes precedence over `LICENSE_KEY` while it is valid. The screen shows which one is in use (**License key source**) and has a **Remove the pasted key** button, after which `LICENSE_KEY` decides again. If you later edit `LICENSE_KEY` by hand, remove the pasted key, or the pasted one keeps winning.
 
-   The license page and the About page show the licensee and the license key masked to its last four characters, never the key itself.
+   The staff System screen shows the licensee and the license key masked to its last four characters, never the key itself.
 
    Without a valid key (no key, a short `OCT-...` key, a damaged key, a key signed by an unknown key, or one issued for another product or another domain), the installation runs with the Community limits: one user account and 10,000 active subscribers counted across every list. The same address on two lists counts twice, while unsubscribed, unconfirmed and hard-bounced subscribers do not count, and administrator accounts are not limited. The administrator area names the reason. At a limit, new user accounts or new subscribers are refused on every path (subscribe forms, the API, imports, journeys and website tracking). Existing users and subscribers stay, and campaigns and journeys keep sending to them. A `LICENSE_KEY` that starts with `CE` is the Community Edition.
 
    **Grace period.** An installation that existed before signed license keys gets 30 days from its first run without a valid key, during which its limits do not change. The administrator area, `install.sh` and `upgrade.sh` show the days left. A fresh installation, or a `CE` key, has no grace period. When the license's `updates_until` date is older than the running release, the administrator area shows a warning and nothing is blocked.
 
-   **Email gateway webhook signatures.** The signing key of email gateway webhooks for a sender domain without its own key (the `SigningKey` that `emailgateway.getwebhooks` returns) used to be derived from `LICENSE_KEY`. It is now fixed the first time it is used, and the installer, the upgrade and the license page fix it before they change the key, so replacing a short key with the signed license key does not change it and webhook receivers keep verifying. Setting the key through one of the three places above is the supported way. If you edit `LICENSE_KEY` by hand on an installation that has never sent a gateway webhook, the signing key is fixed from the new value.
+   **Email gateway webhook signatures.** The signing key of email gateway webhooks for a sender domain without its own key (the `SigningKey` that `emailgateway.getwebhooks` returns) used to be derived from `LICENSE_KEY`. It is now fixed the first time it is used, and the installer, the upgrade and the staff System screen fix it before they change the key, so replacing a short key with the signed license key does not change it and webhook receivers keep verifying. Setting the key through one of the three places above is the supported way. If you edit `LICENSE_KEY` by hand on an installation that has never sent a gateway webhook, the signing key is fixed from the new value.
 
    **Latest updates on the staff dashboard.** Two keys control the Latest updates section of the staff dashboard, which shows release announcements, product updates, offers and notices for this installation, published in the Octeth client area:
 
@@ -122,7 +122,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
    ADMIN_NEWS_FEED_URL=https://my.octeth.com/api/news      # Feed address. Change it only for a staging or development client area
    ```
 
-   While `ADMIN_NEWS_FEED_ENABLED` is true, the installation requests `ADMIN_NEWS_FEED_URL` at most about four times a day: a result is cached for 6 hours, and a failed request for 30 minutes. Each request sends the installed version (`PRODUCT_VERSION`) in the query string and, when the feed URL is `https://` and a signed license key is configured (the key pasted on Settings > License, or `LICENSE_KEY`), the license key as an `Authorization: Bearer` header. The key identifies the license, the licensed domain, the plan and its limits, which lets the client area show notices meant for this license, such as a renewal offer. Without a key the installation receives the public items only. The key is never sent to an `http://` address. The client area stores nothing about the request apart from a one-hour per-IP rate-limit counter.
+   While `ADMIN_NEWS_FEED_ENABLED` is true, the installation requests `ADMIN_NEWS_FEED_URL` at most about four times a day: a result is cached for 6 hours, and a failed request for 30 minutes. Each request sends the installed version (`PRODUCT_VERSION`) in the query string and, when the feed URL is `https://` and a signed license key is configured (the key pasted on the staff System screen, or `LICENSE_KEY`), the license key as an `Authorization: Bearer` header. The key identifies the license, the licensed domain, the plan and its limits, which lets the client area show notices meant for this license, such as a renewal offer. Without a key the installation receives the public items only. The key is never sent to an `http://` address. The client area stores nothing about the request apart from a one-hour per-IP rate-limit counter.
 
    Every item is checked before it is shown: plain text only, links only to `https://` addresses. An installation without internet access shows "cannot be reached right now" in the section and tries again every 30 minutes. Set `ADMIN_NEWS_FEED_ENABLED=false` to make no request at all.
 
@@ -130,7 +130,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
    EMAIL_VERIFICATION_API_URL=https://my.octeth.com/api/email-verification/v1   # Email verification API in the Octeth client area. Change it only for a staging or development client area
    ```
 
-   Email verification sends its checks to `EMAIL_VERIFICATION_API_URL`, with the installation's signed license key (the key pasted on Settings > License, or `LICENSE_KEY`) as an `Authorization: Bearer` header. Nothing is sent until an administrator enables email verification (`verification.settings.update` with `Enabled` set to `true`), and a request is refused unless the address starts with `https://`, so the key never travels over plain HTTP. The installation must also be switched on in the client area (Email verification, Octeth installations). See [Set Up Email Verification](./email-verification).
+   Email verification sends its checks to `EMAIL_VERIFICATION_API_URL`, with the installation's signed license key (the key pasted on the staff System screen, or `LICENSE_KEY`) as an `Authorization: Bearer` header. Nothing is sent until an administrator enables email verification (`verification.settings.update` with `Enabled` set to `true`), and a request is refused unless the address starts with `https://`, so the key never travels over plain HTTP. The installation must also be switched on in the client area (Email verification, Octeth installations). See [Set Up Email Verification](./email-verification).
 
    ```bash
    EMAIL_VERIFICATION_RESULTS_RETENTION_DAYS=30   # Days the per-subscriber results of a finished list verification run are kept, 1 to 365
@@ -1264,7 +1264,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     `UI_MAIL_USERNAME`, `UI_MAIL_PASSWORD` and `UI_MAIL_SCHEME` are written to the interface's configuration only when set, so an install that leaves them empty runs exactly as before.
 
     ::: warning Signup is offered only while the mailer delivers
-    A self-signup account is created disabled and is enabled only by the verification link in its welcome email. Under `UI_MAIL_MAILER=log` that email is written to the interface's log and never delivered, so from v6.0.1 the interface offers signup only while the mailer is one that sends for real: `smtp`, `sendmail`, `ses`, `postmark` or `resend`. Of those, `smtp` is the one the `UI_MAIL_*` settings above configure. Under `log`, the default, or any other value such as `array` or `failover`, the "Create an account" link is hidden and `/user/register` shows a "Signup is not available" message and creates no account. Octeth's own **Let visitors create an account** switch, on the staff **Settings > Sign-up and payments** screen, must be on as well. Password reset emails are likewise only written to the log under `log`.
+    A self-signup account is created disabled and is enabled only by the verification link in its welcome email. Under `UI_MAIL_MAILER=log` that email is written to the interface's log and never delivered, so from v6.0.1 the interface offers signup only while the mailer is one that sends for real: `smtp`, `sendmail`, `ses`, `postmark` or `resend`. Of those, `smtp` is the one the `UI_MAIL_*` settings above configure. Under `log`, the default, or any other value such as `array` or `failover`, the "Create an account" link is hidden and `/user/register` shows a "Signup is not available" message and creates no account. Octeth's own **Let visitors create an account** switch, on the staff **Settings > Sign-up** screen, must be on as well. Password reset emails are likewise only written to the log under `log`.
     :::
 
     A mail server that rejects a message no longer produces an error page. At signup the account is created and the visitor is told the verification email could not be sent and to contact support. At password reset the visitor sees the usual "sent" screen, so the page does not reveal which addresses have accounts. Both failures are logged at `error` level in the interface's log.
@@ -3102,7 +3102,7 @@ Enable **Simplified Campaign Create UI** to provide a streamlined, user-friendly
 Enable **Sender Domain Management** to allow users to add and verify their own sending domains. This improves deliverability and sender reputation compared to using shared domains.
 
 **Delivery Server Configuration** → **Required**
-Before activating a user group, you must create at least one Delivery Server (under **Settings** → **Delivery Servers**) and assign it to all three delivery channels:
+Before activating a user group, you must create at least one Delivery Server (in the staff area, **Delivery > Delivery servers**) and assign it to all three delivery channels:
 
 - **Target Delivery Server - Marketing** → Select your delivery server
 - **Target Delivery Server - Transactional** → Select your delivery server
@@ -3145,457 +3145,44 @@ Let's walk through each settings section in detail.
 
 ## Administrator Account
 
-The Administrator Account section is where you manage your own administrator profile, configure system email settings, and access your API key. These settings control how you log in to Octeth and how the system sends notifications and alerts.
+The Administrator Account settings are where you manage your own administrator profile, configure system email settings, and access your API key. These settings control how you log in to Octeth and how the system sends notifications and alerts.
 
-To access these settings, navigate to **Preferences** → **System Settings** → **Admin Account** in the administrator dashboard.
-
-### Account Information
-
-This tab contains your personal administrator account details and login credentials.
-
-**Name**
-Your full name as the system administrator. This name appears in system logs and may be visible in certain administrative interfaces.
-
-**Email Address**
-The email address associated with your administrator account. This address is used for:
-- Password recovery if you forget your login credentials
-- Important system notifications about your Octeth installation
-- Administrative alerts and updates
+They are on **Your profile** in the staff area of the new interface: click your name at the bottom of the staff sidebar, then **Your profile**. See [Your Staff Profile](/v6.0.6/new-user-interface/staff-profile) for the profile, password, two-factor authentication, system emails (sender name, sender email address and alert recipient, which need the Settings permission as well) and API access sections. The classic admin **Account** page forwards there.
 
 ::: tip
-Use a reliable email address that you check regularly. Losing access to this email could make account recovery difficult.
+- Use a reliable email address that you check regularly, and a monitored address for the alert recipient so you don't miss system alerts.
+- Make sure the sender email's domain has SPF and DKIM records, or system emails may land in spam.
+- Choose a strong password. Your administrator account has complete control over your Octeth installation.
 :::
-
-**Username**
-Your login username for accessing the Octeth administrator dashboard. This is the username you enter on the login page.
-
-::: info
-The username cannot be changed once your account is created. If you need to change it, you'll need to create a new administrator account.
-:::
-
-**New Password**
-Use this field to change your administrator password. Leave this field blank if you want to keep your current password.
-
-::: warning
-Choose a strong password with at least 12 characters, including uppercase letters, lowercase letters, numbers, and symbols. Your administrator account has complete control over your Octeth installation, so password security is critical.
-:::
-
-**Best Practices for Account Information:**
-- Use your actual name in the **Name** field for accountability in system logs
-- Keep your email address up to date
-- Change your password regularly (every 90 days is recommended)
-- Never share your administrator credentials with anyone
-
-### Email Addresses
-
-This tab configures the email addresses and sender information used for system-generated notifications.
-
-**Sender Name**
-The name that appears in the "From" field when Octeth sends system notification emails. This might include alerts about user activity, system errors, or threshold warnings.
-
-Example: If you set this to "Octeth Admin Team", recipients will see emails from "Octeth Admin Team" in their inbox.
-
-**Sender Email**
-The email address used in the "From" field for system notification emails. This should be a valid email address on a domain you control.
-
-::: tip
-Use a dedicated email address for system notifications, such as `noreply@yourdomain.com` or `alerts@yourdomain.com`. This keeps system emails separate from your personal correspondence.
-:::
-
-**Send Alerts To**
-The email address where Octeth sends important system alerts. These alerts include:
-- User threshold warnings (when users are approaching or exceeding their limits)
-- System health notifications
-- Critical errors or issues requiring administrator attention
-
-::: info
-This can be the same as your administrator email address, or you can route alerts to a team inbox or monitoring system.
-:::
-
-**Best Practices for Email Addresses:**
-- Ensure the **Sender Email** domain has proper SPF and DKIM records configured to avoid deliverability issues
-- Use a monitored email address for **Send Alerts To** so you don't miss important system notifications
-- Consider using your company name or product name in **Sender Name** for professional appearance
-- Test system emails after configuring these settings to ensure they're delivered correctly
-
-### API
-
-This tab displays your administrator API key, which provides access to administrator-only API endpoints and system configuration.
-
-**API Key**
-This unique key authenticates API requests that require administrator privileges. The API key grants full access to:
-- Administrator-only API endpoints
-- System configuration via API
-- Advanced automation and integration capabilities
-
-The API key is displayed in a read-only field. You cannot edit it directly, but you can regenerate it if needed.
 
 ::: danger Security Warning
-Your API key provides complete administrator-level access to your Octeth installation. Treat it like a password:
-- Never share it publicly or commit it to version control systems
-- Never embed it directly in client-side code or public websites
-- Store it securely using environment variables or secret management tools
-- Regenerate the key immediately if you suspect it has been compromised
+Your API key provides complete administrator-level access to your Octeth installation. Treat it like a password: never share it publicly, never commit it to version control or embed it in client-side code, store it in an environment variable or secret manager, and replace it immediately if you suspect it has been compromised.
 :::
-
-::: tip
-If you're using the API key in scripts or applications, store it in an environment variable rather than hardcoding it in your source code. This makes it easier to rotate the key if needed and keeps it out of version control.
-:::
-
-**When to Use the API Key:**
-- Automating administrative tasks via scripts
-- Integrating Octeth with other business systems
-- Building custom monitoring or reporting tools
-- Performing bulk operations that aren't available in the UI
-
-**Security Best Practices for API Access:**
-1. Only use the API key on secure, trusted servers
-2. Never transmit the API key over unencrypted connections (always use HTTPS)
-3. Implement IP whitelisting if your infrastructure supports it
-4. Rotate the API key periodically (every 6-12 months)
-5. Monitor API access logs for suspicious activity
-6. Revoke and regenerate the key immediately if a team member with API access leaves your organization
-
-::: details How to Regenerate Your API Key
-If you need to regenerate your API key (for example, if it's been compromised or you want to rotate it for security purposes):
-
-1. Contact Octeth support or use the regeneration feature if available in your version
-2. Update all applications and scripts that use the old key
-3. Test thoroughly to ensure everything works with the new key
-4. Document the key change and update any stored credentials
-
-Note: Regenerating the API key will immediately invalidate the old key, breaking any applications or scripts that use it.
-:::
-
-After configuring your Administrator Account settings, click the **UPDATE ADMINISTRATOR ACCOUNT** button at the bottom of the page to save your changes.
-
 ## Sub-Administrator Accounts
 
-Sub-Administrator Accounts allow you to grant limited administrative access to team members without giving them full control over your Octeth installation. This feature is essential for delegating responsibilities while maintaining security and accountability.
+Sub-Administrator Accounts allow you to grant limited administrative access to team members without giving them full control over your Octeth installation. Each sub-admin signs in with their own username and password, can do only what their permissions allow, and reaches only the user groups you choose.
 
-To access this section, navigate to **Preferences** → **System Settings** → **Sub Admin Accounts** in the administrator dashboard.
+Sub-admins are managed in the staff area of the new interface: click **Administration**, then **Sub-admins** in the staff sidebar (needs the SubAdmins permission). See [Managing Sub-admins in the Staff Area](/v6.0.6/new-user-interface/staff-sub-admins) for creating a sub-admin, ticking permissions and user groups, issuing an API key and resetting two-factor authentication. The classic admin **Sub Admin Accounts** pages forward there.
 
-### What Are Sub-Admin Accounts?
-
-A sub-administrator account is a restricted admin account that can only access specific parts of the Octeth system. Unlike the main administrator account, which has complete control over all settings and users, sub-admin accounts are limited to the permissions you grant them.
-
-**Common use cases for sub-admin accounts:**
-
-- **User Support Team** - Give support staff access to manage users and view reports without allowing them to change system settings
-- **Client Services** - Allow account managers to browse and edit specific user groups without access to delivery servers or system configuration
-- **Marketing Team** - Grant your marketing team access to campaign management and reports without exposing sensitive system settings
-- **Junior Administrators** - Provide limited access to new team members as they learn the system
-- **Contractors** - Give temporary administrative access to consultants or contractors with clearly defined boundaries
-
-::: info
-The main administrator account always retains full control. Sub-admin accounts cannot create other sub-admin accounts or modify system-level settings unless explicitly granted those permissions.
+::: tip Security Best Practices
+- Grant only the permissions and user groups each person needs, and widen them later if needed.
+- Create one account per person. Never share a sub-admin account.
+- Review sub-admin access every few months, and remove an account as soon as its owner leaves or changes role.
+- Reserve the Settings, Security, SubAdmins and DeliveryServers permissions for trusted team members: they change the whole installation.
 :::
-
-### Viewing Sub-Admin Accounts
-
-The Sub Admin Accounts page displays a list of all existing sub-administrator accounts with their name and email address. If no sub-admin accounts exist, you'll see a message prompting you to create your first one.
-
-From this page, you can:
-- **Create** new sub-admin accounts using the "Create a sub admin account" button
-- **Edit** existing accounts by clicking on their name
-- **Delete** accounts by selecting them and clicking the Delete button
-
-::: warning
-Deleting a sub-admin account is permanent and cannot be undone. The sub-admin will immediately lose access to the administrator dashboard. Make sure to remove their access intentionally and communicate with the team member beforehand.
-:::
-
-### Creating a Sub-Admin Account
-
-Follow these steps to create a new sub-administrator account:
-
-1. Navigate to **Preferences** → **System Settings** → **Sub Admin Accounts**
-2. Click the **Create a sub admin account** button
-3. Fill in the account information (see below)
-4. Configure permissions (see below)
-5. Click **CREATE** to save the account
-
-The sub-admin will then be able to log in using their username and password at your Octeth administrator login URL.
-
-#### Account Information Tab
-
-This tab contains the basic details for the sub-admin account.
-
-**Name**
-The full name of the person who will use this account. This name appears in system logs and helps you identify who made which changes.
-
-**Email Address**
-The contact email address for this sub-administrator. This email is used for:
-- Password recovery if they forget their login credentials
-- System notifications relevant to their permissions
-- Communication about account status changes
-
-**Username**
-The login username for this sub-admin account. They'll enter this username when logging into the administrator dashboard.
-
-::: tip
-Use a clear naming convention for usernames, such as `firstname.lastname` or `role.firstname`. This makes it easier to identify accounts in logs and when managing multiple sub-admins.
-:::
-
-**Password**
-Set a secure password for this account. You can:
-- Enter a password manually in the field
-- Click **Generate a strong password** to automatically create a secure random password
-
-::: warning
-Make sure to securely share the password with the sub-admin. Consider using a password manager or secure communication channel. Never send passwords via unencrypted email.
-:::
-
-**Best Practices for Account Information:**
-- Use real names to maintain accountability
-- Use business email addresses (not personal accounts) for professional environments
-- Generate strong passwords and encourage sub-admins to change them on first login
-- Keep a record of which sub-admin accounts exist and who has access to them
-
-#### Permissions Tab
-
-The Permissions tab is where you define exactly what this sub-admin can access and do within Octeth. Permissions are configured using a JSON (JavaScript Object Notation) structure.
-
-::: info What is JSON?
-JSON is a simple text format for storing structured data. Don't worry if you're not familiar with it - we'll provide ready-to-use examples below that you can copy and modify.
-:::
-
-The permissions configuration has two main parts:
-
-**1. AccessAllowedUserGroupIDs**
-This is an array (list) of user group IDs that this sub-admin can manage. If this array is empty `[]`, the sub-admin cannot access any user groups.
-
-Example:
-```json
-"AccessAllowedUserGroupIDs": [1, 3, 5]
-```
-
-This means the sub-admin can only manage users in groups 1, 3, and 5. They won't see users from other groups.
-
-::: tip Finding User Group IDs
-To find a user group's ID, navigate to **Users** → **User Groups** and look at the URL when viewing or editing a group. The ID is the number in the URL after `/usergroups/`. For example, if the URL is `/app/admin/usergroups/edit/3`, the ID is `3`.
-:::
-
-**2. AccessOptions**
-This is an array of permission strings that control which sections of Octeth this sub-admin can access and what actions they can perform.
-
-Example:
-```json
-"AccessOptions": [
-  "Users",
-  "User.Browse",
-  "User.Edit"
-]
-```
-
-Common permission strings include:
-- `Users` - Access to the Users section
-- `User.Browse` - Ability to view user accounts
-- `User.Edit` - Ability to edit user accounts
-- `User.Create` - Ability to create new user accounts
-- `User.Delete` - Ability to delete user accounts
-- `Campaigns` - Access to email campaigns
-- `Campaign.Browse` - Ability to view campaigns
-- `Campaign.Edit` - Ability to edit campaigns
-- `Reports` - Access to reports and analytics
-- `DeliveryServers` - Access to delivery server settings
-- `SystemSettings` - Access to system-wide settings
-
-::: details Click here to learn how to set permissions
-To customize permissions for your sub-admin:
-
-1. Click the "Click here" link below the permissions editor for detailed documentation
-2. Review the available permission strings for your Octeth version
-3. Copy one of the example configurations below
-4. Modify the user group IDs and permission strings to match your needs
-5. Paste the configuration into the Permissions field
-
-The permissions system uses a hierarchical structure. For example:
-- Granting `Users` gives general access to the Users section
-- Adding `User.Browse` allows viewing user details
-- Adding `User.Edit` allows modifying user information
-
-You typically need both the parent permission (`Users`) and the specific action (`User.Edit`) for the sub-admin to perform that action.
-:::
-
-### Common Permission Configurations
-
-Here are ready-to-use permission configurations for common scenarios. Copy and paste these into the Permissions field, then modify the user group IDs as needed.
-
-**1. User Support Representative**
-Can browse and edit users in specific groups, but cannot delete users or access system settings:
-
-```json
-{
-  "AccessAllowedUserGroupIDs": [1, 2],
-  "AccessOptions": [
-    "Users",
-    "User.Browse",
-    "User.Edit"
-  ]
-}
-```
-
-**2. Campaign Manager**
-Can create, edit, and send campaigns, and view reports, but cannot manage users or system settings:
-
-```json
-{
-  "AccessAllowedUserGroupIDs": [],
-  "AccessOptions": [
-    "Campaigns",
-    "Campaign.Browse",
-    "Campaign.Create",
-    "Campaign.Edit",
-    "Campaign.Send",
-    "Reports"
-  ]
-}
-```
-
-**3. Account Manager**
-Can fully manage users in assigned groups and view their campaign performance:
-
-```json
-{
-  "AccessAllowedUserGroupIDs": [3, 4, 5],
-  "AccessOptions": [
-    "Users",
-    "User.Browse",
-    "User.Create",
-    "User.Edit",
-    "User.Delete",
-    "Reports"
-  ]
-}
-```
-
-**4. Read-Only Auditor**
-Can view users, campaigns, and reports, but cannot make any changes:
-
-```json
-{
-  "AccessAllowedUserGroupIDs": [1, 2, 3, 4, 5],
-  "AccessOptions": [
-    "Users",
-    "User.Browse",
-    "Campaigns",
-    "Campaign.Browse",
-    "Reports"
-  ]
-}
-```
-
-**5. Technical Administrator**
-Can manage delivery servers and system settings, but not users:
-
-```json
-{
-  "AccessAllowedUserGroupIDs": [],
-  "AccessOptions": [
-    "DeliveryServers",
-    "DeliveryServer.Browse",
-    "DeliveryServer.Create",
-    "DeliveryServer.Edit",
-    "SystemSettings",
-    "Reports"
-  ]
-}
-```
-
-::: tip Starting with Minimal Permissions
-When in doubt, start with fewer permissions and add more as needed. It's easier (and safer) to grant additional access later than to revoke permissions that were too broad. Begin with browse-only access and gradually add edit/create/delete permissions based on the sub-admin's responsibilities.
-:::
-
-### Security Best Practices
-
-Follow these security guidelines when managing sub-admin accounts:
-
-**Account Management:**
-1. **Use the principle of least privilege** - Only grant the minimum permissions needed for each sub-admin to do their job
-2. **Create separate accounts for each person** - Never share sub-admin accounts between multiple team members
-3. **Review permissions regularly** - Audit sub-admin access every 3-6 months and remove unnecessary permissions
-4. **Disable accounts promptly** - Delete or disable sub-admin accounts immediately when team members leave or change roles
-5. **Document who has access** - Keep a record of all sub-admin accounts, who they belong to, and what permissions they have
-
-**Password Security:**
-1. **Require strong passwords** - Use the "Generate a strong password" feature or enforce strong password requirements
-2. **Encourage password changes** - Ask sub-admins to change their password after first login
-3. **Never share passwords** - Each person should have their own unique credentials
-4. **Use secure communication** - Share initial passwords through encrypted channels, not email
-
-**Permission Security:**
-1. **Limit user group access** - Only grant access to user groups the sub-admin needs to manage
-2. **Restrict system settings** - Reserve SystemSettings and DeliveryServers permissions for trusted team members
-3. **Monitor activity** - Regularly review system logs to ensure sub-admins are using their access appropriately
-4. **Separate concerns** - Don't give billing/financial access to the same people who have technical access
-
-::: danger Critical Security Warning
-Sub-admin accounts with `SystemSettings` permissions can make changes that affect your entire Octeth installation, including email deliverability and system security. Only grant these permissions to highly trusted team members who understand the implications of system-level changes.
-:::
-
-### Managing Existing Sub-Admin Accounts
-
-To edit an existing sub-admin account:
-
-1. Navigate to **Preferences** → **System Settings** → **Sub Admin Accounts**
-2. Click on the name of the sub-admin you want to edit
-3. Update the account information or permissions as needed
-4. Click **UPDATE** to save your changes
-
-To delete a sub-admin account:
-
-1. Navigate to **Preferences** → **System Settings** → **Sub Admin Accounts**
-2. Check the box next to the sub-admin account(s) you want to delete
-3. Click the **Delete** button
-4. Confirm the deletion
-
-::: warning
-Changes to permissions take effect immediately. If you edit a sub-admin's permissions while they're logged in, they may need to log out and log back in for the changes to fully apply.
-:::
-
-### Troubleshooting
-
-**Sub-admin can't see any users**
-
-Make sure the `AccessAllowedUserGroupIDs` array contains the IDs of the user groups they should access. An empty array `[]` means they can't see any users.
-
-**Sub-admin can't perform actions they should be able to**
-
-Check that you've granted both the parent permission and the specific action permission. For example, to edit users, they need both `Users` and `User.Edit`.
-
-**Sub-admin sees an "Access Denied" message**
-
-This means they're trying to access a section they don't have permission for. Review their `AccessOptions` array and add the necessary permissions.
-
-**JSON permissions show an error**
-
-Make sure your JSON is properly formatted:
-- All strings are in double quotes: `"Users"` not `'Users'`
-- Arrays use square brackets: `[1, 2, 3]`
-- Objects use curly braces: `{ }`
-- Commas separate items, but don't add a comma after the last item
-
-If you're unsure, copy one of the example configurations above and modify it carefully.
-
-After creating or editing a sub-admin account, the new credentials and permissions take effect immediately. The sub-admin can log in at your Octeth administrator URL using their username and password.
-
 ## Security
 
-Security settings help protect your Octeth installation from unauthorized access by restricting which IP addresses can access your system and by enabling two-factor authentication for administrator accounts.
+Security settings help protect your Octeth installation from unauthorized access by restricting which IP addresses can reach the admin area and by enabling two-factor authentication for administrator accounts.
 
-To access these settings, navigate to **Preferences** → **System Settings** → **Security** in the administrator dashboard.
+The IP allow-list is on the staff **Security** screen of the new interface: click **Administration**, then **Security** in the staff sidebar (needs the Security permission). See [The Staff Security Screen](/v6.0.6/new-user-interface/staff-security) for the allow-list, the option that applies it to user sign-ins too, and the remembered sign-ins. Two-factor authentication is set by each administrator on their own **Your profile** screen, see [Your Staff Profile](/v6.0.6/new-user-interface/staff-profile#two-factor-authentication). The classic admin **Security** page forwards to the staff screen.
 
 ::: danger Critical Warning
-The security settings on this page can lock you out of your Octeth installation if configured incorrectly. Always test IP restrictions carefully and have a backup access method (such as server console access) available before making changes.
+The IP allow-list can lock you out of the classic admin area if configured incorrectly. Have a backup access method (such as server console access) available before making changes.
 :::
 
 ### Authorized IP Addresses
 
-The Authorized IP Addresses feature allows you to restrict access to the Octeth administrator area to specific IP addresses or IP ranges. This is a powerful security measure that prevents unauthorized access even if someone obtains valid administrator credentials.
-
-**How It Works:**
-
-When you add IP addresses to this field, only visitors connecting from those IP addresses will be able to access the administrator login page and dashboard. Anyone connecting from other IP addresses will be blocked from accessing the admin area.
+The allow-list restricts access to the Octeth administrator area to specific IP addresses or IPv4 ranges in CIDR notation (one per line, such as `203.0.113.7` or `198.51.100.0/24`). An empty list allows every address.
 
 ::: warning Changed in v6.0.0: the list is now checked on every admin request
 Before v6.0.0 the list was consulted **only while the admin login page rendered**. A session that was already open, and the "remember me" cookie, kept working from any address, so a stolen session cookie stayed usable for the full session lifetime from anywhere.
@@ -3614,7 +3201,7 @@ The address compared against this list is the one Octeth resolved for the visito
 
 The same failure still applies to a proxy of your own: if you have put a load balancer, reverse proxy or CDN in front of Octeth at an address that is not loopback and have not listed it in `TRUSTED_PROXIES`, Octeth records **that proxy's** address for every visitor, and the list compares the proxy rather than the person.
 
-Confirm the address Octeth sees **before** you enable the restriction. It is shown in the admin footer and in the login and audit logs. If it is the same for every visitor, set `TRUSTED_PROXIES` (and `TRUST_CLOUDFLARE_CONNECTING_IP=true` if you are behind Cloudflare), restart the app containers, and confirm the footer shows a real visitor address. Only then fill in Authorized IP Addresses.
+Confirm the address Octeth sees **before** you enable the restriction. The staff Security screen shows your address as the admin sign-in sees it, and it is also in the login and audit logs. If it is the same for every visitor, set `TRUSTED_PROXIES` (and `TRUST_CLOUDFLARE_CONNECTING_IP=true` if you are behind Cloudflare), restart the app containers, and confirm a real visitor address is shown. Only then fill in the allow-list.
 :::
 
 **A proxy rule on the `/app/admin/` path does not restrict the admin area.** It is tempting to add an IP restriction at the reverse proxy on that path prefix instead. It does not work: Octeth's front controller takes the route from the path or from the query string, so the admin area answers at several URL shapes that all reach the same controllers.
@@ -3628,87 +3215,16 @@ Confirm the address Octeth sees **before** you enable the restriction. It is sho
 /app/index.php?//admin/
 ```
 
-A rule matching `/app/admin/` covers the first one only. Authorized IP Addresses is enforced in the authentication check, after the route has been resolved, so it covers every shape. Treat the in-app list as the authoritative control and any proxy rule as an extra layer on top of it.
+A rule matching `/app/admin/` covers the first one only. The allow-list is enforced in the authentication check, after the route has been resolved, so it covers every shape. Treat the in-app list as the authoritative control and any proxy rule as an extra layer on top of it.
 
-**Related setting.** `ADMIN_API_ENFORCE_ALLOWED_IP` in `.oempro_env` applies the same list to admin-authenticated API calls through `api.php`. It is a separate switch and it has **no loopback exemption**, so an integration that calls `api.php` with an admin credential from inside the Docker network needs its address added to the list. The admin-area enforcement described here is not behind a switch: it applies whenever the list is non-empty.
-
-**To configure authorized IP addresses:**
-
-1. Enter one IP address per line in the **Authorized IP Addresses** text area
-2. You can use individual IP addresses or CIDR notation for IP ranges
-3. Leave the field blank to allow access from any IP address (default behavior)
-4. Click **UPDATE SECURITY SETTINGS** to save your changes
-
-**IP Address Formats:**
-
-You can enter IP addresses in several formats:
-
-**Single IP Address:**
-```
-203.0.113.45
-192.168.1.100
-```
-
-**Multiple IP Addresses (one per line):**
-```
-203.0.113.45
-198.51.100.78
-192.0.2.123
-```
-
-**CIDR Notation (IP Ranges):**
-```
-203.0.113.0/24
-192.168.1.0/24
-10.0.0.0/8
-```
-
-::: info What is CIDR Notation?
-CIDR (Classless Inter-Domain Routing) notation allows you to specify a range of IP addresses using a slash followed by a number. For example:
-- `192.168.1.0/24` includes all IP addresses from 192.168.1.0 to 192.168.1.255 (256 addresses)
-- `10.0.0.0/8` includes all IP addresses from 10.0.0.0 to 10.255.255.255 (16.7 million addresses)
-- `203.0.113.0/28` includes IP addresses from 203.0.113.0 to 203.0.113.15 (16 addresses)
-
-Use CIDR notation when you want to allow access from an entire office network or data center.
-:::
-
-**Common Use Cases:**
-
-**Office Network Access Only:**
-```
-203.0.113.0/24
-```
-Only allows access from your office's IP range.
-
-**Multiple Office Locations:**
-```
-203.0.113.0/24
-198.51.100.0/24
-192.0.2.0/28
-```
-Allows access from multiple office networks.
-
-**Office + Home Office + VPN:**
-```
-203.0.113.50
-198.51.100.78
-192.0.2.100
-10.8.0.0/24
-```
-Allows access from office, specific home IPs, and VPN IP range.
+**Related setting.** `ADMIN_API_ENFORCE_ALLOWED_IP` in `.oempro_env` applies the same list to admin-authenticated API calls through `api.php`. It is a separate switch and it has **no loopback exemption**, so an integration that calls `api.php` with an admin credential from inside the Docker network needs its address added to the list. The new interface's own calls are exempt. The admin-area enforcement described here is not behind a switch: it applies whenever the list is non-empty.
 
 ::: danger Lockout Risk
-If you enter IP addresses and save the settings, you will immediately lose access to the administrator area if your current IP address is not on the list. Before clicking **UPDATE SECURITY SETTINGS**, make absolutely certain that:
-
-1. Your current IP address is included in the list
-2. You know how to access your server directly (SSH/console) to revert the changes if needed
-3. You've tested the IP addresses are correct
-
-**To find your current IP address:** Search "what is my IP" in Google, or the security page may display it for you. Write it down before making changes.
+If the saved list does not include your address, the classic admin area refuses you from that address. The staff screen asks before saving such a list, and stays open to you so you can change the list again.
 
 **If you do lock yourself out**, either of these gets you back in.
 
-1. **Sign in from the server itself.** Loopback is exempt, so an admin session opened on the server, for example through an SSH tunnel to the application's own port, still works. Clear the field from Settings, Security.
+1. **Sign in from the server itself.** Loopback is exempt, so an admin session opened on the server, for example through an SSH tunnel to the application's own port, still works. Clear the list on the staff Security screen.
 2. **Clear the setting in the database.** The value lives in the `ADMIN_ALLOWED_IP` column of the single `oempro_config` row, and an empty value means no restriction. That row is cached, so drop the cache entry afterwards or the application keeps serving the old value.
 
    ```sql
@@ -3722,630 +3238,54 @@ If you enter IP addresses and save the settings, you will immediately lose acces
 **Check the log first.** From v6.0.0 the refusal is logged at ERROR level with the address that was refused, which is often the whole answer: it shows you either the address to add, or that `TRUSTED_PROXIES` is the real problem.
 :::
 
-::: tip Testing IP Restrictions Safely
-Before implementing IP restrictions in production:
-
-1. **Find your current IP address** and add it to the list first
-2. **Open a second browser** (or incognito window) while keeping your current session active
-3. **Try logging in** with the new browser to verify your IP is whitelisted
-4. **Only close your original session** after confirming the new session works
-5. **Keep server SSH access** available as a backup to revert changes if needed
-
-This way, if something goes wrong, you still have an active session to fix the configuration.
-:::
-
-### User Area IP Restrictions
-
-Below the Authorized IP Addresses field, you'll find a checkbox labeled **"Disable access to the user area from IP addresses not listed above"**.
-
-**How It Works:**
-
-When this checkbox is enabled, the IP restrictions you configured above apply not only to the administrator area but also to the user area (where your regular users log in to manage their campaigns and subscribers).
-
-- **Unchecked (Default):** IP restrictions only apply to the administrator area. Regular users can log in from anywhere.
-- **Checked:** IP restrictions apply to both administrator and user areas. Only visitors from whitelisted IPs can access either area.
-
-**When to Use This:**
-
-Enable user area IP restrictions when:
-- You're running an internal email platform for employees only
-- Your users all work from the same office or VPN
-- You want maximum security for a private installation
-- Compliance requirements mandate IP-based access control
-
-**When NOT to Use This:**
-
-Don't enable user area IP restrictions when:
-- Your users work remotely from various locations
-- Users travel and need access from different networks
-- You're running a public SaaS platform
-- Users access from mobile networks (which have changing IPs)
-
 ::: warning User Area Lockouts
-If you enable this option and users try to log in from unauthorized IP addresses, they will see a 403 Forbidden error page. Make sure all your users' IP addresses or networks are included in the authorized list before enabling this feature, or you'll receive support complaints from locked-out users.
+**Apply the list to user sign-ins too** lets users sign in only from the listed addresses. Use it only for a private installation whose users all work from known networks, and add all of those networks to the list first, or users are locked out.
 :::
 
-### Two Factor Authentication Settings
+### Two-Factor Authentication
 
-Two-factor authentication (2FA) adds an extra layer of security to your administrator account. Even if someone steals or guesses your password, they won't be able to log in without the 6-digit code from your authenticator app.
+Two-factor authentication (2FA) asks for a six-digit code from an authenticator app as well as the password when an administrator signs in. Each administrator turns it on or off for their own account on **Your profile** (click your name at the bottom of the staff sidebar, then **Your profile**), see [Your Staff Profile](/v6.0.6/new-user-interface/staff-profile#two-factor-authentication). Turning it off asks for the current password.
 
-**How It Works:**
-
-Once 2FA is enabled, logging into the administrator area requires two things:
-1. Your username and password (something you know)
-2. A 6-digit code from your authenticator app (something you have)
-
-The 6-digit code changes every 30 seconds, making it virtually impossible for attackers to gain access even if they have your password.
-
-**Setting Up Two-Factor Authentication:**
-
-Follow these steps to enable 2FA on your administrator account:
-
-1. Navigate to **Preferences** → **System Settings** → **Security**
-2. Scroll down to the **Two Factor Authentication Settings** section
-3. You'll see a QR code and an alphanumeric secret key
-4. Install an authenticator app on your smartphone if you haven't already:
-   - **Google Authenticator** ([iOS](https://apps.apple.com/app/google-authenticator/id388497605) / [Android](https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2))
-   - **Authy** ([iOS](https://apps.apple.com/app/authy/id494168017) / [Android](https://play.google.com/store/apps/details?id=com.authy.authy))
-   - **Microsoft Authenticator** ([iOS](https://apps.apple.com/app/microsoft-authenticator/id983156458) / [Android](https://play.google.com/store/apps/details?id=com.azure.authenticator))
-5. Open your authenticator app and scan the QR code displayed on the screen
-   - **Alternative:** If you can't scan the QR code, manually enter the secret key shown below it
-6. Your authenticator app will now display a 6-digit code that changes every 30 seconds
-7. Enter the current 6-digit code in the field labeled **"Enter the generated 6 digit code above"**
-8. Click **UPDATE SECURITY SETTINGS**
-
-If the code was entered correctly, 2FA is now enabled. The next time you log in, you'll be prompted for a 2FA code after entering your username and password.
-
-::: tip Save Your Secret Key
-Write down or securely store the alphanumeric secret key displayed below the QR code. If you lose your phone or need to set up a new device, you can use this key to restore your 2FA configuration without being locked out.
-
-Store it in a secure location like:
-- A password manager (1Password, LastPass, Bitwarden)
-- An encrypted note
-- A secure physical location (not with your phone)
+::: tip Keep your recovery key
+Setup shows a recovery key once. Store it in a password manager. If you lose your phone, choose **Lost your authenticator? Use your recovery key** on the code step to sign in. An administrator with the SubAdmins permission can also reset a sub-admin's two-factor authentication from the sub-admin's **Access** section. If codes are refused, check that the phone's clock is right.
 :::
-
-**Using Two-Factor Authentication:**
-
-After 2FA is enabled, the login process changes:
-
-1. Enter your username and password as usual
-2. Click **Login**
-3. You'll be prompted for a 2FA code
-4. Open your authenticator app and find the 6-digit code for Octeth
-5. Enter the code (you have 30 seconds before it expires)
-6. Click **Submit** or press Enter
-
-The code changes every 30 seconds, so if it expires while you're typing, just wait for the new code and enter that one instead.
-
-::: warning Backup Access
-Before enabling 2FA:
-
-1. **Save your secret key** in a secure location
-2. **Test the 2FA login** while keeping your current session open
-3. **Ensure you have server access** to disable 2FA via configuration files if needed
-4. **Don't close your current session** until you've successfully logged in with 2FA
-
-If you lose access to your authenticator app and don't have the secret key, you may need to disable 2FA directly on the server.
-:::
-
-**Disabling Two-Factor Authentication:**
-
-If you need to disable 2FA (for example, if you lost your phone):
-
-**Method 1: Via the Security Settings (if you still have access):**
-1. Navigate to **Preferences** → **System Settings** → **Security**
-2. In the **Two Factor Authentication Settings** section, enter your current administrator password in the **Current Password** field
-3. Click **DISABLE TWO FACTOR AUTHENTICATION** and confirm
-
-Your password is required so that an open browser session alone cannot switch off your second factor. If the password is wrong, 2FA stays enabled and an error is shown.
-
-**Method 2: Via Server Access (if you're locked out):**
-1. SSH into your Octeth server
-2. Contact Octeth support for instructions on manually disabling 2FA via configuration files or database
-
-### Security Best Practices
-
-Follow these recommendations to maintain strong security for your Octeth installation:
-
-**IP Address Restrictions:**
-1. **Start conservatively** - Begin with a small list of known IPs and expand as needed
-2. **Use CIDR notation** for entire office networks instead of listing individual IPs
-3. **Document your IP list** - Keep a record of what each IP/range represents
-4. **Review quarterly** - Remove IP addresses or ranges that are no longer needed
-5. **Test before deploying** - Always test IP restrictions in a secondary browser session first
-6. **Keep emergency access** - Maintain SSH or console access to your server to revert changes
-
-**Two-Factor Authentication:**
-1. **Enable 2FA immediately** - It's your best defense against password compromise
-2. **Save the secret key** - Store it securely separate from your phone
-3. **Use a reputable authenticator app** - Google Authenticator, Authy, or Microsoft Authenticator
-4. **Test before committing** - Verify 2FA works while keeping your current session open
-5. **Have a backup method** - Ensure you can access your server directly if locked out
-
-**General Security:**
-1. **Combine multiple methods** - Use both IP restrictions and 2FA for maximum security
-2. **Monitor login attempts** - Regularly review administrator login logs
-3. **Use strong passwords** - Even with 2FA, use complex, unique passwords
-4. **Limit administrator accounts** - Only create admin accounts for people who absolutely need them
-5. **Regular audits** - Review security settings every 3-6 months
-
-::: info Defense in Depth
-Security is most effective when you use multiple layers. Consider implementing:
-- IP address restrictions (network layer)
-- Two-factor authentication (application layer)
-- Strong passwords (authentication layer)
-- Regular security audits (process layer)
-- Server firewalls (infrastructure layer)
-
-This "defense in depth" approach ensures that if one security measure fails, others are still protecting your system.
-:::
-
-### Troubleshooting
-
-**I'm locked out after enabling IP restrictions**
-
-If you accidentally locked yourself out by adding the wrong IP addresses:
-
-1. **Check if you have an active session** - If you still have Octeth open in another browser tab, use it to fix the IP list
-2. **Access via SSH** - Log into your server directly and edit the security configuration:
-   ```bash
-   ssh root@your-server-ip
-   # Contact Octeth support for specific file locations and commands
-   ```
-3. **Temporary disable IP restrictions** - Via server access, temporarily disable the feature to regain access
-4. **Contact your hosting provider** - If you can't access the server, your hosting provider may be able to help
-
-**2FA code isn't working**
-
-If your authenticator app code is rejected:
-
-1. **Check the time** - Make sure your phone's clock is accurate. 2FA codes are time-based, so even a few minutes off can cause issues
-2. **Wait for a new code** - If the code is about to expire, wait for the next one
-3. **Re-scan the QR code** - Delete the Octeth entry from your authenticator app and scan again
-4. **Manually enter the secret key** - If QR scanning doesn't work, manually type the secret key into your app
-5. **Check for typos** - Make sure you're entering all 6 digits correctly
-
-**User area is blocked for all users**
-
-If you enabled "Disable access to the user area" but forgot to add user IP addresses:
-
-1. **Uncheck the option** - Navigate to Security settings and uncheck "Disable access to the user area from IP addresses not listed above"
-2. **Add user IPs/ranges** - Before re-enabling, ensure all user IP addresses or networks are in the authorized list
-3. **Test with one user** - Have a single user test access before rolling out to everyone
-
-**Lost my phone with the authenticator app**
-
-If you lost access to your 2FA app:
-
-1. **Use your saved secret key** - Install an authenticator app on a new device and enter the secret key manually
-2. **Server-level disable** - Access your server via SSH and manually disable 2FA (contact Octeth support for instructions)
-3. **Recovery codes** - If you generated backup codes (some installations support this), use one to log in
-
-::: danger Prevention is Key
-Most lockout situations can be avoided by:
-- Testing changes before committing to them
-- Keeping secondary access methods available (SSH, console)
-- Storing 2FA secret keys securely
-- Noting your current IP address before enabling restrictions
-- Making changes during low-traffic periods when mistakes are less disruptive
-:::
-
-After configuring your security settings, click the **UPDATE SECURITY SETTINGS** button to save your changes. Security settings take effect immediately, so test thoroughly before closing your current session.
-
 ## Default Opt-In Email
 
-The Default Opt-In Email is a system-wide fallback template used for double opt-in confirmation emails when users haven't created their own custom opt-in email for their mailing lists. This template ensures that subscribers always receive a confirmation email, even if the list owner hasn't configured one.
+The Default Opt-In Email is a system-wide fallback template used for double opt-in confirmation emails when users haven't created their own custom opt-in email for their mailing lists. This template ensures that subscribers always receive a confirmation email, even if the list owner hasn't configured one. A list that has its own confirmation email always sends that one.
 
-**When is this email used?**
-
-This default template is automatically used when:
-1. A user creates a new mailing list without configuring a custom opt-in email
-2. A user enables double opt-in for their list but hasn't set up their own confirmation email template
-3. The list-specific opt-in email template is missing or deleted
-
-**Navigation:** **Preferences** → **System Settings** → **Default Opt-In Email**
-
-::: info Understanding Double Opt-In
-Double opt-in is an email marketing best practice where subscribers must confirm their email address by clicking a link in a confirmation email. This process:
-- Ensures email addresses are valid and actively monitored
-- Reduces spam complaints and bounce rates
-- Complies with GDPR and other email marketing regulations
-- Protects your sender reputation
-:::
-
-### What You'll Configure
-
-The Default Opt-In Email settings page has two fields that you need to fill out:
-
-#### Email Subject
-
-This is the subject line that subscribers will see when they receive the confirmation email. Make it clear that this is a confirmation request so subscribers know they need to take action.
-
-**Tips for writing a good subject line:**
-- Keep it short and clear (aim for under 50 characters)
-- Make it obvious this is a confirmation email
-- Avoid spam trigger words like "FREE" or "URGENT"
-- You can use personalization tags to make it more specific (we'll explain these below)
-
-**Example subject lines:**
-```
-Please confirm your subscription
-Confirm your email address
-%User:CompanyName%: Complete Your Subscription
-One more step to subscribe
-Verify your subscription request
-```
-
-#### Plain Email Content
-
-This is the actual message that subscribers will read in the email. This field only supports plain text - you can't use HTML formatting, colors, or images here.
-
-**What to include in your message:**
-- A friendly greeting
-- An explanation of why they're receiving this email
-- A clear instruction to click the confirmation link
-- What happens if they ignore the email
-- Contact information in case they have questions
-- You can use personalization tags to customize the message (we'll explain these below)
-
-::: warning Plain Text Only
-This template only supports plain text. If you try to add HTML tags like `<b>` or `<br>`, they'll show up as plain text in the email and won't format anything. If you need fancy HTML emails with logos and colors, you'll need to create custom templates for individual mailing lists.
-:::
-
-### Personalization Tags
-
-Personalization tags are special codes that automatically get replaced with real information when the email is sent. For example, if you use `%User:FirstName%` in your template, it will show as "John" when the email goes out.
-
-**How to add personalization tags:**
-
-1. Click in the **Email Subject** or **Plain Email Content** field where you want to add a tag
-2. Look for the **Insert Personalization Tags** dropdown menu below the field
-3. Select the tag you want from the dropdown
-4. The tag will be inserted at your cursor position
-
-**Available personalization tags:**
-
-**Opt-in confirmation links** (Required!)
-- `%Link:Confirm%` - The confirmation link subscribers must click to complete their subscription
-- `%Link:Reject%` - A link to reject the subscription if they didn't sign up
-
-**Subscriber information**
-- `%Subscriber:HashedSubscriberID%` - A unique identifier for the subscriber
-
-**User information** (Information about the list owner)
-- `%User:FirstName%` - List owner's first name
-- `%User:LastName%` - List owner's last name
-- `%User:EmailAddress%` - List owner's email address
-- `%User:CompanyName%` - List owner's company name
-- `%User:Website%` - List owner's website URL
-- `%User:Street%` - Street address
-- `%User:City%` - City
-- `%User:State%` - State
-- `%User:Zip%` - Zip code
-- `%User:Country%` - Country
-- `%User:Phone%` - Phone number
-- `%User:Fax%` - Fax number
-- `%User:TimeZone%` - Time zone
-
-**Other useful tags**
-- `%Date=...%` - Email delivery date (you can customize the format)
-- `%MFROMDomain%` - The sending domain
-- `%Random:FirstName%` - Generates a random first name
-- `%Random:LastName%` - Generates a random last name
+To change it, open the staff area of the new interface and click **Settings**, then **Default opt-in email** (needs the Settings permission). See [The Default Opt-in Email](/v6.0.6/new-user-interface/staff-optin-email) for editing the subject and body, inserting merge tags and restoring the default text. The classic admin **Default Opt-In Email** page forwards there.
 
 ::: danger Critical Tag Required
-You MUST include `%Link:Confirm%` in the email body. This is the confirmation link that subscribers click to complete their subscription. Without this tag, the opt-in process won't work and subscribers won't be able to confirm their subscription. Always double-check this tag is present before saving.
+The email body must include the `%Link:Confirm%` merge tag. It is the confirmation link subscribers click to complete their subscription. Without it, subscribers cannot confirm.
 :::
-
-### Example Template
-
-Here's a professional example template that follows best practices:
-
-**Email Subject:**
-```
-Please confirm your subscription
-```
-
-**Plain Email Content:**
-```
-Hello,
-
-Thank you for subscribing to our mailing list from %User:CompanyName%!
-
-To complete your subscription and start receiving our emails, please confirm your email address by clicking the link below:
-
-%Link:Confirm%
-
-If you didn't request this subscription, you can safely ignore this email. Your email address will not be added to our list unless you click the confirmation link above.
-
-Why are you receiving this email?
-Someone entered your email address into a subscription form on our website. This confirmation step ensures that we have your permission to send you emails.
-
-Questions or concerns?
-If you have any questions, please contact us at %User:EmailAddress%
-
-Thank you,
-%User:CompanyName%
-```
-
-### Relationship to List-Specific Opt-In Emails
-
-Understanding the hierarchy of opt-in email templates:
-
-**Priority Levels:**
-1. **List-Specific Template** (Highest Priority) - If a user has created a custom opt-in email for their list, that template is used
-2. **Default Template** (Fallback) - If no list-specific template exists, this system-wide default is used
-
-**When Users Should Create List-Specific Templates:**
-- When they want HTML-formatted opt-in emails (default only supports plain text)
-- When they need different messaging for different lists
-- When they want to customize the opt-in experience for their brand
-- When they need language-specific versions for different audiences
-
-**Your Role as Administrator:**
-- The default template you configure here serves as a safety net for all users
-- Make it professional, clear, and compliant with email regulations
-- Keep it generic enough to work for any list or industry
-- Encourage users to create their own custom templates for better branding
 
 ::: info Multi-User Considerations
-In a multi-tenant Octeth installation, this default template is used by ALL users who haven't configured their own opt-in emails. Make sure your template is professional and generic enough to represent any type of business or organization.
+In a multi-tenant Octeth installation, this default template is used by every user who hasn't configured their own opt-in email. Keep it professional and generic enough to represent any type of business or organization, and encourage users to create list-specific confirmation emails for their own branding.
 :::
-
-### Best Practices
-
-**Content Guidelines:**
-1. **Be transparent** - Clearly explain why they're receiving this email
-2. **Make the CTA obvious** - The confirmation link should be easy to find
-3. **Include context** - Mention when and where they signed up
-4. **Provide an out** - Explain what happens if they ignore the email
-5. **Add contact info** - Give them a way to reach support if needed
-
-**Compliance Considerations:**
-1. **GDPR Compliance** - Double opt-in helps demonstrate consent
-2. **CAN-SPAM Compliance** - Include accurate sender information
-3. **Brand Consistency** - Use professional language that represents your organization
-4. **Accessibility** - Use plain text for maximum compatibility
-
-**Technical Best Practices:**
-1. **Always include `%Link:Confirm%`** - This is non-negotiable; without it, the opt-in won't work
-2. **Test with real data** - Send test emails to verify personalization works
-3. **Keep it plain text** - Don't try to use HTML tags; they won't render
-4. **Use proper tag syntax** - Tags must be exact: `%Tag:Name%` with percent signs and colons
-5. **Avoid special characters** - Stick to standard ASCII characters for compatibility
-
-**Deliverability Tips:**
-1. **Avoid spam words** - Don't use "FREE", "URGENT", or excessive exclamation marks
-2. **Keep it concise** - Shorter emails have better deliverability
-3. **Include unsubscribe context** - Explain that ignoring the email = no subscription
-4. **Use sender tags** - Help subscribers recognize your brand with `%User:CompanyName%`
-
-::: tip Professional Tone
-Your default template represents your entire Octeth installation. Use professional, neutral language that works for any industry. Avoid overly casual language, emojis, or industry-specific jargon that might not apply to all users.
-:::
-
 ## Delivery Servers
 
 Delivery Servers are SMTP connections between Octeth and mail servers that handle the actual sending of your email campaigns. Each delivery server represents a configured SMTP server (like Amazon SES, SendGrid, Mailgun, or your own mail server) that physically delivers emails to recipients' inboxes.
 
-To access delivery server management, navigate to **Preferences** → **System Settings** → **Delivery Servers** in the administrator dashboard.
+Delivery servers are managed in the staff area of the new interface: click **Delivery**, then **Delivery servers** in the staff sidebar (needs the DeliveryServers permission). See [Managing Delivery Servers in the Staff Area](/v6.0.6/new-user-interface/staff-delivery-servers) for every field, the password handling, cloning and the verification checks. The classic admin **Delivery Servers** pages forward there. The delivery server reports stay in the classic admin at `/app/admin/deliveryservers/report`.
 
 ::: info Production Setup
-Before you can send email campaigns, you need at least one delivery server properly configured and verified. Each delivery server connects to an SMTP service that you've either set up yourself or signed up for separately. Octeth handles campaign management and personalization - the delivery servers handle the actual email transmission.
+Before you can send email campaigns, you need at least one delivery server properly configured and verified. Each delivery server connects to an SMTP service that you've either set up yourself or signed up for separately. Octeth handles campaign management and personalization, and the delivery servers handle the actual email transmission.
 :::
 
 ::: warning Critical for Email Delivery
 Delivery servers are where you configure the technical settings that make or break your email deliverability. Incorrect settings can prevent emails from sending, while proper configuration with SPF, DKIM, and DMARC ensures your emails reach inboxes instead of spam folders.
 :::
 
-### Creating a New Delivery Server
-
-To create a new delivery server, click **Create a new delivery server** from the Delivery Servers page. The configuration is organized into two tabs: **Delivery Method** and **Domains**.
-
-### Delivery Method Tab
-
-This tab configures how Octeth connects to your SMTP server to send emails.
-
-**Name**
-
-Give your delivery server a descriptive name for administrative purposes. This helps you identify it when you have multiple servers configured or when reviewing sending reports.
-
-Examples of good server names:
-```
-Amazon SES - Production
-SendGrid - Transactional
-Mailgun - Marketing Campaigns
-Office SMTP - Internal Communications
-```
-
-::: tip Naming Convention
-Use names that clearly identify the provider, purpose, or sending type. If you have multiple accounts with the same provider, include distinguishing details like "Production" vs "Testing" or campaign types like "Marketing" vs "Transactional".
+::: tip Settings that matter most
+- Use port `587` with **TLS (STARTTLS)** for most providers. Use **None** for encryption only on a trusted network, such as the Mailpit test server below.
+- The **MAIL FROM domain** must have SPF, DKIM and DMARC records. Entering a full email address there instead of a domain turns bounce processing off, which Amazon SES and some relays require.
+- An **Enforced From address** wins over the two "use the list's sender address" options.
+- Saving never tests the server. Click **Send test and check DNS** in the server's **Verification** section after every change to its connection or domains, and fix every failed check before production use.
 :::
-
-**Host Address/IP**
-
-Enter the domain or IP address of your SMTP server. This is provided by your email service provider or mail server administrator.
-
-Common examples:
-- Amazon SES: `email-smtp.us-east-1.amazonaws.com`
-- SendGrid: `smtp.sendgrid.net`
-- Mailgun: `smtp.mailgun.org`
-- Your own server: `mail.yourdomain.com` or an IP address like `192.168.1.100`
-
-**SMTP Port**
-
-Enter the port number your SMTP server uses for connections. Common ports depend on your security settings:
-- Port `25` - Standard SMTP (usually blocked by cloud providers)
-- Port `587` - SMTP with STARTTLS (recommended for most providers)
-- Port `465` - SMTP with SSL (less common, but supported)
-- Port `2525` - Alternative port (used by some providers when 25/587 are blocked)
-
-::: tip Port Selection
-Most modern email providers use port `587` with TLS encryption. This is the recommended configuration for best compatibility and security.
-:::
-
-**Encryption**
-
-Select the security protocol your SMTP server requires:
-- **None** - No encryption (only use for testing on trusted networks)
-- **SSL** - SSL/TLS encryption from connection start (typically used with port 465)
-- **TLS** - STARTTLS encryption after initial connection (typically used with port 587)
-
-::: warning Security Recommendation
-Always use TLS or SSL encryption when sending through the internet. Unencrypted connections expose your authentication credentials and email content to potential interception.
-:::
-
-**Connection Timeout**
-
-Set how long (in seconds) Octeth should wait for the SMTP server to respond before giving up. Default is `10` seconds.
-
-- Lower values (5-10 seconds) - Fail faster if the server is down, but may cause failures on slow connections
-- Higher values (15-30 seconds) - More patient with slow servers, but delays error detection
-
-::: tip Timeout Guidelines
-For most configurations, `10` seconds works well. Only increase this if you're experiencing timeout errors with a reliable but slow SMTP server. For cloud-based providers like Amazon SES or SendGrid, `10` seconds is sufficient.
-:::
-
-**SMTP Authentication**
-
-Choose whether your SMTP server requires username and password authentication:
-- **Yes** - Most email providers require authentication (Amazon SES, SendGrid, Mailgun, etc.)
-- **No** - Only for open relay servers or special configurations (rare and not recommended)
-
-::: warning Authentication Required
-Nearly all modern SMTP services require authentication to prevent spam and unauthorized use. Select "Yes" unless you have a specific reason not to.
-:::
-
-**Username** (when authentication is enabled)
-
-Enter the username provided by your email service provider. This is often:
-- An actual username like `apiuser@yourdomain.com`
-- An API key identifier
-- An access key ID (for Amazon SES)
-
-**Password** (when authentication is enabled)
-
-Enter the password or API key provided by your email service provider. For security:
-- Never share this password
-- Use API keys instead of account passwords when possible
-- Store API keys securely - Octeth encrypts them in the database
-
-::: tip API Keys vs Passwords
-Many email providers (Amazon SES, SendGrid, Mailgun) use API keys instead of passwords. API keys are more secure because they can be:
-- Revoked without changing your account password
-- Created with limited permissions
-- Rotated regularly for security
-:::
-
-### Domains Tab
-
-This tab configures the domains used for email authentication, tracking, and delivery. Proper domain configuration is critical for deliverability and compliance with email authentication standards (SPF, DKIM, DMARC).
-
-**Link Tracking Domain**
-
-Enter the domain that will be used when Octeth tracks clicks on links in your emails. When subscribers click a link, they're briefly redirected through this domain before reaching the actual destination.
-
-Example: `click.mydomain.com`
-
-::: info Why Link Tracking Domains Matter
-Using a dedicated subdomain for link tracking:
-- Protects your main domain's reputation
-- Allows separate DNS configuration for tracking infrastructure
-- Provides clearer analytics by domain
-- Enables domain-based filtering and routing
-:::
-
-**Open Tracking Domain**
-
-Enter the domain used to track when recipients open your emails. Octeth inserts a tiny invisible image hosted on this domain - when the email is opened, the image loads and registers the open.
-
-Example: `track.mydomain.com`
-
-**MFROM Domain**
-
-This is the "mail-from" domain (also called envelope sender or return-path domain) used in the SMTP envelope. This domain is critical for:
-- SPF (Sender Policy Framework) verification
-- DKIM (DomainKeys Identified Mail) signing
-- DMARC (Domain-based Message Authentication) alignment
-- Bounce email processing and routing
-
-You can enter either:
-- A domain like `bounces.mydomain.com`
-- A full email address like `noreply@bounces.mydomain.com`
-
-::: warning Domain vs Email Address
-If you enter a full email address here, bounce processing will be disabled and the exact address will be used as the envelope sender. Some SMTP providers (like Amazon SES) require a complete email address instead of just a domain. Check your provider's documentation.
-:::
-
-::: info Email Authentication Standards
-The MFROM domain is used for SPF/DKIM/DMARC verification by recipient mail servers. Make sure:
-- This domain has proper SPF, DKIM, and DMARC DNS records configured
-- The domain aligns with your sending domain for DMARC compliance
-- You have access to manage DNS records for this domain
-:::
-
-**Enforced From Email Address**
-
-If you want to force all emails sent through this delivery server to use a specific "From" address regardless of campaign settings, enter it here. This is useful for:
-- Complying with strict DMARC alignment requirements
-- Ensuring brand consistency across all campaigns
-- Meeting provider requirements (some require all emails come from verified addresses)
-
-Example: `noreply@bounces.mydomain.com`
-
-::: tip When to Use Enforced From
-Leave this empty unless you have a specific requirement:
-- **Use it when:** Your email provider requires all emails to use verified sender addresses, or you need strict DMARC alignment
-- **Leave empty when:** You want campaigns to use different sender addresses based on list settings or campaign configuration
-:::
-
-**Sender Email Options**
-
-Two checkboxes control how Octeth handles sender information:
-
-**Use the recipient list sender email address as MFROM email address if possible**
-
-When checked, Octeth will try to use the sender email address configured in the subscriber list settings as the MFROM (envelope sender). This provides better sender alignment but requires the list's sender domain to be properly configured with SPF/DKIM records.
-
-**Use the recipient list sender email address as From email address if possible**
-
-When checked, Octeth will use the sender email address from the subscriber list in the visible "From" header of the email. This allows different lists to have different sender identities while using the same delivery server.
-
-::: warning Sender Address Conflicts
-If you enable these options AND set an "Enforced From Email Address", the enforced address will take priority. The checkboxes only apply when the enforced address field is empty.
-:::
-
-### DNS Verification
-
-After creating your delivery server, Octeth provides DNS verification tools to test your configuration. On the delivery server edit page, you'll see verification status for:
-
-- **Email Delivery** - Tests if emails can be successfully sent through the SMTP server
-- **SPF** - Verifies the MFROM domain has proper SPF records
-- **DKIM** - Verifies the domain has DKIM signing keys configured
-- **DMARC** - Verifies the domain has a DMARC policy published
-- **Sender Domain** - Checks if the sending domain is properly configured
-- **Link Domain** - Verifies the link tracking domain resolves correctly
-- **Open Domain** - Verifies the open tracking domain resolves correctly
-
-::: tip Run Verification After Setup
-Always click **Run DNS Test** after creating a delivery server and configuring your DNS records. Green checkmarks indicate everything is configured correctly. Red X marks show what needs attention. Fix any issues before using the server for production campaigns.
-:::
-
-[[SCREENSHOT: Delivery servers list showing server names, MFROM domains, and verification status with green checkmarks for SPF, DKIM, DMARC]]
 
 ### Creating a Test Delivery Server with Mailpit
 
-Octeth includes a built-in email testing tool called Mailpit. Mailpit is an SMTP and mailbox simulator that captures all emails you send through it without actually delivering them to real recipients. This is invaluable for:
-- Testing email templates and layouts before sending to real subscribers
-- Verifying personalization tags work correctly
-- Checking email structure and formatting
-- Training new team members without risk of sending test emails to real people
-- Development and troubleshooting without affecting your sender reputation
-
-::: info What is Mailpit?
-Mailpit acts like a real SMTP server and accepts all emails you send to it, but instead of delivering them to recipients, it stores them in a web-based inbox you can review. Think of it as a "sandbox" for safely testing your email campaigns.
-:::
+Octeth includes a built-in email testing tool called Mailpit. Mailpit is an SMTP and mailbox simulator that captures all emails you send through it without actually delivering them to real recipients. Use it to test templates, personalization and email structure without sending to real people or affecting your sender reputation.
 
 **Accessing Mailpit**
 
@@ -4402,99 +3342,29 @@ docker-compose kill haproxy && docker-compose up -d haproxy
 
 You should see the Mailpit web interface with an empty inbox ready to receive test emails.
 
-::: tip Finding Your IP Address
-Your IP address can change, especially if you're working from different locations or using a VPN. If you suddenly can't access Mailpit, check if your IP address has changed and update the HAProxy configuration accordingly.
-:::
-
 **Creating the Mailpit Delivery Server**
 
-Now that you can access Mailpit's web interface, create a delivery server in Octeth that sends emails to Mailpit:
-
-1. Navigate to **Preferences** → **System Settings** → **Delivery Servers**
-2. Click **Create a new delivery server**
-3. Configure the **Delivery Method** tab with these specific values:
+In the staff area, click **Delivery**, then **Delivery servers**, then **Create delivery server**, and enter these values:
 
 | Field | Value |
 |-------|-------|
 | Name | `Mailpit` or `Testing - Mailpit` |
-| Host Address/IP | `192.168.99.102` |
-| SMTP Port | `1025` |
-| Encryption | **None** (No secured connection) |
-| Connection Timeout | `10` |
-| SMTP Authentication | **No** (Authentication not required) |
-| Username | *(leave empty)* |
-| Password | *(leave empty)* |
+| SMTP host | `192.168.99.102` |
+| Port | `1025` |
+| Encryption | **None** |
+| Timeout in seconds | `10` |
+| Authentication | Off |
+| Link tracking domain | Your Octeth domain (e.g., `octeth.mydomain.com`) |
+| Open tracking domain | Your Octeth domain (e.g., `octeth.mydomain.com`) |
+| MAIL FROM domain | Your primary sender domain (e.g., `bounces.mydomain.com`) |
+| Enforced From address | *(leave empty)* |
+| Use the list's sender address options | *(off)* |
 
-4. Configure the **Domains** tab with these values:
-
-| Field | Value |
-|-------|-------|
-| Link Tracking Domain | Your Octeth domain (e.g., `octeth.mydomain.com`) |
-| Open Tracking Domain | Your Octeth domain (e.g., `octeth.mydomain.com`) |
-| MFROM Domain | Your primary sender domain (e.g., `bounces.mydomain.com`) |
-| Enforced From Email Address | *(leave empty)* |
-| Use the recipient list sender email address as MFROM | *(unchecked)* |
-| Use the recipient list sender email address as From | *(unchecked)* |
-
-5. Click **Create Delivery Server**
-
-**Testing Your Mailpit Setup**
-
-After creating the delivery server, verify it works correctly:
-
-1. Click on the newly created **Mailpit** delivery server from the list
-2. Go to the **DNS Test** tab
-3. Click **Test Delivery Server**
-4. Wait a few seconds - you should see "Email Delivery ⇒ PASSED" with a green checkmark
-
-[[SCREENSHOT: DNS Test tab showing "Email Delivery ⇒ PASSED" with green checkmark]]
-
-5. Open your web browser and go to `http://your-oempro-domain:8025`
-6. You should see the test email in the Mailpit inbox
-
-[[SCREENSHOT: Mailpit web interface showing test email in inbox]]
-
-**Using Mailpit for Campaign Testing**
-
-To test a campaign with Mailpit:
-
-1. Create your campaign as usual
-2. When selecting the delivery server, choose **Mailpit**
-3. Send the campaign to a test subscriber list
-4. Check the Mailpit web interface to review the emails
-
-All emails will be captured in Mailpit's inbox where you can:
-- View HTML and plain text versions
-- Check email headers
-- See how personalization tags were replaced
-- Test links and tracking
-- Review the email source code
+Click **Create delivery server**. The server opens on its **Verification** section: click **Send test and check DNS**, and the test email appears in the Mailpit inbox at `http://your-oempro-domain:8025`.
 
 ::: warning Mailpit is for Testing Only
-Never use Mailpit for production email sending. It's designed for testing and development - emails sent to Mailpit are never delivered to real recipients. Always switch to a proper production delivery server (Amazon SES, SendGrid, etc.) before sending real campaigns.
+Never use Mailpit for production email sending. Emails sent to Mailpit are never delivered to real recipients. Name the server clearly (like "Testing - Mailpit" or "DO NOT USE FOR PRODUCTION") and switch to a proper production delivery server before sending real campaigns.
 :::
-
-::: tip Best Practice
-Keep your Mailpit delivery server clearly labeled (like "Testing - Mailpit" or "DO NOT USE FOR PRODUCTION") to prevent accidentally using it for real campaigns. You can also set it as inactive when not actively testing.
-:::
-
-### Managing Existing Delivery Servers
-
-The Delivery Servers page shows all configured servers with:
-- Server name and SMTP host
-- MFROM domain
-- Verification status (Email Delivery, SPF, DKIM, DMARC indicators)
-- Links to verification details
-
-You can:
-- **Edit** - Click the server name to modify configuration
-- **Delete** - Select servers and click delete (only if not actively used in campaigns)
-- **Verify** - Click "Run verification" to recheck DNS and delivery settings
-
-::: warning Before Deleting
-You cannot delete a delivery server that's currently assigned to active campaigns or scheduled sends. Pause or complete those campaigns first, or reassign them to a different delivery server.
-:::
-
 ## Email Delivery Settings
 
 Email Delivery Settings control how Octeth sends emails, handles bounces and spam complaints, and processes email headers. These are system-wide default settings that apply when specific delivery servers aren't configured.
@@ -4731,7 +3601,7 @@ The directory must exist and be writable by the web server user (typically `www-
 
 **Testing Your Email Delivery Settings**
 
-After configuring your send method, click the **Test Email Delivery Settings** button at the bottom of the page. This sends a test email to verify that your configuration works correctly.
+After saving your send method, click **Send test email** in the **Send method** section. This sends a test email with the saved settings to verify that your configuration works correctly. Unsaved changes are not tested.
 
 ::: tip
 Always test your email delivery settings after making changes. The test email is sent to the alert recipient address, set on the staff **Your profile** screen.
@@ -5099,16 +3969,17 @@ After adding custom headers:
 
 **Saving Your Settings**
 
-After configuring all tabs, click **UPDATE EMAIL DELIVERY SETTINGS** at the bottom of the page to save your changes.
+Each section of the staff **Email delivery** screen has its own **Save** button and saves only that section's settings.
 
 ::: danger Test Before Production
 After saving email delivery settings:
-1. Click **Test Email Delivery Settings** to send a test email
+1. Click **Send test email** in the **Send method** section to send a test email
 2. Verify the test email arrives successfully
 3. Check spam folders if the test doesn't arrive
 4. Review email headers to confirm your configuration is correct
 
 Never deploy to production without testing your email delivery configuration first. A misconfigured email delivery system can result in bounces, spam filtering, or complete delivery failure.
+:::
 :::
 
 ::: warning Delivery Server Priority
@@ -5632,11 +4503,11 @@ After configuring S2S Postback settings:
 This confirms your integration is working correctly before running live campaigns.
 :::
 
-## Sign-up and Payments
+## Sign-up
 
-Sign-up and payments decides whether visitors can create their own account, the reputation and user group a new account starts with, and the currency, tax, payment receipt email and credit purchase gateway of the classic billing. Configure it if customers sign up by themselves or buy email credits. If you create every account yourself, you can leave it as it is.
+Sign-up decides whether visitors can create their own account, and the reputation, user group and language a new account starts with. Configure it if customers sign up by themselves. If you create every account yourself, you can leave it as it is.
 
-To change these settings, sign in to the new interface as an administrator with the Settings permission and open **Settings > Sign-up and payments** in the staff sidebar. See [Staff Sign-up and Payments](/v6.0.6/new-user-interface/staff-signup-payments) for every field. The classic admin **ESP Settings** page was removed in v6.0.6, and its old address `/app/admin/espsettings/` opens the staff screen.
+To change these settings, sign in to the new interface as an administrator with the Settings permission and open **Settings > Sign-up** in the staff sidebar. See [Staff Sign-up](/v6.0.6/new-user-interface/staff-signup) for every field. The classic admin **ESP Settings** page was removed in v6.0.6, and its old address `/app/admin/espsettings/` opens the staff screen. Its currency, tax, payment receipt email and credit purchase gateway belonged to the classic billing and are not offered in the new interface.
 
 ::: tip Preventing Spam Abuse
 For public sign-up, keep **New account reputation** at **Untrusted**, the default on a new installation. Each campaign of an Untrusted account waits for an administrator's approval, and the account cannot send through the email gateway until an administrator marks it Trusted.
@@ -5652,264 +4523,13 @@ The payment gateways of the new interface's billing (plans and subscriptions) ar
 
 Single Sign On (SSO) allows you to connect Octeth with your existing website or application so users can access Octeth without creating a separate account or logging in manually. When someone clicks a special link from your platform, they're automatically logged into Octeth with their account already set up.
 
-**Why use SSO?**
+SSO sources are managed in the staff area of the new interface: click **Settings**, then **SSO** in the staff sidebar (needs the Settings.SSO permission). See [Managing SSO Sources in the Staff Area](/v6.0.6/new-user-interface/staff-sso) for creating a source, its options, its two keys and its statistics. The classic admin **Single Sign On** section forwards there.
 
-SSO creates a seamless experience for your users by:
-- Eliminating the need for separate registration forms
-- Removing the hassle of remembering another username and password
-- Automatically creating Octeth accounts for your existing users
-- Keeping user information synchronized between your platform and Octeth
-- Providing a professional, integrated experience
+How your application builds a sign-in link, the fields the encrypted token carries and the errors it can return are explained in [Single Sign-On (SSO) Integration](/v6.0.6/using-octeth/integrations/sso).
 
-**When should you set this up?**
-
-You should configure SSO if:
-1. You have an existing user base on your website or application
-2. You want to offer Octeth as part of your platform's features
-3. You need to automatically provision Octeth accounts for your users
-4. You want users to move between your platform and Octeth without logging in again
-
-**Navigation:** **Settings** → **Single Sign On**
-
-::: info Understanding SSO Security
-SSO uses encrypted tokens to securely transfer user information between your platform and Octeth. Each SSO source has two secret encryption keys that ensure only authorized requests from your platform are accepted. The encrypted data includes user details like name, email, and account settings.
+::: warning Keep links short-lived and keys secret
+Keep each source's **Valid for** setting short (the default of 5 seconds is enough for a redirect), so an intercepted link cannot be reused. Anyone with a source's two keys can build links that sign users in, so never publish them or commit them to a public repository. Rotate the keys from the source's **Credentials** tab if one leaks.
 :::
-
-### Creating an SSO Source
-
-An SSO source represents a connection between your platform and Octeth. You can create multiple SSO sources if you need to connect different applications or websites to the same Octeth installation.
-
-**To create a new SSO source:**
-
-1. Navigate to **Settings** → **Single Sign On**
-2. Click **Create SSO Source**
-3. Fill out the configuration fields (explained below)
-4. Click **Create**
-
-After creating the source, you'll receive two secret encryption keys that your developer will need for the integration.
-
-### Basic Configuration
-
-#### Source Name
-
-This is a friendly label that helps you identify this SSO connection in your admin panel. Choose something descriptive that tells you which platform or application this source is for.
-
-**Examples:**
-```
-Main Website SSO
-Mobile App Integration
-Partner Portal Access
-Customer Dashboard
-```
-
-::: tip
-If you manage multiple platforms, use clear names like "iOS App SSO" and "Android App SSO" so you can quickly identify which integration you're looking at.
-:::
-
-#### Source Code
-
-This is a unique identifier that gets included in the SSO links. It tells Octeth which SSO source to use when processing the authentication request.
-
-**Requirements:**
-- Must be unique across all your SSO sources
-- Can only contain letters, numbers, dashes (-), and underscores (_)
-- Cannot contain spaces or special characters
-
-**Examples:**
-```
-main-website
-mobile-app
-partner-portal
-customer-dashboard
-```
-
-::: warning
-Once you create an SSO source, the source code becomes part of your integration. If you change it later, you'll need to update all the SSO links in your platform, which could break existing integrations.
-:::
-
-#### Description
-
-This optional field lets you add notes about what this SSO source is used for, which developers are working on it, or any other relevant details. This is purely for your internal reference and won't affect how SSO works.
-
-#### Expires At
-
-You can optionally set an expiration date for this SSO source. After this date and time, all SSO links for this source will stop working.
-
-**When to use expiration:**
-- **Temporary integrations:** If you're running a limited-time promotion or trial
-- **Testing:** When setting up a test integration that should automatically shut down
-- **Scheduled migrations:** When you know you'll be switching to a new SSO source on a specific date
-
-**Format:** `YYYY-MM-DD HH:MM:SS`
-
-**Example:** `2024-12-31 23:59:59`
-
-**Leave this field empty** if you want the SSO source to work indefinitely (most common scenario).
-
-#### Valid For
-
-This is a critical security setting that determines how long each SSO link remains valid after it's generated.
-
-**What this means:**
-When your platform generates an SSO link for a user, that link will only work for the number of seconds you specify here. After that time expires, the link becomes invalid and won't log the user in.
-
-**Recommended setting:** `5` seconds or less
-
-**Why keep this short?**
-- **Security:** Short validity windows prevent attackers from using stolen or intercepted links
-- **Freshness:** Ensures the user data in the link is current
-- **Prevention of link sharing:** Users can't bookmark or share SSO links
-
-::: warning Important Security Note
-Setting this value too high (like 60 seconds or more) creates a security risk. If someone intercepts the SSO link, they could use it to access the account before it expires. Keep this as short as possible while still giving users enough time to click through.
-:::
-
-**How this works in practice:**
-1. User clicks a button on your platform to access Octeth
-2. Your platform generates an encrypted SSO link (valid for 5 seconds)
-3. User's browser is redirected to that link
-4. Octeth verifies the link is still valid (hasn't expired)
-5. User is logged in
-
-The entire process typically takes 1-2 seconds, so a 5-second validity window is plenty of time.
-
-### SSO Options
-
-These three checkboxes control what happens when users access Octeth through your SSO link.
-
-#### Create new user account if corresponding account is not found
-
-When enabled, Octeth will automatically create a new user account if someone tries to log in through SSO but doesn't have an existing account.
-
-**When to enable this:**
-- You're integrating Octeth with an existing platform that already has users
-- You want new users to seamlessly start using Octeth without manual registration
-- You're offering Octeth as part of your service
-
-**When to disable this:**
-- You only want specific pre-existing Octeth users to access the system via SSO
-- You want to manually control who gets Octeth accounts
-
-**Most common setting:** Enabled (checked)
-
-#### Login the user to the user area
-
-When enabled, users clicking the SSO link will be automatically logged into Octeth's user area and can start using the platform immediately.
-
-**When to enable this:**
-- You want a seamless experience where users go directly to their Octeth dashboard
-- You're using SSO as the primary way users access Octeth
-
-**When to disable this:**
-- You only want to create/update the user account without logging them in
-- You have a custom landing page or workflow after account creation
-
-**Most common setting:** Enabled (checked)
-
-#### Return the user data in JSON format
-
-When enabled, instead of logging the user into Octeth, the SSO endpoint will return the user's information in a structured data format (JSON).
-
-**When to enable this:**
-- You need to verify the account was created/updated successfully
-- You want to display user information in your own application
-- You're building a custom integration that processes the user data programmatically
-
-**When to disable this:**
-- You want users to be logged in directly (the normal use case)
-
-**Most common setting:** Disabled (unchecked)
-
-::: info Understanding the Data Return Option
-If you enable "Return the user data in JSON format," the SSO process won't log the user in. Instead, it returns data like the user ID, email, and account status. This is an advanced option typically used by developers building custom integrations. For most use cases, leave this disabled.
-:::
-
-### Access Credentials and Integration
-
-After creating your SSO source, click on it to view the **Access Credentials** tab. This is where you'll find the encryption keys and integration code that your developer needs to implement SSO.
-
-#### Secret Encryption Keys
-
-Octeth automatically generates two unique encryption keys for your SSO source:
-
-- **Secret Key #1:** Used for encrypting the user data
-- **Secret Key #2:** Used for verifying the encrypted data hasn't been tampered with
-
-These keys are shown in the Access Credentials tab. Your developer will need both keys to create valid SSO links.
-
-::: warning Keep Your Keys Secure
-These encryption keys are like passwords for your SSO integration. Anyone with these keys can create SSO links that log users into your Octeth account. Never share these keys publicly or commit them to public code repositories.
-:::
-
-#### Integration Instructions
-
-The Access Credentials tab includes complete example code showing exactly how to generate encrypted SSO links. The example is written in PHP, but the same encryption approach can be used in any programming language.
-
-**What information needs to be encrypted:**
-
-Your platform must send this information in the encrypted token:
-
-**Required fields:**
-- `id` — The unique user ID from your platform
-- `firstname` — User's first name
-- `lastname` — User's last name
-- `email` — User's email address
-- `username` — The username for the Octeth account
-- `password` — The password for the Octeth account
-- `check_time` — Current timestamp (prevents replay attacks)
-
-**Optional fields:**
-- `target_usergroup_id` — Which user group to assign this user to in Octeth
-- `reputation_level` — Set to `Trusted` or `Untrusted` (affects default limits)
-- `timezone` — User's timezone (like `Europe/London`)
-- `language` — User's preferred language (like `en`)
-- `ip` — User's IP address
-- `availablecredits` — Starting email credits for the user's account
-
-::: info About Required vs. Optional Fields
-While the integration code requires all fields to be present, you can set optional fields to empty values or defaults if you don't need them. For example, if you're not tracking user timezones, you can set it to a default like `UTC`.
-:::
-
-### Monitoring SSO Usage
-
-The **Statistics** tab shows you how your SSO integration is performing over the last 30 days.
-
-**What you can track:**
-
-- **Successful data transfers:** How many times users successfully authenticated through this SSO source
-- **Failed data transfers:** How many SSO attempts failed (usually due to expired links or invalid encryption)
-- **Logins:** How many times existing users logged in through SSO
-- **Sign-ups:** How many new accounts were created through SSO
-
-These statistics help you:
-- Verify your integration is working correctly
-- Identify issues if you see high failure rates
-- Understand how many users are coming through this SSO source
-- Monitor the adoption of your integrated platform
-
-::: tip Understanding the Statistics
-If you see a high number of "Failed data transfers," it usually means:
-- The SSO links are expiring before users click them (try increasing the "Valid For" setting slightly)
-- There's an encryption issue in your integration code
-- Users are trying to reuse old SSO links (which is normal and expected)
-:::
-
-### Common SSO Integration Patterns
-
-Here are typical ways Octeth's SSO feature is used:
-
-**Pattern 1: Seamless Platform Integration**
-You have a membership website, and you want members to access Octeth as part of their membership benefits. When they click "Email Marketing" in your member dashboard, they're automatically logged into Octeth with an account already created for them.
-
-**Pattern 2: White-Label Reselling**
-You're reselling Octeth as part of your own branded platform. You want your customers to see a seamless experience where they never realize they're using Octeth - they think it's part of your platform.
-
-**Pattern 3: Partner Portal**
-You're giving partners or affiliates access to Octeth for managing email campaigns. Partners log into your portal, click through to the email marketing section, and are automatically authenticated in Octeth.
-
-**Pattern 4: Mobile App Integration**
-You have a mobile app and want users to access Octeth's features without creating a separate account. The app generates an SSO link when users tap the email marketing feature.
-
 ## Preferences
 
 Install-wide preferences are in the new interface: open the staff area, click **Settings**, then **Preferences**. See [Staff Preferences](/v6.0.6/new-user-interface/staff-preferences) for the default language, user password reset, send rate alerts, the limit utilization webhook, the failed webhook handler, the List freshness thresholds, the forbidden From addresses and the default custom fields of a new list.

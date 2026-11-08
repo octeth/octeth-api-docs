@@ -809,7 +809,7 @@ Accounts created through the sign-up page or single sign-on have been **Untruste
 | How the account is created | Reputation |
 |---|---|
 | **Create User** in the administration area | **Trusted** |
-| The sign-up page or the new user interface's registration page | The **New account reputation** setting on the staff **Settings > Sign-up and payments** screen, see [Staff Sign-up and Payments](../new-user-interface/staff-signup-payments). It is **Untrusted** on a new installation. |
+| The sign-up page or the new user interface's registration page | The **New account reputation** setting on the staff **Settings > Sign-up** screen, see [Staff Sign-up](../new-user-interface/staff-signup). It is **Untrusted** on a new installation. |
 | Single sign-on | The reputation sent in the sign-on token, otherwise the **New account reputation** setting above. |
 | The `user.create` API | The `ReputationLevel` you send, otherwise the **New account reputation** setting above. |
 
