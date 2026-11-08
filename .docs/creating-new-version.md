@@ -27,6 +27,7 @@ items: [
 - Set `CURRENT_VERSION` in `.vitepress/config.mjs` to the released version
 - Remove "(In development)" from its menu item
 - Point the two hero links and the fallback path in `index.md` at the released version
+- Point the version links in `try-octeth.md` at the released version. `/latest/` URLs follow `CURRENT_VERSION` by themselves
 
 Versions that leave the `BUILT_VERSIONS` window get redirect stubs at build time (see `buildEnd` in `config.mjs`), so their old URLs keep working. Link to a released version's `behavior-changes` page from `changelog.md` only while it is built. After it leaves the window, the stub sends readers to the page's source on GitHub.
 

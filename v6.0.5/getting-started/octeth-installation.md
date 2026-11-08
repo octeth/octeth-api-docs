@@ -5,7 +5,7 @@ layout: doc
 # Octeth Installation
 
 ::: tip Let an AI coding agent install Octeth
-Claude Code, Codex and similar agents can do the whole installation, from Docker to a passing health check. On the server, or with SSH access to it, tell the agent: `Follow https://dev.octeth.com/agent/install.md to install Octeth on this server for the domain mailer.example.com. My license key is in the file license.txt.` Get the one-line key with **Show license key** on your license page at [my.octeth.com](https://my.octeth.com/) after adding the domain to the license. The agent downloads the release with that key, never prints it, and stops to ask you when DNS, port 25 or the server size need your decision.
+Claude Code, Codex and similar agents can do the whole installation, from Docker to a passing health check. On the server, or with SSH access to it, tell the agent: `Follow https://dev.octeth.com/agent/install.md to install Octeth on this server for the domain mailer.example.com. My license key is in the file license.txt.` Get the one-line key with **Show license key** on your license page at [my.octeth.com](https://my.octeth.com/) after adding the domain to the license. The agent downloads the release with that key, never prints it, and stops to ask you when DNS, port 25 or the server size need your decision. First installation? [Try Octeth](/try-octeth) lists what to prepare and the limits of the free Community License.
 :::
 
 On the server, create the Octeth directory and unzip the Octeth package:
@@ -39,7 +39,7 @@ The installer will check server requirements and then ask you a few questions:
 - Username: admin
 - Password: YourSecurePassword123
 - EULA Agree: Y
-- License Key: the signed license key for this domain from my.octeth.com (one line). It can be left blank and pasted later on Settings > License, and until then the installation runs with the Community limits
+- License Key: the signed license key for this domain from my.octeth.com (one line). It can be left blank and pasted later on Settings > License, and until then the installation runs with the [Community limits](/try-octeth#community-license-limits)
 
 Once you confirm, installation utility will start installing Octeth on your server.
 

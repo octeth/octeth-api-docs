@@ -170,4 +170,4 @@ Tell the user:
 2. The upgrade notes from step 4 that apply to them.
 3. Where the backup is: the upgrade output names the backup directory under `/opt/octeth/data/backups/`.
 4. The release zip `/opt/oempro-rel-v<version>.zip` can be deleted.
-5. If the installation runs v6.0.2 or later with an `https://` app URL, they can manage it from Claude or ChatGPT with the connector URL `https://<app-domain>/mcp`. Guide: https://dev.octeth.com/v6.0.2/new-user-interface/ai-assistants
+5. If the installation runs v6.0.2 or later with an `https://` app URL, they can manage it from Claude or ChatGPT with the connector URL `https://<app-domain>/mcp`. Guide: https://dev.octeth.com/latest/new-user-interface/ai-assistants

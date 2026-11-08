@@ -2,7 +2,7 @@
 
 You are an AI coding agent (Claude Code, Codex, OpenCode or similar) asked to install Octeth, an on-premise email marketing platform, on a Linux server. Follow these steps in order. Run each command, compare the result with the expected output, and stop when a stop condition below is met. Do not improvise steps that are not here.
 
-Human documentation, if you need background: https://dev.octeth.com/
+Human documentation, if you need background: https://dev.octeth.com/. What a first-time user prepares, and the limits of the free Community License: https://dev.octeth.com/try-octeth
 
 ## Hard rules
 
@@ -18,7 +18,7 @@ Ask for these before you start. Ask for all of them in one message.
 
 - **The server.** Either you are running on it, or the user gives you SSH access (`ssh root@<host>`). In SSH mode, run every server command below through that SSH connection.
 - **The app domain**, for example `mailer.example.com`. Users and administrators open Octeth here.
-- **The license key file.** The user gets the key in the client area at https://my.octeth.com: open the license, add the app domain to it, and press **Show license key** (an Owner, Admin or Technical member of the team can do this). The key is one line. Ask the user to save it in a file and give you the file's path. Do not ask them to paste the key into this conversation. In SSH mode the file is on the user's computer, and step 4 copies it to the server.
+- **The license key file.** The user gets the key in the client area at https://my.octeth.com: open the license, add the app domain to it, and press **Show license key** (an Owner, Admin or Technical member of the team can do this). A user without a license can register at https://my.octeth.com and press **Get the Community License**, which is free with 1 user account, 10,000 active subscribers, no updates and no support (https://dev.octeth.com/try-octeth#community-license-limits). The key is one line. Ask the user to save it in a file and give you the file's path. Do not ask them to paste the key into this conversation. In SSH mode the file is on the user's computer, and step 4 copies it to the server.
 - **The administrator's full name, email address and username** (3 to 32 characters, starts with a letter, then letters, digits or underscores).
 - **Whether outbound mail goes directly from this server**, or through another relay host. Only needed if step 3 finds port 25 blocked.
 
@@ -34,12 +34,14 @@ df -BG --output=avail / | tail -1
 id -u
 ```
 
-Expected: `ubuntu 24.04`, at least 4 CPUs, at least 8 GB of RAM (the `free` figure may show 7), at least 80 GB of free disk, and user id `0`.
+Expected: `ubuntu 24.04` and user id `0`. The minimum is 2 CPUs, 4 GB of RAM (the `free` figure may show 3) and 50 GB of free disk, for testing and up to 10,000 subscribers. The recommended size for production is 4 CPUs, 8 GB of RAM (`free` may show 7) and 80 GB of free disk. Details: https://dev.octeth.com/latest/getting-started/server-requirements
 
 Stop if:
-- The OS is not Ubuntu 24.04. Other releases and distributions are not supported by these instructions.
+- The OS is not Ubuntu 24.04. Ubuntu 22.04 may work but is not tested, and other distributions are not supported. Tell the user and ask whether to continue anyway.
 - The CPU, RAM or disk figures are below the minimum. Tell the user the numbers and ask whether to continue anyway.
 - You are not root and `sudo -n true` fails. Ask the user for root access.
+
+Report, but do not stop on, figures between the minimum and the recommended size. Tell the user the server suits testing, not production.
 
 If you are not root but `sudo` works, prefix the commands below with `sudo`.
 
@@ -91,7 +93,7 @@ dig +short A <app-domain>
 dig +short -x "$SERVER_IP"
 ```
 
-Stop if `dig +short A <app-domain>` does not print the server's IP. Tell the user to create an A record for the app domain pointing at that IP, and wait. Certificates are issued automatically only when the domain points directly at this server. If the user's domain is behind Cloudflare or another CDN, stop and point them to https://dev.octeth.com/v6.0.2/getting-started/ssl-certificates (that setup is manual).
+Stop if `dig +short A <app-domain>` does not print the server's IP. Tell the user to create an A record for the app domain pointing at that IP, and wait. Certificates are issued automatically only when the domain points directly at this server. If the user's domain is behind Cloudflare or another CDN, stop and point them to https://dev.octeth.com/latest/getting-started/ssl-certificates (that setup is manual).
 
 Check outbound port 25:
 
@@ -234,5 +236,5 @@ Tell the user, in this order:
 1. Octeth is installed at `https://<app-domain>/`. The admin area is `https://<app-domain>/app/admin/`, with username `<username>`. The password is in `/root/octeth-admin.pw` on the server (readable by root only). They should sign in, change the password, then delete the file.
 2. The reverse DNS and port 25 findings from step 3.
 3. Next steps: add a delivery server and a sending domain in the admin area, and publish the SPF, DKIM and DMARC records Octeth shows for it.
-4. They can manage Octeth from Claude or ChatGPT. Add a custom connector with the URL `https://<app-domain>/mcp` and sign in with their Octeth admin login. Guide: https://dev.octeth.com/v6.0.2/new-user-interface/ai-assistants
+4. They can manage Octeth from Claude or ChatGPT. Add a custom connector with the URL `https://<app-domain>/mcp` and sign in with their Octeth admin login. Guide: https://dev.octeth.com/latest/new-user-interface/ai-assistants
 5. The release zip `/opt/oempro-rel-v<version>.zip` can be deleted.

@@ -4,7 +4,7 @@ layout: doc
 
 # Server Initialization
 
-Initialize a virtual machine (VM) with your preferred hosting provider. For this guide, we'll use specifications suitable for running Octeth:
+Initialize a virtual machine (VM) with your preferred hosting provider. This guide uses the recommended specifications from [Server Requirements](./server-requirements):
 
 - 4 Intel/AMD vCPUs
 - 8 GB RAM

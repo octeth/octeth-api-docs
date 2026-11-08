@@ -132,6 +132,7 @@ export default defineConfig({
                     {text: "Octeth MX Server", link: 'https://github.com/octeth/oempro-mx-server', target: '_blank', rel: 'dofollow'}
                 ]
             },
+            {text: 'Try Octeth', link: '/try-octeth'},
             {text: 'Homepage', link: 'https://octeth.com/', target: '_blank', rel: 'dofollow'},
             {text: 'Client Area', link: 'https://my.octeth.com/', target: '_blank', rel: 'dofollow'},
             {text: 'Help Portal', link: 'https://dev.octeth.com/', target: '_blank', rel: 'dofollow'},
@@ -1118,6 +1119,7 @@ export default defineConfig({
                     text: 'INTRODUCTION',
                     collapsed: false,
                     items: [
+                        {text: 'Try Octeth', link: '/try-octeth'},
                         {text: 'Changelog', link: '/changelog'},
                         {text: 'Roadmap', link: '/roadmap'},
                         {text: 'Support', link: '/support'}
@@ -1316,6 +1318,7 @@ export default defineConfig({
                     text: 'INTRODUCTION',
                     collapsed: false,
                     items: [
+                        {text: 'Try Octeth', link: '/try-octeth'},
                         {text: 'Changelog', link: '/changelog'},
                         {text: 'Roadmap', link: '/roadmap'},
                         {text: 'Support', link: '/support'}
@@ -3120,6 +3123,20 @@ export default defineConfig({
             }
         }
         console.log(`wrote ${count} redirect stub(s) for ${excludedVersions.length} purged version(s)`)
+
+        // /latest/<page> redirects to the same page of CURRENT_VERSION, so pages
+        // outside the site (public/agent/*.md, octeth.com) can link to a version
+        // page without going stale. Link to it only from outside the site: the
+        // VitePress router does not know these stubs, so an in-site link 404s.
+        let latest = 0
+        for (const page of currentPages) {
+            const rest = page === 'index' ? '' : page.replace(/(^|\/)index$/, '$1')
+            const out = path.join(siteConfig.outDir, 'latest', `${page}.html`)
+            fs.mkdirSync(path.dirname(out), {recursive: true})
+            fs.writeFileSync(out, redirectStub(`/${CURRENT_VERSION}/${rest}`))
+            latest++
+        }
+        console.log(`wrote ${latest} /latest/ redirect stub(s) for ${CURRENT_VERSION}`)
     }
 })
 

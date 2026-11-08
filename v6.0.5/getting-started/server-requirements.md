@@ -6,13 +6,17 @@ layout: doc
 
 Octeth requires a clean Linux server environment to ensure proper installation and optimal performance. This guide outlines the specific requirements your server must meet.
 
+::: tip Evaluating Octeth
+[Try Octeth](/try-octeth) lists everything to prepare for a first installation with the free Community License, and the limits of that license.
+:::
+
 ## Operating System
 
 ### Supported OS
 
-- **Ubuntu 24.04 LTS** (recommended)
-- **Ubuntu 22.04 LTS** (supported)
-- Other Debian-based distributions may work but are not officially supported
+- **Ubuntu 24.04 LTS** on x86_64 (supported, and the release you should use for new servers)
+- Ubuntu 22.04 LTS may work, but each release is tested on Ubuntu 24.04 only
+- Other distributions are not supported
 
 ### Fresh Installation Required
 
@@ -30,6 +34,8 @@ The server must be a **fresh, vanilla installation** with no pre-installed softw
 Octeth installs and manages all required services via Docker containers.
 
 ## Hardware Requirements
+
+The installer stops when less than 10 GB of disk is free and does not check CPU or memory. The figures below are what Octeth needs to run: the minimum for testing, the recommended size for production.
 
 ### Minimum Specifications
 

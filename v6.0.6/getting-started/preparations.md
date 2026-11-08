@@ -10,10 +10,11 @@ Before installing Octeth and its add-ons, ensure you have the following prerequi
 
 ### Main Octeth Server
 
-A vanilla Ubuntu 24.04 or newer VM server for running the Octeth application:
+A vanilla Ubuntu 24.04 LTS VM server for running the Octeth application:
 
-- **Minimum Specs**: 4 vCPU / 8 GB RAM / 80 GB SSD
-- **Recommended**: 8 vCPU / 16 GB RAM / 160 GB SSD
+- **Minimum Specs**: 2 vCPU / 4 GB RAM / 50 GB SSD, for testing and up to 10,000 subscribers
+- **Recommended**: 4 vCPU / 8 GB RAM / 80 GB SSD, for production
+- **Larger installations**: see the sizing table in [Server Requirements](./server-requirements)
 - **Operating System**: Ubuntu 24.04 LTS (fresh installation, no control panels)
 - **Access**: Root SSH access
 
@@ -53,7 +54,7 @@ About the key:
 
 - Format: one line of about 800 characters. It is not the short `OCT-...` key that identifies the license in the client area.
 - It is bound to one domain. Changing or adding a domain needs a new key, which you get the same way.
-- You will be prompted for it during installation. You can also leave it empty and paste it later on **Settings > License** in the administrator area (see [License](/v6.0.6/using-octeth/administration/license)). Until a valid key is set, the installation runs with the Community limits (one user account, 10,000 subscribers).
+- You will be prompted for it during installation. You can also leave it empty and paste it later on **Settings > License** in the administrator area (see [License](/v6.0.6/using-octeth/administration/license)). Until a valid key is set, the installation runs with the Community limits (one user account, 10,000 subscribers). [Try Octeth](/try-octeth#community-license-limits) lists every limit of the free Community License.
 
 ::: info Octeth v6.0.0 and older
 Versions before v6.0.1 do not read the signed license key. They use the short `OCT-...` license key in `LICENSE_KEY`, and the client area still offers a `license.dat` file for them in the **v5 and older** column. To move such an installation to the signed key, upgrade to v6.0.1 or newer and set the key as described in [Upgrading Octeth](./upgrading-octeth#set-the-license-key).

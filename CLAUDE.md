@@ -110,7 +110,8 @@ See `package.json` for all available commands. Key commands:
 - `CURRENT_VERSION` in `.vitepress/config.mjs` is the latest released version. The version menu labels it "(Current)" automatically, and purged version URLs redirect to it.
 - The version under development gets its own directory and a menu item labelled "(In development)", for example `{text: 'v6.0.6 (In development)', link: '/v6.0.6/'}`. Never mark it "(Current)" before it ships.
 - Visiting https://dev.octeth.com must open the latest released version. The two hero links and the fallback path in `index.md` point at `CURRENT_VERSION`, and the redirect follows the "(Current)" menu item.
-- On release day: set `CURRENT_VERSION` to the new version, remove its "(In development)" label, and point `index.md` at it. See `.docs/creating-new-version.md`.
+- On release day: set `CURRENT_VERSION` to the new version, remove its "(In development)" label, and point `index.md` and the version links in `try-octeth.md` at it.
+- Pages outside the site (`public/agent/*.md`, octeth.com) link to version pages through `/latest/<page>`, which `buildEnd` redirects to `CURRENT_VERSION`. Never use `/latest/` links inside site pages: the VitePress router does not know the stubs and shows a 404. See `.docs/creating-new-version.md`.
 - Only the newest `BUILT_VERSIONS` directories are built. Older ones get redirect stubs from `buildEnd` in `config.mjs`, so do not link to them from `changelog.md` or other pages.
 - Each version has independent documentation set
 
