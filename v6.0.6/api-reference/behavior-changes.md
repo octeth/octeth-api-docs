@@ -181,6 +181,14 @@ Before v6.0.6 a hard bounce processed through the internal bounce register call,
 
 **Who needs to act:** an integration that counts raw rows of the suppression list, or reads `suppression.browse` expecting a hard-bounced address on the account's own scope. Expect the address once, as a system-wide entry. An address on an account's whitelisted email addresses was never exempt from a campaign hard bounce, because the system-wide entry was written anyway, and this is now the documented rule.
 
+### Account suspension by the abuse protection plug-ins
+
+Peak Monitor, SpamAssassin Content Validator and PhishGuard now suspend an account by setting its `AccountStatus` to `Disabled`, so `user.get` and the user lists show the account as disabled and it can no longer sign in or send through the email gateway. Before, they only called a WooCommerce endpoint, and on an install without the WooCommerce plug-in a suspension changed nothing. New installations enable the three plug-ins with non-empty defaults. Upgraded installations keep their enabled plug-ins and saved settings until an administrator applies the new defaults. See [Abuse Protection](/v6.0.6/using-octeth/administration/abuse-protection) (octeth/oempro#3085).
+
+**Not affected:** API request and response fields. The new suspension source, reason and time columns are not returned by any endpoint. Enabling the account again with `user.update` (`AccountStatus=Enabled`) clears them.
+
+**Who needs to act:** an integration that disables and re-enables accounts itself and treats every `Disabled` account as one it disabled. A plug-in can now disable an account too.
+
 ### Tracking flags
 
 #### `OpenTracking` and `LinkTracking` accept more values on `email.update` and the sender-domain endpoints

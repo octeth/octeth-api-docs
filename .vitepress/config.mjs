@@ -1231,6 +1231,7 @@ export default defineConfig({
                         }, {
                             text: 'Administration', items: [
                                 {text: 'Security Settings', link: '/v6.0.6/using-octeth/administration/security'},
+                                {text: 'Abuse Protection', link: '/v6.0.6/using-octeth/administration/abuse-protection'},
                                 {text: 'License', link: '/v6.0.6/using-octeth/administration/license'},
                                 {text: 'Sender Domain Health', link: '/v6.0.6/using-octeth/administration/sender-domain-health'}
                             ],
