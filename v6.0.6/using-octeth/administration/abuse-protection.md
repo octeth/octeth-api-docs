@@ -68,7 +68,7 @@ It counts delivered emails that contain one of the **Keywords** (one per line, c
 
 ## Upgraded installations
 
-An upgrade never changes a plug-in's saved settings or which plug-ins are enabled. The admin area's **Overview** page shows an **Abuse Protection** notice until an administrator with the Settings privilege chooses one of:
+An upgrade never changes a plug-in's saved settings or which plug-ins are enabled. The Overview of the [staff dashboard](../../new-user-interface/staff-dashboard.md) shows an **Abuse Protection** notice until an administrator with the Settings privilege and no user group limit chooses one of:
 
 - **Apply the defaults**: enables the three plug-ins that are off and installed, and saves their recommended settings. Saved whitelists, Slack webhooks, thresholds and keywords are kept. Peak Monitor's suspension switches are not changed. SpamAssassin Content Validator and PhishGuard suspension are turned on.
 - **Dismiss**: hides the notice and changes nothing.

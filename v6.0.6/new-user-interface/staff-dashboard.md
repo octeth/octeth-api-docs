@@ -1,6 +1,6 @@
 # The Staff Dashboard
 
-The **Dashboard** is the first page of the staff area. It brings together what the classic admin overview shows: the setup checklist, campaigns waiting for approval, sender domain health, scheduled and past sending, and the accounts that stand out.
+The **Dashboard** is the first page of the staff area. It brings together the setup checklist, campaigns waiting for approval, sender domain health, scheduled and past sending, the accounts that stand out, and the abuse protection defaults notice. The classic admin overview only links here.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
@@ -18,7 +18,7 @@ The menu on the left lists the dashboard's sections. One section is shown at a t
 
 | Section | What it shows | Permission |
 |---|---|---|
-| Overview | A summary tile per section, and quick links | Dashboard |
+| Overview | A summary tile per section, quick links, and the abuse protection notice when one is waiting | Dashboard |
 | Pending approval | Campaigns waiting for approval, with Preview, Approve and Reject | Reports |
 | Delivery | Scheduled sending for the next 8 days, and past sending | Dashboard |
 | Users | Accounts that stand out, and accounts online now | Dashboard (Online also needs User.Browse) |
@@ -32,6 +32,8 @@ Each section loads on its own after the page opens. It shows the time its figure
 ## Overview
 
 A row of tiles, one figure each. Click a tile to open its section.
+
+<Badge type="tip" text="New in v6.0.6" /> On an upgraded install, an **Abuse Protection** notice can appear above the tiles, offering the recommended abuse protection defaults with **Apply the defaults** and **Dismiss**. It is shown to administrators with the Settings permission and no user group limit, until one of them applies the defaults or dismisses it. See [Abuse protection](../using-octeth/administration/abuse-protection.md) for what applying changes.
 
 | Tile | Figure | Opens |
 |---|---|---|
@@ -84,6 +86,6 @@ A coloured bar shows how the sender domains split across health classes: healthy
 
 ## Setup
 
-The same readiness report as the classic admin overview: one row per check (license, delivery server, sending DNS, reverse DNS, workers, cron and the rest) with what was found and what to do next. A green mark is done, an amber mark needs attention, a grey mark is optional or unknown.
+The install's readiness report: one row per check (license, delivery server, sending DNS, reverse DNS, workers, cron and the rest) with what was found and what to do next. A green mark is done, an amber mark needs attention, a grey mark is optional or unknown.
 
 While the install is not ready, the checks that need something are listed first and the passing checks fold into one row. Click it to see them. When every required check passes, the section shows a single **Ready to send** line. Click it to see the checks.
