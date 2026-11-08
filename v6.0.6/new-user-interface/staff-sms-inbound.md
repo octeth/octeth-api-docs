@@ -6,7 +6,7 @@ The **Inbound** screen of the staff **SMS** group lists every reply and opt-out 
 |---|---|---|
 | Inbound SMS | `/user/staff/sms/inbound` | SMS and Settings |
 
-Open it from the staff sidebar: click **SMS**, then **Inbound**. The classic admin **Reports > Inbound SMS** menu item and the old `/app/admin/smsinbound/` addresses open the same screen, with their filters applied.
+Open it from the staff sidebar: click **SMS**, then **Inbound**. The old `/app/admin/smsinbound/` addresses open the same screen, with their filters applied.
 
 ## Who sees which messages
 

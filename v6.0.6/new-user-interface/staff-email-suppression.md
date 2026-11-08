@@ -6,7 +6,7 @@ A **suppression** stops Octeth from sending to an email address. A **system-wide
 |---|---|---|
 | Email suppression | `/user/staff/deliverability/suppression` | Suppression |
 
-Open it from the staff sidebar: click **Suppression**, then **Email**. The classic admin **Preferences > Email Suppression List** link, and the old `/app/admin/suppression/` address, open the same screen.
+Open it from the staff sidebar: click **Suppression**, then **Email**. The old `/app/admin/suppression/` address opens the same screen.
 
 ::: tip
 An account whose user group turns the suppression check off is not blocked by system-wide suppressions or patterns. Accounts also keep their own account-wide and list suppressions, which they manage on their own **Suppressions** pages. How the scopes work is explained in [Suppression Lists](/v6.0.6/using-octeth/email-deliverability/suppression-lists).

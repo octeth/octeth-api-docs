@@ -6,7 +6,7 @@
 |---|---|---|
 | SMS campaigns | `/user/staff/sms/campaigns` | SMS and Settings |
 
-Open it from the staff sidebar: click **SMS**, then **Campaigns**. The classic admin **Reports > SMS Campaigns** menu item and the old `/app/admin/smscampaigns/` addresses open the same screen, with their filters applied.
+Open it from the staff sidebar: click **SMS**, then **Campaigns**. The old `/app/admin/smscampaigns/` addresses open the same screen, with their filters applied.
 
 An administrator who is limited to some user groups sees, pauses and cancels only the campaigns of accounts in those groups.
 

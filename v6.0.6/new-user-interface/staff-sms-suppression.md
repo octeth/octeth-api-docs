@@ -6,7 +6,7 @@ The **SMS** screen of the staff **Suppression** group lists every phone number a
 |---|---|---|
 | SMS suppression | `/user/staff/sms/suppression` | SMS and Settings |
 
-Open it from the staff sidebar: click **Suppression**, then **SMS**. The classic admin menu item and the old `/app/admin/sms_suppression/` address open the same screen.
+Open it from the staff sidebar: click **Suppression**, then **SMS**. The old `/app/admin/sms_suppression/` address opens the same screen.
 
 ## Scopes
 

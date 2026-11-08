@@ -6,7 +6,7 @@ A **plugin** adds a feature or an integration to Octeth, for example a CRM sync 
 |---|---|---|
 | Plugins | `/user/staff/settings/plugins` | Settings |
 
-Open it from the staff sidebar: click **Settings**, then **Plugins**. The classic admin **Settings > Plugins** link, the **Plugins** item of the classic admin menu and the old `/app/admin/plugins/` address open the same screen.
+Open it from the staff sidebar: click **Settings**, then **Plugins**. The old `/app/admin/plugins/` address opens the same screen.
 
 ## The list
 

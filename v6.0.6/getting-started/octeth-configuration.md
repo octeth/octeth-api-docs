@@ -16,7 +16,7 @@ Octeth has a few configuration modules:
 |-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Environment Variables | Environment files are `/opt/octeth/.oempro_*_env`, `/opt/octeth/system/.env` and `/opt/octeth/cli/email_campaign_controller/.env` and they are used to set environment for the platform. |
 | Configuration Files   | Configuration files are located inside `/opt/octeth/config/` directory and consists of many files. These files can be extended or updated directly.                                      |
-| System Settings       | System settings can be configured on the Administrator Dashboard → Preferences → System Settings                                                                                         |
+| System Settings       | Most system settings are configured in the staff area of the new interface: sign in as an administrator and use the **Settings**, **Delivery** and **Administration** groups of the staff sidebar |
 
 ## System Configuration Part I: Environment Variables
 
@@ -1264,7 +1264,7 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     `UI_MAIL_USERNAME`, `UI_MAIL_PASSWORD` and `UI_MAIL_SCHEME` are written to the interface's configuration only when set, so an install that leaves them empty runs exactly as before.
 
     ::: warning Signup is offered only while the mailer delivers
-    A self-signup account is created disabled and is enabled only by the verification link in its welcome email. Under `UI_MAIL_MAILER=log` that email is written to the interface's log and never delivered, so from v6.0.1 the interface offers signup only while the mailer is one that sends for real: `smtp`, `sendmail`, `ses`, `postmark` or `resend`. Of those, `smtp` is the one the `UI_MAIL_*` settings above configure. Under `log`, the default, or any other value such as `array` or `failover`, the "Create an account" link is hidden and `/user/register` shows a "Signup is not available" message and creates no account. Octeth's own switch in **Admin > Settings > ESP settings** must be on as well. Password reset emails are likewise only written to the log under `log`.
+    A self-signup account is created disabled and is enabled only by the verification link in its welcome email. Under `UI_MAIL_MAILER=log` that email is written to the interface's log and never delivered, so from v6.0.1 the interface offers signup only while the mailer is one that sends for real: `smtp`, `sendmail`, `ses`, `postmark` or `resend`. Of those, `smtp` is the one the `UI_MAIL_*` settings above configure. Under `log`, the default, or any other value such as `array` or `failover`, the "Create an account" link is hidden and `/user/register` shows a "Signup is not available" message and creates no account. Octeth's own **Let visitors create an account** switch, on the staff **Settings > Sign-up and payments** screen, must be on as well. Password reset emails are likewise only written to the log under `log`.
     :::
 
     A mail server that rejects a message no longer produces an error page. At signup the account is created and the visitor is told the verification email could not be sent and to contact support. At password reset the visitor sees the usual "sent" screen, so the page does not reveal which addresses have accounts. Both failures are logged at `error` level in the interface's log.
@@ -3125,7 +3125,7 @@ User groups cannot send emails without assigned delivery servers. Configure your
 
 Octeth's System Settings provide comprehensive control over your email marketing platform. This walkthrough guides you through each settings section, explaining what each option does and how to configure it for optimal performance and security.
 
-All system settings are accessed through the administrator dashboard by clicking **Preferences** in the top navigation menu, then selecting **System Settings** from the dropdown.
+Most system settings are now in the staff area of the new interface: sign in as an administrator and open the **Settings**, **Delivery** or **Administration** group in the staff sidebar. See [The New User Interface](/v6.0.6/new-user-interface/) for the list of staff screens. The classic admin **Preferences** menu no longer has a **System Settings** item: it lists only the entries plugins add.
 
 Each settings section controls a specific aspect of your Octeth installation:
 - Account and security settings for administrators
@@ -5632,277 +5632,21 @@ After configuring S2S Postback settings:
 This confirms your integration is working correctly before running live campaigns.
 :::
 
-## ESP Settings
+## Sign-up and Payments
 
-ESP Settings control how new users can sign up for accounts, payment processing, and customer billing. These settings are essential if you plan to offer Octeth as a service to customers, run it as a multi-tenant platform, or allow users to self-register and purchase email credits.
+Sign-up and payments decides whether visitors can create their own account, the reputation and user group a new account starts with, and the currency, tax, payment receipt email and credit purchase gateway of the classic billing. Configure it if customers sign up by themselves or buy email credits. If you create every account yourself, you can leave it as it is.
 
-**Navigation:** **Settings** → **ESP Settings**
-
-The ESP Settings page has four main tabs that work together to create your customer onboarding and payment experience:
-- **User Sign-Up** - Controls whether users can create their own accounts and what information they provide
-- **Currency and Tax** - Sets the currency and tax rate for all credit purchases
-- **Notification Emails** - Customizes receipt emails sent to customers after credit purchases
-- **Payment Gateway** - Configures PayPal or custom payment processors for collecting payments
-
-::: info When to Configure ESP Settings
-Configure ESP Settings if you're running Octeth as a service where:
-- Customers sign up and create their own user accounts
-- Users purchase email credits through your platform
-- You need to collect payment for email sending services
-- You're operating a multi-tenant email marketing platform
-
-If you're using Octeth internally (single organization, manually created user accounts), you can skip most ESP Settings configuration.
-:::
-
-### User Sign-Up
-
-The User Sign-Up tab controls whether new users can register for accounts themselves and what happens when they do.
-
-**Allow users to sign up from your website**
-
-Choose whether to enable or disable self-service user registration:
-- **Enabled** - Users can create their own accounts through a signup form on your website
-- **Disabled** - Only administrators can create user accounts through the admin panel
-
-When enabled, Octeth generates a registration page you can link to from your website. Users fill out a form, and their account is created automatically.
-
-::: warning Security Consideration
-Enabling public signup means anyone with the registration link can create an account. Consider using reputation settings and approval workflows to prevent abuse.
-:::
-
-**Default reputation for new signups**
-
-When self-registration is enabled, you must choose the default trust level for new accounts:
-
-- **Trusted** - New users can send emails immediately without restrictions. Their emails are treated as legitimate from the start.
-- **Untrusted** - New users have limited sending ability until they build a reputation. This helps prevent spam abuse on your platform.
-
-This setting applies to every self-signup: the legacy signup form, single sign-on and the new user interface's registration page. It is also the reputation an account gets when `user.create` is called without `ReputationLevel`. An `Untrusted` account's campaigns wait for administrator approval, and it cannot send through the Email Gateway (HTTP API or SMTP relay) until an administrator marks it `Trusted`. Paying for a plan does not change an account's reputation.
+To change these settings, sign in to the new interface as an administrator with the Settings permission and open **Settings > Sign-up and payments** in the staff sidebar. See [Staff Sign-up and Payments](/v6.0.6/new-user-interface/staff-signup-payments) for every field. The classic admin **ESP Settings** page was removed in v6.0.6, and its old address `/app/admin/espsettings/` opens the staff screen.
 
 ::: tip Preventing Spam Abuse
-For public-facing signup forms, set default reputation to **Untrusted**. This protects your sending infrastructure from spammers who might try to abuse your platform. You can manually upgrade legitimate users to Trusted status after verifying their use case.
+For public sign-up, keep **New account reputation** at **Untrusted**, the default on a new installation. Each campaign of an Untrusted account waits for an administrator's approval, and the account cannot send through the email gateway until an administrator marks it Trusted.
 :::
-
-**Required signup fields**
-
-Choose which information to collect during the registration process. Check the boxes for fields you want to require from new users:
-
-- **First Name** - User's given name
-- **Last Name** - User's family name
-- **Company Name** - Organization name
-- **Website** - Company or personal website URL
-- **Street** - Street address
-- **City** - City name
-- **State** - State or province
-- **Zip** - Postal code
-- **Country** - Country of residence
-- **Phone** - Contact phone number
-- **Fax** - Fax number (rarely used today)
-- **TimeZone** - User's local timezone
-- **Language** - Preferred interface language
-
-You can select multiple fields. Only request information you actually need - longer forms reduce signup conversion rates.
-
-::: tip Form Field Strategy
-For basic email marketing accounts, collect just **First Name**, **Last Name**, **Company Name**, and **Email** (always required). You can request additional information later if needed for billing or compliance.
-:::
-
-**Default language**
-
-Select the language for the user interface that new signups will see when they first log in. Users can change this later in their account settings if they prefer a different language.
-
-Available languages depend on which language packs are installed in your Octeth installation.
-
-**User group assignment**
-
-Decide how new signups are assigned to user groups. You have two options:
-
-**Option 1: Assign all new users to a specific group**
-Select a single user group from the dropdown menu. Every new signup will automatically be placed in this group with that group's settings, limits, and permissions.
-
-This is the simplest approach and works well when all new users should start with the same plan (e.g., a "Free Trial" group or "Basic Plan" group).
-
-**Option 2: Let users choose their group during signup**
-Select **"Allow users to choose from the following user groups"** from the dropdown. Then choose multiple groups from the list below.
-
-During registration, users will see a selection of available plans (user groups) and can choose which one they want to join. This is useful when offering multiple tiers during signup (Free, Starter, Professional, etc.).
 
 ::: tip User Group Setup Required
-Before enabling user signup, create at least one user group with appropriate limits and permissions. The user group should have delivery servers assigned, or new users won't be able to send emails.
+Before you turn on self-signup, create at least one user group with suitable limits and assign it delivery servers, or new accounts cannot send email.
 :::
 
-### Currency and Tax
-
-The Currency and Tax tab configures financial settings for credit purchases.
-
-**Payment Currency**
-
-Enter the three-letter currency code for all credit purchases (e.g., `USD`, `EUR`, `GBP`). This currency will be used when displaying prices, processing payments, and showing billing history.
-
-Common currency codes:
-- `USD` - US Dollar
-- `EUR` - Euro
-- `GBP` - British Pound
-- `CAD` - Canadian Dollar
-- `AUD` - Australian Dollar
-
-**Tax Percentage**
-
-Enter the tax rate to apply to all credit purchases. Use the numeric percentage without the % symbol.
-
-For example:
-- Enter `20` for 20% tax (e.g., UK VAT)
-- Enter `13` for 13% tax (e.g., Canadian HST)
-- Enter `0` if you don't charge tax
-
-The tax is calculated automatically and added to the total when users purchase credits. Tax amounts are shown separately on receipts and invoices.
-
-::: warning Tax Compliance
-Consult with an accountant or tax professional to determine the correct tax rate for your jurisdiction. Tax requirements vary by country, state, and business type. Some regions require different tax rates based on the customer's location (origin vs. destination taxation).
-:::
-
-### Notification Emails
-
-The Notification Emails tab customizes the automatic receipt emails sent to users after they purchase credits.
-
-**Email Subject**
-
-Enter the subject line for receipt emails. Keep it clear and professional so recipients immediately recognize what the email is about.
-
-Good examples:
-- `Your Credit Purchase Receipt`
-- `Payment Confirmation - [Company Name]`
-- `Credits Added to Your Account`
-
-You can use personalization tags to include user-specific information in the subject. Click the dropdown menu below the subject field to select available tags:
-
-- `%User:FirstName%` - Replaced with the user's first name
-- `%User:LastName%` - Replaced with the user's last name
-- `%Period:StartDate%` - Billing period start date
-- `%Period:FinishDate%` - Billing period end date
-- `%Period:TotalAmount%` - Total amount paid including tax
-
-Example with personalization:
-```
-Your Receipt - %Period:TotalAmount% Paid
-```
-
-**Email Message**
-
-Enter the body text for receipt emails. This is what users see when they open the receipt. Include a friendly message confirming their purchase and thanking them for their business.
-
-You can use the same personalization tags available for the subject line, plus these additional tags:
-
-- `%Period:ReceiptDetails%` - Automatically inserts a formatted table showing the purchase breakdown (credits, tax, total)
-- `%Payment:Links%` - Inserts relevant payment-related links (invoice download, payment history, etc.)
-
-::: tip Professional Receipt Template
-A good receipt email should include:
-1. A friendly greeting with the user's name
-2. Confirmation of what was purchased
-3. The `%Period:ReceiptDetails%` tag to show the breakdown
-4. A thank you message
-5. Contact information for support questions
-6. The `%Payment:Links%` tag for accessing invoices
-
-Example:
-```
-Hi %User:FirstName%,
-
-Thank you for your credit purchase! Your payment has been processed successfully and credits have been added to your account.
-
-%Period:ReceiptDetails%
-
-You can view your payment history and download invoices anytime:
-%Payment:Links%
-
-If you have any questions, reply to this email or contact us at support@yourcompany.com.
-
-Best regards,
-The [Your Company] Team
-```
-:::
-
-### Payment Gateway
-
-The Payment Gateway tab configures which payment processors are available for credit purchases.
-
-**Payment Processing Options**
-
-You can enable one or both payment methods:
-
-**Enable PayPal Express Checkout**
-Check this box to allow users to pay for credits using PayPal. PayPal Express Checkout lets customers pay with their PayPal balance, bank account, or credit card through PayPal's secure checkout flow.
-
-When enabled, you must provide these additional settings:
-
-**Business Email**
-Enter the email address associated with your PayPal business account. This is where payment funds will be deposited. The email must match your verified PayPal account email exactly.
-
-**Purchase Description**
-Enter a description that appears on the PayPal payment page and on customers' PayPal transaction history. Keep it short and clear.
-
-Examples:
-- `Email Marketing Credits`
-- `[Your Company] - Email Credits Purchase`
-- `Octeth Platform Credits`
-
-**Currency**
-Select the currency for PayPal transactions from the dropdown menu. Available currencies include:
-- USD (US Dollar)
-- EUR (Euro)
-- GBP (British Pound)
-- CAD (Canadian Dollar)
-- AUD (Australian Dollar)
-- And many more...
-
-The PayPal currency should typically match the **Payment Currency** you configured in the Currency and Tax tab.
-
-::: warning PayPal Account Requirements
-Before enabling PayPal Express Checkout:
-1. Create and verify a PayPal Business account (personal accounts don't support payment processing)
-2. Complete PayPal's identity verification requirements
-3. Test the integration with a sandbox account first
-4. Ensure your PayPal account can receive payments in the selected currency
-:::
-
-**Enable Custom Payment Gateway**
-Check this box if you want to integrate a custom payment processor other than PayPal (such as Stripe, Square, Authorize.net, or your own payment system).
-
-When enabled, you must provide:
-
-**Payment Gateway URL**
-Enter the complete URL to your custom payment gateway endpoint. This is where Octeth will redirect users when they click to purchase credits.
-
-Your custom payment gateway must:
-1. Accept the user information sent by Octeth (user ID, email, requested credit amount)
-2. Process the payment through your chosen payment processor
-3. Notify Octeth when payment is complete using the provided callback URL
-4. Add credits to the user's account after successful payment
-
-::: info Custom Gateway Integration
-Custom payment gateway integration requires developer work. Your development team will need to:
-- Create a payment processing page at the specified URL
-- Handle payment processing with your chosen provider (Stripe, Square, etc.)
-- Implement the callback mechanism to notify Octeth of successful payments
-- Handle errors and payment failures gracefully
-
-This option gives you full control over the payment experience and allows using any payment processor, but requires technical implementation.
-:::
-
-**Saving Your Settings**
-
-After configuring all four tabs, click **UPDATE ESP SETTINGS** at the bottom of the page to save your changes. All settings take effect immediately.
-
-::: tip Testing Your Configuration
-After saving ESP Settings, test the complete flow:
-1. If user signup is enabled, try creating a test account through the registration form
-2. Log in as the test user
-3. Attempt a small credit purchase using your configured payment gateway
-4. Verify the receipt email arrives with correct information
-5. Confirm credits are added to the test account
-6. Check that tax calculations are correct
-:::
+The payment gateways of the new interface's billing (plans and subscriptions) are set up separately, see [Payment Gateways](/v6.0.6/new-user-interface/payment-gateways).
 
 ## Single Sign On (SSO)
 
@@ -6168,52 +5912,9 @@ You have a mobile app and want users to access Octeth's features without creatin
 
 ## Preferences
 
-Most install-wide preferences are in the new interface: open the staff area, click **Settings**, then **Preferences**. See [Staff Preferences](/v6.0.6/new-user-interface/staff-preferences) for the default language, user password reset, send rate alerts, the limit utilization webhook, the failed webhook handler and the List freshness thresholds.
+Install-wide preferences are in the new interface: open the staff area, click **Settings**, then **Preferences**. See [Staff Preferences](/v6.0.6/new-user-interface/staff-preferences) for the default language, user password reset, send rate alerts, the limit utilization webhook, the failed webhook handler, the List freshness thresholds, the forbidden From addresses and the default custom fields of a new list.
 
-The classic admin page, **Settings** > **User area preferences** (`/app/admin/preferences/`), keeps the three settings only the classic user area uses.
-
-**Forbidden Emails**
-
-Specify email addresses that users are not allowed to use as "From" addresses in their email campaigns. This prevents users from impersonating certain email addresses or domains.
-
-Enter one email address or pattern per line. You can use the asterisk (`*`) as a wildcard to match multiple addresses.
-
-Examples:
-```
-noreply@yourdomain.com
-admin@yourdomain.com
-*@gmail.com
-*@yahoo.com
-support@*
-```
-
-::: warning
-The list is checked only by the email editor of the classic user area.
-:::
-
-**User Area Footer**
-
-Customize the footer text that appears at the bottom of every page in the classic user area. You can include HTML markup for formatting and links.
-
-Example:
-```html
-© 2024 Your Company Name. All rights reserved. |
-<a href="https://yourdomain.com/privacy">Privacy Policy</a> |
-<a href="https://yourdomain.com/terms">Terms of Service</a>
-```
-
-**Default Custom Fields**
-
-Define custom fields that will be automatically created whenever a user creates a new subscriber list. These fields will be added to every new list as text-based custom fields.
-
-Enter one field name per line, for example:
-```
-First Name
-Last Name
-Company
-```
-
-Click **Update Preferences** to save. The three settings are saved together, and a refused save changes none of them.
+The classic admin **User area preferences** page was retired in v6.0.6, and its old address `/app/admin/preferences/` opens the staff Preferences screen. Its last setting, the classic user area's footer, has no screen any more. A footer already stored still shows at the bottom of the classic user area, and the `settings.update` API call can still change it.
 
 ## Rebranding
 
@@ -6326,25 +6027,24 @@ The logout URL is your last touchpoint with subscribers in this session. Conside
 
 **Minimize file size**: Keep your header and footer files small (under 50KB each) to ensure fast page loading times.
 
-## Upload Settings
+## Uploads and Media
 
-Upload Settings control how files are stored and managed in your Octeth installation. This includes the media library where users upload images and documents for email campaigns, as well as file size limits for imports, attachments, and media files.
+Uploads and media control how files are stored and managed in your Octeth installation. This includes the media library where users upload images and documents for email campaigns, as well as file size limits for imports, attachments, and media files.
 
-To access these settings, navigate to **Preferences** → **System Settings** → **Uploads and Media Library** in the administrator dashboard.
+To change these settings, sign in to the new interface as an administrator with the Settings permission and open **Settings > Uploads and media** in the staff sidebar. See [Staff Uploads and Media](/v6.0.6/new-user-interface/staff-uploads-media). The classic admin **Uploads and Media Library** page was removed in v6.0.6, and its old address `/app/admin/uploadsandmedialibrary/` opens the staff screen.
 
-The Upload Settings page has two main tabs: **Media Library** (where you control file uploads and storage) and **File Upload** (where you set file size limits).
+The screen has three cards, **Media library**, **Storage** and **Upload size limits**, saved together with one button.
 
-### Media Library Tab
+### Media Library and Storage
 
-The Media Library tab controls whether users can upload files, which file types are allowed, and where those files are stored (on your server, in your database, or on Amazon S3).
+The **Media library** and **Storage** cards control whether users can upload files, which file types are allowed, and where those files are stored (on your server, in your database, or on Amazon S3).
 
-**Status**
+**Users can upload files to the media library**
 
-The status determines whether your users can upload and use files in the media library.
+This switch determines whether your users can upload and use files in the media library.
 
-Options:
-- **Media library is enabled** - Users can upload files to the media library and use them in email campaigns
-- **Media library is disabled** - Users cannot upload files or access the media library
+- **On** - Users can upload files to the media library and use them in email campaigns
+- **Off** - Users cannot upload files or open the media library
 
 ::: tip When to Disable the Media Library
 You might disable the media library if:
@@ -6403,11 +6103,11 @@ Only allow file types that are necessary for your users. Each file type you allo
 - Archive files (`.zip`, `.rar`) - Only allow if users need to share downloadable resources
 :::
 
-**Upload Method**
+**Store uploaded media**
 
-The upload method determines where uploaded files are physically stored. Octeth supports three storage options:
+This setting determines where uploaded files are physically stored. Octeth supports three storage options:
 
-**1. Upload to the server (Recommended for most installations)**
+**1. On this server (Recommended for most installations)**
 
 Files are stored in a directory on your Octeth server's file system. This is the simplest and most common configuration.
 
@@ -6426,7 +6126,7 @@ Disadvantages:
 This is the default and recommended option for most installations. It works well for installations with up to several gigabytes of media files.
 :::
 
-**2. Upload to the database**
+**2. In the database**
 
 Files are stored directly in your MySQL database as binary data instead of as separate files on disk.
 
@@ -6445,7 +6145,7 @@ Disadvantages:
 Storing files in the database can significantly increase database size and slow down backups. This method is generally only recommended for small installations with minimal file uploads (under 1GB total).
 :::
 
-**3. Upload to Amazon S3**
+**3. On Amazon S3**
 
 Files are stored in Amazon S3 (Simple Storage Service), a cloud storage platform. This option requires an AWS account and S3 bucket.
 
@@ -6473,7 +6173,7 @@ Amazon S3 is ideal for:
 
 **Amazon S3 Connection Settings**
 
-This section only appears when you select **Upload to Amazon S3** as your upload method. You'll need to configure your AWS credentials and S3 bucket information.
+These fields appear only when you select **On Amazon S3** under **Store uploaded media**, and all of them are required then. You'll need to configure your AWS credentials and S3 bucket information.
 
 ::: info Prerequisites for S3 Setup
 Before configuring S3 storage, you need to:
@@ -6503,6 +6203,8 @@ Never share your AWS access credentials publicly or commit them to version contr
 Your AWS IAM secret access key. This is a 40-character secret that looks like: `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`
 
 The secret key is only shown once when you create the access key. If you lose it, you'll need to create new credentials.
+
+Octeth never shows a stored secret key. Leave the field blank to keep it, or enter a new one to replace it. **Remove the stored key** clears it, which is refused while media is stored on Amazon S3 and no new key is entered.
 
 ::: warning
 Store your secret key securely. If someone obtains both your Access ID and Secret Key, they have full access to your S3 bucket.
@@ -6563,9 +6265,9 @@ Do **not** include forward slashes (`/`) at the beginning or end of the URL.
 **Incorrect:** `https://octeth-media-files.s3.amazonaws.com/` or `https://d111111abcdef8.cloudfront.net/`
 :::
 
-### File Upload Limits Tab
+### Upload Size Limits
 
-The File Upload Limits tab controls the maximum file sizes for different types of uploads in Octeth. These limits prevent users from uploading excessively large files that could consume server resources or cause performance issues.
+The **Upload size limits** card controls the maximum file sizes for different types of uploads in Octeth. These limits prevent users from uploading excessively large files that could consume server resources or cause performance issues.
 
 All file sizes are specified in bytes. Use this reference for conversions:
 - 1 MB (megabyte) = 1,048,576 bytes
@@ -6582,7 +6284,7 @@ To convert MB to bytes, multiply by 1,048,576:
 Or use an online converter like Google: search "5 MB to bytes"
 :::
 
-**Import File Size**
+**Subscriber import file**
 
 The maximum file size allowed for importing subscriber lists and data files.
 
@@ -6608,7 +6310,7 @@ Your import file size limit cannot exceed your server's PHP configuration limits
 If your import limit is higher than these PHP limits, uploads will fail. Contact your system administrator to adjust PHP settings if needed.
 :::
 
-**Attachment Size**
+**Email attachment**
 
 The maximum file size allowed for email campaign attachments.
 
@@ -6637,7 +6339,7 @@ For document distribution: `10485760` (10 MB) maximum
 Files larger than 10 MB should be hosted separately and shared via links rather than email attachments.
 :::
 
-**Media File Size**
+**Media library file**
 
 The maximum file size allowed for uploads to the media library (images, documents, etc.).
 
@@ -6668,7 +6370,7 @@ Smaller files load faster in emails, improve delivery rates, and reduce server s
 
 **Saving Your Upload Settings**
 
-After configuring all settings on both tabs, click the **UPDATE UPLOAD SETTINGS** button at the bottom of the page to save your changes.
+After configuring all three cards, click **Save upload settings** at the bottom of the screen. Only the settings you changed are saved.
 
 ::: danger Testing After Configuration Changes
 After changing upload settings, especially when switching storage methods or adjusting file size limits:
@@ -6685,7 +6387,7 @@ Configuration errors can prevent users from uploading files or cause existing fi
 
 Octeth can integrate with popular third-party services to enhance your email marketing campaigns. The integrations settings allow you to connect external tools for campaign tracking, professional email design, and analytics.
 
-Google Analytics and Stripo.email are set on the staff **Settings > Integrations** screen of the new interface, see [Staff Integrations](/v6.0.6/new-user-interface/staff-integrations). Unlayer and the settings plugins add stay on the classic admin page, **Settings > Integrations (legacy builders and plugins)** (`/app/admin/integration/`).
+Google Analytics and Stripo.email are set on the staff **Settings > Integrations** screen of the new interface, see [Staff Integrations](/v6.0.6/new-user-interface/staff-integrations). The settings tabs the Cleanify, IP Monitor and TCPA Protect plugins add stay on the classic admin **Plugin settings** page (`/app/admin/integration/`), which the classic admin links only while one of those plugins is enabled.
 
 ### Google Analytics
 
@@ -6797,52 +6499,17 @@ To disable Stripo.email, click **Disconnect Stripo** on the staff **Settings > I
 
 ### Unlayer
 
-Unlayer is an alternative drag-and-drop email builder similar to Stripo.email. It provides a visual email design tool with templates, customization options, and mobile-responsive design capabilities.
-
-**Why Use Unlayer?**
-
-- **Visual email builder** - Create emails by dragging and dropping content blocks
-- **Template library** - Start with professionally designed templates
-- **Mobile optimization** - Emails automatically adapt to different screen sizes
-- **Custom branding** - Customize the editor interface with your own branding
-
-::: info Getting Unlayer Credentials
-To use this integration, you need an Unlayer account:
-
-1. Sign up at https://unlayer.com/
-2. Log into your Unlayer account
-3. Navigate to **Projects** in your dashboard
-4. Create a new project or select an existing one
-5. Copy the **Project ID** and **API Key** from your project settings
-:::
-
-**Project ID**
-
-Your Unlayer project identifier. This is a numeric or alphanumeric string that identifies your Unlayer project.
-
-**API Key**
-
-Your Unlayer project API credential. This authenticates Octeth's connection to your Unlayer project.
-
-::: warning Stripo vs Unlayer
-You can enable both Stripo.email and Unlayer integrations simultaneously. Your users will be able to choose which email builder they prefer when creating campaigns.
-
-However, for simpler user experience, most installations enable only one email builder to avoid confusion.
-:::
-
-**Disabling Unlayer Integration**
-
-To disable Unlayer, clear both the **Project ID** and **API Key** fields and save. The Unlayer email builder option will no longer appear to users.
+The Unlayer email builder of the classic user area is retired. From v6.0.6 the classic admin has no page for its **Project ID** and **API Key**. An install that still has both stored keeps offering the Unlayer builder in the classic user area until they are cleared through the `settings.update` API call. Use Stripo for drag-and-drop email design.
 
 ### Saving Your Changes
 
 After configuring your integrations:
 
 1. Review all settings to ensure credentials are entered correctly
-2. Click the section's save button: **Save Google Analytics settings** or **Save Stripo settings** on the staff screen, **Save Settings** on the classic page for Unlayer
+2. Click the section's save button: **Save Google Analytics settings** or **Save Stripo settings**
 3. Test each integration to verify it's working:
    - **Google Analytics:** Send a test campaign and check if tracking parameters appear in links
-   - **Stripo/Unlayer:** Try creating a new email campaign and verify the email builder loads correctly
+   - **Stripo:** Try creating a new email campaign and verify the email builder loads correctly
 
 ::: danger Credential Security
 Integration credentials (Secret Keys, API Keys) should be treated as sensitive passwords:

@@ -2131,7 +2131,7 @@ The `DailyGrowth` example is shortened; the real array always has exactly `Spark
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-The admin Payment Reports screen as data. Revenue is the sum of `TotalAmount` over the payment log plus `NetAmount` over paid credit purchases, in `Currency` (the install's `PAYMENT_CURRENCY`). The response holds this month against last month, the all-time total split into paid and not paid, this month's highest payment period, the five accounts with the highest all-time revenue and every account with an unpaid balance.
+The figures of the classic admin Payment Reports screen, which was removed in v6.0.6, as data. Revenue is the sum of `TotalAmount` over the payment log plus `NetAmount` over paid credit purchases, in `Currency` (the install's `PAYMENT_CURRENCY`). The response holds this month against last month, the all-time total split into paid and not paid, this month's highest payment period, the five accounts with the highest all-time revenue and every account with an unpaid balance.
 
 Ratios are always finite: a month with no revenue gives `RevenueDifferenceRatio` 0, and an empty payment log gives 0 for both `TotalPaidRevenueRatio` and `TotalNotPaidRevenueRatio`.
 
@@ -2213,7 +2213,7 @@ curl -X POST https://example.com/api/v1/admin.revenue.summary \
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-Monthly revenue (payment log `TotalAmount` plus paid credit purchases `NetAmount`) for a range of calendar months, one point per month with 0 where nothing was billed. This is the source of the revenue chart on the Payment Reports screen. The range is capped at 36 months: a longer range is cut to the 36 months ending at `To` and `Capped` is `true`.
+Monthly revenue (payment log `TotalAmount` plus paid credit purchases `NetAmount`) for a range of calendar months, one point per month with 0 where nothing was billed. It was the source of the revenue chart on the classic admin Payment Reports screen, which was removed in v6.0.6. The range is capped at 36 months: a longer range is cut to the 36 months ending at `To` and `Capped` is `true`.
 
 **Request Body Parameters:**
 
@@ -2864,7 +2864,7 @@ curl -X POST https://example.com/api/v1/admin.processes.list \
 - Not available in demo mode
 :::
 
-Deletes rows from the process registry (`oempro_processes`) whose `LastPingedAt` is older than `StaleMinutes`. This is the API form of the admin Processes screen's "clear dead processes" link, which uses a fixed 10 minutes; the screen and this command share one implementation. Workers ping every few seconds, so a row older than the window belongs to a process that died without recording its exit. Only the registry row is removed; no process is signalled or stopped. Use `admin.processes.list` with the same `StaleMinutes` to preview what would be removed.
+Deletes rows from the process registry (`oempro_processes`) whose `LastPingedAt` is older than `StaleMinutes`. The staff **Administration > Workers** screen's **Clear stale** button calls this command with a fixed 10 minutes, see [The Staff Workers Screen](../new-user-interface/staff-workers). It replaces the classic admin Processes screen, which was removed in v6.0.6. Workers ping every few seconds, so a row older than the window belongs to a process that died without recording its exit. Only the registry row is removed; no process is signalled or stopped. Use `admin.processes.list` with the same `StaleMinutes` to preview what would be removed.
 
 **Request Body Parameters:**
 

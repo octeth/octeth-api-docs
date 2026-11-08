@@ -6,7 +6,7 @@ The **Sender domain health** report lists every sender domain across all user ac
 |---|---|---|
 | Sender domain health | `/user/staff/reports/sender-domains` | User.Edit |
 
-Open it from the staff sidebar: click **Reports**, then **Sender domain health**. The classic admin **Reports > Sender Domain Health** menu item, the old `/app/admin/senderdomainhealth/` addresses, and each class of the [staff dashboard](./staff-dashboard#sender-domains)'s **Sender domains** section open the same report, with their filter applied.
+Open it from the staff sidebar: click **Reports**, then **Sender domain health**. The old `/app/admin/senderdomainhealth/` addresses and each class of the [staff dashboard](./staff-dashboard#sender-domains)'s **Sender domains** section open the same report, with their filter applied.
 
 An administrator who is limited to some user groups sees, and re-checks, only the domains of accounts in those groups. Deleted domains are not listed.
 

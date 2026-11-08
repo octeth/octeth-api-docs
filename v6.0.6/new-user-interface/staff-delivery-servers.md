@@ -8,7 +8,7 @@ A **delivery server** is an SMTP relay or MTA that Octeth sends email through. E
 | Create delivery server | `/user/staff/settings/delivery-servers/new` | DeliveryServers |
 | Edit delivery server | `/user/staff/settings/delivery-servers/<id>/edit` | DeliveryServers |
 
-Open it from the staff sidebar: click **Delivery**, then **Delivery servers**. The classic admin **Settings > Delivery Servers** link, and the old `/app/admin/deliveryservers/` addresses, open the same screens. The delivery server reports stay in the classic admin at `/app/admin/deliveryservers/report`.
+Open it from the staff sidebar: click **Delivery**, then **Delivery servers**. The old `/app/admin/deliveryservers/` addresses open the same screens. The delivery server reports stay in the classic admin at `/app/admin/deliveryservers/report`.
 
 ## The list
 

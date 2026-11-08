@@ -8,7 +8,7 @@ An **SSO source** lets another application, such as a customer portal, sign peop
 | Create SSO source | `/user/staff/settings/sso/new` | Settings.SSO |
 | Edit SSO source | `/user/staff/settings/sso/<id>/edit` | Settings.SSO |
 
-Open it from the staff sidebar: click **Settings**, then **SSO**. The classic admin **Settings > Single Sign On** link, and the old `/app/admin/sso/` addresses, open the same screens.
+Open it from the staff sidebar: click **Settings**, then **SSO**. The old `/app/admin/sso/` addresses open the same screens.
 
 How the connected application builds a sign-in link, and what Octeth does with it, is explained in [Single Sign-On (SSO) Integration](/v6.0.6/using-octeth/integrations/sso).
 

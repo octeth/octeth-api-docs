@@ -8,7 +8,7 @@ A **global custom field** is one field for the whole install: every account can 
 | Create custom field | `/user/staff/settings/custom-fields/new` | CustomFields |
 | Edit custom field | `/user/staff/settings/custom-fields/<id>/edit` | CustomFields |
 
-Open it from the staff sidebar: click **Settings**, then **Custom fields**. The classic admin **Preferences > Global Custom Fields** link, and the old `/app/admin/customfields/` addresses, open the same screens.
+Open it from the staff sidebar: click **Settings**, then **Custom fields**. The old `/app/admin/customfields/` addresses open the same screens.
 
 Each account can still create its own fields on its lists. Those are managed by the account, not here.
 

@@ -1,6 +1,6 @@
 # Staff Preferences
 
-**Preferences** holds the install-wide settings for the default language, password reset, notifications about account limits, the handling of failing customer webhooks, the List freshness thresholds, the forbidden From addresses and the default custom fields of a new list. It replaces the classic admin **Settings > Preferences** page except for the classic user area's footer.
+**Preferences** holds the install-wide settings for the default language, password reset, notifications about account limits, the handling of failing customer webhooks, the List freshness thresholds, the forbidden From addresses and the default custom fields of a new list. It replaces the classic admin **Settings > Preferences** page.
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
@@ -10,7 +10,7 @@
 | Preferences, List freshness section | `/user/staff/settings/preferences?section=list-freshness` | Settings |
 | Preferences, Lists and senders section | `/user/staff/settings/preferences?section=lists-and-senders` | Settings |
 
-Open it from the staff sidebar: click **Settings**, then **Preferences**. The classic admin **Settings > Preferences** link and the **Preferences** item of the classic header's **Preferences** menu open the same screen.
+Open it from the staff sidebar: click **Settings**, then **Preferences**. The old `/app/admin/preferences/` address opens the same screen.
 
 Each section has its own **Save** button and saves only its own settings. When nothing in a section changed, saving says so and sends nothing.
 
@@ -18,7 +18,7 @@ Each section has its own **Save** button and saves only its own settings. When n
 Every save is recorded in the staff audit log, with the section and the names of the settings that changed. Values are never recorded.
 :::
 
-The classic user area's footer stays on the classic admin page, now named **User area preferences** (`/app/admin/preferences/`). That page links to the **Lists and senders** section for the two settings that moved from it.
+The classic admin **User area preferences** page, which held the classic user area's footer, was retired in v6.0.6. A footer already stored still shows in the classic user area, but no screen edits it.
 
 ## General
 

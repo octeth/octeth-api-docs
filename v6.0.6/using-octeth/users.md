@@ -809,9 +809,9 @@ Accounts created through the sign-up page or single sign-on have been **Untruste
 | How the account is created | Reputation |
 |---|---|
 | **Create User** in the administration area | **Trusted** |
-| The sign-up page or the new user interface's registration page | The **Reputation** setting under **Settings > ESP Settings**, **User Sign-Up** tab. It is **Untrusted** on a new installation. |
-| Single sign-on | The reputation sent in the sign-on token, otherwise the **Reputation** setting above. |
-| The `user.create` API | The `ReputationLevel` you send, otherwise the **Reputation** setting above. |
+| The sign-up page or the new user interface's registration page | The **New account reputation** setting on the staff **Settings > Sign-up and payments** screen, see [Staff Sign-up and Payments](../new-user-interface/staff-signup-payments). It is **Untrusted** on a new installation. |
+| Single sign-on | The reputation sent in the sign-on token, otherwise the **New account reputation** setting above. |
+| The `user.create` API | The `ReputationLevel` you send, otherwise the **New account reputation** setting above. |
 
 Changing a plan in the new user interface never changes an account's reputation.
 

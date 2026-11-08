@@ -6,7 +6,7 @@
 |---|---|---|
 | S2S postback | `/user/staff/settings/s2s-postback` | Settings |
 
-Open it from the staff sidebar: click **Settings**, then **S2S postback**. The classic admin **Settings > S2S Postback** link, and the old `/app/admin/s2spostback/` address, open the same screen.
+Open it from the staff sidebar: click **Settings**, then **S2S postback**. The old `/app/admin/s2spostback/` address opens the same screen.
 
 ## Conversion address
 

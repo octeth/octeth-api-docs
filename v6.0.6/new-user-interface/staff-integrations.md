@@ -7,7 +7,7 @@
 | Integrations, Google Analytics section | `/user/staff/settings/integrations` | Settings |
 | Integrations, Stripo section | `/user/staff/settings/integrations?section=stripo` | Settings |
 
-Open it from the staff sidebar: click **Settings**, then **Integrations**. The **Integrations** link of the classic admin **Settings** sidebar opens the same screen.
+Open it from the staff sidebar: click **Settings**, then **Integrations**.
 
 Each section has its own **Save** button and saves only its own settings. When nothing in a section changed, saving says so and sends nothing.
 
@@ -15,7 +15,7 @@ Each section has its own **Save** button and saves only its own settings. When n
 Every save, every **Disconnect Stripo**, every **Check connection** and every load of the Stripo template gallery key list is recorded in the staff audit log, with the section and the names of the settings involved. Values, keys and secrets are never recorded.
 :::
 
-The Unlayer settings of the classic email builder, and the tabs plugins such as TCPAProtect, IP Monitor and Cleanify add, stay on the classic admin page, now named **Integrations (legacy builders and plugins)** (`/app/admin/integration/`).
+The settings tabs the Cleanify, IP Monitor and TCPA Protect plugins add stay on the classic admin page, now named **Plugin settings** (`/app/admin/integration/`). The classic admin links to it only while one of those plugins is enabled. The Unlayer email builder is retired, and its settings were removed from that page in v6.0.6.
 
 ## Google Analytics
 

@@ -8,7 +8,7 @@ A **segment routing rule** (a global segment) sends the subscribers who match it
 | Create segment routing | `/user/staff/settings/global-segments/new` | Settings.Segments |
 | Edit segment routing | `/user/staff/settings/global-segments/<id>/edit` | Settings.Segments |
 
-Open it from the staff sidebar: click **Delivery**, then **Segment routing**. The classic admin **Preferences > Global Segments** link, and the old `/app/admin/segments/` addresses, open the same screens.
+Open it from the staff sidebar: click **Delivery**, then **Segment routing**. The old `/app/admin/segments/` addresses open the same screens.
 
 A subscriber who matches no segment routing rule is sent through the delivery server of the account's user group, as usual.
 

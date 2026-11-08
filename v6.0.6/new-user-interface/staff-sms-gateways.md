@@ -8,7 +8,7 @@ An **SMS gateway** connects Octeth to one account at an SMS provider, such as Xe
 | Create SMS gateway | `/user/staff/settings/sms-gateways/new` | DeliveryServers |
 | Edit SMS gateway | `/user/staff/settings/sms-gateways/<id>/edit` | DeliveryServers |
 
-Open it from the staff sidebar: click **Delivery**, then **SMS gateways**. The classic admin **Settings > SMS Gateways** link, and the old `/app/admin/smsgateways/` addresses, open the same screens.
+Open it from the staff sidebar: click **Delivery**, then **SMS gateways**. The old `/app/admin/smsgateways/` addresses open the same screens.
 
 ## The list
 

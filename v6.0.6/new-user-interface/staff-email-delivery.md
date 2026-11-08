@@ -6,7 +6,7 @@ The **Email delivery** screen of the staff **Delivery** group holds the sending 
 |---|---|---|
 | Email delivery | `/user/staff/settings/email-delivery` | Settings |
 
-Open it from the staff sidebar: click **Delivery**, then **Email delivery**. The classic admin **Email Delivery** sidebar item and the old `/app/admin/emaildelivery/` address open the same screen.
+Open it from the staff sidebar: click **Delivery**, then **Email delivery**. The old `/app/admin/emaildelivery/` address opens the same screen.
 
 ## Sections
 

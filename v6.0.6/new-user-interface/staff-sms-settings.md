@@ -6,7 +6,7 @@ The **Settings** screen of the staff **SMS** group holds the bulk SMS settings o
 |---|---|---|
 | SMS settings | `/user/staff/sms/settings` | SMS and Settings |
 
-Open it from the staff sidebar: click **SMS**, then **Settings**. The classic admin **Bulk SMS Settings** sidebar item and the old `/app/admin/smssettings/` address open the same screen.
+Open it from the staff sidebar: click **SMS**, then **Settings**. The old `/app/admin/smssettings/` address opens the same screen.
 
 ## Where each value comes from
 

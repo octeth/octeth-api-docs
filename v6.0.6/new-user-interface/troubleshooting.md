@@ -217,7 +217,7 @@ If a mail server is set and the emails still do not arrive, look in the interfac
 
 **Self-signup needs a working mail server.** A new account is enabled only by the link in its welcome email, so the interface offers signup only while `UI_MAIL_MAILER` sends for real (`smtp`, `sendmail`, `ses`, `postmark` or `resend`). Under `log`, the default, or any other value, it does not offer signup at all. Set up mail as described in [Password reset emails never arrive](#password-reset-emails-never-arrive).
 
-If mail is set up, check that self-signup is switched on in **Admin > Settings > ESP settings**. The interface reads that setting every minute, so no restart is needed.
+If mail is set up, check that **Let visitors create an account** is switched on in the staff area under **Settings > Sign-up and payments**, see [Staff Sign-up and Payments](./staff-signup-payments). The interface reads that setting every minute, so no restart is needed.
 
 ## A new customer was told their verification email could not be sent
 

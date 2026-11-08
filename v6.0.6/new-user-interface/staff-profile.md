@@ -8,7 +8,7 @@
 | Your profile, Two-factor authentication section | `/user/staff/profile?section=two-factor` | None, every administrator |
 | Your profile, System emails section | `/user/staff/profile?section=system-emails` | Account and Settings |
 
-Open it from the user menu: click your name at the bottom of the left menu, then **Your profile**. The classic admin **Settings > Account** link opens the same screen.
+Open it from the user menu: click your name at the bottom of the left menu, then **Your profile**. The old `/app/admin/account/` address opens the same screen.
 
 ::: info
 The screen acts as the administrator who is signed in, and every save is recorded in the staff audit log with the names of the fields that changed. The values themselves are not recorded.

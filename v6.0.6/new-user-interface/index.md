@@ -41,8 +41,7 @@ the create form, each user's page and its tabs open their new counterparts, and 
 from other classic admin pages, plugins and Slack alerts point there too. A form posted to the
 old section is refused and nothing is changed. The classic payment history tab and invoice
 editor have no new counterpart and are not carried over. The user group list, create form and
-edit form open their new counterparts, and the classic admin menu, overview button and delivery
-server settings link there too. A form posted to the old User Groups section is refused and
+edit form open their new counterparts. A form posted to the old User Groups section is refused and
 nothing is changed. Your customers are not affected.
 
 ::: warning
@@ -128,8 +127,8 @@ The staff menu groups its screens by job. The group a screen sits in does not ch
 - **SMS**: Campaigns, Inbound
 - **Suppression**: Email, SMS
 - **Billing**, when billing is enabled
-- **Settings**: Preferences, Branding, Default opt-in email, Custom fields, S2S postback, SSO, Integrations, Plugins, Webhooks
-- **Administration**: Sub-admins, Security, System, Logs
+- **Settings**: Preferences, Sign-up and payments, Branding, Default opt-in email, Custom fields, Uploads and media, S2S postback, SSO, Integrations, Plugins, Webhooks
+- **Administration**: Sub-admins, Security, System, Workers, Logs
 - **AI assistants**
 
 The menu has no link to the classic admin area. Open `/app/admin/` directly when you need it.
@@ -160,9 +159,11 @@ Each staff screen follows the administrator permissions:
 | Billing: Revenue, Worklists, Transactions | Reports |
 | Billing: Discounts, Catalog, Health, Settings | Settings |
 | Settings: Preferences | Settings, see [Staff Preferences](./staff-preferences) |
+| Settings: Sign-up and payments | Settings, see [Staff Sign-up and Payments](./staff-signup-payments) |
 | Settings: Branding | Administrators with full access only. A sub-administrator never sees or opens it, whatever permissions they hold, see [Branding the New User Interface from the Staff Area](./staff-branding) |
 | Settings: Default opt-in email | Settings, see [The Default Opt-in Email](./staff-optin-email) |
 | Settings: Custom fields | CustomFields, see [Managing Global Custom Fields in the Staff Area](./staff-custom-fields) |
+| Settings: Uploads and media | Settings, see [Staff Uploads and Media](./staff-uploads-media) |
 | Settings: S2S postback | Settings, see [The Staff S2S Postback Screen](./staff-s2s-postback) |
 | Settings: SSO | Settings.SSO, see [Managing SSO Sources in the Staff Area](./staff-sso) |
 | Settings: Integrations | Settings, see [Staff Integrations](./staff-integrations) |
@@ -171,6 +172,7 @@ Each staff screen follows the administrator permissions:
 | Administration: Sub-admins | SubAdmins. A sub-administrator can grant only the permissions and user groups they hold, and cannot change their own account or a wider one, see [Managing Sub-admins in the Staff Area](./staff-sub-admins) |
 | Administration: Security | Security, see [The Staff Security Screen](./staff-security) |
 | Administration: System | System, see [The Staff System Screen](./staff-system) |
+| Administration: Workers | Processes, see [The Staff Workers Screen](./staff-workers) |
 | Administration: Logs | Settings, see [The Staff Logs Screen](./staff-logs) |
 | Your profile | None for its Two-factor authentication section, which every administrator can open. Its Profile, Password and API access sections need Account, and its System emails section needs Account and Settings, see [Your Staff Profile](./staff-profile) |
 | AI assistants | None. The keys it creates carry the administrator's own permissions |
@@ -206,6 +208,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/sms/settings` | The bulk SMS settings, with the layer each value comes from, see [The Staff SMS Settings Screen](./staff-sms-settings) |
 | `/user/staff/sms/suppression` | Every suppressed SMS number and pattern of every account, with adding, removing and the cache clear, see [The Staff SMS Suppression Screen](./staff-sms-suppression) |
 | `/user/staff/settings/preferences` | The default language, password reset, limit notifications, the failed webhook handler and the List freshness thresholds, see [Staff Preferences](./staff-preferences) |
+| `/user/staff/settings/signup-payments` | Self-signup, new account reputation, the sign-up group and language, the currency, tax, payment receipt email and credit purchase gateway, see [Staff Sign-up and Payments](./staff-signup-payments) |
 | `/user/staff/settings/branding` | The interface's name, logos, favicon, colours, support and legal links and email sender name, saved over `.oempro_env` with a per-field reset, and the product name and the header, footer and logout addresses of the classic subscriber pages, see [Branding the New User Interface from the Staff Area](./staff-branding) |
 | `/user/staff/settings/delivery-servers` | The delivery servers list, create and edit screens, with the in-use warning before a delete, the write-only SMTP password and the test send, see [Managing Delivery Servers in the Staff Area](./staff-delivery-servers) |
 | `/user/staff/settings/delivery-routes` | The recipient MX routes in match order, with add, edit, reorder and remove, see [Routing Email by Recipient Mail Server](./staff-delivery-routes) |
@@ -214,6 +217,7 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/settings/sms-gateways` | The SMS gateways list, create and edit screens, with masked provider keys and webhook secrets, connection tests and an in-use warning before a delete, see [Managing SMS Gateways in the Staff Area](./staff-sms-gateways) |
 | `/user/staff/settings/optin-email` | The confirmation email double opt-in subscribers receive when their list has none of its own, see [The Default Opt-in Email](./staff-optin-email) |
 | `/user/staff/settings/custom-fields` | The global custom fields list, create and edit screens, with what uses a field and how many values it stores before a delete, and the type lock once values are stored, see [Managing Global Custom Fields in the Staff Area](./staff-custom-fields) |
+| `/user/staff/settings/uploads-media` | The media library switch and allowed file types, where uploads are stored with the write-only Amazon S3 secret key, and the upload size limits, see [Staff Uploads and Media](./staff-uploads-media) |
 | `/user/staff/settings/s2s-postback` | The conversion addresses and the S2S parameter names, see [The Staff S2S Postback Screen](./staff-s2s-postback) |
 | `/user/staff/settings/sso` | The SSO sources list, create and edit screens, with masked keys, key rotation and sign-in statistics, see [Managing SSO Sources in the Staff Area](./staff-sso) |
 | `/user/staff/settings/integrations` | The Google Analytics source and medium, and the Stripo email builder with its write-only secret key, project key list, connection check and Disconnect, see [Staff Integrations](./staff-integrations) |
@@ -222,12 +226,13 @@ and signs in again. This loads their permissions into the new interface.
 | `/user/staff/deliverability/suppression` | The system-wide email suppressions, the search across every account, the suppression patterns and the counts by source, see [The Staff Email Suppression Screen](./staff-email-suppression) |
 | `/user/staff/profile` | Your own administrator profile, see [Your Staff Profile](./staff-profile) |
 | `/user/staff/system` | The installed version, the license and the system health check, see [The Staff System Screen](./staff-system) |
+| `/user/staff/workers` | The registered background workers with their instances and last ping, and Clear stale, see [The Staff Workers Screen](./staff-workers) |
 | `/user/staff/security` | The admin area IP allow-list and the remembered sign-ins, see [The Staff Security Screen](./staff-security) |
 | `/user/staff/logs` | The log files of the install: read, download and empty them, see [The Staff Logs Screen](./staff-logs) |
 | `/user/staff/billing/...` | The staff billing screens, when billing is enabled |
 | `/ui/` | Images, stylesheets, the health check, and inbound payment webhooks |
 | `/mcp`, `/oauth/`, `/.well-known/oauth-...` | The built-in AI assistant connector and its sign-in, see [Connect Claude or ChatGPT](./ai-assistants). `MCP_ENABLED=false` turns these off |
-| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Sub Admin Accounts**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About**, **Log Observer**, **Campaign Report**, **List Freshness**, **Sender Domain Health**, **SMS Campaigns**, **Inbound SMS**, **SMS Suppression List**, **Delivery Servers**, **SMS Gateways**, **Default Opt-in Email**, **S2S Postback**, **Single Sign On**, **Plugins**, **Bounce Processing**, **Email Suppression List**, **Global Custom Fields** and **Global Segments** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/sub-admins`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system`, `/user/staff/logs`, `/user/staff/reports/campaigns`, `/user/staff/reports/list-freshness`, `/user/staff/reports/sender-domains`, `/user/staff/sms/campaigns`, `/user/staff/sms/inbound`, `/user/staff/sms/suppression`, `/user/staff/settings/delivery-servers`, `/user/staff/settings/sms-gateways`, `/user/staff/settings/optin-email`, `/user/staff/settings/s2s-postback`, `/user/staff/settings/sso`, `/user/staff/settings/plugins`, `/user/staff/deliverability/bounces`, `/user/staff/deliverability/suppression`, `/user/staff/settings/custom-fields` and `/user/staff/settings/global-segments`. The admin **Preferences** page keeps only the user area's own settings and links to `/user/staff/settings/preferences` for the rest, the admin **Integrations** page keeps only Unlayer and the plugin tabs and links to `/user/staff/settings/integrations` for Google Analytics and Stripo, and the delivery server reports stay at `/app/admin/deliveryservers/report` |
+| `/app/user/`, `/app/admin/` | The classic interface, unchanged except the admin **Users**, **User Groups**, **Sub Admin Accounts**, **Subscriber Email Search**, **Account**, **Security**, **License**, **About**, **Log Observer**, **Campaign Report**, **List Freshness**, **Sender Domain Health**, **SMS Campaigns**, **Inbound SMS**, **SMS Suppression List**, **Delivery Servers**, **SMS Gateways**, **Default Opt-in Email**, **S2S Postback**, **Single Sign On**, **Plugins**, **Bounce Processing**, **Email Suppression List**, **Global Custom Fields**, **Global Segments**, **ESP Settings**, **Uploads and Media Library**, **Processes** and **Preferences** sections, which forward to `/user/staff/customers`, `/user/staff/user-groups`, `/user/staff/sub-admins`, `/user/staff/subscriber-search`, `/user/staff/profile`, `/user/staff/security`, `/user/staff/system`, `/user/staff/logs`, `/user/staff/reports/campaigns`, `/user/staff/reports/list-freshness`, `/user/staff/reports/sender-domains`, `/user/staff/sms/campaigns`, `/user/staff/sms/inbound`, `/user/staff/sms/suppression`, `/user/staff/settings/delivery-servers`, `/user/staff/settings/sms-gateways`, `/user/staff/settings/optin-email`, `/user/staff/settings/s2s-postback`, `/user/staff/settings/sso`, `/user/staff/settings/plugins`, `/user/staff/deliverability/bounces`, `/user/staff/deliverability/suppression`, `/user/staff/settings/custom-fields`, `/user/staff/settings/global-segments`, `/user/staff/settings/signup-payments`, `/user/staff/settings/uploads-media`, `/user/staff/workers` and `/user/staff/settings/preferences`. The admin **Payment Reports** page was removed with no replacement page, and its figures stay available through the `admin.revenue.summary` and `admin.revenue.series` API calls. The admin **Integrations** page is now **Plugin settings** (`/app/admin/integration/`) and holds only the settings tabs the Cleanify, IP Monitor and TCPA Protect plugins add, and the delivery server reports stay at `/app/admin/deliveryservers/report` |
 
 ::: info
 These path names are settings, not fixed values. See the

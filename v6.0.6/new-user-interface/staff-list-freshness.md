@@ -7,7 +7,7 @@
 | List freshness | `/user/staff/reports/list-freshness` | Reports |
 | A user's lists | `/user/staff/reports/list-freshness/<user id>` | Reports |
 
-Open it from the staff sidebar: click **Reports**, then **List freshness**. The classic admin **Reports > List Freshness** menu item, and the old `/app/admin/listfreshness/` addresses, open the same screens.
+Open it from the staff sidebar: click **Reports**, then **List freshness**. The old `/app/admin/listfreshness/` addresses open the same screens.
 
 A sub-administrator limited to some user groups sees only the users of those groups.
 

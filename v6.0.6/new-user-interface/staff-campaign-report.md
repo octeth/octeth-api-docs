@@ -6,7 +6,7 @@ The **Campaigns** report lists the campaigns of every account on the install by 
 |---|---|---|
 | Reports: Campaigns | `/user/staff/reports/campaigns` | Reports |
 
-Open it from the staff sidebar: click **Reports**, then **Campaigns**. The classic admin **Reports > Campaign Report** link, and the old `/app/admin/campaignreport/` address, open the same screen.
+Open it from the staff sidebar: click **Reports**, then **Campaigns**. The old `/app/admin/campaignreport/` address opens the same screen.
 
 A sub-administrator limited to some user groups sees only the campaigns of accounts in those groups, and the counts cover only those campaigns.
 

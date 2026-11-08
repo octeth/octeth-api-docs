@@ -6,7 +6,7 @@
 |---|---|---|
 | Default opt-in email | `/user/staff/settings/optin-email` | Settings |
 
-Open it from the staff sidebar: click **Settings**, then **Default opt-in email**. The classic admin **Settings > Default Opt-in Email** link, and the old `/app/admin/defaultoptinemail/` address, open the same screen.
+Open it from the staff sidebar: click **Settings**, then **Default opt-in email**. The old `/app/admin/defaultoptinemail/` address opens the same screen.
 
 ## When this email is sent
 

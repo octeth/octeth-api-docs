@@ -6,7 +6,7 @@ A **delivery route** sends campaign email through a chosen delivery server when 
 |---|---|---|
 | Delivery routes | `/user/staff/settings/delivery-routes` | Settings and DeliveryServers |
 
-Open it from the staff sidebar: click **Delivery**, then **Delivery routes**. The classic admin **Settings > Delivery Routes** link, and the old `/app/admin/deliveryroutes/` address, open the same screen.
+Open it from the staff sidebar: click **Delivery**, then **Delivery routes**. The old `/app/admin/deliveryroutes/` address opens the same screen.
 
 ## How routing works
 
