@@ -12,27 +12,78 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Changelog will be updated upon release.
+Octeth v6.0.6 adds email verification for single addresses, new subscribers and whole lists, gives held customers an account review page with a questionnaire and a staff review panel, and lets journey emails wait out sending limits and account holds instead of failing. It makes the public subscribe command respect opt-outs and account boundaries, shortens SMS tracking links, makes Keitaro reporting count sales only, and lets the abuse protection plug-ins suspend an account on their own. This release changes how the API, the email gateway and the SMTP relay answer some requests, so read the Upgrade Notes and the [API behavior changes in v6.0.6](/v6.0.6/api-reference/behavior-changes) before upgrading an installation that other systems call.
 
 ### New Features
 
-- (To be documented)
+- **Email verification** - Check one address, check new subscribers as they sign up, or verify a whole list or segment and then unsubscribe or suppress the addresses in each result group. Verification uses credits per user, which administrators can grant and accounts can buy as packs in Billing. Nothing is checked until an administrator enables it in staff Settings > Email verification. See the [email verification API reference](/v6.0.6/api-reference/email-verification) (#3699, #3695, #3696, #3697, #3698)
+- **Account review for held customers** - An account whose sending is held has a review page that says what is paused and why, and an application form with questions the operator configures. Staff review the answers in a panel on the customer page, and the customer receives an email when the account is approved (#3849, #3850, #3851, #3852)
+- **Journey conversion postbacks** - A journey can turn on server-to-server postback tracking, so a conversion reported for a click on a journey email is credited to that journey and its Send email step (#3915)
+- **Latest updates for administrators** - A bell in the staff top bar shows Octeth product news and release notices, with unread items marked (#3809)
+- **SMS campaign search and sorting** - The SMS campaign list can be searched and sorted, in the new interface and through `smscampaign.browse` (#3041)
 
 ### Enhancements
 
-- (To be documented)
+- **Journey emails wait instead of failing** - Journey sends are no longer counted against the email API request limit. When a send is throttled or the account is on hold, the journey waits and retries instead of failing the step, for up to one day for a throttle and seven days for a hold (#3944, #3951)
+- **Shorter SMS links** - Tracked SMS links use a five-character code instead of a 20-character one, which leaves more room for the message. Links already sent keep working (#3935)
+- **Keitaro reporting** - Only the `sale` status counts as a conversion and as revenue, the report says when Keitaro is not connected instead of showing zeros, figures are labelled as total or unique, and the recipient list gains Converted and Keitaro clicked tabs (#3925, #3924, #3923, #3922, #3921)
+- **Abuse protection suspends accounts itself** - The volume monitor, content filter and phishing protection plug-ins disable an account directly and record why and when. New installations have them enabled with safe defaults, the volume monitor also catches brand-new accounts, and upgraded installations keep their settings and are offered the new defaults on the staff dashboard (#3085)
+- **Campaign report** - Each metric appears once, with its count and rate, complaints included, next to a compact audience line, a chart that starts at the send and the send's duration (#3916)
+- **Segment editor** - A segment can be saved as a new segment (#3918)
+- **Phone-sized screens** - The new interface's navigation works on phones, with a sidebar that slides in and a top bar that wraps (#3479)
+- **Team member sessions** - Team member sign-ins appear in the owner's login activity and active sessions, and the owner can sign out one device at a time (#3766)
+- **Staff settings** - Forbidden From addresses and default custom fields moved to staff Settings > Preferences, and lists created in the new interface now get the default custom fields. Workers, uploads and media, and sign-up settings moved to the staff area, and the classic admin links to their new places (#4011, #4054)
+- **Faster gateway tag statistics** - Per-tag figures in the email gateway domain statistics are read from a daily summary and load in milliseconds on large installations (#3709)
+- **Delivery history total** - The staff dashboard's delivery history shows a total (#3848)
+- **List send-time heatmap** - The heatmap can use the account's time zone instead of the server's (#3948)
 
 ### Bug Fixes
 
-- (To be documented)
+- **Segment builder segments** - Removing subscribers by a segment built with the segment builder removed the whole list. Removal, subscriber lists, search, exports, recipient estimates and AI assistant counts now use the segment's members only (#3942, #3943, #3940)
+- **Campaigns that cannot be sent** - A campaign whose email has no subject, content or From address can no longer be scheduled, and a campaign whose every recipient failed ends as Failed instead of Sent (#3945)
+- **Campaign delete during sending** - Deleting a campaign at the moment it started sending could remove it while delivery went on. A sending campaign is now never deleted (#3791)
+- **Health check during SMS sends** - The system health check reported a failure during every SMS send (#3994)
+- **Subscriber updates** - Updating a subscriber without changing its email address could fail, and subscribing a contact who resubmits their own unique field value no longer reports a duplicate (#3882, #3883)
+- **Segment counts** - New segments showed 0 subscribers until the next scheduled count, and counts after an import or delete could stay stale (#3937, #3939, #3949)
+- **Tag rules** - Adjacent tag rules in a segment are combined correctly (#1263)
+- **Hard bounces** - A hard bounce writes one suppression entry instead of two (#3946)
+- **Bounce and unsubscribe records** - Processed bounces record the email they came from, and link and one-click unsubscribes record their channel (#3947)
+- **Tracking settings** - Open and click tracking values such as "Enabled" turned tracking off on emails and sender domains (#3950)
+- **Sender domain verification** - An existing DMARC record on the domain was not accepted (#3886)
+- **SMS reports** - Carrier and country breakdowns count each message once, the report says whose quiet hours a campaign follows, and a Keitaro click is no longer lost when a background process stops at the wrong moment (#3920, #3919, #3731)
+- **Fresh installs** - A new installation no longer reports a failed dependency install at random (#3867)
+- **Email editor and campaign screens** - Unsubscribe and other link tags in the drag-and-drop editor's link menu, readable "Save and close" button, link tag names instead of raw codes, the current sender in the preview dialog, and table columns that no longer hide or overflow (#3869, #3873, #3875, #3871, #3880, #3866)
 
 ### Security Patches
 
-- (To be documented)
+- **`subscriber.subscribe` list checks** - A subscribe request whose lists belong to different accounts is refused, every list in a multi-list request follows its own double opt-in setting, and one request can carry at most 10 lists by default, so a single request can no longer send a confirmation email per list (#3956, #4006)
+- **Opt-outs** - `subscriber.subscribe` no longer re-subscribes a contact who unsubscribed from the list (#3881)
+- **Forbidden From addresses on the email gateway** - The operator's forbidden From addresses now also apply to email gateway sends over the API and the SMTP relay (#3623)
+- **SMTP relay recipients** - The SMTP relay delivers only to the recipients given in the SMTP envelope, not to extra addresses written in the message headers (#1314)
+- **AI assistant scopes** - The AI assistant connection screen and the connected assistants page offer only the scopes the user group allows (#3884)
+- **Account review answers** - Only the account owner or an Admin team member can submit the account review application (#3851)
+- **Revoked devices** - A team member device that was signed out is also signed out on the invitation page (#3766)
+- **Verification credit notes** - Notes staff write on a credit grant are no longer shown to the account (#4025)
+- **Archived delivery servers** - Archived or missing delivery servers can no longer be assigned to a user group through the API, IP pools or the operator AI assistant tool (#3847)
+- **Install logs** - The dependency install log and marker files are no longer reachable over the web (#3867)
 
 ### Upgrade Notes
 
-- (To be documented)
+- **Subscribe requests** - `subscriber.subscribe` now refuses an unsubscribed contact with error code 12, a set of lists from different accounts with error code 13, and more than 10 lists with error code 14. Send `UpdateIfUnsubscribed=true` only for a contact who asked to subscribe again, and set `SUBSCRIBE_MAX_LISTS_PER_REQUEST` in `.oempro_env` to allow larger sets. Each double opt-in list in a set now sends its own confirmation email (#3881, #3956, #4006)
+- **Scheduling campaigns** - `campaign.update` and `campaign.resume` refuse a campaign whose email cannot be sent with error code 32, and an integration that waits for `Sent` should also treat `Failed` as final (#3945)
+- **Deleting campaigns** - `campaigns.delete` skips a campaign that is sending and still answers success. Pause the campaign first, or wait until it finishes (#3791)
+- **SMS tracking links** - Tracking codes are now five characters. A redirect rule at your CDN that checks the code's length must accept the new length before you send an SMS campaign after the upgrade (#3935)
+- **Keitaro figures** - Conversions and revenue count the `sale` status only, so existing campaigns show lower figures than before. Use a segment rule on `status` to match leads or custom statuses (#3925)
+- **Email gateway senders** - Check any wildcard lines in the forbidden From addresses list (staff Settings > Preferences). A gateway send from a matching address is refused after the upgrade with `Code 45` over the API or `550 5.7.1` on the SMTP relay (#3623)
+- **SMTP relay envelopes** - A client that relies on header `To` or `Cc` addresses that are missing from its SMTP envelope stops reaching them after the upgrade (#1314)
+- **Gateway hard bounces** - A new email gateway hard bounce suppresses the address for every account, and only an administrator can remove the entry (#3946)
+- **Tracking values** - Values such as "yes", "on" and "enabled" for open and click tracking now turn tracking on. Send `false` or `0` to turn it off (#3950)
+- **Abuse protection** - The abuse protection plug-ins now disable accounts themselves, so a disabled account may have been suspended by Octeth rather than by an integration. Upgraded installations keep their plug-in settings, and the staff dashboard offers the new defaults (#3085)
+- **Latest updates** - The staff top bar requests product news from my.octeth.com with the installation's product version. Set `ADMIN_NEWS_FEED_ENABLED=false` in `.oempro_env` to turn it off (#3809)
+- **Journey waits** - Throttled journey emails now wait up to `JOURNEY_ACTION_THROTTLE_MAX_WAIT_SECONDS` (one day) and held ones retry every `JOURNEY_ACTION_HOLD_SNOOZE_SECONDS` (one hour) for up to `JOURNEY_ACTION_HOLD_MAX_WAIT_SECONDS` (seven days) instead of failing (#3944, #3951)
+- **New settings** - The upgrade adds `ADMIN_NEWS_FEED_ENABLED`, `ADMIN_NEWS_FEED_URL`, `EMAIL_VERIFICATION_API_URL`, `EMAIL_VERIFICATION_RESULTS_RETENTION_DAYS`, the three journey wait settings, `RABBITMQ_POLL_QUEUE_STALL_SECONDS`, `SEGMENT_COUNT_INLINE_TIMEOUT`, `SMS_TEST_LIMITS_ENABLED`, `SMS_TEST_REQUIRE_VERIFIED_NUMBER` and `SUBSCRIBE_MAX_LISTS_PER_REQUEST` to `.oempro_env`, each at its default. See the [configuration reference](/v6.0.6/getting-started/octeth-configuration)
+- **Database** - The upgrade adds the email verification, SMS link code, gateway tag statistics, journey postback and account suspension tables and columns. Gateway tag statistics switch to the daily summary after its first nightly run
+- **Other API changes** - See [API behavior changes in v6.0.6](/v6.0.6/api-reference/behavior-changes) for the full list and an upgrade checklist.
 
 ### Deprecations
 

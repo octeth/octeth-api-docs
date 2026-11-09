@@ -8,12 +8,6 @@ description: Deliberate API behavior changes in Octeth v6.0.6 that an existing i
 
 This page lists every deliberate change in v6.0.6 that an existing integration can observe, so you can check your code against it before upgrading.
 
-::: info Release in progress
-This page is written as changes merge during the release cycle, not at release time. A deliberate contract change reads as an ordinary bug fix in the commit log, so a page assembled from commit subjects at the end of a cycle will miss it.
-
-If this notice is still here when the release ships, there were no observable API behavior changes in v6.0.6.
-:::
-
 ## Tier 1: changes that can break an integration
 
 ### Subscribers
@@ -72,6 +66,18 @@ Such an update is now refused with the new `ErrorCode 32`, and the campaign is l
 Before v6.0.6, a campaign ended as `Sent` even when every recipient failed, and it was counted as a sent campaign for the account's payment period and statistics. Now a campaign that sent to no recipient and failed at least one (seed list emails are not counted) ends with `CampaignStatus` `Failed` and `CampaignStatusReason` `018`, and is not counted as sent. When the failed run belongs to a repeating campaign, the repeating campaign is set to `Failed` with the same reason too, so it stops instead of failing again every cycle. A campaign with at least one sent recipient still ends as `Sent`, with its failures in `TotalFailed`.
 
 **Who needs to act:** an integration that polls a campaign until it is `Sent`. Treat `Failed` as a final status too.
+
+#### `campaigns.delete` no longer deletes a campaign that is sending
+
+`campaigns.delete` skips every campaign whose status is `Sending` when the delete runs, and deletes the others in the list. The response is unchanged: it still answers `Success: true`, and the skipped campaign simply stays, with its statistics, recipients and queue (octeth/oempro#3791). Before, a sending campaign was deleted with its data while delivery went on, which could leave a partly delivered campaign with no report. The same rule applies in the classic interface and the new interface, which delete through the same command.
+
+The change also closes a race: a scheduled campaign that became due in the same moment it was deleted could start sending after its rows were removed. Now exactly one of the two wins. Either the campaign is deleted and never starts, or it starts sending and the delete leaves it.
+
+Auto-resend campaigns that `campaigns.delete` deletes together with the requested campaign are checked one by one, so an auto-resend campaign that has not started is still deleted when its original campaign is sending and kept.
+
+**Not affected:** campaigns in any other status (`Draft`, `Ready`, `Paused`, `Pending Approval`, `Sent`, `Failed`). Deleting a user account (`users.delete`) still deletes all of the account's campaigns, sending ones included. AI agent keys were already refused a sending campaign (octeth/oempro#3781) and still are.
+
+**Who needs to act:** an integration that deletes a campaign while it sends and expects it gone. Pause the campaign (`campaign.pause`) and then delete it, or wait until it has finished, and check with `campaign.get` that it no longer exists.
 
 ### SMS campaigns
 
@@ -232,6 +238,7 @@ A value outside both lists keeps the result it had before and writes a warning n
 - [ ] If you call `subscriber.subscribe`, handle `ErrorCode 12` (the contact unsubscribed from the list, nothing changed). Send `UpdateIfUnsubscribed=true` only for a contact who asked to subscribe again.
 - [ ] If you call `subscriber.subscribe` with more than 10 lists in `ListID`, split the call or raise `SUBSCRIBE_MAX_LISTS_PER_REQUEST`. A larger set is refused with `ErrorCode 14`, and a non-numeric list ID with `ErrorCode 4`.
 - [ ] If you call `subscriber.subscribe` with unique custom fields, `ErrorCode 7` now means another subscriber holds the value. An existing contact resubmitting its own value gets `ErrorCode 9` or `ErrorCode 12`.
+- [ ] If you call `campaigns.delete` for campaigns that may be sending, pause them with `campaign.pause` first or wait until they finish. A `Sending` campaign is skipped and the call still answers `Success`.
 - [ ] If you set `TargetDeliveryServerID_*` through `usergroup.update` or `usergroup.patch`, handle `ErrorCode 37` or `ErrorCode 41` (the server is archived or does not exist, nothing changed).
 - [ ] If you read `smscampaign.stats.breakdown` by `carrier` or `country`, expect each message in one row (the rows add up to `TotalMessages`) and a smaller empty `Dimension` row.
 - [ ] If you read Keitaro `Conversions` or `Revenue`, expect sales only, and set `status` in a segment rule to match `lead` or a custom status.
