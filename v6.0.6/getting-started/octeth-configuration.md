@@ -1806,6 +1806,16 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     Introduced in v6.0.5 (issue #3691).
 
+59. **Public Subscribe List Cap**
+
+    ```bash
+    SUBSCRIBE_MAX_LISTS_PER_REQUEST=10   # Most lists one subscriber.subscribe call may carry in ListID (default: 10)
+    ```
+
+    `subscriber.subscribe`, which the public subscription form (`subscribe.php`) calls, needs no authentication and accepts a comma-separated `ListID`. Every double opt-in list in the set sends its own confirmation email, so this caps how many emails one request can trigger. A set with more distinct lists than this value is refused with `ErrorCode 14` before any list is looked up, and nothing is written. Repeated and empty IDs are dropped before counting. Raise it only if a signup form of yours really subscribes to more lists in one go. A value below `1` counts as `1`. Read on every web request, so a change applies at once.
+
+    Introduced in v6.0.6 (issue #4006).
+
 
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.

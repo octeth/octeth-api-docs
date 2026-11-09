@@ -43,6 +43,20 @@ Two changes:
 
 **Who needs to act:** an integration or signup form that sends several lists of different accounts in one call. Send one call per account instead. A form that subscribes to several double opt-in lists of one account now sends one confirmation email per double opt-in list, and the contact is only `Subscribed` on each list after confirming it.
 
+#### `subscriber.subscribe` refuses a `ListID` set of more than 10 lists
+
+This is a security fix. Because every double opt-in list in a comma-separated `ListID` now sends its own confirmation email (see above), one unauthenticated call with a long set of lists could mail one address once per list. Before v6.0.6 nothing limited the length of the set, and every ID in it cost a list lookup, IDs that do not exist included (octeth/oempro#4006).
+
+The set is now validated before any list is looked up:
+
+- Each ID is trimmed. Empty entries are dropped, and a repeated ID counts once (the first occurrence keeps its place, so the first list stays the primary list).
+- A set with more than 10 distinct lists is refused with the new `ErrorCode 14`. Nothing is written and no email is sent.
+- An ID that is not made of digits only is refused with `ErrorCode 4` (invalid list). Before v6.0.6 such an ID after the first was skipped.
+
+**Not affected:** a set of up to 10 lists, which behaves as described in the section above.
+
+**Who needs to act:** a signup form or integration that sends more than 10 lists in one call. Split the lists across calls, or raise the limit with `SUBSCRIBE_MAX_LISTS_PER_REQUEST` in `.oempro_env` (see [Octeth Configuration](/v6.0.6/getting-started/octeth-configuration), "Public Subscribe List Cap"). A form that sends a non-numeric list ID must remove it.
+
 ### Campaigns
 
 #### `campaign.update` refuses to schedule a campaign whose email cannot be sent
@@ -216,6 +230,7 @@ A value outside both lists keeps the result it had before and writes a warning n
 ## Upgrade checklist
 
 - [ ] If you call `subscriber.subscribe`, handle `ErrorCode 12` (the contact unsubscribed from the list, nothing changed). Send `UpdateIfUnsubscribed=true` only for a contact who asked to subscribe again.
+- [ ] If you call `subscriber.subscribe` with more than 10 lists in `ListID`, split the call or raise `SUBSCRIBE_MAX_LISTS_PER_REQUEST`. A larger set is refused with `ErrorCode 14`, and a non-numeric list ID with `ErrorCode 4`.
 - [ ] If you call `subscriber.subscribe` with unique custom fields, `ErrorCode 7` now means another subscriber holds the value. An existing contact resubmitting its own value gets `ErrorCode 9` or `ErrorCode 12`.
 - [ ] If you set `TargetDeliveryServerID_*` through `usergroup.update` or `usergroup.patch`, handle `ErrorCode 37` or `ErrorCode 41` (the server is archived or does not exist, nothing changed).
 - [ ] If you read `smscampaign.stats.breakdown` by `carrier` or `country`, expect each message in one row (the rows add up to `TotalMessages`) and a smaller empty `Dimension` row.

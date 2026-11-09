@@ -207,7 +207,7 @@ curl -X POST https://example.com/api/v1/subscriber.create \
 | Parameter | Type   | Required | Description                           |
 |-----------|--------|----------|---------------------------------------|
 | Command   | String | Yes      | API command: `subscriber.subscribe`   |
-| ListID    | String | Yes      | ID of the subscriber list. Can be a comma-separated set of lists; every list in the set must belong to the same account as the first one. <Badge type="warning" text="Changed in v6.0.6" /> A set that includes another account's list is refused with `ErrorCode 13` and nothing is written. Each list follows its own opt-in mode: a double opt-in list gets `Opt-In Pending` and sends its confirmation email. A list ID that does not exist is skipped. |
+| ListID    | String | Yes      | ID of the subscriber list. Can be a comma-separated set of lists; every list in the set must belong to the same account as the first one. <Badge type="warning" text="Changed in v6.0.6" /> A set that includes another account's list is refused with `ErrorCode 13` and nothing is written. Each list follows its own opt-in mode: a double opt-in list gets `Opt-In Pending` and sends its confirmation email. A list ID that does not exist is skipped. <Badge type="warning" text="Changed in v6.0.6" /> At most 10 distinct lists per call (set by `SUBSCRIBE_MAX_LISTS_PER_REQUEST`): a larger set is refused with `ErrorCode 14`. Spaces around IDs, empty entries and repeated IDs are ignored, and an ID that is not made of digits only is refused with `ErrorCode 4`. |
 | EmailAddress | String | Yes   | Email address of the subscriber       |
 | IPAddress | String | Yes      | IP address of the subscriber          |
 | CustomFieldN | String | No    | Custom field values (N = CustomFieldID) |
@@ -226,6 +226,10 @@ The public signup form (`subscribe.php`), the re-subscribe action on the subscri
 
 ::: danger Multiple lists must belong to one account
 <Badge type="warning" text="Changed in v6.0.6" /> Before v6.0.6 every list after the first in a comma-separated `ListID` was written as `Subscribed` with no confirmation email and no check of which account owned it. A request whose lists belong to more than one account is now refused with `ErrorCode 13`, before anything is written, and each list after the first follows its own opt-in mode. Custom field values and `UpdateIfUnsubscribed` still apply only to the first list. An address already on one of the other lists, or unsubscribed from it, is left as it is there. See [API Behavior Changes in v6.0.6](/v6.0.6/api-reference/behavior-changes#subscriber-subscribe-refuses-a-listid-set-that-spans-accounts-and-every-list-honours-double-opt-in).
+:::
+
+::: danger At most 10 lists per call
+<Badge type="warning" text="Changed in v6.0.6" /> Every double opt-in list in `ListID` sends its own confirmation email, so the set is capped. It is validated before any list is looked up: each ID is trimmed, empty entries are dropped and a repeated ID counts once, keeping the first list first. A set with more than 10 distinct lists is refused with `ErrorCode 14`, and an ID that is not made of digits only with `ErrorCode 4`. Nothing is written and no email is sent. An install can change the limit with `SUBSCRIBE_MAX_LISTS_PER_REQUEST` in `.oempro_env`. Before v6.0.6 there was no limit and a non-numeric ID after the first was skipped. See [API Behavior Changes in v6.0.6](/v6.0.6/api-reference/behavior-changes#subscriber-subscribe-refuses-a-listid-set-of-more-than-10-lists).
 :::
 
 ::: info ErrorCode 9 is not an update
@@ -306,6 +310,13 @@ curl -X POST https://example.com/api.php \
 }
 ```
 
+```json [Error Response (too many lists)]
+{
+  "Success": false,
+  "ErrorCode": 14
+}
+```
+
 ```json [Rejected by Email Verification]
 {
   "Success": false,
@@ -341,7 +352,8 @@ curl -X POST https://example.com/api.php \
 1: Missing ListID parameter
 2: Missing EmailAddress parameter
 3: Missing IPAddress parameter
-4: Invalid ListID
+4: Invalid ListID (the first list does not exist, or an ID in ListID
+   is not made of digits only)
 5: Invalid EmailAddress
 6: Required custom field missing (returned with ErrorCustomFieldID and
    ErrorCustomFieldTitle)
@@ -356,6 +368,8 @@ curl -X POST https://example.com/api.php \
     PreviousSubscriptionStatus)
 13: A list in ListID belongs to a different account than the first
     list, nothing changed
+14: ListID holds more distinct lists than
+    SUBSCRIBE_MAX_LISTS_PER_REQUEST allows (default 10), nothing changed
 101: The email address was refused by email verification (Verification
      is returned) or by a plugin's own check
 ```
