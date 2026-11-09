@@ -135,6 +135,14 @@ The `QuietHours` block carries the new `Source` field: `campaign` when the campa
 
 **Who needs to act:** nobody. A client that labels a campaign's quiet hours can read `Source` to mark the install default.
 
+#### Campaign test sends: two install switches, and two new `sms.testnumbers.get` fields
+
+`sms.testnumbers.get` returns two new `Limits` fields, `VerificationRequired` and `LimitsEnabled`. Both are `true` unless an operator switches them off with `SMS_TEST_REQUIRE_VERIFIED_NUMBER` or `SMS_TEST_LIMITS_ENABLED` (or the staff SMS settings). With both on, `smscampaign.test` behaves exactly as in v6.0.5. With verification off it accepts any valid phone number and no longer returns error `14`, and with limits off it no longer returns errors `16` and `17`. `admin.sms.settings.get` lists 19 settings instead of 17.
+
+**Not affected:** installs that leave both settings at their default.
+
+**Who needs to act:** nobody. A client that explains test-send refusals can read the two new fields.
+
 ### Journeys
 
 #### Journey emails skip the email API request limit and wait out throttles and account holds

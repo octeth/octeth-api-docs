@@ -1572,6 +1572,8 @@ Sends one copy of a campaign's message to one of the account's verified test num
 
 <Badge type="warning" text="Changed in v6.0.4" /> `RecipientNumber` must be a number the account has verified with `sms.testnumber.add` and `sms.testnumber.verify`; any other number is refused with error `14`. Test sends are also limited per account to `SMSTestDailyLimit` in any 24 hours (default 10, error `16`) and `SMSTestCooldownSeconds` apart (default 30, error `17`), both set in the staff SMS settings, and a limit of `0` turns them off (error `15`). Each test is recorded against the campaign. See [behavior changes](./behavior-changes).
 
+<Badge type="warning" text="Changed in v6.0.6" /> An install can switch both rules off. When the `SMSTestRequireVerifiedNumber` setting is off, `RecipientNumber` can be any valid phone number and error `14` is not returned. When `SMSTestLimitsEnabled` is off, errors `16` and `17` are not returned, while a daily limit of `0` still returns `15`. `sms.testnumbers.get` reports both settings in `Limits`. The account's SMS send limits (error `10`) apply either way.
+
 A test differs from the campaign's own messages: links are written out in full, a tracking tag (<code v-pre>{{ SMS:TrackingCode }}</code>) is written as twenty zeros, and subscriber merge tags render their fallbacks. `smscampaign.test.preview` returns exactly what a test sends, and its cost.
 
 **Request Body Parameters:**
@@ -1582,7 +1584,7 @@ A test differs from the campaign's own messages: links are written out in full, 
 | SessionID | String | No | Session ID obtained from login |
 | APIKey | String | No | API key for authentication |
 | SMSCampaignID | Integer | Yes | The campaign whose message to test |
-| RecipientNumber | String | Yes | <Badge type="warning" text="Changed in v6.0.4" /> One of the account's Verified test numbers |
+| RecipientNumber | String | Yes | <Badge type="warning" text="Changed in v6.0.4" /> One of the account's Verified test numbers, or any valid phone number when the install does not require verification (v6.0.6) |
 | SenderID | String | No | Override the campaign's sender id |
 
 ::: code-group
@@ -1633,7 +1635,7 @@ curl -X POST https://example.com/api/v1/smscampaign.test \
 11: The test message could not be queued, so nothing was sent
 12: The message's merge tags could not be rendered, so nothing was sent
 13: The message has a merge tag that cannot be read, which would be sent as typed
-14: RecipientNumber is not one of the account's verified test numbers (new in v6.0.4)
+14: RecipientNumber is not one of the account's verified test numbers (new in v6.0.4; not returned when the install does not require verification, v6.0.6)
 15: Test sends are turned off on this install (new in v6.0.4)
 16: The account has sent its daily limit of tests in the last 24 hours (new in v6.0.4)
 17: Too soon after the previous test (new in v6.0.4)
@@ -1722,7 +1724,7 @@ curl -X GET https://example.com/api/v1/smscampaign.test.preview \
 - Legacy endpoint access via `/api.php` is also supported
 :::
 
-The account's test numbers, and where its test limits stand. `Status` is `Pending` until the number is verified, then `Verified`. In `Limits`, `Remaining` is the tests left in the last 24 hours, and `NextTestAt` (UTC) is when the next one may go while the daily limit or the cooldown holds it back, otherwise `null`.
+The account's test numbers, and where its test limits stand. `Status` is `Pending` until the number is verified, then `Verified`. In `Limits`, `Remaining` is the tests left in the last 24 hours, and `NextTestAt` (UTC) is when the next one may go while the daily limit or the cooldown holds it back, otherwise `null`. <Badge type="tip" text="New in v6.0.6" /> `VerificationRequired` is `false` when the install lets a test go to any valid number, and `LimitsEnabled` is `false` when the daily limit and the cooldown do not apply. In that case `UsedLast24Hours`, `Remaining` and `NextTestAt` are still filled in, for information only.
 
 **Request Body Parameters:**
 
@@ -1757,7 +1759,9 @@ curl -X GET https://example.com/api/v1/sms.testnumbers \
     "CooldownSeconds": 30,
     "NextTestAt": null,
     "MaxNumbers": 5,
-    "MaxCodesPerDay": 3
+    "MaxCodesPerDay": 3,
+    "VerificationRequired": true,
+    "LimitsEnabled": true
   }
 }
 ```
