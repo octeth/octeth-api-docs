@@ -8,6 +8,36 @@ description: Complete release history for all Octeth versions - features, improv
 
 This document tracks the complete release history of Octeth, including new features, enhancements, bug fixes, security patches, and deprecations for each version. Use this changelog to understand what changed between releases and determine when to upgrade your installation.
 
+## v6.0.7
+
+### Release Summary
+
+Release in progress. Changelog will be updated upon release.
+
+### New Features
+
+- (To be documented)
+
+### Enhancements
+
+- (To be documented)
+
+### Bug Fixes
+
+- (To be documented)
+
+### Security Patches
+
+- (To be documented)
+
+### Upgrade Notes
+
+- (To be documented)
+
+### Deprecations
+
+None
+
 ## v6.0.6
 
 ### Release Summary
@@ -464,7 +494,7 @@ None
 
 ### Release Summary
 
-v6.0.0 is a security release. It remediates the findings of a full audit of the API surface, and most of its changes are refusals of requests that were previously accepted. It also delivers bulk SMS campaigns to phone-only contacts through the API. Read the Upgrade Notes below and the [behavior changes page](/v6.0.0/api-reference/behavior-changes) before upgrading: an integration can break even though no successful call changes shape.
+v6.0.0 is a security release. It remediates the findings of a full audit of the API surface, and most of its changes are refusals of requests that were previously accepted. It also delivers bulk SMS campaigns to phone-only contacts through the API. Read the Upgrade Notes below and the [behavior changes page](https://github.com/octeth/octeth-api-docs/blob/main/v6.0.0/api-reference/behavior-changes.md) before upgrading: an integration can break even though no successful call changes shape.
 
 ### New Features
 
