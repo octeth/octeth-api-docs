@@ -32,6 +32,16 @@ A campaign that starts, resumes from a pause or leaves quiet hours sends its fir
 
 **Who needs to act:** nobody. A rate of 60 or more a minute still sends every second, spread at rate / 60 messages per second.
 
+#### Keitaro clicks count as SMS clicks
+
+A click Keitaro reports on a <code v-pre>{{SMS:TrackingCode}}</code> passthrough link is now also recorded as an ordinary `clicked` SMS event, with `attributes.provider` set to `keitaro` (octeth/oempro#4079). Every click figure counts it: the campaign's `TotalClicks` and `TotalUniqueClicks`, the recipient's `FirstClickedAt` and `ClickCount`, the contact's SMS click total behind the segment rule "SMS activity, Clicked", `smscampaign.linkclicks.get`, and the `clicked` series and rows of the stats, breakdown, timeseries and event endpoints. Before v6.0.7 a Keitaro click was recorded only as `integration_click`, so all of these stayed at zero for a passthrough-only campaign. The upgrade records the missing `clicked` event once for every Keitaro click stored before it, except on campaigns whose event history retention has already partly removed.
+
+A contact who clicks a short link and a Keitaro link is two clicks and one unique clicker. Bot clicks Keitaro flags stay out of the counts, as Octeth's own bot clicks do.
+
+**Not affected:** `integration_click` events and the `includeintegrations` output, the Keitaro figures in `smscampaign.stats` (`Integrations`), and saved segments that use the `integration clicked` operator, which still match the same contacts. The new interface no longer offers that operator for a new rule, because "Clicked" now covers Keitaro clicks.
+
+**Who needs to act:** an integration that adds `integration_click` counts to `clicked` counts itself. After upgrading that sum counts every Keitaro click twice, so read `clicked` alone.
+
 ### Email gateway
 
 #### `process_pmta_log_file` accepts batch array bodies under `enforce`
@@ -55,6 +65,7 @@ A user's API calls, including every action taken in the new user interface, now 
 ## Upgrade checklist
 
 - If you set `API_SCALAR_PARAMETER_CHECK=log` only to keep PowerMTA accounting flowing, set it back to `enforce` after upgrading to v6.0.7.
+- If your integration adds `integration_click` events to `clicked` events, read `clicked` alone after upgrading to v6.0.7, because it now includes Keitaro clicks.
 - If a plug-in should act for every account, check that each user group's permissions include it (`Plugin.<code>`), because v6.0.7 applies user group plug-in permissions to API calls.
 
 ---
