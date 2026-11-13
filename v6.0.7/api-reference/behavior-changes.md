@@ -32,9 +32,19 @@ A campaign that starts, resumes from a pause or leaves quiet hours sends its fir
 
 **Who needs to act:** nobody. A rate of 60 or more a minute still sends every second, spread at rate / 60 messages per second.
 
+### Email gateway
+
+#### `process_pmta_log_file` accepts batch array bodies under `enforce`
+
+From v6.0.2 the scalar parameter check refused every PowerMTA accounting batch posted to `process_pmta_log_file` as a top-level JSON array, with HTTP 400 and `ErrorCode` 100017 for parameter `0`, so delivered, bounce and complaint events stopped arriving (octeth/oempro#4075). v6.0.7 accepts all-digit keys holding objects for this command only.
+
+**Not affected:** named parameters such as `AdminAPIKey` are still refused when sent as an array, every other command still refuses an array under key `0`, and posts to `/system/bounce_webhook`.
+
+**Who needs to act:** installs that set `API_SCALAR_PARAMETER_CHECK=log` only to keep PowerMTA accounting flowing can set it back to `enforce` after upgrading.
+
 ## Upgrade checklist
 
-Nothing to check yet.
+- If you set `API_SCALAR_PARAMETER_CHECK=log` only to keep PowerMTA accounting flowing, set it back to `enforce` after upgrading to v6.0.7.
 
 ---
 

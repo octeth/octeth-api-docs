@@ -322,6 +322,7 @@ To monitor whether the login pages are reachable from the internet, point an ext
 - This endpoint is designed for PowerMTA integration to process email delivery logs
 - Accepts batch processing of email events (delivery, bounce, etc.)
 - Legacy endpoint access via `/api.php` is also supported
+- The request body is a JSON array of log entries, sent as the whole body. Under `API_SCALAR_PARAMETER_CHECK=enforce` (the default) this needs v6.0.7 or later: v6.0.2 to v6.0.6 refuse the batch with HTTP 400 and `ErrorCode` 100017 for parameter `0`, so run `log` on those versions (octeth/oempro#4075)
 :::
 
 **Request Body Parameters:**
