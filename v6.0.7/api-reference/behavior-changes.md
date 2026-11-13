@@ -42,9 +42,20 @@ From v6.0.2 the scalar parameter check refused every PowerMTA accounting batch p
 
 **Who needs to act:** installs that set `API_SCALAR_PARAMETER_CHECK=log` only to keep PowerMTA accounting flowing can set it back to `enforce` after upgrading.
 
+### Plug-ins
+
+#### User group plug-in permissions apply to API calls
+
+A user's API calls, including every action taken in the new user interface, now run only the plug-ins the user's group includes: `Plugin.<code>` or `*` in the group's permissions, the rule the legacy user area has always applied (octeth/oempro#4061). Before v6.0.7, `api.php` loaded every enabled plug-in before it knew the caller, so each plug-in's hooks ran for every user's API activity whatever their group allowed. A plug-in API command registered for user authentication is now refused with error 99999 ("Not enough privileges") when the user's group does not include its plug-in.
+
+**Not affected:** calls served by an admin session or admin API key (including admin calls that name a `UserID`), calls with no user (public commands, webhooks), system plug-ins, background workers, and the bundled plug-in commands, which are admin-only.
+
+**Who needs to act:** an operator whose plug-in seems to stop working for some accounts after upgrading. Add `Plugin.<code>` to the user groups that should have it.
+
 ## Upgrade checklist
 
 - If you set `API_SCALAR_PARAMETER_CHECK=log` only to keep PowerMTA accounting flowing, set it back to `enforce` after upgrading to v6.0.7.
+- If a plug-in should act for every account, check that each user group's permissions include it (`Plugin.<code>`), because v6.0.7 applies user group plug-in permissions to API calls.
 
 ---
 
