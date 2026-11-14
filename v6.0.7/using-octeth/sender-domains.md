@@ -137,6 +137,10 @@ The specific records generated depend on the DNS template configured by your adm
 | **CNAME** | `track-sl.mail.example.com` | Tracking domain — used for link click and open tracking URLs. |
 | **TXT** | `<random>.mail.example.com` | Domain ownership verification — a unique token proving you control the domain. |
 
+::: tip Subdomains of a verified domain
+When you add a subdomain of a domain your account has already verified (for example `mail.example.com` while `example.com` is enabled), Octeth does not ask for the ownership TXT record: verifying `example.com` already proved you control it. The subdomain still needs its other records. A subdomain added before Octeth v6.0.7 that is still waiting for its ownership record drops it the next time you click **Re-check**.
+:::
+
 ::: info
 The actual record hosts and values are unique to your installation and domain. The examples above are illustrative. Always use the exact records shown on your domain's edit page in Octeth.
 :::
