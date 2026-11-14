@@ -20,6 +20,20 @@ None recorded yet.
 
 ## Tier 2: shape and value changes
 
+### RSS feeds in emails
+
+#### RSS blocks render without the RSS plug-in, gated by a user group permission
+
+RSS blocks (`%RSS:<feed url>:<item count>%` to `%RSS:END%`) are now rendered by Octeth itself in every send path: campaigns, auto responders and transactional emails, test sends, the web browser view, `email.render` and the previews (octeth/oempro#3984). Before, they rendered only on installs with the RSS plug-in enabled, and on other installs the text went out as written. The output for a given feed is byte for byte what the plug-in produced, and the plug-in's 300 second feed cache is kept.
+
+A new user group permission, `Email.RSSFeeds` ("Insert RSS feeds into emails"), controls it. The upgrade grants it to every existing user group. For a group without it, every RSS block is removed from the email when it is sent, tested or previewed. A `&` written as `&amp;` in a block's feed address, as HTML editors store it, is now decoded before the feed is fetched.
+
+`personalization.gettags` accepts `RSS` in `Categories`, outside the default set, so a call without `Categories` returns the same response as before. `rss.feed.preview` and `rss.content.render` are new.
+
+**Not affected:** content without RSS blocks, the email subject (RSS blocks are not rendered there, as before) and installs that already had the plug-in enabled, apart from the `&amp;` decoding.
+
+**Who needs to act:** nobody, unless an install without the plug-in has existing content that contains RSS block text meant to be sent literally. To stop RSS rendering for a group, switch off "Insert RSS feeds into emails" in its user group settings.
+
 ### SMS campaigns
 
 #### `SendRatePerMinute` is spread evenly across the minute
