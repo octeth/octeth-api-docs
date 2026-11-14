@@ -48,6 +48,14 @@ This applies to every send path, the previews and `rss.content.render`.
 
 **Who needs to act:** nobody. A template that relied on the byte count to fit a fixed width may now show more text for non-ASCII titles and HTML content (octeth/oempro#4116).
 
+#### The RSS plug-in is removed
+
+The RSS plug-in (`octrss`) is removed in this release, because RSS rendering is now part of Octeth (see the entry above). On an install that had the plug-in enabled, the upgrade removes `octrss` from the enabled plug-in list and deletes its `OctRSS_Language` setting. The plug-in can no longer be listed, loaded or enabled, even when its files are still on disk (an upgrade does not delete files under `plugins/`): it is absent from the plug-in list in the legacy admin, the new interface and `admin.plugins.get`, and from the user group plug-in permissions. `admin.plugin.enable` with `octrss` fails with error code 2 and the text "Plugin "octrss" was retired and can no longer be enabled.", `admin.plugin.disable` with `octrss` fails with error code 2 as for a plug-in that is not installed, and `settings.update` refuses an `ENABLED_PLUGINS` value that lists it. The leftover `plugins/octrss` directory can be deleted by hand. `upgrade:remove-retired-files` also removes `includes/libraries/rssparser.inc.php`, a legacy copy of the RSS parser nothing loads.
+
+**Not affected:** RSS blocks keep rendering in every email, through Octeth itself, with the same output, gated by the "Insert RSS feeds into emails" user group permission.
+
+**Who needs to act:** nobody, unless a script enables, disables or checks the `octrss` plug-in by code. Remove that call. (octeth/oempro#4117)
+
 ### SMS campaigns
 
 #### `SendRatePerMinute` is spread evenly across the minute
