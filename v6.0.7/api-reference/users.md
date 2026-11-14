@@ -624,6 +624,10 @@ curl -X POST https://example.com/api.php \
 | AvailableCredits | Integer | No | Available credits (admin only) |
 | RelUserGroupID | Integer | No | User group ID (admin only) |
 | ReputationLevel | String | No | Reputation level (admin only) |
+| DeliveryServerID | Integer | No | Admin only. Delivery server for all three channels (marketing, transactional and autoresponder), overriding the user group's servers. `0` uses the user group's servers. A value that is not a plain digit string is stored as `0`. A user-authenticated call that supplies it succeeds and the value is ignored. <Badge type="warning" text="Changed in v6.0.7" /> It also removes any per-channel override below, so the server applies to all three channels |
+| DeliveryServerID_Marketing | Integer | No | Admin only. Delivery server for this user's campaigns, overriding the user group's marketing server. `0` uses the user group's server. Canonicalised and ignored for non-admin callers like `DeliveryServerID`. See [Per-channel delivery server override](#per-channel-delivery-server-override). <Badge type="tip" text="Added in v6.0.7" /> |
+| DeliveryServerID_Transactional | Integer | No | Admin only. Delivery server for this user's transactional and email gateway mail, overriding the user group's transactional server. `0` uses the user group's server. <Badge type="tip" text="Added in v6.0.7" /> |
+| DeliveryServerID_AutoResponder | Integer | No | Admin only. Delivery server for this user's autoresponders, overriding the user group's autoresponder server. `0` uses the user group's server. <Badge type="tip" text="Added in v6.0.7" /> |
 | DisableLinkTrackingRedirects | String | No | Admin only. `true` stops link tracking for the account's email gateway messages: links are no longer rewritten into the tracking domain, including in messages already queued, and tracking links already delivered return HTTP 404 instead of redirecting. `false` turns it back on. Omit to keep the stored value. A user-authenticated call that supplies it succeeds and the value is ignored. It applies to email gateway messages, which include journey Send Email messages. Campaigns and autoresponders are not affected. <Badge type="tip" text="Added in v6.0.4" /> |
 | RateLimits | String | No | JSON string of rate limits, normalised before storage to `{"EmailGateway":{Minute,Hour,Day,Week,Month,Year},"SMS":{…}}` with integer values (`-1` = unlimited; an omitted interval becomes `-1`). Omit to keep the existing row's value; pass an **empty string** to clear it, which means "no user-level override, inherit the user group's default rate limits" (an empty value is stored as-is, never normalised into an all-unlimited document). |
 | CustomEmailHeaders | String | No | Custom email headers. Omit to keep the existing row's value; pass an empty string to clear it. |
@@ -693,6 +697,25 @@ The call that enables two-factor authentication (`Enable2FA=true` with a valid `
 ::: tip Clearing a field (v6.0.2)
 `user.update` skips an empty value for the contact and address fields, so a field could not be blanked. Send `ClearEmptyFields: true` with the fields to clear set to an empty string, for example `{"Command": "user.update", "UserID": 123, "CompanyName": "", "ClearEmptyFields": true}`. Only fields present in the request are cleared. A call without the flag behaves exactly as before.
 :::
+
+### Per-channel delivery server override
+
+<Badge type="tip" text="Added in v6.0.7" />
+
+An administrator can pin one account's campaigns to a dedicated delivery server while its transactional and autoresponder mail stays on the user group's servers. Send `DeliveryServerID_Marketing`, `DeliveryServerID_Transactional` or `DeliveryServerID_AutoResponder`, in any combination:
+
+```json
+{"Command": "user.update", "UserID": 123, "DeliveryServerID_Marketing": 7}
+```
+
+- Each channel is resolved on its own when the account sends. A stored per-channel value wins, and `0` there means the user group's server, even when a `DeliveryServerID` is also stored. Without a per-channel value the channel uses `DeliveryServerID` when it is above `0`, otherwise the user group's server.
+- A per-channel value that names a missing or archived server falls back to the user group's server for that channel.
+- When a per-channel parameter is sent for an account that has a `DeliveryServerID`, that server is copied into each channel the call does not name and `DeliveryServerID` is set to `0`. The routing of the untouched channels does not change.
+- `DeliveryServerID` keeps its meaning: one server for all three channels. Sending it removes the per-channel values.
+- A user override wins over a recipient-domain delivery route, as `DeliveryServerID` always has. A global segment's per-group delivery server can still replace the marketing server of a campaign, as before.
+- `user.get` returns the stored values in `Options`.
+
+A call without any of these parameters behaves exactly as before.
 
 ::: tip Error code 12 (v6.0.4)
 A call that changes the password, turns on two-factor authentication or disables the account also signs the user out of every browser where "Remember me" was ticked in the classic user area. When that sign-out cannot be recorded, nothing is saved and the call answers `ErrorCode 12` instead of reporting success. Retry the call. Every other `user.update` response is unchanged.
