@@ -32,7 +32,7 @@ Release in progress. Changelog will be updated upon release.
 
 ### Upgrade Notes
 
-- (To be documented)
+- **The upgrade removes superseded new-interface build files** - The upgrade now makes `ui/public/ui/build/` match the release exactly, so the hashed asset files an earlier release shipped and this one replaced no longer pile up or appear in the stale-file report. Every removed file is kept in `data/backups/upgrade_<timestamp>/rsync_replaced/`. A browser tab left open across the upgrade can show a loading error in the new interface until it is refreshed. `./cli/octeth.sh upgrade:remove-retired-files` now also removes `ui/.env.testing`, a test-suite file v5.9.6 shipped by mistake (#3156)
 
 ### Deprecations
 
