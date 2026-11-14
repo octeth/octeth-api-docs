@@ -100,6 +100,7 @@ curl -X POST https://example.com/api/v1/journey \
 19: Invalid rate_limit_per_day parameter
 20: Missing or invalid Trigger_ListID parameter for ScheduledPull trigger
 21: Trigger_ListID matching record not found (ScheduledPull)
+24: Invalid Timezone in triggerparameters for ScheduledPull trigger
 ```
 
 :::
@@ -127,12 +128,13 @@ When `Trigger` is set to `ScheduledPull`:
 | AllowedDays           | Array   | (none)      | Day-of-week abbreviations when pulls may run. Values: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`. Only applies when `TimeConstraintEnabled` is `true`; an empty list blocks all pulls. |
 | DontSendBefore        | String  | `00:00`     | Earliest time of day a pull may run, `HH:MM`. Only applies when `TimeConstraintEnabled` is `true`.        |
 | DontSendAfter         | String  | `23:59`     | Latest time of day a pull may run, `HH:MM`. Only applies when `TimeConstraintEnabled` is `true`.          |
+| Timezone              | String  | (empty)     | IANA timezone the time window is evaluated in, for example `America/New_York`. Empty or omitted means the journey owner's account timezone. Only applies when `TimeConstraintEnabled` is `true`. An invalid identifier is rejected with error code 24. Added in v6.0.7. |
 | FrequencyCapEnabled   | Boolean | `false`     | When `true`, limits how often the same subscriber can be re-enrolled by this trigger.                     |
 | FrequencyCapCount     | Integer | `0`         | Maximum number of enrollments per subscriber within the frequency-cap period.                             |
 | FrequencyCapPeriod    | Integer | `0`         | Length of the frequency-cap window, combined with `FrequencyCapUnit`.                                     |
 | FrequencyCapUnit      | String  | `days`      | Unit for `FrequencyCapPeriod`. Values: `minutes`, `hours`, `days`.                                        |
 
-The time window is evaluated in the journey owner's timezone. The top-level `Run_Criteria` / `Run_Criteria_Operator` (subscriber filtering) and `Rate_Limit_Per_Hour` / `Rate_Limit_Per_Day` parameters also apply to `ScheduledPull` journeys.
+The time window (`AllowedDays`, `DontSendBefore`, `DontSendAfter`) is evaluated in `Timezone` when it is set, otherwise in the journey owner's account timezone, otherwise UTC. An overnight window such as `22:00` to `02:00` belongs to the day it starts on, in that timezone. The top-level `Run_Criteria` / `Run_Criteria_Operator` (subscriber filtering) and `Rate_Limit_Per_Hour` / `Rate_Limit_Per_Day` parameters also apply to `ScheduledPull` journeys.
 
 ::: tip Key casing
 The `TriggerParameters` keys above are **case-insensitive on input** — you may send them in any case (e.g. `intervalValue`, `intervalvalue`, or `IntervalValue`). They are normalized to the canonical PascalCase shown in the table before being stored, and `journey.get` always returns them in PascalCase. Sending the canonical PascalCase keys is recommended.
@@ -159,6 +161,7 @@ curl -X POST https://example.com/api/v1/journey \
       "AllowedDays": ["mon", "tue", "wed", "thu", "fri"],
       "DontSendBefore": "09:00",
       "DontSendAfter": "17:00",
+      "Timezone": "America/New_York",
       "FrequencyCapEnabled": true,
       "FrequencyCapCount": 1,
       "FrequencyCapPeriod": 7,
@@ -874,6 +877,7 @@ curl -X PATCH https://example.com/api/v1/journey \
 20: Missing or invalid Trigger_ListID parameter for ScheduledPull trigger
 21: Trigger_ListID matching record not found (ScheduledPull)
 22: A journey cannot be triggered by its own completion (JourneyCompleted)
+24: Invalid Timezone in triggerparameters for ScheduledPull trigger
 ```
 
 :::

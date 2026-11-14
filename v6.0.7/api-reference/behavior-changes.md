@@ -98,6 +98,16 @@ A user's API calls, including every action taken in the new user interface, now 
 
 **Who needs to act:** an operator whose plug-in seems to stop working for some accounts after upgrading. Add `Plugin.<code>` to the user groups that should have it.
 
+### Journeys
+
+#### ScheduledPull trigger accepts a window Timezone
+
+`journey.create` and `journey.update` accept an optional `TriggerParameters.Timezone` for the `ScheduledPull` trigger: an IANA timezone such as `America/New_York` that the time window (`AllowedDays`, `DontSendBefore`, `DontSendAfter`) is evaluated in (octeth/oempro#1984). `journey.get` returns it in PascalCase like the other ScheduledPull keys. A non-empty value that is not an IANA identifier is now rejected with error code 24 (HTTP 422). Before v6.0.7 an unknown key was stored and ignored.
+
+**Not affected:** requests that do not send `Timezone` or send it empty, and existing journeys, which keep using the owner's account timezone.
+
+**Who needs to act:** nobody, unless an integration already sends a `Timezone` key with a value that is not an IANA identifier.
+
 ## Upgrade checklist
 
 - If you set `API_SCALAR_PARAMETER_CHECK=log` only to keep PowerMTA accounting flowing, set it back to `enforce` after upgrading to v6.0.7.
