@@ -2465,6 +2465,103 @@ Time,Event,MessageID,From,To,Subject,Domain,SMTPCode
 
 :::
 
+## Get the Saved Content of an Email
+
+<Badge type="info" text="POST" /> `/api.php`
+
+::: tip API Usage Notes
+- Authentication required: User API Key or session
+- Required permissions: `EmailGateway.ManageDomain`
+- Team members need the `Audience.Read` access, the same as for the event log
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+- Available in v6.0.7 and later
+:::
+
+Returns the saved content of one of your Email Gateway emails: the subject, the HTML as it was submitted (before open and click tracking were added), the plain text part, and the names, types and sizes of its attachments. Attachment files are never kept.
+
+Content is saved only when your user group has **Save email gateway content** turned on, and only for that group's retention period (1 to 31 days). Each email keeps the retention that applied when it was sent. HTML and plain text parts longer than 1 MB are cut at 1 MB and flagged as truncated.
+
+The lookup is always scoped to your account. An email that belongs to another account reads as `NotStored`.
+
+::: warning
+`HTMLBody` is the sender's markup, unchanged. Display it only inside a sandboxed iframe, never inline in your own page.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description |
+|-----------|---------|----------|-------------|
+| Command   | String  | Yes      | API command: `emailgateway.getmessagecontent` |
+| SessionID | String  | No       | Session ID obtained from login |
+| APIKey    | String  | No       | API key for authentication |
+| QueueID   | Integer | One of   | The gateway queue ID of the email |
+| MessageID | String  | One of   | The message ID the event log shows for the email (`message.headers.message-id` in [`emailgateway.getevents`](#get-email-events)). Used when `QueueID` is not supplied |
+
+**Response fields:**
+
+| Field | Description |
+|-------|-------------|
+| ContentStatus | `Stored`, `Expired` or `NotStored`. `Expired` means the saved copy is past its retention and has not been removed yet. `NotStored` means saving was off when the email was sent, the saved copy was already removed, or the email is not yours |
+| QueueID, UUID, DomainID | The email's identifiers. Returned with `Stored` and `Expired` |
+| StoredAt, ExpiresAt | When the content was saved and when it is removed, ISO 8601. Returned with `Stored` and `Expired` |
+| Subject, HTMLBody, TextBody | The saved content. Returned with `Stored` only |
+| HTMLTruncated, TextTruncated | `true` when that part was longer than 1 MB and was cut. Returned with `Stored` only |
+| Attachments | List of `name`, `type` and `size` (bytes). Returned with `Stored` only |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -d 'Command=emailgateway.getmessagecontent' \
+  -d 'SessionID=your-session-id' \
+  -d 'MessageID=bb1a701c-dcf0-4948-81eb-62726da0d67d'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ContentStatus": "Stored",
+  "QueueID": 88123,
+  "UUID": "bb1a701c-dcf0-4948-81eb-62726da0d67d",
+  "DomainID": 7,
+  "StoredAt": "2026-11-14T09:12:00+00:00",
+  "ExpiresAt": "2026-11-28T09:12:00+00:00",
+  "Subject": "Reset your password",
+  "HTMLBody": "<p>Choose a new password: ...</p>",
+  "TextBody": "Choose a new password: ...",
+  "HTMLTruncated": false,
+  "TextTruncated": false,
+  "Attachments": [
+    { "name": "receipt.pdf", "type": "application/pdf", "size": 48213 }
+  ]
+}
+```
+
+```json [Not Saved Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ContentStatus": "NotStored"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "QueueID or MessageID is required"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: QueueID or MessageID is required
+2: The saved content could not be read (content store unavailable)
+```
+
+:::
+
 ## Regenerate the Webhook Signing Key for a Domain
 
 <Badge type="info" text="POST" /> `/api.php`

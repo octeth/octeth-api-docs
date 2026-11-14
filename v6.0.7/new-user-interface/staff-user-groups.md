@@ -78,7 +78,8 @@ unsaved change in another section is not sent.
   options, the default sender domain with its monthly limit, the email gateway and campaign DNS
   templates (a template once chosen can be changed but not cleared here), the email gateway
   options (including **Track opens on new sender domains** and **Track clicks on new sender
-  domains**), and the custom email headers as JSON.
+  domains**), saved email gateway content with its retention, and the custom email headers as
+  JSON.
 - **Limits.** The same fields as on the Create page.
 - **Permissions.** Only the permissions you turn on or off are changed. A permission of a plug-in
   that is disabled today is kept.
@@ -102,6 +103,26 @@ domains added from then on, by the account in the new interface or the classic u
 the API, or when the default sender domain is used. Domains that already exist keep their own
 setting, and the account can still turn tracking on or off for each domain. An API call that
 sends `LinkTracking` or `OpenTracking` when it creates a domain uses that value instead.
+
+### Saved email gateway content
+
+Under **Saved gateway content** in the Sending section, **Save email gateway content** keeps a
+copy of every email the group's accounts send through the email gateway (the API and the SMTP
+relay): the subject, the HTML as it was submitted (before open and click tracking were added), the
+plain text part, and the names, types and sizes of attachments. Attachment files themselves are
+never kept. The account, and its team members who can read the event log, then see the email under
+**Content** when they expand an event in the **Transactional** event log.
+
+**Content retention (days)** sets how long each email is kept, from 1 to 31 days, and is required
+while saving is on. Each email keeps the retention that applied when it was sent, so a shorter
+retention affects only emails sent afterwards. HTML and plain text parts longer than 1 MB are cut
+at 1 MB.
+
+Saving is off by default. Transactional email often holds password reset links, one-time codes
+and personal data, and everything is stored exactly as sent, so turn it on only for groups that
+need it and keep the retention short. Emails sent while the option is off are never saved later.
+Saved content is written by the `oempro_emailgateway_content` background worker. The API command
+is [`emailgateway.getmessagecontent`](../api-reference/emailgateway.md#get-the-saved-content-of-an-email).
 
 ### Send method
 
