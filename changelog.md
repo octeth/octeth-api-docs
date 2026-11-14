@@ -12,31 +12,54 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Changelog will be updated upon release.
+Octeth v6.0.7 makes RSS-to-email part of Octeth, adds global search, team members without access to contact data, optional Google sign-in for the new interface, and saved message content for the email gateway. It adds an Overview tab to campaign reports, paces SMS sends across each minute, counts Keitaro clicks as SMS clicks, and applies user group plug-in permissions to API calls. This release changes how some API calls and plug-ins behave, so read the Upgrade Notes and the [API behavior changes in v6.0.7](/v6.0.7/api-reference/behavior-changes) before upgrading an installation that other systems call.
 
 ### New Features
 
-- (To be documented)
+- **RSS feeds in emails without a plug-in** - RSS blocks now render in every send path, test send, web browser view and preview without the RSS plug-in. A new user group permission, "Insert RSS feeds into emails", controls it and is granted to every existing group on upgrade. The new interface's email editors gain an "Insert RSS feed" dialog with a live preview (#3984, #4121)
+- **Global search** - Search subscribers, campaigns, lists, journeys, templates, segments and SMS campaigns from the new interface's top bar or with Cmd/Ctrl+K (#3673)
+- **Team members without contact data** - Account owners can invite team members who work on campaigns and journeys without seeing subscriber data (#4081)
+- **Google sign-in and sign-up** - The new interface can offer "Continue with Google" on its sign-in and sign-up pages. It is off until an operator sets `UI_GOOGLE_AUTH_ENABLED=true` with OAuth client credentials, and two-factor authentication still applies (#3245)
+- **Saved email gateway message content** - Each user group can keep the content of email gateway messages for 1 to 31 days, viewable from the event log (#3071)
+- **Delivery servers per message type** - Staff can assign a customer a separate delivery server for marketing, transactional and auto responder email (#3879)
+- **Campaign report Overview tab** - Email and SMS campaign reports show the content and every setting of the campaign on an Overview tab (#4091)
+- **Visual and HTML editing** - Custom HTML email editors have a Visual / HTML toggle (#4077)
+- **Date range presets** - The date range picker offers Today and Yesterday (#4092)
 
 ### Enhancements
 
-- (To be documented)
+- **ScheduledPull time window timezone** - A ScheduledPull journey trigger can evaluate its time window in its own timezone instead of the account's (#1984)
+- **Sender domain subdomains** - A subdomain of a verified sender domain no longer needs its own ownership TXT record (#2718)
+- **Scheduled campaigns** - Scheduled campaigns show a countdown and the exact start time with its timezone (#4093)
+- **SMS campaign report** - The report shows the campaign name once, explains status reasons in words, labels progress correctly, counts tracking-integration clicks as clicks and gives conversions their own section (#4078, #4080)
+- **Smoother SMS sending** - An SMS campaign's per-minute rate is now spread evenly across the minute instead of sent in the first second, which carriers read as a flood (#4089)
+- **Faster delivery metrics** - The staff delivery metrics read only the requested periods (#2822)
+- **Cleaner upgrades** - Upgrades remove new-interface build files that a release replaced, and keep a backup of each (#3156)
 
 ### Bug Fixes
 
-- (To be documented)
+- **Email gateway delivery events** - PowerMTA accounting events stopped arriving when the API parameter check was set to `enforce` (#4075)
+- **SMS campaigns with a global phone field** - SMS campaigns failed when the list's phone field was a global custom field, and a failed estimate retried without end (#4076)
+- **Keitaro clicks** - Keitaro clicks on SMS links were missing from click totals, segments and reports. The upgrade records them for clicks stored before it (#4079)
+- **Segment builder** - The "Bounce type is No bounce" rule was dropped, and statuses that match nothing were offered (#4073)
+- **RSS length tags** - Trimmed RSS titles and content could end inside an HTML tag, entity or multi-byte character. Length tags now count characters and keep HTML intact (#4116)
 
 ### Security Patches
 
-- (To be documented)
+- **User group plug-in permissions on API calls** - A user's API calls, including every action in the new interface, now run only the plug-ins the user's group includes, as the legacy user area always did. Plug-in API commands are refused for a user whose group does not include the plug-in (#4061)
 
 ### Upgrade Notes
 
 - **The upgrade removes superseded new-interface build files** - The upgrade now makes `ui/public/ui/build/` match the release exactly, so the hashed asset files an earlier release shipped and this one replaced no longer pile up or appear in the stale-file report. Every removed file is kept in `data/backups/upgrade_<timestamp>/rsync_replaced/`. A browser tab left open across the upgrade can show a loading error in the new interface until it is refreshed. `./cli/octeth.sh upgrade:remove-retired-files` now also removes `ui/.env.testing`, a test-suite file v5.9.6 shipped by mistake (#3156)
+- **Plug-ins follow user group permissions for API calls** - After the upgrade, a plug-in acts on a user's API calls and new-interface actions only when the user's group includes it. If a plug-in seems to stop working for some accounts, add `Plugin.<code>` to the permissions of the user groups that should have it (#4061)
+- **The RSS plug-in is retired** - RSS rendering is built in, so the upgrade removes the RSS plug-in from the enabled plug-in list, and it can no longer be enabled. RSS blocks keep rendering with the same output. On an installation that did not have the plug-in enabled, existing content with RSS block text now renders as a feed. `./cli/octeth.sh upgrade:remove-retired-files` removes an unused legacy RSS parser file, and the leftover `plugins/octrss` directory can be deleted by hand (#3984, #4117)
+- **Keitaro clicks count as SMS clicks** - The upgrade records a click event for each stored Keitaro click, so SMS click figures rise for campaigns with Keitaro links. An integration that adds integration clicks to clicks itself should read clicks alone after upgrading (#4079)
+- **PowerMTA accounting under `enforce`** - Installations that set `API_SCALAR_PARAMETER_CHECK=log` only to keep PowerMTA accounting flowing can set it back to `enforce` after upgrading (#4075)
+- **New background process** - A new email gateway content worker runs under the supervisor container. It stores message content only for user groups that turn retention on (#3071)
 
 ### Deprecations
 
-None
+- **RSS plug-in** - The RSS plug-in is removed and replaced by built-in RSS support (#4117)
 
 ## v6.0.6
 
