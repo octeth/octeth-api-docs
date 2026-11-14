@@ -1271,7 +1271,7 @@ export default defineConfig({
                                 {text: 'Reports', link: '/v6.0.7/api-reference/reports'},
                                 {text: 'Auto Responders', link: '/v6.0.7/api-reference/autoresponders'},
                                 {text: 'Campaigns', link: '/v6.0.7/api-reference/campaigns'},
-                                {text: 'Saved Search Filters', link: '/v6.0.7/api-reference/search'},
+                                {text: 'Search', link: '/v6.0.7/api-reference/search'},
                                 {text: 'Custom Fields', link: '/v6.0.7/api-reference/customfields'},
                                 {text: 'Delivery Servers', link: '/v6.0.7/api-reference/deliveryservers'},
                                 {text: 'SMS Gateways', link: '/v6.0.7/api-reference/sms-gateways'},
