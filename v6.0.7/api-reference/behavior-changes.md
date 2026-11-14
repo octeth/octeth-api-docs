@@ -34,6 +34,20 @@ A new user group permission, `Email.RSSFeeds` ("Insert RSS feeds into emails"), 
 
 **Who needs to act:** nobody, unless an install without the plug-in has existing content that contains RSS block text meant to be sent literally. To stop RSS rendering for a group, switch off "Insert RSS feeds into emails" in its user group settings.
 
+#### RSS length tags count characters and keep HTML intact
+
+`%RSS:TITLE:<n>%` and `%RSS:CONTENT:<n>%` now count characters instead of bytes, and `%RSS:CONTENT:<n>%` builds an HTML-aware excerpt. Before, both cut the raw value at `<n>` bytes, so a trimmed item could end inside an HTML tag or attribute (an unfinished `<a href="...` swallowed the rest of the block and sometimes the rest of the email), leave a bold or link element open into the template, split an entity such as `&#8217;`, or split a multi-byte character such as `Ç` or an emoji.
+
+`%RSS:CONTENT:<n>%` now counts only visible text: tags, comments, `<style>` and `<script>` count nothing, and an entity counts as one character. The cut never falls inside a tag, attribute, entity or character. Links and formatting before the cut are kept, open inline elements (such as `<a>` and `<b>`) are closed, the `...` is added inside the last open block element, and every other open element is closed. Markup after the cut, such as an image, is dropped. Content whose visible text is `<n>` characters or fewer is now returned in full with no `...`, where before it was cut whenever its HTML was longer than `<n>` bytes.
+
+`%RSS:TITLE:<n>%` keeps the same output for titles in plain ASCII. A title with accented or non-Latin characters is now cut at `<n>` characters instead of `<n>` bytes, so it keeps more text.
+
+This applies to every send path, the previews and `rss.content.render`.
+
+**Not affected:** `%RSS:TITLE%` and `%RSS:CONTENT%` without a length, and any value at or under its limit (returned byte for byte as before).
+
+**Who needs to act:** nobody. A template that relied on the byte count to fit a fixed width may now show more text for non-ASCII titles and HTML content (octeth/oempro#4116).
+
 ### SMS campaigns
 
 #### `SendRatePerMinute` is spread evenly across the minute
