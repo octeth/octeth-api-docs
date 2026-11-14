@@ -44,18 +44,49 @@ A command the role does not allow is refused with HTTP status `403` and error `1
 
 | Role | What it can do | Role permissions |
 |---|---|---|
-| Admin | Everything except billing, including team, API keys, sender domains, webhooks and account settings | `Account.Read`, `Content.Edit`, `Content.Delete`, `Campaigns.Send`, `Automation.Manage`, `Audience.Manage`, `Data.Export`, `Plugins.Manage`, `Team.Manage`, `Account.Settings`, `ApiKeys.Manage`, `SenderDomains.Manage`, `Webhooks.Manage`, `AuditLog.View` |
-| Manager | Create, edit, import, export, delete and send for lists, subscribers, campaigns, journeys, autoresponders, templates, segments and SMS. No team, keys, sender domains, webhooks, account settings or billing | `Account.Read`, `Content.Edit`, `Content.Delete`, `Campaigns.Send`, `Automation.Manage`, `Audience.Manage`, `Data.Export`, `Plugins.Manage` |
-| Author | Create and edit content: campaign drafts, emails, templates, segments, SMS drafts, media. Cannot send, schedule, import, export or delete | `Account.Read`, `Content.Edit` |
-| Viewer | Read-only, reports included | `Account.Read` |
+| Admin | Everything except billing, including team, API keys, sender domains, webhooks and account settings | `Account.Read`, `Audience.Read`, `Content.Edit`, `Content.Delete`, `Campaigns.Send`, `Automation.Manage`, `Audience.Manage`, `Data.Export`, `Plugins.Manage`, `Team.Manage`, `Account.Settings`, `ApiKeys.Manage`, `SenderDomains.Manage`, `Webhooks.Manage`, `AuditLog.View` |
+| Manager | Create, edit, import, export, delete and send for lists, subscribers, campaigns, journeys, autoresponders, templates, segments and SMS. No team, keys, sender domains, webhooks, account settings or billing | `Account.Read`, `Audience.Read`, `Content.Edit`, `Content.Delete`, `Campaigns.Send`, `Automation.Manage`, `Audience.Manage`, `Data.Export`, `Plugins.Manage` |
+| Author | Create and edit content: campaign drafts, emails, templates, segments, SMS drafts, media. Cannot send, schedule, import, export or delete | `Account.Read`, `Audience.Read`, `Content.Edit` |
+| Viewer | Read-only, reports included | `Account.Read`, `Audience.Read` |
 
 An invitation can grant Admin, Manager, Author or Viewer. The account owner is always the account's own sign-in. The account owner manages members and invitations at every role. An Admin member manages Manager, Author and Viewer members and invitations only: it cannot invite or promote anyone to Admin, and cannot change, suspend, remove, resend or revoke anything at Admin, itself included.
+
+### Audience data access
+
+<Badge type="tip" text="New in v6.0.7" />
+
+Every membership and invitation also has an audience data access switch, `AudienceAccess` (`Yes` or `No`). It applies on top of any role. With `Yes` (the default, and what every membership created before v6.0.7 has) the role decides alone. With `No` the member keeps every other permission of the role but loses `Audience.Read`, `Audience.Manage` and `Data.Export`:
+
+- Refused: subscriber records and profiles, subscriber search, activity and timelines, per-recipient campaign, autoresponder, journey and SMS lists and events, SMS replies, email gateway event browsing, suppression lists, test emails personalized with a real subscriber (`email.emailpreview` with a `SubscriberID`, `autoresponder.sendtest`), per-subscriber email verification results (`list.verification.results`), `email.smtp.render` (it renders a real subscriber), every import and every export.
+- Still available: list and segment names, counts and rules, custom field definitions, and aggregate campaign, journey, SMS and list reports, so the member can pick targets and read results.
+- Partly available: `campaign.get` with `RetrieveStatistics` answers the statistics without `SubscribersOpened` and `SubscribersClicked`, `email.emailpreview` without a `SubscriberID` personalizes the test email with placeholder values instead of a random subscriber, `search.global` answers without its `Subscribers` group, `campaign.linkclicks.get` answers its per-link ranking with each `LinkURL` cut to scheme and host (a personalized link carries subscriber values after the host) but refuses `GroupBy=Subscribers`, `email.render` refuses a `SubscriberID`, `campaign.recipients.get` answers `OnlyTotal=true` (the count) but refuses the recipient list, and `emailgateway.aggrevents` answers every aggregation except by recipient `ip`, clicked `url` or delivery `reason` (a diagnostic can quote the recipient).
+- `subscriber.journey.trigger` and `subscribers.journey.bulk` name subscribers, so they need `Audience.Read` as well as `Campaigns.Send`.
+- Commands that would send subscriber data to a place the member chooses also need `Audience.Read`: `user.webhook.create` and `user.webhook.update` (Subscription and Unsubscription webhooks), `emailgateway.addwebhook`, `emailgateway.addapi` and `emailgateway.replaceapi` (a sender API key reads recipient events), `journey.actions.update` with a Webhook action or an email with CC or BCC recipients anywhere in the journey, and `journey.actions.published`, `journey.enable` and `journeys.enable` for a journey that already holds one. An email gateway sender API key a member created stops reading events (`emailgateway.getevents.public`) and adding webhooks (`emailgateway.addwebhook.public`) while that member has no audience data access, with error `14` and HTTP `403`, cannot add CC or BCC recipients to a `TargetListID` send (`emailgateway.sendemail` error `46`), and cannot personalize a send with a stored subscriber through `ListID` and `SubscriberID` (error `47`); other sending with it is not affected. The same holds for the member's own session and keys.
+
+A refused command answers error `100021` as for a role, with `RequiredMemberPermission` set to `Audience.Read`, `Audience.Manage` or `Data.Export`:
+
+```json
+{
+  "Success": false,
+  "ErrorCode": 100021,
+  "ErrorText": "Your team access does not include audience data (subscriber records, imports and exports).",
+  "MemberRole": "Manager",
+  "RequiredMemberPermission": "Audience.Read"
+}
+```
+
+An API key or agent key a member created follows the member's current switch, like the role. Changing the switch ends the member's open sessions, as a role change does.
+
+A member whose own `AudienceAccess` is `No` (for example an Admin the owner restricted) cannot hand out access it does not hold: it can invite only with `No`, and it can suspend a member who has access or turn that access off, but any other change to such a member is refused with error `5`.
+
+Some limits remain, because they come with the right to target, edit and send: segment counts stay visible, so a restricted member can narrow a segment to one address and learn from its count whether that address is on the list; a member who can edit and send can put personalization tags in content that leaves Octeth, such as a link (including its hostname) or a `%RemoteContent=…%` URL, and so receive subscriber values when the campaign sends; and the link-click report keeps each link's scheme and host, which shows a personalized hostname. Turn audience data access off for people you trust with sending, not as a hard barrier.
 
 ### Role permissions
 
 | Permission | Covers |
 |---|---|
-| `Account.Read` | Every read of lists, subscribers, campaigns, journeys, autoresponders, segments, emails, templates, media, SMS, suppression lists, sender domains and reports |
+| `Account.Read` | Every read of lists, campaigns, journeys, autoresponders, segments, emails, templates, media, SMS, sender domains and aggregate reports |
+| `Audience.Read` | Subscriber-level reads: subscriber records, search, activity, tags, per-recipient campaign, autoresponder, journey and SMS lists and events, SMS replies, email gateway events and suppression lists. Every role holds it; audience data access `No` removes it (v6.0.7) |
 | `Content.Edit` | Creating and editing campaign drafts, emails, templates, segments, SMS campaign drafts and templates, media uploads, campaign tags, test emails |
 | `Content.Delete` | Deleting campaigns, emails, templates, segments, SMS campaigns and templates, media and tags |
 | `Campaigns.Send` | Sending, scheduling, pausing, resuming and cancelling campaigns and SMS campaigns, turning journeys on, putting subscribers into journeys, SMS test numbers and test sends. Also needed to edit a campaign so that it is scheduled, to edit a scheduled or sending campaign, and to edit an email, template or segment that a scheduled or sending campaign, an autoresponder or a journey uses |
@@ -81,9 +112,12 @@ A member with `ApiKeys.Manage` sees the value of an email gateway sender API key
 
 A command marked (read) changes nothing. Commands authorized only for administrators are not listed: a member session never runs them.
 
+Some commands need `Audience.Read` only for part of what they do (v6.0.7): `campaign.recipients.get` without `OnlyTotal=true`, `emailgateway.aggrevents` with `AggregatedField` `ip`, `url` or `reason`, `email.emailpreview` with a `SubscriberID`, `campaign.linkclicks.get` with `GroupBy=Subscribers`, `email.render` with a `SubscriberID`, `journey.actions.update` with a Webhook action or CC/BCC recipients on an email, and `journey.actions.published`, `journey.enable` or `journeys.enable` for a journey that holds one. `autoresponder.sendtest`, `subscriber.journey.trigger`, `subscribers.journey.bulk`, `user.webhook.create`, `user.webhook.update`, `emailgateway.addwebhook`, `emailgateway.addapi` and `emailgateway.replaceapi` need `Audience.Read` next to the permission in their row. `search.global` leaves out its `Subscribers` group for a member without `Audience.Read`.
+
 | Needs | Commands |
 |---|---|
-| Account.Read | `user.snapshot` (read), `user.stats` (read), `user.agentpolicy.get` (read), `user.emailcontent.get` (read), `user.integrations.browse` (read), `automated_reports.get` (read), `automated_reports.list` (read), `user.senderdomain.list` (read), `user.senderdomain.get` (read), `user.senderdomain.dns` (read), `user.senderdomain.dnshost` (read), `dns.provider` (read), `emailgateway.getdomains` (read), `emailgateway.getdomain` (read), `emailgateway.domainstats` (read), `emailgateway.recipientdomainstats` (read), `emailgateway.listrecipientdomains` (read), `emailgateway.accountstats` (read), `emailgateway.getevents` (read), `emailgateway.aggrevents` (read), `emailgateway.dailyseries` (read), `suppression.browse` (read), `suppression.check` (read), `suppression.stats` (read), `smssuppression.browse` (read), `smssuppression.stats` (read), `smssuppression.patterns.browse` (read), `lists.get` (read), `lists.overview` (read), `lists.stats` (read), `list.get` (read), `list.assets` (read), `list.getactivityseries` (read), `list.getsubscriberstatusbreakdown` (read), `list.getbouncetrend` (read), `list.getengagementtiers` (read), `list.getsendtimeheatmap` (read), `list.gettenuredistribution` (read), `list.getespbreakdown` (read), `list.getsourcebreakdown` (read), `list.getctrretentionmatrix` (read), `list.sms.settings.get` (read), `customfields.get` (read), `listintegration.geturls` (read), `listintegration.generatesubscriptionformhtmlcode` (read), `listintegration.generateunsubscriptionformhtmlcode` (read), `subscribers.get` (read), `subscribers.search` (read), `subscriber.get` (read), `subscriber.get.activity` (read), `subscriber.activity.timeline` (read), `subscriber.events` (read), `subscriber.exists` (read), `subscriber.sms.events.get` (read), `subscriber.tags.get` (read), `website_events.properties` (read), `subscribers.import.get` (read), `segments.get` (read), `segments.rulevocabulary.get` (read), `emails.get` (read), `email.get` (read), `email.personalizationtags` (read), `personalization.gettags` (read), `email.render` (read), `email.html2text` (read), `email.smtp.render` (read), `email.templates.get` (read), `email.template.get` (read), `useremailtemplates.get` (read), `useremailtemplate.get` (read), `useremailtemplate.preview` (read), `media.browse` (read), `media.retrieve` (read), `campaigns.get` (read), `campaigns.counts` (read), `campaign.get` (read), `campaign.recipients.get` (read), `campaign.linkclicks.get` (read), `campaign.recipients.activity.get` (read), `campaign.abtest.get` (read), `campaigns.archive.geturl` (read), `search.filters.get` (read), `tags.get` (read), `autoresponders.get` (read), `autoresponders.acrosslists.get` (read), `autoresponder.get` (read), `autoresponder.activity.get` (read), `autoresponder.stats.window.get` (read), `journey.list` (read), `journey.get` (read), `journey.action.subscribers` (read), `journey.sendemailactions` (read), `journey.stats.byisp` (read), `journey.stats.byaction` (read), `account.journey.benchmark` (read), `subscriber.journey.list` (read), `smscampaign.get` (read), `smscampaign.browse` (read), `smscampaign.summary.get` (read), `smscampaign.stats` (read), `smscampaign.stats.timeseries` (read), `smscampaign.stats.breakdown` (read), `smscampaign.recipients.browse` (read), `smscampaign.events.browse` (read), `smscampaign.replies.browse` (read), `smscampaign.linkclicks.get` (read), `smscampaign.audience.count` (read), `smscampaign.estimate` (read), `smscampaign.estimate.get` (read), `sms.stats.account` (read), `sms.replies.browse` (read), `sms.replies.summary.get` (read), `sms.gateways.get` (read), `sms.mergetags.get` (read), `sms.testnumbers.get` (read), `smstemplate.get` (read), `smstemplate.browse` (read) |
+| Account.Read | `user.snapshot` (read), `user.stats` (read), `user.agentpolicy.get` (read), `user.emailcontent.get` (read), `user.integrations.browse` (read), `automated_reports.get` (read), `automated_reports.list` (read), `user.senderdomain.list` (read), `user.senderdomain.get` (read), `user.senderdomain.dns` (read), `user.senderdomain.dnshost` (read), `dns.provider` (read), `emailgateway.getdomains` (read), `emailgateway.getdomain` (read), `emailgateway.domainstats` (read), `emailgateway.recipientdomainstats` (read), `emailgateway.listrecipientdomains` (read), `emailgateway.accountstats` (read), `emailgateway.dailyseries` (read), `suppression.stats` (read), `smssuppression.stats` (read), `lists.get` (read), `lists.overview` (read), `lists.stats` (read), `list.get` (read), `list.assets` (read), `list.getactivityseries` (read), `list.getsubscriberstatusbreakdown` (read), `list.getbouncetrend` (read), `list.getengagementtiers` (read), `list.getsendtimeheatmap` (read), `list.gettenuredistribution` (read), `list.getespbreakdown` (read), `list.getsourcebreakdown` (read), `list.getctrretentionmatrix` (read), `list.sms.settings.get` (read), `customfields.get` (read), `listintegration.geturls` (read), `listintegration.generatesubscriptionformhtmlcode` (read), `listintegration.generateunsubscriptionformhtmlcode` (read), `website_events.properties` (read), `segments.get` (read), `segments.rulevocabulary.get` (read), `emails.get` (read), `email.get` (read), `email.personalizationtags` (read), `personalization.gettags` (read), `email.render` (read), `email.html2text` (read), `email.templates.get` (read), `email.template.get` (read), `useremailtemplates.get` (read), `useremailtemplate.get` (read), `useremailtemplate.preview` (read), `media.browse` (read), `media.retrieve` (read), `campaigns.get` (read), `campaigns.counts` (read), `campaign.get` (read), `campaign.linkclicks.get` (read), `campaign.abtest.get` (read), `campaigns.archive.geturl` (read), `search.filters.get` (read), `tags.get` (read), `autoresponders.get` (read), `autoresponders.acrosslists.get` (read), `autoresponder.get` (read), `autoresponder.stats.window.get` (read), `journey.list` (read), `journey.get` (read), `journey.sendemailactions` (read), `journey.stats.byisp` (read), `journey.stats.byaction` (read), `account.journey.benchmark` (read), `smscampaign.get` (read), `smscampaign.browse` (read), `smscampaign.summary.get` (read), `smscampaign.stats` (read), `smscampaign.stats.timeseries` (read), `smscampaign.stats.breakdown` (read), `smscampaign.linkclicks.get` (read), `smscampaign.audience.count` (read), `smscampaign.estimate` (read), `smscampaign.estimate.get` (read), `sms.stats.account` (read), `sms.replies.summary.get` (read), `sms.gateways.get` (read), `sms.mergetags.get` (read), `sms.testnumbers.get` (read), `smstemplate.get` (read), `smstemplate.browse` (read), `search.global` (read), `emailgateway.aggrevents` (read), `subscriber.tags.get` (read) |
+| Audience.Read | `emailgateway.getevents` (read), `suppression.browse` (read), `suppression.check` (read), `smssuppression.browse` (read), `smssuppression.patterns.browse` (read), `subscribers.get` (read), `subscribers.search` (read), `subscriber.get` (read), `subscriber.get.activity` (read), `subscriber.activity.timeline` (read), `subscriber.events` (read), `subscriber.exists` (read), `subscriber.sms.events.get` (read), `subscribers.import.get` (read), `campaign.recipients.get` (read), `campaign.recipients.activity.get` (read), `autoresponder.activity.get` (read), `journey.action.subscribers` (read), `subscriber.journey.list` (read), `smscampaign.recipients.browse` (read), `smscampaign.events.browse` (read), `smscampaign.replies.browse` (read), `sms.replies.browse` (read), `user.subscriber.search` (read), `email.smtp.render` (read), `list.verification.results` (read) |
 | Content.Edit | `segment.create`, `segment.update`, `segments.copy`, `email.spamtest` (read), `stripo.editor.get` (read), `stripo.auth` (read), `email.create`, `email.duplicate`, `email.update`, `attachment.delete`, `email.template.create`, `email.template.update`, `email.template.thumbnail.upload`, `useremailtemplate.create`, `useremailtemplate.update`, `useremailtemplate.copy`, `media.upload`, `media.foldercreate`, `campaign.create`, `campaign.copy`, `campaign.update`, `splittest.create`, `search.filters.create`, `search.filters.update`, `search.filters.delete`, `tag.create`, `tag.update`, `tag.assigntocampaigns`, `tag.unassignfromcampaigns`, `smscampaign.test.preview` (read), `smscampaign.create`, `smscampaign.update`, `smscampaign.rename`, `smscampaign.copy`, `smstemplate.create`, `smstemplate.update` |
 | Content.Delete | `segments.delete`, `email.delete`, `email.template.delete`, `useremailtemplate.delete`, `media.delete`, `media.folderdelete`, `tags.delete`, `campaigns.delete`, `smscampaign.delete`, `smstemplate.delete` |
 | Campaigns.Send | `email.emailpreview`, `campaign.pause`, `campaign.resume`, `campaign.cancel`, `journey.enable`, `journeys.enable`, `subscriber.journey.trigger`, `subscribers.journey.bulk`, `smscampaign.send`, `smscampaign.schedule`, `smscampaign.pause`, `smscampaign.resume`, `smscampaign.cancel`, `smscampaign.test`, `sms.send`, `sms.testnumber.add`, `sms.testnumber.verify`, `sms.testnumber.delete` |
@@ -160,6 +194,7 @@ curl -X POST https://example.com/api.php \
       "AccountID": 1042,
       "AccountName": "Acme Coffee",
       "Role": "Admin",
+      "AudienceAccess": "Yes",
       "TwoFactorRequired": false,
       "CanSwitch": true
     },
@@ -168,6 +203,7 @@ curl -X POST https://example.com/api.php \
       "AccountID": 2210,
       "AccountName": "Northwind Books",
       "Role": "Viewer",
+      "AudienceAccess": "Yes",
       "TwoFactorRequired": true,
       "CanSwitch": true
     }
@@ -247,6 +283,7 @@ curl -X POST https://example.com/api.php \
       "AccountID": 1042,
       "AccountName": "Acme Coffee",
       "Role": "Admin",
+      "AudienceAccess": "Yes",
       "TwoFactorRequired": false,
       "CanSwitch": true
     }
@@ -277,6 +314,8 @@ curl -X POST https://example.com/api.php \
 :::
 
 Opens a member session for one of the person's memberships. The response carries a **new** `SessionID`; use it for every following call. The `SessionID` sent with the request stops working.
+
+`Membership.AudienceAccess` (v6.0.7) is `No` when the membership has audience data access turned off (see [Audience data access](#audience-data-access)).
 
 When the account's user group requires two-factor authentication from members and the person has none, the call answers error `100020`. Enrol with `member.2fa.enrol` and `member.2fa.verify` using the same session, then call `member.switch` again.
 
@@ -310,7 +349,8 @@ curl -X POST https://example.com/api.php \
     "MembershipID": 31,
     "AccountID": 1042,
     "AccountName": "Acme Coffee",
-    "Role": "Admin"
+    "Role": "Admin",
+    "AudienceAccess": "Yes"
   },
   "Person": {
     "PersonID": "12",
@@ -751,6 +791,7 @@ curl -X GET "https://example.com/api/v1/team.member.list" \
       "PersonID": 12,
       "EmailAddress": "alex@agency.example",
       "Role": "Admin",
+      "AudienceAccess": "Yes",
       "Status": "Active",
       "PersonStatus": "Active",
       "TwoFactorEnabled": true,
@@ -798,6 +839,7 @@ Invites a person by email with a role and emails them the invitation link. The l
 | Command | String | Yes | API command: `team.member.invite` |
 | EmailAddress | String | Yes | The address to invite |
 | Role | String | Yes | `Admin`, `Manager`, `Author` or `Viewer`. An Admin member can grant `Manager`, `Author` or `Viewer` only |
+| AudienceAccess | String | No | `Yes` or `No` (v6.0.7). `No` invites without [audience data access](#audience-data-access). Omitted: `Yes` when the account owner invites, the caller's own access when a member invites. A member without audience data access can send only `No` |
 
 ::: code-group
 
@@ -820,6 +862,7 @@ curl -X POST https://example.com/api/v1/team.member.invite \
     "InvitationID": 88,
     "EmailAddress": "sam@agency.example",
     "Role": "Author",
+    "AudienceAccess": "Yes",
     "State": "pending",
     "InvitedByPersonID": null,
     "CreatedAt": "2026-10-26 15:00:00",
@@ -845,7 +888,7 @@ curl -X POST https://example.com/api/v1/team.member.invite \
 2: Role is missing
 3: EmailAddress is not valid
 4: Role is not Admin, Manager, Author or Viewer
-5: Your role cannot invite at this role
+5: Your role cannot invite at this role, or you cannot grant audience data access because you do not hold it
 6: This address already has a pending invitation (use team.invitation.resend)
 7: Team members are not available on this installation
 8: This address is already a member of the account
@@ -853,6 +896,8 @@ curl -X POST https://example.com/api/v1/team.member.invite \
 10: The account sent 50 invitations in the last 24 hours
 11: Team members are not available for this account (its user group allows none)
 14: Another change to the team is in progress, try again
+16: AudienceAccess is not Yes or No
+17: AudienceAccess No was sent before the database upgrade that adds it has run
 100021: The member's role does not allow this command
 ```
 
@@ -869,7 +914,7 @@ curl -X POST https://example.com/api/v1/team.member.invite \
 - v1 REST alias: `POST /api/v1/team.member.update`. Legacy access via `/api.php` is also supported
 :::
 
-Changes a member's role, or suspends or reactivates the member. Either change ends every session the member has open in this account at once (error `99998` with `MemberSessionEnded` `membership_changed` or `membership_suspended`), and applies to the API keys the member created. A suspended member cannot switch into the account and keeps a seat.
+Changes a member's role or [audience data access](#audience-data-access), or suspends or reactivates the member. Any change ends every session the member has open in this account at once (error `99998` with `MemberSessionEnded` `membership_changed` or `membership_suspended`), and applies to the API keys the member created. A suspended member cannot switch into the account and keeps a seat.
 
 **Request Body Parameters:**
 
@@ -877,8 +922,9 @@ Changes a member's role, or suspends or reactivates the member. Either change en
 |-----------|------|----------|-------------|
 | Command | String | Yes | API command: `team.member.update` |
 | MembershipID | Integer | Yes | The member, from `team.member.list` |
-| Role | String | Conditional | `Admin`, `Manager`, `Author` or `Viewer`. Send Role, Status or both |
+| Role | String | Conditional | `Admin`, `Manager`, `Author` or `Viewer`. Send at least one of Role, Status and AudienceAccess |
 | Status | String | Conditional | `Active` or `Suspended` |
+| AudienceAccess | String | Conditional | `Yes` or `No` (v6.0.7). Omitted: unchanged. A member without audience data access can only suspend a member who has it or turn it off |
 
 ::: code-group
 
@@ -902,6 +948,7 @@ curl -X POST https://example.com/api/v1/team.member.update \
     "PersonID": 12,
     "EmailAddress": "alex@agency.example",
     "Role": "Manager",
+    "AudienceAccess": "Yes",
     "Status": "Suspended",
     "PersonStatus": "Active",
     "TwoFactorEnabled": true,
@@ -916,13 +963,15 @@ curl -X POST https://example.com/api/v1/team.member.update \
 ```txt [Error Codes]
 0: Success
 1: MembershipID is missing
-2: Neither Role nor Status was sent
+2: None of Role, Status and AudienceAccess was sent
 3: No member with this MembershipID in this account
 4: Role is not Admin, Manager, Author or Viewer
-5: Your role cannot manage this member or grant this role
+5: Your role cannot manage this member or grant this role, or you cannot leave this member with audience data access because you do not hold it
 6: Status is not Active or Suspended
 7: Team members are not available on this installation
 15: The member was changed by another request after it was read: read it again and retry
+16: AudienceAccess is not Yes or No
+17: AudienceAccess No was sent before the database upgrade that adds it has run
 100021: The member's role does not allow this command
 ```
 
@@ -1052,6 +1101,7 @@ Lists the account's invitations, newest first (at most 500), with their state.
       "InvitationID": 88,
       "EmailAddress": "sam@agency.example",
       "Role": "Author",
+      "AudienceAccess": "Yes",
       "State": "pending",
       "InvitedByPersonID": 12,
       "CreatedAt": "2026-10-26 15:00:00",
@@ -1089,7 +1139,7 @@ Lists the account's invitations, newest first (at most 500), with their state.
 - Counts against the 50 invitations per 24 hours
 :::
 
-Emails a pending or expired invitation again with a new link and a new 7-day expiry. The old link stops working: the old invitation is revoked and replaced by a new one, so the response carries a new `InvitationID`.
+Emails a pending or expired invitation again with a new link and a new 7-day expiry. The old link stops working: the old invitation is revoked and replaced by a new one, so the response carries a new `InvitationID`. The new invitation keeps the role and `AudienceAccess` of the old one, so a member without audience data access cannot resend an invitation that grants it (error `5`).
 
 **Request Body Parameters:**
 
@@ -1109,6 +1159,7 @@ Emails a pending or expired invitation again with a new link and a new 7-day exp
     "InvitationID": 91,
     "EmailAddress": "sam@agency.example",
     "Role": "Author",
+    "AudienceAccess": "Yes",
     "State": "pending",
     "InvitedByPersonID": null,
     "CreatedAt": "2026-10-27 08:00:00",
@@ -1298,6 +1349,7 @@ curl -X POST https://example.com/api/v1/team.invitation.accept \
     "AccountID": 1042,
     "AccountName": "Acme Coffee",
     "Role": "Author",
+    "AudienceAccess": "Yes",
     "TwoFactorRequired": false
   }
 }

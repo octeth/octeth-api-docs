@@ -1466,6 +1466,7 @@ curl -X POST https://example.com/api/v1/webhooks \
 6: WebhookURL must be a valid HTTP or HTTPS URL (rejects ftp://, gopher://, etc.)
 7: WebhookURL cannot point to localhost, loopback, or .local addresses
 13: Invalid SenderAPIKey
+14: The SenderAPIKey was created by a team member who has no audience data access (HTTP 403, v6.0.7)
 429: Too many requests
 ```
 
@@ -1742,6 +1743,7 @@ curl -X GET https://example.com/api/v1/events \
 4: Missing StartFrom
 5: Missing RetrieveCount
 13: Invalid SenderAPIKey
+14: The SenderAPIKey was created by a team member who has no audience data access (HTTP 403, v6.0.7)
 429: Too many requests
 ```
 
@@ -2001,6 +2003,8 @@ curl -X POST https://example.com/api/v1/email \
 43: AI agent key only: the From address domain is not a sender domain of the account (HTTP 422)
 44: The IdempotencyKey could not be checked because Redis is unavailable, nothing was sent (HTTP 503)
 45: The From address is on the administrator's forbidden From addresses list, nothing was sent (HTTP 422)
+46: CC or BCC recipients on a TargetListID send by a team member without audience data access, or with a sender API key such a member created, nothing was sent (HTTP 403, v6.0.7)
+47: ListID and SubscriberID personalization by a team member without audience data access, or with a sender API key such a member created, nothing was sent (HTTP 403, v6.0.7)
 429: Email send rate limit exceeded (or the send-rate counters could not be read and EMAILGATEWAY_RATE_LIMIT_FAIL_CLOSED is true)
 ```
 
