@@ -9,7 +9,7 @@ description: Track Octeth version releases, development status, and upcoming fea
 This roadmap shows all past and upcoming Octeth releases. Use this page to track version history, plan upgrades, and see what's coming next.
 
 ::: tip Current Version
-The latest stable release is **v6.0.6** (released November 9th, 2026). [View changelog](/changelog#v6-0-6) to see what's new.
+The latest stable release is **v6.0.7** (released November 14th, 2026). [View changelog](/changelog#v6-0-7) to see what's new.
 :::
 
 ## Understanding Version Numbers
@@ -72,9 +72,10 @@ Each version has a status badge indicating its current state:
 | v6.0.4  |           <Badge type="tip" text="Released" />           | Oct 25th, 2026 | Keitaro tracking for SMS campaigns, SMS test sends to verified numbers, API reference and playground, session and API security hardening |
 | v6.0.5  |           <Badge type="tip" text="Released" />           | Oct 30th, 2026 | Team members with roles, account audit log, more AI assistant tools, merge tag menus and saved segments in campaigns, SMTP relay encryption |
 | v6.0.6  |           <Badge type="tip" text="Released" />           | Nov 9th, 2026  | Email verification, account review for held customers, journey emails that wait out limits, shorter SMS links, subscribe API hardening |
+| v6.0.7  |           <Badge type="tip" text="Released" />           | Nov 14th, 2026 | Built-in RSS-to-email, global search, team members without contact data, Google sign-in, campaign report overview, smoother SMS sending |
 
 ::: info What's Next?
-Octeth ships on a **two-week release cadence**, so expect a new version roughly every fortnight. The next release is due **November 23rd, 2026**.
+Octeth ships on a **two-week release cadence**, so expect a new version roughly every fortnight. The next release is due **November 28th, 2026**.
 :::
 
 ## Release Schedule
