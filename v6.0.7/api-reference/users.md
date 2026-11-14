@@ -898,8 +898,15 @@ The response is the merge of two payloads: a stat-strip header (the overall fiel
 | UserID    | Integer | Yes | User ID to switch to |
 | PrivilegeType | String | No | `Default` (or empty) logs in with the user group's permissions. `Full` lets the admin act as the user with every user permission, whatever the user group allows. Full applies only to the session `user.switch` returns, while it is logged in as this user: another lookup of the same user (for example `user.get`) and any account the session later switches to keep the group's real permissions. Changed in v6.0.2 |
 | ActingAdminID | Integer | No | The administrator acting through this call, for the customer's account audit log. Honoured only when the call is authenticated with the master admin API key and only for an existing administrator that may reach this account; otherwise the caller's own AdminID is recorded (AdminID 1 for the master key). It changes nothing else: the session and the response are the same. The new interface's staff area sends the signed-in staff member here. Added in v6.0.5 |
+| SignInMethod | String | No | Turns the call into the account owner's own sign-in instead of an impersonation. The only accepted value is `google`, sent by the new interface after Google has verified the account's email address, and it is accepted only from a call authenticated with the master admin API key (`ErrorCode 9` otherwise). In this mode two-factor authentication, the user-area IP allow-list and the login limiter apply as they do on `user.login`, `PrivilegeType` is ignored, and the account audit log records an owner sign-in (`user.signin.google`) instead of staff impersonation. Without it, the call behaves exactly as before. Added in v6.0.7 |
+| TFACode | String | No | The six-digit two-factor code. Read only with `SignInMethod`, and required then for an account with two-factor authentication. Added in v6.0.7 |
+| TFARecoveryCode | String | No | The account's two-factor recovery key, instead of `TFACode`. A matching key turns the account's two-factor authentication off and signs in, as on `user.login`. Read only with `SignInMethod`. Added in v6.0.7 |
 
 The target account must be enabled. `user.switch` refuses an account whose status is not `Enabled` with `ErrorCode 4` and creates no session, because a session for a disabled account cannot authenticate any user command. Enable the account first, or read it through admin commands such as `user.get`. (Changed in v6.0.1.)
+
+::: tip New in v6.0.7 (#3245): owner sign-in mode
+With `SignInMethod`, `user.switch` signs the account owner in after an external identity provider has verified the account's email address, which is how the new interface's Google sign-in works. No session is created until two-factor authentication passes: the first call for a 2FA account returns `ErrorCode 6`, and the call is repeated with `TFACode` or `TFARecoveryCode`. Wrong codes count toward the same limit as wrong passwords on `user.login`. Calls without `SignInMethod` are unchanged, and `TFACode` and `TFARecoveryCode` are ignored on them.
+:::
 
 ::: code-group
 
@@ -948,6 +955,12 @@ curl -X POST https://example.com/api.php \
 2: User not found
 3: Invalid privilege type (must be 'Default' or 'Full')
 4: Target account is disabled (account status is not Enabled). No session is created (v6.0.1)
+5: Unsupported SignInMethod (v6.0.7)
+6: SignInMethod only: the account has two-factor authentication and no code, a wrong code or a wrong recovery key was sent (v6.0.7)
+7: SignInMethod only: more than one account uses this email address (v6.0.7)
+8: SignInMethod only: the visitor's IP address is not on the user-area allow-list (v6.0.7)
+9: SignInMethod sent with a credential other than the master admin API key (v6.0.7)
+429: SignInMethod only: too many failed attempts for this account, see RetryAfterSeconds (v6.0.7)
 5003: User is outside the user groups this admin account may access
 ```
 

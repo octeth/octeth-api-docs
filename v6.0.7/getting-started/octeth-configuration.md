@@ -1271,6 +1271,18 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     Changed in v6.0.1 (issue #2852): `UI_MAIL_USERNAME`, `UI_MAIL_PASSWORD`, `UI_MAIL_SCHEME` and `UI_MAIL_AUTO_TLS` were added, and signup is offered only while the mailer delivers.
 
+    **Google sign-in and sign-up**
+
+    ```bash
+    UI_GOOGLE_AUTH_ENABLED=false         # true shows "Continue with Google" on the sign-in and sign-up pages
+    UI_GOOGLE_CLIENT_ID=                 # OAuth client ID from the Google Cloud console
+    UI_GOOGLE_CLIENT_SECRET=             # OAuth client secret. Quote it if it contains a '#'
+    ```
+
+    Adds "Continue with Google" to the interface's sign-in and sign-up pages. It is on only when `UI_GOOGLE_AUTH_ENABLED` is `true` and both client values are set; otherwise the button is hidden and the Google pages return 404. Register `<APP_URL>/user/auth/google/callback` as the redirect URI of the OAuth client, built from `APP_URL`, which must be an absolute `https://` address. Only Gmail addresses and Google Workspace accounts on the address's own domain are accepted. A Google address that matches an existing account signs in to it without its password, and two-factor authentication still applies. A new address creates an account only while self-signup is on, and that account is active at once, with no verification email, so it does not need a delivering mailer. The three values are written to the interface's configuration only when set, and the client secret is stored in `ui/.env` like the mail password. Restart the interface after changing them. See [Google Sign-in](../new-user-interface/google-sign-in).
+
+    Added in v6.0.7 (issue #3245).
+
     **Product mode**
 
     ```bash

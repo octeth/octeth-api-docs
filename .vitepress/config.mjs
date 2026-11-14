@@ -1168,6 +1168,7 @@ export default defineConfig({
                         {text: 'The Staff SMS Suppression Screen', link: '/v6.0.7/new-user-interface/staff-sms-suppression'},
                         {text: 'Staff Preferences', link: '/v6.0.7/new-user-interface/staff-preferences'},
                         {text: 'Staff Sign-up', link: '/v6.0.7/new-user-interface/staff-signup'},
+                        {text: 'Google Sign-in', link: '/v6.0.7/new-user-interface/google-sign-in'},
                         {text: 'Reviewing New Accounts', link: '/v6.0.7/new-user-interface/staff-account-review'},
                         {text: 'Branding from the Staff Area', link: '/v6.0.7/new-user-interface/staff-branding'},
                         {text: 'Managing Delivery Servers in the Staff Area', link: '/v6.0.7/new-user-interface/staff-delivery-servers'},
