@@ -3511,6 +3511,21 @@ export default defineConfig({
         }
     },
 
+    // Every built version page gets a canonical to the same page of
+    // CURRENT_VERSION, so search engines index one copy instead of one per
+    // version. The version in development points there too. A page missing from
+    // CURRENT_VERSION, and a behavior-changes page (one release only), are
+    // canonical to themselves. Pages outside version directories get none.
+    transformHead({pageData}) {
+        const match = /^(v[^/]+)\/(.+)\.md$/.exec(pageData.relativePath)
+        if (!match || !versionDirs.includes(match[1])) return
+        const [, dir, page] = match
+        if (!currentPageSet) currentPageSet = new Set(listPages(CURRENT_VERSION))
+        const target = !/(^|\/)behavior-changes$/.test(page) && currentPageSet.has(page) ? CURRENT_VERSION : dir
+        const rest = page.replace(/(^|\/)index$/, '$1')
+        return [['link', {rel: 'canonical', href: `https://dev.octeth.com/${target}/${rest}`}]]
+    },
+
     // GitHub Pages cannot send a 301, so every page of a version that left the
     // build window gets a static redirect stub at its old URL. A page that also
     // exists in CURRENT_VERSION redirects there. A behavior-changes page describes
@@ -3552,6 +3567,8 @@ export default defineConfig({
         console.log(`wrote ${latest} /latest/ redirect stub(s) for ${CURRENT_VERSION}`)
     }
 })
+
+let currentPageSet = null
 
 // Page paths of a version directory without the .md suffix, e.g. 'api-reference/behavior-changes'.
 function listPages(dir) {
