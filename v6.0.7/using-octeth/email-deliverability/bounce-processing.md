@@ -326,7 +326,7 @@ input {
         sincedb_path => "/var/log/logstash/sincedb_pmta_logs.db"
         sincedb_write_interval => 5
         ignore_older => 0
-        path => [ "/var/log/pmta/bounces-*.csv" ]
+        path => [ "/var/log/pmta/bounces.csv" ]
     }
 }
 
