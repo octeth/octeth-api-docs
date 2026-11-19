@@ -320,7 +320,8 @@ To monitor whether the login pages are reachable from the internet, point an ext
 - Authentication required: Admin API Key (via Bearer token)
 - Rate limit: 100 requests per 60 seconds
 - This endpoint is designed for PowerMTA integration to process email delivery logs
-- Accepts batch processing of email events (delivery, bounce, etc.)
+- Accepts batch processing of PowerMTA accounting records: `d` (delivered), `b` and `rb` (bounce), `f` (feedback loop complaint) and `r` (received, accepted but not processed)
+- This is the endpoint that processes PowerMTA `f` complaint records. The bounce webhook (`/system/bounce_webhook`) registers every row as a bounce and does not process complaints
 - Legacy endpoint access via `/api.php` is also supported
 - The request body is a JSON array of log entries, sent as the whole body. Under `API_SCALAR_PARAMETER_CHECK=enforce` (the default) this needs v6.0.7 or later: v6.0.2 to v6.0.6 refuse the batch with HTTP 400 and `ErrorCode` 100017 for parameter `0`, so run `log` on those versions (octeth/oempro#4075)
 :::
@@ -334,7 +335,17 @@ To monitor whether the login pages are reachable from the internet, point an ext
 
 **PowerMTA Log Entry Format:**
 
-Each log entry in the array should contain PowerMTA event data following the PowerMTA log format specification.
+Each entry in the array is one accounting record. A record that lacks a required field is skipped and listed in `FailedEvents`.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `event_type` | Yes | PowerMTA record type: `d`, `b`, `rb`, `f` or `r` |
+| `originator` | Yes | Return-path (MAIL FROM) address of the original email. Octeth decodes the campaign or email gateway identifiers from it |
+| `recipient` | Yes | Recipient address. For an `f` record use the PowerMTA `header_To` field |
+| `time_logged` | Yes | Time PowerMTA logged the record |
+| `bounce_category` | For `b` and `rb` | PowerMTA bounce category. A `b` or `rb` record without it is rejected |
+| `dsn_status` | No | DSN status code, used for `b` and `rb` records |
+| `dsn_diagnostic` | No | DSN diagnostic text, used for `b` and `rb` records |
 
 ::: code-group
 
@@ -344,16 +355,19 @@ curl -X POST https://example.com/api/v1/process_pmta_log_file \
   -H "Authorization: Bearer YOUR_ADMIN_API_KEY" \
   -d '[
     {
-      "type": "delivery",
-      "timeLogged": "2025-01-15T10:30:00Z",
-      "recipient": "user@example.com",
-      "messageId": "550e8400-e29b-41d4-a716-446655440000"
+      "event_type": "b",
+      "originator": "bounce-xxxxxxxx@bounces.example.com",
+      "recipient": "invalid@example.com",
+      "time_logged": "2025-01-15 10:31:00",
+      "bounce_category": "bad-mailbox",
+      "dsn_status": "5.1.1",
+      "dsn_diagnostic": "smtp;550 5.1.1 user unknown"
     },
     {
-      "type": "bounce",
-      "timeLogged": "2025-01-15T10:31:00Z",
-      "recipient": "invalid@example.com",
-      "bounceType": "hard"
+      "event_type": "f",
+      "originator": "bounce-xxxxxxxx@bounces.example.com",
+      "recipient": "user@example.com",
+      "time_logged": "2025-01-15 10:32:00"
     }
   ]'
 ```
@@ -362,7 +376,13 @@ curl -X POST https://example.com/api/v1/process_pmta_log_file \
 {
   "Success": true,
   "ProcessedCount": 2,
-  "ErrorCount": 0
+  "FailedCount": 0,
+  "ProcessedEvents": [
+    {"index": 0, "event_type": "b", "recipient": "invalid@example.com"},
+    {"index": 1, "event_type": "f", "recipient": "user@example.com"}
+  ],
+  "FailedEvents": [],
+  "Message": "Processed 2 of 2 events successfully"
 }
 ```
 

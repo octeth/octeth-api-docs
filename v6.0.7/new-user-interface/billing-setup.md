@@ -174,7 +174,7 @@ Each plan is linked to one or more Octeth user groups, and each link has a role:
 | Role | Meaning |
 |---|---|
 | **Default** | Where a customer on this plan normally sits. One per plan. |
-| **Suspended** | Where a customer on this plan goes when their payment fails past the grace period. One per plan. |
+| **Suspended** | Where a customer on this plan goes when every payment retry fails. One per plan. |
 | **After cancel** | Where a customer goes after cancelling. One per plan. |
 | **Member** | A group that is valid for this plan but is never where an automatic move lands. Any number per plan. |
 
@@ -238,7 +238,7 @@ Go to **Staff**, then **Billing settings**, then the **Policy** tab.
 | Setting | Default | What it does |
 |---|---|---|
 | **Retry schedule** | `1,3,5` | Days after a failed payment on which the card is tried again. Must be whole days, increasing, and total no more than 90 days. |
-| **Grace period** | `7` days | How long a past-due customer keeps working before being suspended. |
+| **Grace period** | `7` days | How long a suspended customer has to pay before the subscription is cancelled. It starts when the last retry fails and the account is suspended. |
 
 ::: tip
 The retry schedule is read as an escalating series of gaps. `1,3,5` means: try the next day,

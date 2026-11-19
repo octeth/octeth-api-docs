@@ -54,7 +54,7 @@ When a spam complaint is received, Octeth follows a multi-step process to identi
 
 1. **Complaint is generated** — The recipient clicks "Mark as Spam" in their email client.
 2. **Email provider sends FBL report** — The provider sends an ARF-formatted email or webhook notification back to the sender.
-3. **Octeth receives the complaint** — The complaint arrives through one of several channels: email pipe, POP3 mailbox polling, MTA webhook, or third-party email service webhook.
+3. **Octeth receives the complaint** — The complaint arrives through one of several channels: email pipe, POP3 mailbox polling, PowerMTA `f` accounting records posted to `process_pmta_log_file`, or third-party email service webhook. The bounce webhook is not one of them.
 4. **Subscriber is identified** — Octeth extracts the `X-MessageID` header from the original email embedded in the FBL report. This header contains encoded identifiers for the campaign, subscriber, list, and user account.
 5. **Subscriber is unsubscribed** — The subscriber is automatically unsubscribed from the list with the channel recorded as "SPAM complaint."
 6. **Email is added to suppression list** — The subscriber's email address is added to the global suppression list to prevent any future delivery, even if the address is added to a new list later.
@@ -103,11 +103,11 @@ The POP3 processor (`cli/pop3_fbl.php`) connects to the configured mailbox, down
 
 Configure the feedback loop mailbox on the staff [Email delivery](/v6.0.7/new-user-interface/staff-email-delivery) screen (**Delivery > Email delivery**), in the **Complaints and inboxes** section. See the [Administrator Settings](#administrator-settings) section for details.
 
-### MTA Webhook (PowerMTA, Logstash)
+### PowerMTA Accounting Records
 
-When using an external MTA like PowerMTA, complaint events are captured in the MTA's accounting logs and forwarded to Octeth's webhook endpoint via a log-forwarding tool like Logstash. PowerMTA logs FBL events as `f` (feedback loop) records.
+When PowerMTA receives FBL reports itself, it logs each complaint as an `f` (feedback loop) accounting record. A log shipper posts these records to the `process_pmta_log_file` API command, and the PowerMTA log processor handles them. The bounce webhook does not accept complaints: it registers every row it receives as a bounce, so a log shipper set up only for bounces forwards no complaints.
 
-This is the recommended method for high-volume sending operations. See the [Integrating with Third-Party MTAs](#integrating-with-third-party-mtas) section for detailed setup instructions.
+See the [Integrating with Third-Party MTAs](#integrating-with-third-party-mtas) section for setup instructions.
 
 ### Third-Party Email Service Webhooks
 
@@ -133,15 +133,20 @@ The Report Abuse form provides a direct channel for recipients to complain witho
 
 ## Integrating with Third-Party MTAs
 
-When using an external MTA to deliver your emails, you need to configure the MTA to report complaint (FBL) events back to Octeth. This section covers integration with PowerMTA, which is the most commonly used MTA for high-volume sending.
+When using an external MTA to deliver your emails, you need a path that brings complaint (FBL) reports back to Octeth. This section covers PowerMTA, which is the most commonly used MTA for high-volume sending.
+
+::: warning The bounce webhook does not process complaints
+The bounce webhook (`/system/bounce_webhook`) registers every row it receives as a bounce, whatever its record type. It has no complaint handling. A PowerMTA `f` record posted there is recorded as a hard bounce, not as a complaint. Never forward `f` records to the bounce webhook, and do not expect a log shipper set up for bounces to deliver complaints.
+:::
 
 ### PowerMTA Integration
 
-[PowerMTA](https://www.sparkpost.com/powermta/) captures FBL events in its accounting files alongside bounce and delivery records. The integration uses [Logstash](https://www.elastic.co/logstash) to forward these events to Octeth's webhook endpoint.
+PowerMTA complaints reach Octeth in one of two ways:
 
-::: info
-If you have already configured the PowerMTA integration for bounce processing (see [Bounce Processing](./bounce-processing)), the same Logstash pipeline handles FBL events. The `f` record type in the Logstash filter configuration captures FBL events and forwards them to Octeth alongside bounce events. No additional configuration is needed.
-:::
+1. **FBL report emails.** Point your ISP feedback loop registrations at the **FBL Incoming Email Address** and let Octeth read the reports through the [email pipe](#email-pipe-direct-fbl) or [POP3 mailbox polling](#pop3-mailbox-polling). Octeth identifies the subscriber from the `X-MessageID` header of the original message. No PowerMTA accounting setup is needed for this path.
+2. **PowerMTA `f` accounting records.** PowerMTA receives the FBL reports itself and logs each one as an `f` record. A log shipper posts these records to the `process_pmta_log_file` API command, which handles them in the PowerMTA log processor.
+
+The rest of this section covers the second path.
 
 #### Step 1: Configure PowerMTA FBL Accounting
 
@@ -164,30 +169,11 @@ This tells PowerMTA to log FBL events with the following fields:
 | `timeLogged` | Timestamp when the FBL report was received. |
 | `format` | The format of the FBL report (typically ARF). |
 | `header_To` | The original recipient address from the complaint. |
-| `header_Return-Path` | The return-path address used in the original email. |
+| `header_Return-Path` | The return-path address used in the original email. Octeth identifies the campaign, subscriber and list from it. |
 | `reportedDomain` | The domain reported in the complaint. |
-| `header_X-FBLId` | The `X-FBLId` header from the original email, used for identification. |
+| `header_X-FBLId` | The `X-FBLId` header from the original email. |
 
-If you are also processing bounces through PowerMTA (recommended), your complete accounting configuration should include both bounce and FBL directives:
-
-```
-<acct-file /var/log/pmta/bounces.csv>
-    move-interval 1h
-    move-to /var/log/pmta/accounting/bounces/
-    records b, rb
-    record-fields b timeQueued,timeLogged,orig,rcpt,bounceCat,dsnStatus,dsnAction,dsnDiag,dsnMta,jobId,vmta,header_X-FBLId
-    record-fields rb timeLogged,orig,rcpt,bounceCat,dsnStatus,dsnAction,dsnDiag,dsnMta,header_X-FBLId
-    world-readable yes
-</acct-file>
-
-<acct-file /var/log/pmta/fbl.csv>
-    move-interval 24h
-    move-to /var/log/pmta/accounting/fbl/
-    records feedback-loop
-    record-fields f timeLogged,format,header_To,header_Return-Path,reportedDomain,header_X-FBLId
-    world-readable yes
-</acct-file>
-```
+Keep this file separate from the bounce accounting file, so the bounce pipeline never reads `f` records.
 
 Reload your PowerMTA configuration to apply the changes:
 
@@ -195,53 +181,66 @@ Reload your PowerMTA configuration to apply the changes:
 pmta reload
 ```
 
-#### Step 2: Configure Logstash for FBL Events
+#### Step 2: Post `f` Records to `process_pmta_log_file`
 
-If you have already set up Logstash for bounce processing, your existing pipeline configuration already includes the FBL filter. The `f` record type is parsed in the filter section:
+Configure a log shipper (for example [Logstash](https://www.elastic.co/logstash), [Fluentd](https://www.fluentd.org/), [Vector](https://vector.dev/) or a custom script) to read `/var/log/pmta/fbl.csv` and post the records to the [Process PowerMTA Log File](/{V}/api-reference/system#process-powermta-log-file) command. The command takes a JSON array of records and authenticates with the Admin API key as a Bearer token.
 
-```
-} else if ([message] =~ "^(f),") {
-    csv {
-        source => "message"
-        columns => [
-            "logType", "timeLogged", "format",
-            "header_To", "header_Return-Path",
-            "reportedDomain", "header_X-FBLId"
-        ]
-        separator => ","
-        add_tag => [ "pmta_fbl" ]
-        skip_empty_columns => true
+Map each `f` record to these fields. The processor rejects a record that lacks any of them:
+
+| Field | Value |
+|---|---|
+| `event_type` | `f` |
+| `originator` | The `header_Return-Path` address, without angle brackets. |
+| `recipient` | The `header_To` address. |
+| `time_logged` | The `timeLogged` value. |
+
+The following request posts one complaint record:
+
+```bash
+curl -X POST https://octeth.example.com/api/v1/process_pmta_log_file \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-admin-api-key-here" \
+  -d '[
+    {
+      "event_type": "f",
+      "originator": "bounce-xxxxxxxx@bounces.example.com",
+      "recipient": "user@example.com",
+      "time_logged": "2026-01-15 10:30:00"
     }
-}
+  ]'
 ```
 
-If you are setting up Logstash from scratch, refer to the [Bounce Processing — PowerMTA Integration](./bounce-processing#powermta-integration) article for the complete Logstash pipeline configuration. The same pipeline handles bounces (`b`, `rb` records) and FBL events (`f` records).
+The response reports `ProcessedCount` and `FailedCount`. Each failed record is listed in `FailedEvents` with the reason.
 
 ::: warning
-Replace `octeth.example.com` in the Logstash output URL with your actual Octeth server domain. The URL must be reachable from your PowerMTA server over HTTPS.
+Replace `octeth.example.com` with your actual Octeth server domain. The URL must be reachable from your PowerMTA server over HTTPS. The command is rate limited to 100 requests per 60 seconds, so send records in batches.
 :::
 
 #### Step 3: Verify the Integration
 
-After configuring PowerMTA and Logstash:
+After configuring PowerMTA and the log shipper:
 
 1. Send a test campaign to a mailbox where you can trigger a complaint.
 2. Mark the email as spam in the test mailbox.
-3. Wait for the FBL report to be logged by PowerMTA and forwarded by Logstash.
-4. Check the **Admin Area** > **Bounce Processing** > **Webhooks** tab for incoming FBL events.
-5. Verify the subscriber was unsubscribed and added to the suppression list.
+3. Wait for PowerMTA to log the `f` record and for the log shipper to post it.
+4. Check that the `process_pmta_log_file` response shows the record in `ProcessedCount`, not in `FailedEvents`.
+5. Verify that the address was added to the suppression list and that the campaign's complaint count increased.
 
 #### How the PowerMTA Complaint Data Flow Works
 
-The complete data flow for complaint processing through PowerMTA:
+The complete data flow for complaint processing through PowerMTA accounting records:
 
 1. **Email is sent** — PowerMTA delivers the email to the recipient's mail server.
 2. **Recipient marks as spam** — The recipient clicks the spam button in their email client.
 3. **Email provider sends FBL report** — The provider sends an ARF report back to the sender's domain.
 4. **PowerMTA logs the FBL event** — The event is written to `/var/log/pmta/fbl.csv` with record type `f`.
-5. **Logstash detects the new log entry** — Logstash tails the accounting file in real time.
-6. **Logstash sends to Octeth** — The parsed FBL data is POSTed to the Octeth webhook endpoint.
-7. **Octeth processes the complaint** — The webhook handler identifies the subscriber, unsubscribes them, adds the address to the suppression list, and records the FBL report.
+5. **The log shipper reads the new entry** — It maps the record to the `process_pmta_log_file` fields.
+6. **The log shipper posts to Octeth** — The records are POSTed to `/api/v1/process_pmta_log_file`.
+7. **Octeth processes the complaint** — The PowerMTA log processor decodes the return path, adds the address to the suppression list and records the FBL report. For a campaign email it also increments the campaign's complaint counter and the sender domain's complaint counter. For an email gateway email it increments the sender domain's complaint counter.
+
+::: info
+This path does not unsubscribe the subscriber from the list. The suppression list entry stops all future delivery to the address. The email pipe and POP3 paths also unsubscribe the subscriber.
+:::
 
 PowerMTA uses the following record types in its accounting files:
 
@@ -254,27 +253,16 @@ PowerMTA uses the following record types in its accounting files:
 | `t` | Transient — temporary status. |
 | `tq` | Transient queue — temporary queue status. |
 
+The `process_pmta_log_file` command accepts `d`, `b`, `rb`, `f` and `r` records. The bounce webhook treats every row as a bounce.
+
 ### Integrating with Other MTAs
 
-If you use an MTA other than PowerMTA, you can integrate with Octeth's webhook using the same general approach:
+If you use an MTA other than PowerMTA, deliver complaints to Octeth in one of these ways:
 
-1. **Configure your MTA to log FBL events** — Most MTAs support FBL logging to files, databases, or event hooks.
-2. **Forward FBL data to Octeth's webhook** — Send an HTTP POST request to `https://<your-octeth-domain>/system/bounce_webhook?type=pmta` with the complaint details.
+1. **Forward the FBL report emails** to the **FBL Incoming Email Address** and process them through the [email pipe](#email-pipe-direct-fbl) or [POP3 mailbox polling](#pop3-mailbox-polling). Octeth identifies the subscriber from the `X-MessageID` header of the original message.
+2. **Post complaint records to `process_pmta_log_file`** in the format shown in [Step 2](#step-2-post-f-records-to-process-pmta-log-file), with `event_type` set to `f` and `originator` set to the return-path address Octeth used for the original email.
 
-The webhook endpoint accepts FBL events when the `logType` field is set to `f`. The key fields for FBL events are:
-
-| Parameter | Description |
-|---|---|
-| `type` | Data source type. Use `pmta` for direct submissions. |
-| `logType` | Set to `f` to indicate a feedback loop (complaint) event. |
-| `orig` | The original sender (return-path/MFROM) email address. |
-| `rcpt` | The recipient email address that filed the complaint. |
-| `header_X-FBLId` | The FBL identification header from the original email. |
-| `timeLogged` | Timestamp when the FBL report was received. |
-
-::: tip
-You can use any log-forwarding tool to send FBL data to Octeth — not just Logstash. Tools like [Fluentd](https://www.fluentd.org/), [Filebeat](https://www.elastic.co/beats/filebeat), or a custom script can monitor your MTA's FBL logs and POST the data to the webhook endpoint.
-:::
+Do not post complaints to the bounce webhook. It registers every row as a bounce.
 
 ## Administrator Settings
 

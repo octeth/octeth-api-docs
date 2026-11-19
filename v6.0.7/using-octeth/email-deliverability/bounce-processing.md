@@ -293,7 +293,7 @@ This tells PowerMTA to log:
 
 - **`b` records** — Synchronous bounces with full details including DSN status and bounce category.
 - **`rb` records** — Asynchronous bounces reported back by receiving servers.
-- **`f` records** — Feedback loop (complaint) reports from ISPs.
+- **`f` records** — Feedback loop (complaint) reports from ISPs. These do not go to the bounce webhook. See [Complaint Processing](./complaint-processing#powermta-integration).
 
 Reload your PowerMTA configuration to apply the changes:
 
@@ -364,17 +364,8 @@ filter {
                 skip_empty_columns => true
             }
         } else if ([message] =~ "^(f),") {
-            csv {
-                source => "message"
-                columns => [
-                    "logType", "timeLogged", "format",
-                    "header_To", "header_Return-Path",
-                    "reportedDomain", "header_X-FBLId"
-                ]
-                separator => ","
-                add_tag => [ "pmta_fbl" ]
-                skip_empty_columns => true
-            }
+            # Complaints must not reach the bounce webhook, which registers every row as a bounce.
+            drop {}
         } else if ([message] =~ "^(t),") {
             drop {}
         } else if ([message] =~ "^(tq),") {
@@ -428,7 +419,7 @@ PowerMTA uses the following record types in its accounting files:
 | `b` | Synchronous bounce — delivery rejected during the SMTP conversation. |
 | `rb` | Asynchronous bounce — DSN email received after initial acceptance. |
 | `d` | Delivered — email was successfully delivered (ignored by Logstash). |
-| `f` | Feedback loop — ISP complaint report (handled separately). |
+| `f` | Feedback loop — ISP complaint report (dropped by Logstash, see [Complaint Processing](./complaint-processing#powermta-integration)). |
 | `t` | Transient — temporary status (ignored by Logstash). |
 | `tq` | Transient queue — temporary queue status (ignored by Logstash). |
 
