@@ -120,7 +120,7 @@ Earlier versions saved such a document, and it compiled to no condition, so the 
 
 | Field | Values |
 |---|---|
-| `operator` | `sent`, `not sent`, `delivered`, `not delivered`, `failed`, `not failed`, `clicked`, `not clicked`, `replied`, `not replied`, `opted out`, `not opted out` |
+| `operator` | `sent`, `not sent`, `delivered`, `not delivered`, `failed`, `not failed`, `clicked`, `not clicked`, `replied`, `not replied`, `opted out`, `not opted out`, `converted`, `not converted` |
 | `value` | An `SMSCampaignID`, or empty for any SMS |
 | `time_filter` | `in_last_x_days`, `not_in_last_x_days`, `after`, `before`. `between` and `not_between` only with a campaign `value` |
 | `aggregation` | `at_least`, `at_most`, `exactly` with `count`. Only with an empty `value` and no `time_filter`, and not with `opted out`, which has no counter |
@@ -130,6 +130,29 @@ These rules are validated when the segment is saved, so an unknown operator, an 
 A negative rule naming a specific campaign means "was a recipient of it and did not", not "is not in the matching set", so contacts who never received that campaign do not satisfy "did not click it".
 
 Segment results lag SMS activity by the rollup cycle, about one minute.
+:::
+
+::: tip Segmenting on conversions <Badge type="tip" text="New in v6.0.8" />
+`sms-events` rules accept two operators for conversions reported by a tracking integration (see [Keitaro for SMS Campaigns](../new-user-interface/sms-keitaro)):
+
+| Operator | Matches contacts who |
+|---|---|
+| `converted` | have a conversion after an SMS |
+| `not converted` | do not have one |
+
+They match exactly the contacts `integration converted` and `not integration converted` match, and take the same optional `status` key, `value`, `time_filter` and `aggregation`, with the same restrictions. Bot conversions are not counted. A conversion from any connected integration counts.
+
+```json
+{
+  "type": "sms-events",
+  "operator": "converted",
+  "value": "",
+  "status": "sale",
+  "time_filter": { "type": "in_last_x_days", "value": 7 }
+}
+```
+
+`integration converted` and `not integration converted` stay accepted and keep matching the same contacts. The new interface offers "Converted" and "Did not convert" for a new rule.
 :::
 
 ::: tip Segmenting on Keitaro activity <Badge type="tip" text="New in v6.0.4" />
@@ -163,7 +186,7 @@ The two converted operators take an optional `status` key:
 
 A conversion stores only its latest status, so a contact whose `lead` later became a `sale` matches `sale` and not `lead`.
 
-A `status` key on any other operator, including the existing ones such as `clicked`, is refused with error code `12` and the message "The status filter is only available for Keitaro conversion rules.". A `status` that is not a string, is blank after trimming, or is longer than 64 characters is refused with error code `12` and "The Keitaro conversion status must be text of 1 to 64 characters.". Nothing is saved in either case.
+A `status` key on any operator other than `converted`, `not converted`, `integration converted` and `not integration converted` is refused with error code `12` and the message "The status filter is only available for conversion rules." <Badge type="warning" text="Changed in v6.0.8" />. A `status` that is not a string, is blank after trimming, or is longer than 64 characters is refused with error code `12` and "The conversion status must be text of 1 to 64 characters." <Badge type="warning" text="Changed in v6.0.8" />. Nothing is saved in either case. Before v6.0.8 both messages said "Keitaro conversion".
 :::
 
 ## Update a Segment

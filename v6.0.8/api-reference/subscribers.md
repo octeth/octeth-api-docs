@@ -447,6 +447,8 @@ If the `RulesJSON` matching query fails in the database (for example a statement
 
 ::: tip `RulesJSON` validation is shared across five commands
 `RulesJSON` is validated identically on `subscribers.search`, `subscribers.delete`, `subscriber.unsubscribe`, `subscriber.tag` and `subscriber.untag`. The accepted payload shapes and the message text are the same on all five; only the error **code** differs — `6` on `subscribers.search`, `7` on the other four.
+
+<Badge type="warning" text="Changed in v6.0.8" /> An `sms-events` rule (SMS activity) is accepted in `RulesJSON` on all of these commands and on `subscribers.journey.bulk`. Before v6.0.8 a payload whose only typed rules were `sms-events` was refused as invalid (`ErrorCode` `6` on `subscribers.search`, `8` on `subscribers.journey.bulk`, `7` on the others), so an SMS activity filter in the subscriber browse showed "Couldn't load subscribers". The rule follows the same format as in [`segment.create`](/v6.0.8/api-reference/segments#create-a-segment). A malformed `sms-events` rule (an unknown operator, a campaign you do not own) matches nobody rather than being refused.
 :::
 
 ::: warning Empty RulesJSON no longer takes the bulk path (new in v5.9.3)

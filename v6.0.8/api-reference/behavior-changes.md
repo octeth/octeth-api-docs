@@ -30,9 +30,27 @@ None recorded yet.
 
 **Who needs to act:** nobody. A client that rejects unknown keys must accept the new ones.
 
+### Subscribers
+
+#### `RulesJSON` accepts SMS activity rules
+
+`subscribers.search`, `subscribers.delete`, `subscriber.tag`, `subscriber.untag`, `subscriber.unsubscribe` and `subscribers.journey.bulk` now accept a `RulesJSON` whose rules are `sms-events` (octeth/oempro#4157). Before v6.0.8 such a payload was refused as invalid RulesJSON (`ErrorCode` `6` on `subscribers.search`, `8` on `subscribers.journey.bulk`, `7` on the others), although the same rule worked in a saved segment. A bulk command sent with an SMS activity rule now acts on the contacts the rule matches.
+
+**Who needs to act:** nobody, unless an integration relied on the refusal to skip SMS rules.
+
+### Segments
+
+#### `converted` and `not converted` SMS operators
+
+`sms-events` rules accept `converted` and `not converted`, which match the same contacts as `integration converted` and `not integration converted` and take the same `status` key (octeth/oempro#4157). The older pair stays accepted. The new interface offers "Converted" and "Did not convert" for new rules and shows a saved rule that uses the older pair as "Converted (legacy rule)".
+
+The two `sms-events` status error texts no longer name Keitaro: "The status filter is only available for conversion rules." and "The conversion status must be text of 1 to 64 characters." The error code is still `12`.
+
+**Who needs to act:** an integration that compares `ErrorText` against the old "Keitaro conversion" messages.
+
 ## Upgrade checklist
 
-Nothing to check yet.
+- If your integration matches the `ErrorText` "The status filter is only available for Keitaro conversion rules." or "The Keitaro conversion status must be text of 1 to 64 characters.", match error code `12` or the new texts instead.
 
 ---
 
