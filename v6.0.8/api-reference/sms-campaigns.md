@@ -534,6 +534,7 @@ curl -X GET https://example.com/api/v1/smscampaign.get \
 | SearchField <Badge type="tip" text="New in v6.0.6" /> | String | No | Only campaigns whose name or message text contains this term. Case-insensitive, and `%` and `_` match literally. An empty value is no filter |
 | OrderField <Badge type="tip" text="New in v6.0.6" /> | String | No | Sort column. Possible values: `SMSCampaignID` (default), `CampaignName`, `CreatedAt`, `TotalSent`, `TotalDelivered`, `TotalOptOuts`, `ActualCost`. Case-insensitive |
 | OrderType <Badge type="tip" text="New in v6.0.6" /> | String | No | Sort direction, `ASC` or `DESC` (default `DESC`). Case-insensitive |
+| IncludeIntegrations <Badge type="tip" text="New in v6.0.8" /> | String | No | Set to `true`, `1` or `yes` to add `TotalConversions` to each campaign row. Any other value, or leaving it out, returns the response unchanged |
 
 ::: code-group
 
@@ -588,6 +589,21 @@ curl -X GET https://example.com/api/v1/smscampaign.browse \
 Results are ordered newest first by `SMSCampaignID` unless `OrderField` or `OrderType` is sent. `OrderType` on its own reverses the default order. Campaigns with an empty value in the sort column always come last, whichever direction is chosen, and campaigns with equal values are ordered newest first, so paging through a sorted list never repeats or skips a campaign. An `OrderField` outside the list above is refused with ErrorCode 4, and an `OrderType` other than `ASC` or `DESC` with ErrorCode 5, rather than falling back to the default order. `TotalCampaigns` counts the campaigns matching every filter, `SearchField` included, so it can drive pagination of a search. A call that sends none of `SearchField`, `OrderField` and `OrderType` behaves exactly as before they were added. Added in v6.0.6. A `CreatedAfter` or `CreatedBefore` value that cannot be parsed is refused with ErrorCode 3 rather than ignored, so a malformed date never silently widens the window.
 
 <Badge type="tip" text="New in v6.0.8" /> `RateLimitHolds` lists the campaigns on this page that an account SMS rate limit is holding right now, keyed by `SMSCampaignID`, each with `Interval`, `Limit` and `Reason` as in `smscampaign.get`'s `RateLimitHold`. Only `Sending` campaigns appear. It is an empty object when none is held or the holds cannot be read. The campaign rows are unchanged.
+
+<Badge type="tip" text="New in v6.0.8" /> With `IncludeIntegrations` set, each object in `SMSCampaigns` gains `TotalConversions` (integer or null): the unique contacts with a Keitaro conversion whose latest status is sale, bots excluded, for that campaign. It is the same number as `Integrations.Conversions` in `smscampaign.stats`. It is `null` when the account has no Keitaro connection and the campaign has no recorded conversions, because no figure can be collected. It is also `null` on every row when the conversion figures could not be read, and the rest of the response is still returned. The figures for a page are read with one query, not one per campaign.
+
+```json
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "TotalCampaigns": 2,
+  "SMSCampaigns": [
+    { "SMSCampaignID": 4098, "CampaignName": "Weekend flash sale", "TotalDelivered": 38650, "TotalConversions": 412 },
+    { "SMSCampaignID": 4095, "CampaignName": "Loyalty reminder", "TotalDelivered": 4980, "TotalConversions": 0 }
+  ],
+  "RateLimitHolds": {}
+}
+```
 
 ### Get a Campaign Summary
 
