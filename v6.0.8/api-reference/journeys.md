@@ -779,6 +779,123 @@ curl -X GET https://example.com/api/v1/journey.sendemailactions \
 The endpoint joins to `oempro_emails` via the `EmailID` stored in the action's `ActionParameters`. If the referenced email row no longer exists (manually deleted, mid-rebuild, etc.) the action is still returned with `EmailName: ""` and `Subject: ""` — the picker should display a fallback label rather than dropping the row.
 :::
 
+## Find What References Journey Steps or Emails
+
+<Badge type="info" text="GET" /> `/api/v1/journey.references`
+
+Returns what in the authenticated user's journeys still points at the given Send email steps or emails, so a client can warn before deleting them. Read-only.
+
+- A Decision's "Journey email" condition in action mode (opened, clicked, unsubscribed, complained, bounced and their negations) names a Send email step by its `ActionID`. When that step is deleted the condition matches nobody and every contact takes the No path. `ActionIDs` returns those Decisions.
+- A Send email step stores the `EmailID` of the email it sends. `EmailIDs` returns those steps.
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Campaign.Create`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command   | String | Yes | API command: `journey.references` |
+| SessionID | String | No  | Session ID obtained from login |
+| APIKey    | String | No  | API key for authentication |
+| ActionIDs | String | No* | Comma separated Send email step ids, at most 100. Returns the Decisions whose conditions name one of them. |
+| EmailIDs  | String | No* | Comma separated email ids, at most 100. Returns the Send email steps that send one of them. |
+| ExcludeJourneyID | Integer | No | Leave out the Decisions of this journey, for a client that checks the journey it is editing from its own unsaved state. |
+
+\* At least one of `ActionIDs` and `EmailIDs` is required.
+
+::: code-group
+
+```bash [Example Request]
+curl -X GET https://example.com/api/v1/journey.references \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "journey.references",
+    "SessionID": "your-session-id",
+    "ActionIDs": "412,415",
+    "ExcludeJourneyID": 18
+  }'
+```
+
+```bash [Emails]
+curl -X GET https://example.com/api/v1/journey.references \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "journey.references",
+    "SessionID": "your-session-id",
+    "EmailIDs": "95"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "DecisionReferences": [
+    {
+      "JourneyID": 21,
+      "JourneyName": "Win-back",
+      "ActionID": 503,
+      "ReferencedActionID": 412
+    }
+  ],
+  "EmailUsages": []
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "ActionIDs or EmailIDs is required",
+  "Errors": [
+    {
+      "Code": 3,
+      "Message": "ActionIDs or EmailIDs is required"
+    }
+  ]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Invalid ActionIDs parameter
+2: Invalid EmailIDs parameter
+3: ActionIDs or EmailIDs is required
+4: Too many ids (at most 100 of each)
+5: Invalid ExcludeJourneyID parameter
+6: The journey references could not be read (HTTP 500)
+```
+
+:::
+
+Errors 1 to 5 return HTTP 422.
+
+**DecisionReferences fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| JourneyID   | Integer | The journey that holds the Decision. |
+| JourneyName | String  | That journey's name. |
+| ActionID    | Integer | The Decision step. |
+| ReferencedActionID | Integer | The Send email step its condition names. A Decision that names several of the given steps is listed once per step. |
+
+**EmailUsages fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| JourneyID   | Integer | The journey that holds the Send email step. |
+| JourneyName | String  | That journey's name. |
+| ActionID    | Integer | The Send email step. |
+| EmailID     | Integer | The email it sends. |
+
+Disabled journeys and unpublished steps are included: a disabled journey can be enabled again.
+
 ## Update a Journey
 
 <Badge type="info" text="PATCH" /> `/api/v1/journey`
