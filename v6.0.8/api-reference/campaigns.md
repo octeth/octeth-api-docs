@@ -324,6 +324,15 @@ curl -X POST https://example.com/api.php \
 
 `Campaign.Options.JourneyEnrolleeHandling` (`list`, `include` or `exclude`) is present once it was set with `campaign.create` or `campaign.update`. When it is absent the campaign follows each list's setting. Added in v6.0.4.
 
+<Badge type="tip" text="New in v6.0.8" /> `Campaign.EstimatedDeliverableRecipients` is an additive field, returned next to `Campaign.EstimatedRecipients` for a campaign in `Ready` status scheduled `Future` or `Recursive`. `EstimatedRecipients` and every other field are unchanged. `EstimatedRecipients` counts the active members of the campaign's audience. `EstimatedDeliverableRecipients` is that audience minus the addresses the send skips because they are on a suppression list that applies to it: entries for the audience list, account-wide entries and system-wide entries. An exclusion list takes out its members minus those already removed by an account-wide or system-wide entry, because the send drops an excluded address whether or not it is suppressed on the exclusion list itself. For a campaign targeted with conditions (`RulesJsonBundle`) it counts the subscribers each list's conditions select, where `EstimatedRecipients` counts each list as a whole. When the account has Disable Suppression Check turned on, no address is subtracted. The figure is approximate: smart suppression patterns and duplicates across lists are not taken out. The value is `null` when the estimate cannot be computed within about five seconds, when a count fails, or when a criterion names a list the campaign owner does not own.
+
+The two fields in the `Campaign` object of a scheduled campaign:
+
+```json
+"EstimatedRecipients": 3954,
+"EstimatedDeliverableRecipients": 1419
+```
+
 ::: warning Campaign Not Found Is Not An Error By Default
 Unless `FailOnNotFound=true` is passed, requesting a campaign that does not exist (or that belongs to another user) returns:
 
@@ -445,6 +454,7 @@ curl -X POST https://example.com/api.php \
   "ErrorCode": 0,
   "CampaignID": 12345,
   "TotalRecipients": 1500,
+  "TotalDeliverableRecipients": 1420,
   "Recipients": [
     {
       "SubscriberID": 101,
@@ -478,6 +488,8 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+<Badge type="tip" text="New in v6.0.8" /> `TotalDeliverableRecipients` is an additive field, returned with and without `OnlyTotal`. `TotalRecipients`, `Recipients` and every other field are unchanged. `TotalRecipients` counts the active subscribers each criterion selects. `TotalDeliverableRecipients` is, for each criterion, its counted audience minus the addresses the send skips because they are on a suppression list that applies to them: entries for the criterion's list, account-wide entries and system-wide entries. With `OnlyTotal` off, the figure comes from each criterion's counted audience, not from the rows returned in `Recipients`. When the list owner has Disable Suppression Check turned on, no address is subtracted. The figure is approximate: smart suppression patterns and duplicates across lists are not taken out. The value is `null` when the estimate cannot be computed within about five seconds for all criteria together, or when a count fails.
 
 ::: tip Changed in v5.9.3
 Codes `5` and `6` are returned with **HTTP 200** and `Success: false`, like every other
