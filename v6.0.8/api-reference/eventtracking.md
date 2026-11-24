@@ -79,6 +79,7 @@ curl -X POST https://example.com/api/v1/event \
 8: Missing conversion-id event property (for conversion events)
 9: Missing conversion-name event property (for conversion events)
 10: Missing conversion-value event property (for conversion events)
+100005: The event could not be queued (HTTP 500)
 ```
 
 :::
@@ -87,6 +88,7 @@ curl -X POST https://example.com/api/v1/event \
 - If none of `Email`, `ID`, or `UUID` is provided, a UUID is auto-generated
 - For "conversion" events, the `Properties` object must include `conversion-id`, `conversion-name`, and `conversion-value`
 - For "identify" events or when sending a new email, an identify event is sent to update subscriber information
+- From v6.0.8 the call succeeds only after the message queue confirms the event. If the queue is unreachable, refuses the event or does not confirm it within 2 seconds, the call answers the [hard-failure envelope](./error-handling.md) with `ErrorCode` `100005` and HTTP 500. After an unconfirmed attempt the event may still have been recorded, so a retry can record it twice
 - Test events can be sent by including `"isTest": true` in the `Properties` object (returns success without actual tracking)
 
 ### Writing custom fields with `IdentifyProperties`

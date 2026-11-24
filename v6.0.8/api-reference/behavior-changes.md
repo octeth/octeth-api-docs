@@ -66,8 +66,19 @@ Both journey builders now name the zone the window follows: the IANA zone (for e
 
 **Who needs to act:** anyone whose ScheduledPull windows were set to compensate for the old fixed offset.
 
+### Event tracking
+
+#### `event.track` fails when the message queue does not confirm the event
+
+`event.track` now waits for the message queue to confirm the event before it answers success (octeth/oempro#3846). If the queue refuses the event or does not confirm it within 2 seconds, the call answers the hard-failure envelope with `ErrorCode` `100005` and HTTP 500, the same answer an unreachable queue has always produced. Before v6.0.8 it answered success and the event could be lost.
+
+**Not affected:** the success response, the validation errors, test events (`isTest`) and the browser tracker.
+
+**Who needs to act:** an integration that treats every answered call as recorded. After an unconfirmed attempt the event may still have been recorded, so a retry can record it twice.
+
 ## Upgrade checklist
 
+- If you call `event.track` from a server, handle HTTP 500 with `ErrorCode` `100005`. The event was not confirmed, and a retry can record it twice.
 - If you run ScheduledPull journeys with a time window and no journey **Timezone**, check that the new local-time window is the one you want. To pin a window to a specific zone, set the journey's **Timezone**.
 - If your integration matches the `ErrorText` "The status filter is only available for Keitaro conversion rules." or "The Keitaro conversion status must be text of 1 to 64 characters.", match error code `12` or the new texts instead.
 
