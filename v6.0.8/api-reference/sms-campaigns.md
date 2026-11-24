@@ -419,6 +419,8 @@ curl -X POST https://example.com/api/v1/smscampaign.audience.count \
 
 `QuietHours` says whether the campaign's quiet hours are holding it right now. While `Active` is true a Sending campaign sends nothing, and `ResumesAt` (UTC) is when it starts again. `Start` and `End` are in the campaign's `Timezone`, and both are null when the campaign has no quiet hours. <Badge type="tip" text="New in v6.0.6" /> `Source` says whose window it is: `campaign` when the campaign sets both `QuietHoursStart` and `QuietHoursEnd`, `default` when it follows the install's quiet hours. An install default with the same start and end has no quiet window, so `Start` and `End` are null and `Source` is `default`.
 
+<Badge type="tip" text="New in v6.0.8" /> `RateLimitHold` says whether an account SMS rate limit is holding the campaign right now. It is `null` when nothing holds it, and always `null` unless the campaign is `Sending`. Otherwise it has `Interval` (`Minute`, `Hour`, `Day`, `Week`, `Month` or `Year`), `Limit` (the account's limit for that interval, `0` when the account's user group allows no SMS) and `Reason`, the same text the administrator's SMS campaigns page and the release worker's log show. The release worker refreshes the hold while it lasts, so it can lag by up to two minutes. When the reason cannot be read, `RateLimitHold` is `null` and the call still succeeds.
+
 <Badge type="tip" text="New in v6.0.5" /> `SendRatePerMinute` in `SMSCampaign` is the campaign's speed limit in messages per minute, `0` for none. `QuietHoursStart` and `QuietHoursEnd` in `SMSCampaign` are the campaign's own window, `null` when it follows the install's. The `QuietHours` block gives the window in force either way.
 
 The campaign's audience is `RelListID`, narrowed by at most one of `RelSegmentID` (a saved segment) and `RulesJsonBundle` (conditions, as the JSON string it was saved as). Both are `null` when the campaign goes to the whole list.
@@ -475,6 +477,11 @@ curl -X GET https://example.com/api/v1/smscampaign.get \
     "Timezone": "America/New_York",
     "ResumesAt": "2026-09-23 13:00:00",
     "Source": "campaign"
+  },
+  "RateLimitHold": {
+    "Interval": "Day",
+    "Limit": 0,
+    "Reason": "SMS rate limit for this account reached (Day = 0)"
   },
   "LinkExpiry": {
     "EffectiveHours": 72,
@@ -545,10 +552,17 @@ curl -X GET https://example.com/api/v1/smscampaign.browse \
 {
   "Success": true,
   "ErrorCode": 0,
-  "Campaigns": [
+  "TotalCampaigns": 1,
+  "SMSCampaigns": [
     { "SMSCampaignID": 4821, "CampaignName": "October promotion", "Status": "Sending" }
   ],
-  "TotalCampaigns": 1
+  "RateLimitHolds": {
+    "4821": {
+      "Interval": "Day",
+      "Limit": 0,
+      "Reason": "SMS rate limit for this account reached (Day = 0)"
+    }
+  }
 }
 ```
 
@@ -572,6 +586,8 @@ curl -X GET https://example.com/api/v1/smscampaign.browse \
 :::
 
 Results are ordered newest first by `SMSCampaignID` unless `OrderField` or `OrderType` is sent. `OrderType` on its own reverses the default order. Campaigns with an empty value in the sort column always come last, whichever direction is chosen, and campaigns with equal values are ordered newest first, so paging through a sorted list never repeats or skips a campaign. An `OrderField` outside the list above is refused with ErrorCode 4, and an `OrderType` other than `ASC` or `DESC` with ErrorCode 5, rather than falling back to the default order. `TotalCampaigns` counts the campaigns matching every filter, `SearchField` included, so it can drive pagination of a search. A call that sends none of `SearchField`, `OrderField` and `OrderType` behaves exactly as before they were added. Added in v6.0.6. A `CreatedAfter` or `CreatedBefore` value that cannot be parsed is refused with ErrorCode 3 rather than ignored, so a malformed date never silently widens the window.
+
+<Badge type="tip" text="New in v6.0.8" /> `RateLimitHolds` lists the campaigns on this page that an account SMS rate limit is holding right now, keyed by `SMSCampaignID`, each with `Interval`, `Limit` and `Reason` as in `smscampaign.get`'s `RateLimitHold`. Only `Sending` campaigns appear. It is an empty object when none is held or the holds cannot be read. The campaign rows are unchanged.
 
 ### Get a Campaign Summary
 

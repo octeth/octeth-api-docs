@@ -20,7 +20,15 @@ None recorded yet.
 
 ## Tier 2: shape and value changes
 
-None recorded yet.
+### SMS campaigns
+
+#### SMS campaign reads say when an account rate limit is holding a campaign
+
+`smscampaign.get` returns a new `RateLimitHold` key, and `smscampaign.browse` a new top-level `RateLimitHolds` key keyed by `SMSCampaignID` (octeth/oempro#3418). Each hold has `Interval`, `Limit` and `Reason`, and appears only for a `Sending` campaign that an account SMS rate limit is holding. `RateLimitHold` is `null` and `RateLimitHolds` is empty when nothing is held.
+
+**Not affected:** every existing key and the campaign rows, which are unchanged.
+
+**Who needs to act:** nobody. A client that rejects unknown keys must accept the new ones.
 
 ## Upgrade checklist
 
