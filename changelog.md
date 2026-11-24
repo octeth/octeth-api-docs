@@ -32,7 +32,7 @@ Release in progress. Changelog will be updated upon release.
 
 ### Upgrade Notes
 
-- (To be documented)
+- **Logstash pipeline sample on the staff Bounces screen:** the sample now reads `/var/log/pmta/bounces.csv`, the file the PowerMTA accounting sample on the same screen writes. Earlier versions printed `/var/log/pmta/bounces-*.csv`, which matches no file, so a pipeline copied from the screen read no bounces and logged no error. If you set up Logstash from that sample, change the `path` in its `file` input to `[ "/var/log/pmta/bounces.csv" ]` and restart Logstash.
 
 ### Deprecations
 
