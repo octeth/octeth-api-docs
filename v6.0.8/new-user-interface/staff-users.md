@@ -289,6 +289,16 @@ and in the customer's own audit log, where the account owner and Admin members s
 action. When you open a customer's account to act as them, the customer's audit log also names you,
 not the main administrator account.
 
+## Where a user signed up from
+
+When a user signed up on the registration page of the new user interface, their page shows a
+**Signup source** block with what was recorded: the referral code (`ref`), the UTM source, medium,
+campaign, content and term from the link they arrived on, and the referrer, the page that linked to
+the registration page. Only the values that were recorded are shown, and the block is hidden when
+there are none, for example for a user an administrator created or one who signed up before
+v6.0.8. The same values are sent in the `user.signed_up` webhook and returned by the `user.get`
+and `users.get` API commands. Added in v6.0.8.
+
 ## Troubleshooting
 
 | Message or symptom | What to do |

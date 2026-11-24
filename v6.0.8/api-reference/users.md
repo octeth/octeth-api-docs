@@ -60,6 +60,7 @@ See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for the
 | ReputationLevel | String | No | Reputation level ('Trusted' or 'Untrusted'). When omitted, the **New account reputation** setting on the staff **Settings > Sign-up** screen applies (`Untrusted` on a default install). Before v6.0.1 the default was 'Trusted'. An `Untrusted` account's campaigns wait for approval and it cannot send through the email gateway |
 | SignUpIPAddress | String | No | User signup IP address |
 | SSOID | String | No | Single sign-on ID |
+| SignupAttribution | Object or String | No | Where the account signed up from: a JSON object, or a JSON-encoded string of one, with any of the keys `ref`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term` and `referrer`. Unknown keys are dropped. Control characters are removed, values are trimmed and cut to 100 characters (255 for `referrer`), and empty values are dropped. Returned by `user.get` and `users.get`. The new user interface sends it for sign-ups on its registration page, including sign-ups with Google. Added in v6.0.8 |
 
 ::: code-group
 
@@ -111,6 +112,8 @@ curl -X POST https://example.com/api.php \
 14: Invalid language code
 15: Invalid reputation level (must be 'Trusted' or 'Untrusted')
 16: Maximum number of user accounts exceeded (the license's user account limit)
+17: ForwardToFriendHeader or ForwardToFriendFooter is not an http(s) URL or a file in the product's template directory
+18: SignupAttribution is not a JSON object (a JSON array is refused too), or is larger than 8 KB (v6.0.8)
 ```
 
 :::
@@ -533,6 +536,15 @@ curl -X POST https://example.com/api.php \
     "Username": "john.doe",
     "FirstName": "John",
     "LastName": "Doe",
+    "SignupAttribution": {
+      "ref": "integration-ghost",
+      "utm_source": "ghost-docs",
+      "utm_medium": null,
+      "utm_campaign": null,
+      "utm_content": null,
+      "utm_term": null,
+      "referrer": "https://ghost.example/docs/integrations?src=nav"
+    },
     "GroupInformation": {}
   },
   "LimitUtilization": {
@@ -579,6 +591,8 @@ curl -X POST https://example.com/api.php \
 :::
 
 `ForcedFromEnabled.Campaign` reflects the group's marketing delivery server. A type with no delivery server assigned, or with no forced From address, reads `false`. The key is added only when the user has a user group.
+
+`UserInformation.SignupAttribution` is where the account signed up from: an object with the keys `ref`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term` and `referrer`, each a string or `null`. It is `null` for an account created with no attribution, for example by an administrator or before v6.0.8. The values come from the visitor who signed up, so treat them as untrusted text. Added in v6.0.8.
 
 ## Update User
 
@@ -1611,6 +1625,7 @@ curl -X POST https://example.com/api.php \
       "UserID": 123,
       "Username": "john.doe",
       "EmailAddress": "john@example.com",
+      "SignupAttribution": null,
       "GroupInformation": {}
     }
   ],
@@ -1635,6 +1650,8 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+Every user in `Users` carries `SignupAttribution`, with the same shape as in `user.get`: an object with all seven keys, or `null`. Added in v6.0.8.
 
 ## Search Users (Admin)
 

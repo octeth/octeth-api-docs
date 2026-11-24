@@ -99,9 +99,28 @@ The body always has the same four fields:
   "email": "alice@acme.com",
   "name": "Alice Anderson",
   "company": "Acme Inc",
-  "signed_up_at": "2026-10-01T12:00:00Z"
+  "signed_up_at": "2026-10-01T12:00:00Z",
+  "attribution": {
+    "ref": "integration-ghost",
+    "utm_source": "ghost-docs",
+    "utm_medium": null,
+    "utm_campaign": null,
+    "utm_content": null,
+    "utm_term": null,
+    "referrer": "https://ghost.example/docs/integrations?src=nav"
+  }
 }
 ```
+
+`attribution` says where the sign-up came from. It is read from the first visit to the registration
+page in the visitor's browser session that carries any of these values: the `ref`, `utm_source`,
+`utm_medium`, `utm_campaign`, `utm_content` and `utm_term` query parameters of that page's URL, and
+the page that linked to it (`referrer`, the full URL cut to 255 characters). The other values are
+cut to 100 characters. A sign-up with Google started from the registration page carries it too.
+Every key is always present, and a value that was not captured is `null`. A visit to the sign-in
+page is not recorded, a referrer on your own installation's domain is left out, and browsers and
+email clients often send no referrer. The values are typed by the visitor, so treat them as
+untrusted text. Added in v6.0.8.
 
 ::: warning
 This event sends the new user's email address, name and company to your URL. Make sure the
