@@ -48,8 +48,27 @@ The two `sms-events` status error texts no longer name Keitaro: "The status filt
 
 **Who needs to act:** an integration that compares `ErrorText` against the old "Keitaro conversion" messages.
 
+### Journeys
+
+#### ScheduledPull time windows follow daylight saving time in the account timezone
+
+A ScheduledPull journey with **Time window restriction** on and no **Timezone** of its own evaluates its allowed days, start time and end time in the journey owner's account timezone (octeth/oempro#4136). Before v6.0.8 the worker read the account timezone label (for example `(GMT-05:00) Eastern Time (US & Canada)`) as a fixed UTC offset, so the window ignored daylight saving time, and a label whose offset is out of date was wrong all year. From v6.0.8 the label is resolved to its IANA zone (for example `America/New_York`) before the window is checked, so the window opens and closes at the same local time all year.
+
+What moves on upgrade:
+
+- Accounts in a zone with daylight saving time: during summer time the window now opens and closes one hour earlier in UTC than before. A 09:00 to 17:00 window for an Eastern Time account ran from 10:00 to 18:00 New York time between March and November, and now runs from 09:00 to 17:00 all year.
+- Accounts on a label with a stale offset: the window moves by the label's error all year. `(GMT+02:00) Istanbul` now runs on `Europe/Istanbul`, which has been UTC+03:00 since 2016, so the window opens one hour earlier in UTC.
+- `(GMT+02:00) Kyev` resolves to `Europe/Minsk`, which is UTC+03:00 all year. Its window is now right during Kyiv's summer time and one hour early in winter. Set the journey's **Timezone** to `Europe/Kyiv` to follow Kyiv time exactly.
+
+**Not affected:** journeys that set their own **Timezone**, journeys with the time window off, accounts in a zone without daylight saving time whose label offset is correct, and the labels `(GMT-03:00) Greenland`, `(GMT) Edinburgh`, `(GMT+01:00) Bern` and `(GMT+06:30) Rangoon`, which keep their fixed offset.
+
+Both journey builders now name the zone the window follows: the IANA zone (for example "Account timezone: America/New_York"), or the label for the four labels that keep their fixed offset.
+
+**Who needs to act:** anyone whose ScheduledPull windows were set to compensate for the old fixed offset.
+
 ## Upgrade checklist
 
+- If you run ScheduledPull journeys with a time window and no journey **Timezone**, check that the new local-time window is the one you want. To pin a window to a specific zone, set the journey's **Timezone**.
 - If your integration matches the `ErrorText` "The status filter is only available for Keitaro conversion rules." or "The Keitaro conversion status must be text of 1 to 64 characters.", match error code `12` or the new texts instead.
 
 ---
