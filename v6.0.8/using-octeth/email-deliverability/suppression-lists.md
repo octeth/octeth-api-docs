@@ -81,6 +81,20 @@ If any of these checks returns a match, the email is not sent.
 | **User-level** | All lists of a specific user | User | All of that user's lists |
 | **List-level** | A specific list | User | Only that specific list |
 
+## Suppressing a Whole Domain
+
+<Badge type="tip" text="New in v6.0.8" />
+
+An entry written as `*@example.com` suppresses every address at that domain. It works at all three scopes: an administrator adds it system-wide, a user adds it for the account or for one list.
+
+- You can type `*@example.com` or `@example.com`. Both are stored as `*@example.com`. A plain `example.com` is skipped, so a pasted list of domains cannot block them by accident.
+- The domain must match exactly. `*@example.com` does not cover `mail.example.com`. Add a subdomain as its own entry.
+- Entries carry a **Whole domain** label in the suppression list. To lift one, remove it like any other entry.
+- An address listed exactly in the account's whitelist is still delivered when only an account or list domain entry matches it. A system-level domain entry has no exception.
+- Removing the suppressed subscribers of a list keeps the members matched only by a domain entry. They stay on the list and are skipped when you send.
+
+Only entries that a person added, with the source **User** or **Administrator**, block a domain. Bounces, spam complaints and unsubscribes never do.
+
 ## How Email Addresses Get Added to Suppression Lists
 
 Email addresses can be added to suppression lists through automatic system actions or through manual actions by administrators and users.

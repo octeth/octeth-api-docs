@@ -14,6 +14,22 @@ The `SuppressionSource` column is a fixed enumeration. The valid values are:
 - `Hard Bounced`
 - `Unsubscribe`
 
+## Domain Entries
+
+<Badge type="tip" text="New in v6.0.8" />
+
+An entry whose `EmailAddress` is `*@example.com` suppresses every address at exactly that domain, at the entry's scope. A subdomain such as `mail.example.com` is its own entry.
+
+| Rule | Detail |
+|---|---|
+| Accepted spellings | `*@example.com` and `@example.com`. Both are stored as `*@example.com`, lowercased. A bare `example.com` is rejected as an invalid address. |
+| Where it applies | Campaign queue, recipient estimates, the suppression segment rule, transactional and journey sends, the email gateway API and SMTP relay, `suppression.check` and the `Suppressed` flags. |
+| Source | Only rows with the source `Administrator` or `User` act as domain entries. A `*@domain` row recorded by a bounce, a complaint or an unsubscribe matches only that literal address. |
+| Who can write one | `suppression.import` and the suppression options of a CSV import. Every other writer is refused. |
+| Whitelist | An address listed exactly in the account's whitelist is still delivered when only an account or list domain entry matches. Regular expression entries are not applied to single addresses, and a system-wide entry is not exempted. A whitelist entry that matches `*@example.com` itself, such as `.*@example\.com`, keeps that account or list domain entry from being added (`whitelisted`). |
+
+Removing the subscribers suppressed on a list does not remove members matched only by a domain entry. They stay on the list and are skipped at send time.
+
 ## Effective Suppression View of a List
 
 For a list owned by the caller, the effective view is every suppression entry the campaign send path applies to that list. `suppression.browse` and `suppression.stats` with a `ListID`, the `Suppressed` segment of `subscribers.get` and the suppressed subscribers export return this view.
@@ -24,7 +40,7 @@ For a list owned by the caller, the effective view is every suppression entry th
 | `AccountWide` | `RelListID = 0`, owner = the caller | Only for addresses that are on the list |
 | `SystemWide` | `RelListID = 0`, owner = 0 (hard bounces, complaints) | Only for addresses that are on the list |
 
-An address that matches several scopes appears once, with its narrowest entry (`PerList`, then `AccountWide`, then `SystemWide`). So the length of a listing, its total and the stats for the same filters always agree. Global suppression patterns are regular expressions, not addresses, so they are never listed. They do count for the per-subscriber `Suppressed` flag.
+An address that matches several scopes appears once, with its narrowest entry (`PerList`, then `AccountWide`, then `SystemWide`). So the length of a listing, its total and the stats for the same filters always agree. An account-wide or system-wide [domain entry](#domain-entries) is listed when the list has a member at that domain, and it counts as one entry. Global suppression patterns are regular expressions, not addresses, so they are never listed. They do count for the per-subscriber `Suppressed` flag.
 
 Changed in v6.0.1: before, these reads returned only `PerList` entries.
 
@@ -50,6 +66,7 @@ Changed in v6.0.1: before, these reads returned only `PerList` entries.
 | StartFrom | Integer | No      | Starting record index for pagination (default: 0) |
 | RetrieveCount | Integer | No  | Number of records to retrieve (default: 100) |
 | IncludeCreatedOn | Boolean | No | When `true` (or `1`), every entry in `SuppressedEmails` carries `CreatedOn`: when the entry was added, as `YYYY-MM-DD HH:MM:SS` in UTC. Entries added before this field existed have `CreatedOn: null` because their date was never recorded. Omitted or `false`: the response is unchanged. |
+| IncludeDomainEntries | Boolean | No | When `true` (or `1`), every entry carries `IsDomainEntry`: `true` when it is a [domain entry](#domain-entries). Omitted or `false`: the response is unchanged. **New in v6.0.8** |
 
 **Response Shape:**
 
@@ -175,6 +192,7 @@ The suppression list is a two-dimensional scope matrix (`RelListID` × `RelOwner
 | EmailAddresses | String | No* | JSON-encoded array of email addresses, e.g. `["a@example.com","b@example.com"]`. A JSON request body may also send a real array. |
 | EmailAddressesBulk | String | No* | Newline-separated email addresses. May be combined with `EmailAddresses`; the two sets are merged. |
 | ListID | Integer | No | Scope the check to a single subscriber list. When omitted or `0`, only account-wide and system-wide entries are considered. When non-zero, the list must be owned by the authenticated user; otherwise the call fails with `ErrorCode: 4`. |
+| IncludeDomainEntries | Boolean | No | When `true` (or `1`), every `MatchedScopes` entry carries `MatchedBy` and `MatchedEntry`. Omitted or `false`: the response is unchanged. **New in v6.0.8** |
 
 \* At least one of `EmailAddresses` or `EmailAddressesBulk` is required. Both can be provided simultaneously.
 
@@ -212,6 +230,8 @@ Each `MatchedScopes` entry:
 | Scope | String | `PerList`, `AccountWide` or `SystemWide` |
 | SuppressionSource | String | One of the `SuppressionSource` ENUM values listed at the top of this page |
 | Reason | String | Free-text reason stored with the entry; `""` when not set |
+| MatchedBy | String | Only with `IncludeDomainEntries`. `Address` or `Domain` (a [domain entry](#domain-entries), new in v6.0.8) |
+| MatchedEntry | String | Only with `IncludeDomainEntries`. The stored entry that matched, for example `*@example.com` |
 
 **Scope meanings:**
 
@@ -504,15 +524,18 @@ curl -X POST https://example.com/api.php \
 | Reason | String | No | Override the reason recorded for imported rows. Capped at 250 characters. Defaults to `Suppression List Import`. |
 | ListID | Integer | No | Write imported rows scoped to a single subscriber list. When omitted or `0`, imports go to the user-wide global suppression list (`RelListID = 0`, today's default behavior). When non-zero, the list must be owned by the authenticated user; otherwise the call fails with `ErrorCode: 4` and no rows are written. Applies to both `EmailAddresses` and `EmailAddressesBulk` paths. Not supported under admin auth (fails with `ErrorCode: 4`). |
 | ReturnDetailedCounts | Boolean | No | `true` adds `TotalAlreadySuppressed`, `TotalWhitelisted` and `TotalWriteFailed` to the response. Default `false`: the response is unchanged. **New in v6.0.2** |
+| IncludeDomainEntries | Boolean | No | `true` adds `DomainEntries` to the response: one object per [domain entry](#domain-entries) in the request, with `Entry` (the stored form) and `Outcome` (`added`, `duplicate`, `whitelisted` or `failed`). Default `false`: the response is unchanged. **New in v6.0.8** |
 
 \* **Note:** Either `EmailAddresses` or `EmailAddressesBulk` must be provided. Both can be provided simultaneously.
+
+**Domain entries:** a value of `*@example.com` or `@example.com` adds a [domain entry](#domain-entries). Both spellings are one entry, so the second is a duplicate. It is stored with the source `User` (or `Administrator` under admin auth) whatever `SuppressionSource` says, unless that is already `User` or `Administrator`.
 
 **Response Counters:**
 
 The response returns three fields: `TotalImported`, `TotalFailed` and `FailedEmailAddresses`.
 
 - `TotalImported` counts **only rows actually persisted** to the suppression list.
-- `TotalFailed` counts **only malformed email addresses**, inputs that fail `FILTER_VALIDATE_EMAIL`. It does not mean "everything that was not imported". Each such address is also echoed back in `FailedEmailAddresses`.
+- `TotalFailed` counts **only malformed email addresses**, inputs that fail `FILTER_VALIDATE_EMAIL` and are not a domain entry. It does not mean "everything that was not imported". Each such address is also echoed back in `FailedEmailAddresses`.
 - With `ReturnDetailedCounts=true`, three more counters split what is neither imported nor malformed: `TotalAlreadySuppressed` (the address is already on the target suppression list), `TotalWhitelisted` (skipped because the account whitelists it, user auth only) and `TotalWriteFailed` (the insert failed, so the address is **not** suppressed and can still be sent to). Blank lines count in none of them.
 
 ::: warning Counters may not add up to the number of addresses you submitted
@@ -632,6 +655,7 @@ Pages through the **system-wide** suppression rows (`RelListID = 0` and `RelOwne
 | StartFrom | Integer | No      | Starting record index for pagination (default: 0) |
 | RetrieveCount | Integer | No  | Number of records to retrieve (default: 100, max: 1000) |
 | IncludeCreatedOn | Boolean | No | When `true` (or `1`), every entry carries `CreatedOn` (UTC, `YYYY-MM-DD HH:MM:SS`), `null` for entries added before the field existed. Omitted or `false`: the response is unchanged. |
+| IncludeDomainEntries | Boolean | No | When `true` (or `1`), every entry carries `IsDomainEntry`: `true` when it is a [domain entry](#domain-entries). Omitted or `false`: the response is unchanged. **New in v6.0.8** |
 
 ::: code-group
 
@@ -708,6 +732,7 @@ A restricted sub-admin (one with `AccessAllowedUserGroupIDs` set) only sees rows
 | StartFrom | Integer | No      | Starting record index for pagination (default: 0) |
 | RetrieveCount | Integer | No  | Number of records to retrieve (default: 100, max: 1000) |
 | IncludeCreatedOn | Boolean | No | When `true` (or `1`), every entry carries `CreatedOn` (UTC, `YYYY-MM-DD HH:MM:SS`), `null` for entries added before the field existed. Omitted or `false`: the response is unchanged. |
+| IncludeDomainEntries | Boolean | No | When `true` (or `1`), every entry carries `IsDomainEntry`: `true` when it is a [domain entry](#domain-entries). Omitted or `false`: the response is unchanged. **New in v6.0.8** |
 
 **Response Fields:**
 

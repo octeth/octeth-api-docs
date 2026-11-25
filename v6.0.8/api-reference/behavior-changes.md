@@ -16,7 +16,30 @@ If this notice is still here when the release ships, there were no observable AP
 
 ## Tier 1: changes that can break an integration
 
-None recorded yet.
+### Suppression
+
+#### `*@domain` suppression rows suppress the whole domain
+
+A suppression row whose `EmailAddress` is `*@example.com` now suppresses every address at exactly that domain, at the row's scope (octeth/oempro#3662). Before, `suppression.import` accepted and stored such a row, but it matched no address. Rows that already exist start suppressing after the upgrade, so sends to those domains drop.
+
+Only rows with the source `Administrator` or `User` act this way. A `*@domain` row recorded by a bounce, a complaint or an unsubscribe keeps matching only that literal address. `@domain` rows added by an older CSV import with one of those two sources are rewritten to `*@domain` by the upgrade.
+
+To list the rows that take effect, before or after the upgrade:
+
+```sql
+SELECT * FROM oempro_suppression_list
+WHERE (EmailAddress LIKE '*@%' OR EmailAddress LIKE '@%')
+  AND SuppressionSource IN ('Administrator', 'User');
+```
+
+#### `suppression.import` accepts domain entries
+
+- `@example.com`, rejected before, is accepted and stored as `*@example.com`. The domain is lowercased.
+- A domain entry is stored with the source `User`, or `Administrator` under admin auth, when the request names another source.
+- `*@[192.0.2.1]` (an address literal), accepted before, is counted in `TotalFailed`.
+- No other writer can add a `*@domain` row: a bounce, complaint or unsubscribe of such an address records no suppression.
+
+**Not affected:** the default response fields of every suppression command. The new fields are returned only with `IncludeDomainEntries`.
 
 ## Tier 2: shape and value changes
 
@@ -140,6 +163,7 @@ The `delivery_server_id` of a transactional email delivery activity is the serve
 
 ## Upgrade checklist
 
+- List the `*@domain` and `@domain` suppression rows with the query under [Suppression](#suppression), and delete the ones that should not block a whole domain before you upgrade.
 - If you store media in Amazon S3, check that the access key may read and delete objects, not only write them, and run **Test connection** in **Settings**, **Uploads and media**. Set the region there if the lookup cannot reach Amazon S3.
 - If **Media library file** in **Settings**, **Uploads and media** is still 10,240 bytes, the old default, raise it. New installs start at 5 MB.
 - If a custom plugin loads `aws_s3`, switch it to the AWS SDK in `vendor/`. The old class is removed.
