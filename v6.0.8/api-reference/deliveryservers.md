@@ -39,6 +39,7 @@ Delivery server management endpoints for creating, updating, deleting, retrievin
 | SenderInfoAsFrom | String | No | Use sender info as From: "Enabled" or "Disabled" (default: "Disabled") |
 | SenderRotation | String | No | `Enabled` to store `Domains.sender_rotation = true` (default false). Before v5.9.6 this parameter was accepted by `deliveryserver.update` only and silently dropped on create |
 | SenderRotation_Settings | String | No | Stored as `Domains.sender_rotation_settings`. Before v5.9.6 this parameter was accepted by `deliveryserver.update` only and silently dropped on create |
+| FallbackDeliveryServerID | Integer | No | <Badge type="tip" text="New in v6.0.8" /> The delivery server that takes over this server's Email Gateway and autoresponder email while it is down. Empty or `0` is none. It must be another, existing server that is not archived (error `18`) |
 
 ::: code-group
 
@@ -98,6 +99,8 @@ curl -X POST https://example.com/api.php \
 14: Invalid sendmethodsmtpauth value (must be: true, false)
 15: Invalid sendmethodsmtptimeout value (must be numeric)
 16: Invalid email address value for domainsettings_enforcedfrom
+18: Invalid FallbackDeliveryServerID (New in v6.0.8)
+19: A fallback server needs the database migration of this version (New in v6.0.8)
 99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
@@ -284,6 +287,7 @@ Read the stored outcome back with `deliveryserver.get`: `VerificationResults` ho
 | SenderInfoAsMFrom | String | No | Use sender info as MFrom: "Enabled" or "Disabled" |
 | SenderInfoAsFrom | String | No | Use sender info as From: "Enabled" or "Disabled" |
 | SenderRotation | String | No | Enable sender rotation: "Enabled" or "Disabled" |
+| FallbackDeliveryServerID | Integer | No | <Badge type="tip" text="New in v6.0.8" /> The delivery server that takes over this server's Email Gateway and autoresponder email while it is down. Empty or `0` is none. It must be another, existing server that is not archived (error `18`). Omit it to keep the stored fallback |
 
 ::: tip The stored SMTP password is kept when omitted (v6.0.1)
 `deliveryserver.update` replaces the server's `ConnectionParams` and `Domains` as a whole. `deliveryserver.get` and `deliveryservers.get` never return `smtp_password`, so an integration cannot read it back and resend it. When the request omits `SendMethodSMTPPassword`, the stored password is kept. Before v6.0.1 an omitted password was stored as empty, which broke the server's sending.
@@ -353,6 +357,8 @@ curl -X POST https://example.com/api.php \
 15: Invalid sendmethodsmtptimeout value (must be numeric)
 16: Invalid email address value for domainsettings_enforcedfrom
 17: Delivery server not found
+18: Invalid FallbackDeliveryServerID (New in v6.0.8)
+19: A fallback server needs the database migration of this version (New in v6.0.8)
 99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 
@@ -544,6 +550,7 @@ curl -X POST https://example.com/api.php \
 | VerificationLastCheckedAt | String | Timestamp of last verification check |
 | UserGroupAssignments | Array | List of user groups assigned to this delivery server. Each entry contains `UserGroupID`, `GroupName`, and `Channels` (array of channel names: `Marketing`, `Transactional`, `AutoResponder`) |
 | IsAllocated | Boolean | Whether the delivery server is assigned to at least one user group channel |
+| FallbackDeliveryServerID | Integer or null | <Badge type="tip" text="New in v6.0.8" /> The server that takes over this server's Email Gateway and autoresponder email while it is down, `null` for none. `deliveryserver.get` returns it too |
 | IsArchived | Boolean | Only when `ArchiveFilter` is sent: whether the server is archived |
 
 ## Get a Delivery Server
@@ -617,6 +624,7 @@ curl -X POST https://example.com/api.php \
       "open_domain": true
     },
     "VerificationLastCheckedAt": "2026-09-04 10:12:33",
+    "FallbackDeliveryServerID": 4,
     "UserGroupAssignments": [
       {"UserGroupID": "2", "GroupName": "Agencies", "Channels": ["Marketing", "Transactional"]}
     ],
@@ -772,7 +780,7 @@ curl -X POST https://example.com/api.php \
   "ErrorText": "",
   "DeliveryServerID": 3,
   "InUse": true,
-  "TotalReferences": 4,
+  "TotalReferences": 5,
   "UserGroups": [
     {"UserGroupID": 2, "GroupName": "Growth", "Channels": ["Marketing", "Transactional"]}
   ],
@@ -790,7 +798,10 @@ curl -X POST https://example.com/api.php \
     {"MXHost": "gmail-smtp-in.l.google.com"}
   ],
   "IPPools": [],
-  "IPAddresses": []
+  "IPAddresses": [],
+  "FallbackFor": [
+    {"DeliveryServerID": 4, "Name": "Primary"}
+  ]
 }
 ```
 
@@ -817,7 +828,7 @@ curl -X POST https://example.com/api.php \
 | Field | Type | Description |
 |-------|------|-------------|
 | InUse | Boolean | Whether anything below references the server |
-| TotalReferences | Integer | The number of entries in `UserGroups`, `Users`, `GlobalSegments`, `DeliveryRoutes`, `IPPools` and `IPAddresses` together |
+| TotalReferences | Integer | The number of entries in `UserGroups`, `Users`, `GlobalSegments`, `DeliveryRoutes`, `IPPools`, `IPAddresses` and `FallbackFor` together |
 | UserGroups | Array | User groups that send through the server, each with `UserGroupID`, `GroupName` and `Channels` (`Marketing`, `Transactional`, `AutoResponder`) |
 | UsersInGroups | Integer or null | The number of users in those user groups, or `null` when it could not be counted |
 | AffectedUsers | Integer or null | The distinct users that send through the server: members of those user groups or users with their own override, each counted once. `null` when it could not be counted |
@@ -828,6 +839,7 @@ curl -X POST https://example.com/api.php \
 | DeliveryRoutes | Array | Recipient domain routes (Delivery Routes) that send to an MX host through the server, each with `MXHost` |
 | IPPools | Array | IP pools of the IP pool plug-in whose default server this is, each with `PoolID` and `PoolName`. Empty when the plug-in is not installed |
 | IPAddresses | Array | IP addresses of the IP pool plug-in bound to the server, each with `IPID` and `IPAddress`. Empty when the plug-in is not installed |
+| FallbackFor | Array | <Badge type="tip" text="New in v6.0.8" /> Active delivery servers whose fallback is this server, each with `DeliveryServerID` and `Name` |
 
 Error `3` means a query failed or a stored user group, user or segment holds settings that cannot be decoded. The command does not guess: treat the server as possibly in use.
 
@@ -841,7 +853,7 @@ Archives a delivery server you no longer use. An archived server is hidden from 
 - Authentication required: Admin API Key
 - Required privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
 - v1 REST alias: `POST /api/v1/admin.deliveryserver.archive`. Legacy access via `/api.php` is also supported
-- Refused with error `4` while anything still sends through the server: a user group channel, a user's own delivery server, a global segment, a recipient domain route, or (with the IP pool plug-in) an IP pool or IP address. `ErrorText` names them, the same references `admin.deliveryserver.references.get` lists. Move them to another server first.
+- Refused with error `4` while anything still sends through the server: a user group channel, a user's own delivery server, a global segment, a recipient domain route, or (with the IP pool plug-in) an IP pool or IP address, or (from v6.0.8) another active server that falls back to it. `ErrorText` names them, the same references `admin.deliveryserver.references.get` lists. Move them to another server first.
 - The check covers the whole install. A sub-admin limited to some user groups sees only those groups and their users by name; the others are counted.
 - Archiving an archived server succeeds and changes nothing.
 - Once archived, `usergroup.options.patch` (error `7`), `usergroup.update` (error `37`) and `usergroup.patch` (error `41`) (changed in v6.0.6), `global.segment.create` and `global.segment.update` (error `7`) and `deliveryroutes.update` refuse the server as a target, as they refuse a server that does not exist.
@@ -940,6 +952,219 @@ Restores an archived delivery server. It shows on the Delivery servers list and 
 1: Missing DeliveryServerID
 2: Delivery server not found
 3: The delivery server could not be restored. Try again
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
+```
+
+:::
+
+## Get Delivery Server Health <Badge type="tip" text="New in v6.0.8" />
+
+<Badge type="info" text="GET" /> `/api/v1/admin.deliveryservers.health.get`
+
+Lists which delivery servers are down and where their Email Gateway and autoresponder email goes. Read-only.
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
+- v1 REST alias: `GET /api/v1/admin.deliveryservers.health.get`. Legacy access via `/api.php` is also supported
+- Rate limit: 100 requests per 60 seconds
+- Admin agent keys (AI assistants) cannot call this command.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.deliveryservers.health.get` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.deliveryservers.health.get",
+    "SessionID": "admin-session-id"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "HealthAvailable": true,
+  "Servers": [
+    {
+      "DeliveryServerID": 3,
+      "IsDown": true,
+      "DownSince": "2026-11-25T10:00:00+00:00",
+      "Reason": "3 failed connections in a row",
+      "Source": "auto",
+      "MarkedDownBy": "",
+      "FallbackDeliveryServerID": 4,
+      "FallbackUsable": true,
+      "RoutesToDeliveryServerID": 4
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999,
+  "ErrorText": "Not enough privileges"
+}
+```
+
+```txt [Error Codes]
+0: Success
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
+```
+
+:::
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| HealthAvailable | Boolean | `false` when Redis could not be read. Every server then counts as up for sending, and `IsDown` is `false` on every entry |
+| IsDown | Boolean | Whether the server is down |
+| DownSince | String or null | When it went down, UTC, ISO 8601. `null` while it is up |
+| Reason | String | Why it is down |
+| Source | String or null | `auto` (Octeth could not connect) or `manual` (an administrator marked it down) |
+| MarkedDownBy | String | The administrator's username for `manual` |
+| FallbackDeliveryServerID | Integer or null | The stored fallback server |
+| FallbackUsable | Boolean | `false` when there is no fallback, or it is archived or deleted |
+| RoutesToDeliveryServerID | Integer | Where its email goes now: the fallback while it is down and the fallback can send, otherwise itself |
+
+## Mark a Delivery Server Down <Badge type="tip" text="New in v6.0.8" />
+
+<Badge type="info" text="POST" /> `/api/v1/admin.deliveryserver.markdown`
+
+Marks a delivery server down for planned maintenance. Its Email Gateway and autoresponder email goes to its fallback server until `admin.deliveryserver.markup`.
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
+- v1 REST alias: `POST /api/v1/admin.deliveryserver.markdown`. Legacy access via `/api.php` is also supported
+- The recovery probe leaves the server alone. A server that is already down automatically is taken over and keeps its start time.
+- Without a usable fallback, email keeps going to the server. Campaign email is never rerouted.
+- Posts a Slack message with the admin's username when `DELIVERY_SERVER_FAILOVER_SLACK_WEBHOOK_URL` is set
+- Admin agent keys (AI assistants) cannot call this command.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.deliveryserver.markdown` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| DeliveryServerID | Integer | Yes | ID of the delivery server |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.deliveryserver.markdown",
+    "SessionID": "admin-session-id",
+    "DeliveryServerID": 3
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "DeliveryServerID": 3,
+  "IsDown": true
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Delivery server not found"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing DeliveryServerID
+2: Delivery server not found
+3: Redis is not available, so the state could not be written
+4: The server is archived
+99999: Not enough privileges (the admin account does not hold DeliveryServers)
+```
+
+:::
+
+## Mark a Delivery Server Up <Badge type="tip" text="New in v6.0.8" />
+
+<Badge type="info" text="POST" /> `/api/v1/admin.deliveryserver.markup`
+
+Marks a delivery server up, whichever way it went down. New email goes through it again at once. Marking up a server that is up succeeds and changes nothing.
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privilege: `DeliveryServers`, checked even when `ADMIN_API_ENFORCE_PRIVILEGES` is off (answers `99999` without it)
+- v1 REST alias: `POST /api/v1/admin.deliveryserver.markup`. Legacy access via `/api.php` is also supported
+- Posts a Slack message with the admin's username when `DELIVERY_SERVER_FAILOVER_SLACK_WEBHOOK_URL` is set
+- Admin agent keys (AI assistants) cannot call this command.
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `admin.deliveryserver.markup` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| DeliveryServerID | Integer | Yes | ID of the delivery server |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "admin.deliveryserver.markup",
+    "SessionID": "admin-session-id",
+    "DeliveryServerID": 3
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "ErrorText": "",
+  "DeliveryServerID": 3,
+  "IsDown": false
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": [2],
+  "ErrorText": ["Delivery server not found"]
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Missing DeliveryServerID
+2: Delivery server not found
+3: Redis is not available, so the state could not be written
 99999: Not enough privileges (the admin account does not hold DeliveryServers)
 ```
 

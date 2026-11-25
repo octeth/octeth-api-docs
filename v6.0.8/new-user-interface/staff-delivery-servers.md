@@ -18,12 +18,13 @@ The list shows every delivery server by name:
 - **MAIL FROM domain**: the return path domain of the email it sends.
 - **Used by**: the user groups that send through it, with their channels. Click a group to open it, when you have the User groups permission.
 - **Verification**: **Passed**, how many checks failed, or **Not tested**, with the time of the last test.
+- **Status**: **Up** with the fallback server, or **Down** with the time, the reason and the server its email goes to. **Unknown** means Octeth could not read the state.
 
-Click a row to open the server. The row actions edit, clone and delete it.
+Click a row to open the server. The row actions edit, clone, archive and delete it, and mark it down or up.
 
 ### Clone a server
 
-Click the **Clone** icon of a row. Octeth copies the server, its stored password included, names the copy after the original with "(Copy)" at the end, and opens it. User group assignments, delivery routes and email headers are not copied, and the copy has not been tested.
+Click the **Clone** icon of a row. Octeth copies the server, its stored password included, names the copy after the original with "(Copy)" at the end, and opens it. User group assignments, delivery routes, email headers and the fallback server are not copied, and the copy has not been tested.
 
 ### Delete servers
 
@@ -34,6 +35,7 @@ Click the **Delete** icon of a row, or tick several rows and click **Delete**. B
 - **Global segments** whose sending settings name the server.
 - **Recipient domain routes** that send to an MX host through it.
 - **IP pools** and **IP addresses**, when the IP pool plug-in is installed.
+- **Delivery servers that fall back to it.** They are left without a fallback server.
 
 User groups and users link to their staff pages when you have the permissions to open them. When your account is limited to some user groups, groups and users outside them are not named: the confirmation says how many more use the server.
 
@@ -41,9 +43,30 @@ Deleting switches the user groups to the system default server. Users, global se
 
 If Octeth cannot read what uses a server, the confirmation says so. Treat the server as in use.
 
+## Failover
+
+When Octeth cannot connect to a server 3 times in a row, it marks the server down. If the server has a **fallback server**, its Email Gateway and autoresponder email goes to the fallback until the server recovers. Campaign email is not rerouted.
+
+- Only a server that refuses or times out the connection counts. Wrong credentials, a failed TLS handshake and an SMTP error reply never mark a server down.
+- A probe connects to the server every minute without sending email. After 3 passes in a row the server is up and its email goes through it again.
+- One level only. When the fallback is down too, email still goes to the fallback, where it is retried and can fail.
+- Without a fallback server, email is retried on the server, as before.
+
+Choose the fallback on the **Failover** card when you create a server, or in the **Failover** section of the edit page. Any other server that is not archived can be chosen. Your customers' sender domains must be authenticated for the fallback server too (SPF, DKIM and return-path). Email from a domain that is not can fail DMARC while the fallback sends. The screen warns when the chosen server was never tested or failed its last verification.
+
+Octeth can post to Slack when a server goes down or recovers. Set the **Delivery server alerts** webhook under **Settings**, **Preferences**, **Notifications**.
+
+### Mark a server down for maintenance
+
+1. Open the **...** menu of its row and click **Mark down**. The confirmation names the server that takes over, or says that there is none.
+2. Click **Mark down**. The probe leaves the server alone, so it stays down until someone marks it up.
+3. When the maintenance is over, click **Mark up** in the same menu. New email goes through the server at once.
+
+**Mark up** also brings back a server that went down by itself.
+
 ## Create a server
 
-Click **Create delivery server** and fill in two cards.
+Click **Create delivery server** and fill in the **Connection** and **Domains** cards. The **Failover** card is optional.
 
 **Connection:**
 
@@ -66,7 +89,7 @@ Click **Create delivery server**. Creating does not test the server: it opens on
 
 ## Edit a server
 
-The edit page has three sections in a menu on the left: **Connection**, **Domains** and **Verification**. **Connection** and **Domains** hold the fields above, and each saves only its own fields with its own **Save changes** button.
+The edit page has four sections in a menu on the left: **Connection**, **Domains**, **Failover** and **Verification**. **Connection**, **Domains** and **Failover** hold the fields above, and each saves only its own fields with its own **Save changes** button.
 
 When you leave a section with unsaved changes, Octeth asks **Discard your changes to Connection?** (or **Domains**). Click **Discard changes** to drop them and open the other section, or **Keep editing** to stay and save first.
 
@@ -92,4 +115,4 @@ Click **Send test and check DNS** to run every check again. A failed check shows
 
 ## Audit log
 
-Every create, change, clone, delete and test is recorded in the staff audit log with the fields that changed. Passwords are never recorded.
+Every create, change, clone, delete, test, mark down and mark up is recorded in the staff audit log with the fields that changed. Passwords are never recorded.

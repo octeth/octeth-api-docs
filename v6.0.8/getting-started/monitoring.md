@@ -109,3 +109,10 @@ Each family is only written when its query succeeds. If a query fails the gauge 
 | `bounce_webhook` | Bounces received on the bounce webhook (hourly accuracy) |
 
 `-1` means no event of that kind is on record. The event store keeps 31 days. Like the other gauges, each source is written only when its query succeeds, so a failing query leaves the previous value in place and logs a warning. A useful rule is an age above a few hours for `delivered` or `bounced` while gateway traffic continues. The built-in monitor alert (configuration page, Email Gateway Queue Monitor) already combines the age with the send volume.
+
+## Delivery Server Failover Metrics <Badge type="tip" text="New in v6.0.8" />
+
+| Metric | Type | Meaning |
+|---|---|---|
+| `octeth_delivery_server_down{delivery_server_id}` | Gauge | `1` while the server is down, `0` while it is up. One series per delivery server, refreshed at scrape time |
+| `octeth_delivery_server_connect_failures_total{delivery_server_id}` | Counter | Failed connections recorded by the Email Gateway and autoresponder workers |

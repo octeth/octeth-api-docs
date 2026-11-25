@@ -37,6 +37,12 @@ Octeth posts a Slack message when an account goes over its send rate limit. Limi
 - **Slack webhook URL**: an incoming webhook URL of the Slack channel to post to. Leave it empty to send no alerts. The field is masked, because anyone with this URL can post to the channel. Click the eye icon to show it.
 - **Alert at most every (seconds)**: at most one alert per account in this many seconds. `3600` is one hour. `0` turns the alerts off.
 
+### Delivery server alerts
+
+Octeth posts a Slack message when a delivery server goes down, when its fallback server is down too, and when it recovers. A message also names the administrator who marks a server down or up.
+
+- **Slack webhook URL**: an incoming webhook URL of the Slack channel to post to. Leave it empty to send no alerts. Failover works without it. The field is masked.
+
 ### Limit utilization webhook
 
 Octeth sends a POST to your URL when an account's limit usage changes status, for example from OK to Warning.

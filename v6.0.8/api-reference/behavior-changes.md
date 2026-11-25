@@ -104,6 +104,24 @@ Files uploaded to S3 are written without the public-read ACL (octeth/oempro#4112
 
 **Who needs to act:** an integration that builds bucket addresses itself. Use `MediaURL`.
 
+### Delivery servers
+
+#### A delivery server that cannot be connected to fails over
+
+A delivery server that cannot be connected to 3 times in a row is marked down (octeth/oempro#3232). With a fallback server set, its Email Gateway and autoresponder email goes to the fallback until a probe finds it working again. `oempro_eg_queue` records the server that sent. Without a fallback, email is retried on the server as before. No server has a fallback until you choose one.
+
+`deliveryserver.get` and `deliveryservers.get` return the new `FallbackDeliveryServerID`, and `admin.deliveryserver.references.get` returns the new `FallbackFor` list. `admin.deliveryserver.archive` refuses a server that another active server falls back to.
+
+**Not affected:** campaign email, and every existing key of these responses.
+
+**Who needs to act:** nobody. A client that rejects unknown keys must accept the new ones.
+
+#### The delivery server of an autoresponder in the subscriber activity
+
+The `delivery_server_id` of a transactional email delivery activity is the server of the channel that sent the email (octeth/oempro#3232). Before v6.0.8 it was always the Marketing channel's server.
+
+**Who needs to act:** an integration that reads this value.
+
 ## Upgrade checklist
 
 - If you store media in Amazon S3, check that the access key may read and delete objects, not only write them, and run **Test connection** in **Settings**, **Uploads and media**. Set the region there if the lookup cannot reach Amazon S3.

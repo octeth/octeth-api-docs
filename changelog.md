@@ -17,6 +17,7 @@ Release in progress. Changelog will be updated upon release.
 ### New Features
 
 - **Plan activity on the staff customer page:** the Billing tab now lists every plan change of a customer, with the date, the plan, the price and whether the customer, a staff member or Octeth made it. History starts with this upgrade (#3089)
+- **Delivery server failover:** a delivery server can have a fallback server. When Octeth cannot connect to it, its Email Gateway and autoresponder email goes to the fallback until it recovers, with Slack alerts, Prometheus metrics and a manual mark down for maintenance. Reload the cron container so the recovery probe runs.
 
 ### Enhancements
 

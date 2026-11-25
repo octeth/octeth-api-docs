@@ -1710,6 +1710,10 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
     | `BOUNCE_PROCESSING_THREADS` | `10` | Shipped | Maximum parallel threads for IMAP bounce and FBL mailbox processing. |
     | `EMAILGATEWAY_MAX_RETRIES` | `3` | Shipped | Email Gateway retries of a transient SMTP failure (a 4xx reply, a connection, TLS or timeout error). |
     | `EMAILGATEWAY_RETRY_BACKOFF_BASE_SECONDS` | `30` | Shipped | Base delay before an Email Gateway retry. It doubles on each retry: 30, 60, 120 seconds. |
+    | `DELIVERY_SERVER_FAILOVER_FAILURE_THRESHOLD` | `3` | Shipped | Consecutive failed connections after which a delivery server is marked down and its Email Gateway and autoresponder email goes to its fallback server. Keep it below `EMAILGATEWAY_MAX_RETRIES` + 1, so the last try of a lone email already uses the fallback. New in v6.0.8. |
+    | `DELIVERY_SERVER_FAILOVER_FAILURE_TTL_SECONDS` | `300` | Shipped | Seconds after the last failed connection when the failure count expires. New in v6.0.8. |
+    | `DELIVERY_SERVER_FAILOVER_RECOVERY_PROBES` | `3` | Shipped | Consecutive passed recovery probes, one per minute, after which a server that was marked down automatically is marked up. New in v6.0.8. |
+    | `DELIVERY_SERVER_FAILOVER_PROBE_TIMEOUT_SECONDS` | `10` | Shipped | Connect and read timeout of a recovery probe. New in v6.0.8. |
     | `ENFORCED_FROM_APPlY_TO_REPLYTO` | `false` | Commented | Also applies a user group's enforced From address to the Reply-To header. The key name is mixed case, write it exactly as shown. |
     | `EMAIL_DELIVERY_HOSTNAME` | `localhost.localdomain` | Commented | Host name the mailer announces to the SMTP server when no web server name is known, which is the case in every background worker. |
     | `SEND_FBL_NOTIFICATIONEMAIL` | `false` | Commented | Emails the administrator when FBL detection fails. |
