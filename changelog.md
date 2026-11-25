@@ -30,12 +30,14 @@ Release in progress. Changelog will be updated upon release.
 
 - The `octeth/oempro` image (`v6.0.8`) and the `oempro_ui` image carry the PHP security releases of 2026-11-19: PHP 5.6.40-110, 8.1.34-15 and 8.4.28-3 from packages.sury.org, and `php:8.4.28-apache` for the new interface. They fix the session handling RCEs CVE-2026-126714 and CVE-2026-115560, the timezone cache use-after-free CVE-2026-129496 and the DOM serialization double free CVE-2026-129501, among others. CVE-2026-127960, a denial of service only, has no fix for PHP 5.6 yet.
 - The image build now installs PHP 8.4 by version and fails if any PHP branch other than 5.6, 8.1 and 8.4 is installed or if Apache enables any PHP module other than PHP 5.6. A repository moving its default PHP version can no longer change the PHP in the image.
+- **Passwords stored with `password_hash()`:** user and administrator passwords are now stored with a per-account salt and a work factor (bcrypt) instead of a single MD5 digest. Existing accounts are upgraded automatically the next time they sign in with their password. The session token of an account no longer contains its password hash (#2921)
 
 ### Upgrade Notes
 
 - The upgrade moves every Octeth container to the `octeth/oempro:v6.0.8` image and recreates it. This signs out every user and administrator of the classic user area and admin area (their sessions are files inside the container), and restarts the background workers and cron. The new interface keeps its sessions in Redis and is not affected. Plan the upgrade for a quiet period. If your `docker-compose.override.yml` pins an `octeth/oempro` image tag, change it to `v6.0.8` by hand, and redeploy dedicated MTA hosts with `cli/sendengine-deploy-to-server.sh`.
 - `oempro_ui` is rebuilt on your server from `php:8.4.28-apache`. The upgrade pulls this new base image automatically.
 - **Logstash pipeline sample on the staff Bounces screen:** the sample now reads `/var/log/pmta/bounces.csv`, the file the PowerMTA accounting sample on the same screen writes. Earlier versions printed `/var/log/pmta/bounces-*.csv`, which matches no file, so a pipeline copied from the screen read no bounces and logged no error. If you set up Logstash from that sample, change the `path` in its `file` input to `[ "/var/log/pmta/bounces.csv" ]` and restart Logstash.
+- **Password storage:** each account's stored password is upgraded at its first password sign-in after this release. That sign-in ends the account's other open sessions once, team member sessions of the account included. Remembered browsers stay signed in. Do not roll back to an earlier version after the upgrade: an account that has been upgraded cannot sign in there until its password is reset. If you set passwords with your own SQL, set `PasswordAlgo` to `NULL` in the same statement, or use `./cli/octeth.sh admin:change-password` and `user.update` instead (#2921)
 
 ### Deprecations
 

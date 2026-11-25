@@ -360,7 +360,7 @@ docker exec oempro_app php /var/www/html/cli/reset-admin-password.php
    ```bash
    docker exec oempro_redis redis-cli ping
    ```
-4. Regenerate authentication tokens:
+4. Create missing authentication tokens:
    ```bash
    /opt/octeth/cli/octeth.sh regenerate-auth-tokens
    ```

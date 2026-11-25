@@ -525,7 +525,7 @@ This installs or updates required software packages. Run this after upgrading Oc
 /opt/octeth/cli/octeth.sh regenerate-auth-tokens
 ```
 
-This fixes authentication issues where users can't log in. Use this if users report login problems after password changes.
+This gives every user and administrator without an authentication token a new one. Accounts that already have a token are not changed. A missing token is also created automatically at the next sign-in, so you rarely need this command.
 
 ::: tip
 Most day-to-day operations only require the **backend:start**, **backend:stop**, and **backend:status** commands. The other commands are typically used during setup, upgrades, or troubleshooting.
