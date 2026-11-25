@@ -244,6 +244,15 @@ Campaign event rules support optional time-based filtering:
 Combine campaign event rules with time filters to create powerful engagement segments. For example, "Opened any campaign in the last 30 days" identifies your most engaged subscribers, while "Not opened any campaign in the last 90 days" identifies subscribers who may need a re-engagement campaign.
 :::
 
+**Automated opens and clicks:**
+
+Mail proxies such as Apple Mail Privacy Protection and the Gmail image proxy open emails for the reader, and security scanners click links before the reader does. Opened and clicked rules can leave this activity out:
+
+- **Opened** and **Not opened** rules have **Exclude automated opens**, off by default.
+- **Clicked** and **Not clicked** rules have **Exclude automated clicks**, on by default.
+
+With the option on, a subscriber whose email was only opened or clicked automatically counts as not having opened or clicked it.
+
 ### Journey Rules
 
 Journey rules filter subscribers based on their status in journey automations.
@@ -267,6 +276,13 @@ Journey rules filter subscribers based on their status in journey automations.
 | **Complained** / **Not complained** | Whether the subscriber reported a journey email as spam. |
 
 Select the journey and optionally a specific email action within the journey.
+
+Opened and clicked rules of journey emails have the same **Exclude automated opens** and **Exclude automated clicks** options as campaign event rules. <Badge type="tip" text="New in v6.0.8" />
+
+- A person who opens or clicks after an automated visit counts, and a time filter then uses the time of that person's first open or click.
+- Journey emails opened or clicked before the upgrade to v6.0.8 count as opened or clicked by a person.
+- A clicked rule saved before the upgrade keeps counting every click until you turn the option on.
+- Journey decisions and run criteria count every open and click, and do not offer the options.
 
 ### Website Event Rules
 

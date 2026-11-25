@@ -93,6 +93,33 @@ Filter people based on their journey enrollments.
 * `operator` - one of `in journey`, `completed journey`, `not in journey`, `opened`, `not opened`, `clicked`, `not clicked`, `unsubscribed`, `complained`, `not complained`, `bounced`, `not bounced`
 * `value` - the ID number of the target journey or action depending on the chosen `operator`
 
+## Filtering By Journey Emails
+
+Filter people based on what they did with the emails a journey sent.
+
+```json
+{
+  "type": "journey-email-action",
+  "operator": "clicked",
+  "journey-id": 7,
+  "value": 23,
+  "includeAutomated": false,
+  "time_filter": {
+    "type": "in_last_x_days",
+    "value": 30
+  }
+}
+```
+
+* `operator` - one of `opened`, `not opened`, `clicked`, `not clicked`, `unsubscribed`, `complained`, `not complained`, `bounced`, `not bounced`
+* `journey-id` - target journey ID, or `-1` for any journey
+* `value` - target email action ID, optional. Leave it out for any email of the journey
+* `excludeAutomated` - optional, for `opened` and `not opened`. `true` leaves out automated opens. Default `false` <Badge type="tip" text="New in v6.0.8" />
+* `includeAutomated` - optional, for `clicked` and `not clicked`. An explicit `false` leaves out automated clicks. Without this key every click counts, unlike a campaign event rule <Badge type="tip" text="New in v6.0.8" />
+* `time_filter` - optional, the same as in campaign event rules. When automated activity is left out, it reads the time of the first open or click by a person
+
+A message counts as opened or clicked by a person when at least one open or click of it was not automated. Opens and clicks recorded before v6.0.8 count as made by a person.
+
 ## Filtering By Custom Fields
 
 Filter people based on custom field values.
@@ -283,6 +310,8 @@ Filter people based on campaign events.
   * `array` - multiple campaign IDs (e.g., `[123, 124, 125]`)
   * `empty string "" or array []` - any campaign
 * `email-id` - target email ID to apply an additional filter if the campaign is A/B test campaign (optional)
+* `excludeAutomated` - optional, for `opened` and `not opened`. `true` leaves out automated opens (mail proxies such as Apple Mail Privacy Protection and the Gmail image proxy). Default `false`
+* `includeAutomated` - optional, for `clicked` and `not clicked`. `true` also counts automated clicks (security scanners, link prefetching). Default `false`
 * `time_filter` - optional time-based filtering configuration
   * `type` - one of:
     * `in_last_x_days` - events that occurred within the last X days
