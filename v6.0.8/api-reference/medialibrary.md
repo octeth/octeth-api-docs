@@ -29,6 +29,8 @@ This endpoint is deprecated and will be removed in a future Octeth release. Ther
 
 Browse media library files and folders in a specified folder.
 
+Since v6.0.8 (#4112) each file also has `MediaURL`, the absolute public address to use in emails, with `Type` (MIME type) and `Size` (bytes). `Path` lists the folders from the top level down to the browsed one (empty at the top level), and `Rules` holds the install's media library rules: `Enabled`, `AllowedFileTypes` and `MaxFileSize` in bytes. `URL` is unchanged.
+
 **Request Body Parameters:**
 
 | Parameter | Type    | Required | Description                                    |
@@ -66,9 +68,18 @@ curl -X POST https://example.com/api.php \
     {
       "ID": 456,
       "Name": "image.jpg",
-      "URL": "https://cdn.example.com/media/abc123"
+      "URL": "/public/file/view/rt/th",
+      "MediaURL": "https://example.com/m/rt/th",
+      "Type": "image/jpeg",
+      "Size": 102400
     }
-  ]
+  ],
+  "Path": [],
+  "Rules": {
+    "Enabled": true,
+    "AllowedFileTypes": ["image/gif", "image/jpeg", "image/png", "application/pdf"],
+    "MaxFileSize": 5242880
+  }
 }
 ```
 
@@ -99,7 +110,7 @@ This endpoint is deprecated and will be removed in a future Octeth release. Ther
 - v1 REST alias: `POST /api/v1/media.delete`. Legacy access via `/api.php` is also supported
 :::
 
-Delete a media file from the media library.
+Delete a media file from the media library. The stored bytes are deleted from the storage that holds them, whatever the install's current storage method is (v6.0.8, #4112).
 
 **Request Body Parameters:**
 
@@ -281,7 +292,7 @@ This endpoint is deprecated and will be removed in a future Octeth release. Ther
 - Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
 :::
 
-Retrieve details of a specific media file from the media library.
+Retrieve details of a specific media file from the media library. `MediaURL` (v6.0.8, #4112) is the absolute public address to use in emails.
 
 **Request Body Parameters:**
 
@@ -311,7 +322,8 @@ curl -X POST https://example.com/api.php \
   "Name": "image.jpg",
   "Type": "image/jpeg",
   "Size": 102400,
-  "URL": "https://cdn.example.com/media/abc123"
+  "URL": "/public/file/view/rt/th",
+  "MediaURL": "https://example.com/m/rt/th"
 }
 ```
 
@@ -344,7 +356,7 @@ This endpoint is deprecated and will be removed in a future Octeth release. Ther
 - v1 REST alias: `POST /api/v1/media.upload`. Legacy access via `/api.php` is also supported
 :::
 
-Upload a new media file to the media library.
+Upload a new media file to the media library. `MediaURL` in the response is the absolute public address to use in emails (v6.0.8, #4112).
 
 ::: tip Admin usage (v5.9.6, #2775)
 This command also accepts admin authentication. Pass `AdminAPIKey` (or an admin `SessionID`), `Access=admin`, and `UserID` naming the account to act on; the response is exactly what that account's own API key would receive. The uploaded file is stored under that account (`RelOwnerUserID`). Without `Access=admin` the call is treated as a user call, so existing integrations are unaffected. `UserID` is ignored under user authentication. Admin-only error codes: `5001` UserID missing or invalid, `5002` user not found, `5003` user outside the user groups a restricted sub-admin may access. Requires the `User.Edit` privilege when `ADMIN_API_ENFORCE_PRIVILEGES` is on.
@@ -362,6 +374,8 @@ This command also accepts admin authentication. Pass `AdminAPIKey` (or an admin 
 | MediaType | String  | Yes      | MIME type of the file (e.g., "image/jpeg")      |
 | MediaSize | Integer | Yes      | File size in bytes                              |
 | MediaName | String  | Yes      | File name                                       |
+| FolderID  | Integer | No       | Folder to store the file in, one of the account's own. Omit or send `0` for the top level (v6.0.8, #4112) |
+| EnforceMediaRules | Boolean | No | `true` applies the install's media library rules: the on/off switch and the allowed file types, judged on the file's bytes instead of `MediaType`. The detected type is stored. Default `false`, which keeps the size limit as the only check (v6.0.8, #4112) |
 
 ::: code-group
 
@@ -382,7 +396,8 @@ curl -X POST https://example.com/api.php \
 {
   "Success": true,
   "ErrorCode": 0,
-  "MediaID": 456
+  "MediaID": 456,
+  "MediaURL": "https://example.com/m/rt/th"
 }
 ```
 
@@ -400,6 +415,11 @@ curl -X POST https://example.com/api.php \
 3: Missing required parameter: MediaSize
 4: File size exceeds maximum allowed limit
 5: Missing required parameter: MediaName
+6: The media library is turned off (only with EnforceMediaRules, v6.0.8)
+7: This file type is not allowed (only with EnforceMediaRules, v6.0.8)
+8: Folder not found (v6.0.8)
+9: The file could not be stored. Nothing is kept (v6.0.8)
+10: MediaData is not a base64 encoded file (only with EnforceMediaRules, v6.0.8)
 ```
 
 :::

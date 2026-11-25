@@ -19,7 +19,7 @@ Every save is recorded in the staff audit log, with the names of the settings th
 - **Users can upload files to the media library**: when off, users cannot open the media library or upload to it.
 - **Allowed file types**: the MIME types the media library accepts, separated by commas, for example `image/gif,image/jpeg,image/png,application/pdf`. An upload is accepted only when its type is on the list exactly. Spaces around the commas are removed when you save. See the [IANA list of media types](https://www.iana.org/assignments/media-types/media-types.xhtml).
 
-On an install where these two were never saved, the screen shows the switch on and `image/gif,image/jpg,application/pdf,application/zip`, and the first save stores them.
+On an install where these two were never saved, the screen shows the switch on and `image/gif,image/jpeg,image/png,image/webp,application/pdf,application/zip`, and the first save stores them.
 
 ## Storage
 
@@ -29,24 +29,37 @@ On an install where these two were never saved, the screen shows the switch on a
 |---|---|
 | **On this server** | Files are written to the `data/media` directory of the install |
 | **In the database** | Files are stored in the MySQL database. Simple to back up, but the database grows with every file |
-| **On Amazon S3** | Files are uploaded to an S3 bucket and served from its URL |
+| **In S3-compatible storage** | Files are uploaded to a bucket on Amazon S3, Cloudflare R2, MinIO, Wasabi or another service with an S3 API. The bucket can stay private: this install serves the files |
 
 A change applies to new uploads only. Files already uploaded stay where they are.
 
-### Amazon S3 connection
+### S3-compatible connection
 
-The connection fields appear when **On Amazon S3** is selected, and all of them are required then:
+The connection fields appear when **In S3-compatible storage** is selected:
 
-- **Access ID**: the access key ID of an IAM user that can write to the bucket.
+- **Endpoint**: the service's S3 API address, the host only. Leave it empty for Amazon S3.
+- **Region**: the bucket's region. For Amazon S3 it is looked up when empty.
+- **Bucket name** and **Path in the bucket**: where the files go. The path has no slash at the start or the end. Changing the endpoint, bucket or path does not move files already stored, so copy them under the same path first.
+- **Access key ID**: a key that can read, write and delete objects in the bucket.
 - **Secret key**: write-only. When one is stored, the field is named **Replace secret key** and says **A secret key is stored**. The stored key is never shown. Leave the field blank to keep it, or enter a new one to replace it.
-- **Remove the stored key**: shown when a key is stored. Tick it and save to clear the key. While media is stored on Amazon S3, a key is required, so removing it without entering a new one is refused. A key you type in the field wins over the box.
-- **Bucket name**: the S3 bucket.
-- **Media library path**: the folder in the bucket that holds the files, without a slash at the start or the end.
-- **Media library URL**: the public address the files are served from, without a slash at the end. Links in emails point here.
+- **Remove the stored key**: shown when a key is stored. Tick it and save to clear the key. While media is stored in S3-compatible storage, a key is required, so removing it without entering a new one is refused. A key you type in the field wins over the box.
+- **Path-style addresses**: put the bucket in the path instead of the host name.
+- **Earlier public address**: only for files uploaded before v6.0.8, which were public. If the bucket does not hold one, it is read from this address. Keep it when you move to another service, or leave it empty.
 
-A slash at the start or the end of the path and the URL is removed when you save.
+| Service | Endpoint | Region | Path-style addresses |
+|---|---|---|---|
+| Amazon S3 | empty | the bucket's region, or empty | Off |
+| Cloudflare R2 | `https://ACCOUNT_ID.r2.cloudflarestorage.com` | `auto` | Off or on |
+| MinIO | your server's address, for example `https://minio.example.com` | `us-east-1` unless you changed it | On |
+| Wasabi | `https://s3.REGION.wasabisys.com` | the same region | Off |
+
+**Test connection** writes a small test object, reads it back and deletes it, with what the form holds. Nothing is saved. When it fails, the message names the step and the service's own error.
 
 When media is stored elsewhere but a secret key is still stored from an earlier setup, the card says so and offers **Remove the stored key**.
+
+### How files are served
+
+Every media file is served by this install, whatever stores it, with headers that let mail providers' image proxies keep it for a year. In sent mail, image addresses move to the sender domain's tracking host. A file in S3-compatible storage is read from the bucket for every request a proxy has not cached, so plan the bandwidth of the application server: a campaign to one million recipients with a 200 KB image is up to 200 GB.
 
 ## Upload size limits
 

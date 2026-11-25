@@ -76,7 +76,39 @@ Both journey builders now name the zone the window follows: the IANA zone (for e
 
 **Who needs to act:** an integration that treats every answered call as recorded. After an unconfirmed attempt the event may still have been recorded, so a retry can record it twice.
 
+### Media library
+
+#### Media files are streamed, cached and answered with 404 when missing
+
+`image_viewer.php` and `public/file/view` serve every media library file themselves (octeth/oempro#4112). A file stored in S3 used to answer a 302 redirect to the bucket. Responses now carry `Cache-Control`, `ETag`, `X-Content-Type-Options: nosniff` and a sandboxing `Content-Security-Policy` (except PDF files). File types a browser could run, such as HTML, are sent as a download. A missing file answers HTTP 404 instead of 200 with the text "Media not found".
+
+**Who needs to act:** an integration that relied on the redirect to the bucket, or on HTTP 200 for a missing file.
+
+#### Media images in sent mail use the sender domain's tracking host
+
+In sent mail, media library addresses on the application's own URL move to the sender domain's tracking host when the domain is Enabled and its DNS records list that host, and otherwise to the host open tracking uses (octeth/oempro#4112). The application URL stays when the tracking host's last TLS check failed. The stored email content does not change.
+
+**Who needs to act:** anyone who matches media library addresses in delivered mail.
+
+#### `media.upload`, `media.browse` and `media.retrieve` return more, and a failed store is an error
+
+`media.upload` and `media.retrieve` return `MediaURL`. `media.browse` returns `MediaURL`, `Type` and `Size` for each file, and `Path` and `Rules` (octeth/oempro#4112). `media.upload` takes the optional `FolderID` and `EnforceMediaRules`. When the storage refuses a file, `media.upload` now answers `ErrorCode` `9` and keeps nothing. Before v6.0.8 it answered success and the file could not be opened.
+
+**Not affected:** every existing key, and which files `media.upload` accepts without `EnforceMediaRules`.
+
+**Who needs to act:** an integration that treats every `media.upload` answer as stored must handle `ErrorCode` `9`.
+
+#### Objects in S3 are private
+
+Files uploaded to S3 are written without the public-read ACL (octeth/oempro#4112). Files uploaded earlier keep working. `S3_URL` is now only the address earlier public files are read from when the bucket does not hold them, so it can be empty.
+
+**Who needs to act:** an integration that builds bucket addresses itself. Use `MediaURL`.
+
 ## Upgrade checklist
+
+- If you store media in Amazon S3, check that the access key may read and delete objects, not only write them, and run **Test connection** in **Settings**, **Uploads and media**. Set the region there if the lookup cannot reach Amazon S3.
+- If **Media library file** in **Settings**, **Uploads and media** is still 10,240 bytes, the old default, raise it. New installs start at 5 MB.
+- If a custom plugin loads `aws_s3`, switch it to the AWS SDK in `vendor/`. The old class is removed.
 
 - If you call `event.track` from a server, handle HTTP 500 with `ErrorCode` `100005`. The event was not confirmed, and a retry can record it twice.
 - If you run ScheduledPull journeys with a time window and no journey **Timezone**, check that the new local-time window is the one you want. To pin a window to a specific zone, set the journey's **Timezone**.

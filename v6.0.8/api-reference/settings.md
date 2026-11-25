@@ -114,7 +114,7 @@ Sending is also checked at the point of use on both mail engines, so a path stor
 **Response:**
 
 - `Settings`: the `oempro_config` row keyed by column name (all columns except `ConfigID`). Values are typed the way the application types them at bootstrap: the stored strings `true` and `false` come back as JSON booleans, everything else as stored. Secrets (`*_PASSWORD`, `S3_SECRET_KEY`, and every other key matching the `system.getsettings` sensitive-key rule) are returned as the literal `***REDACTED***` when set, and as `""` when empty. Sending that literal back to `settings.update` is refused (ErrorCode 13): omit the field to keep the stored secret.
-- `RuntimeOptions`: the `oempro_options` keys `settings.update` can write, in their decoded shapes: `SeedList`, `AliasList`, `RelayDomains`, `PreHeaderTextTemplate`, `EmailDeliverySubscriberSnapshot`, `DefaultCustomFieldsForNewLists`, `FailedWebhookHandler`, `LimitUtilizationWebhook`, `Stripo_PluginId`, `Stripo_SecretKey`, `Stripo_APIKey`, `Unlayer_ProjectId`, `Unlayer_APIKey`, `MediaUploadStatus`, `MediaLibraryAllowedFileTypes` (strings, `null` when never saved); `ListFreshnessThresholds` (`{Active, SlowingDown, Stale}` integers, defaulted like the Preferences screen); `FailedWebhookHandlerSettings` (`{FailThreshold, DisableForXSeconds, CallWebhookURL}`); `LimitUtilizationWebhookSettings` (`{WebhookURL, NotifyTransitions{OKToWarning, WarningToExceeded, OKToExceeded, ExceededToWarning, WarningToOK, ExceededToOK}}`); `PreventUserLoginFromAlienIPs` and `DisableUserPasswordReset` (booleans). Secrets are redacted the same way, except that the two boolean options are always returned as their real value, because a true/false flag cannot hold a secret (before v6.0.2, `DisableUserPasswordReset` came back as `***REDACTED***` because its name contains `PASSWORD`, #3549).
+- `RuntimeOptions`: the `oempro_options` keys `settings.update` can write, in their decoded shapes: `SeedList`, `AliasList`, `RelayDomains`, `PreHeaderTextTemplate`, `EmailDeliverySubscriberSnapshot`, `DefaultCustomFieldsForNewLists`, `FailedWebhookHandler`, `LimitUtilizationWebhook`, `Stripo_PluginId`, `Stripo_SecretKey`, `Stripo_APIKey`, `Unlayer_ProjectId`, `Unlayer_APIKey`, `MediaUploadStatus`, `MediaLibraryAllowedFileTypes`, `S3_ENDPOINT`, `S3_REGION` (strings, `null` when never saved; the two `S3_` keys since v6.0.8, #4112); `S3_PATH_STYLE` (boolean, v6.0.8, #4112); `ListFreshnessThresholds` (`{Active, SlowingDown, Stale}` integers, defaulted like the Preferences screen); `FailedWebhookHandlerSettings` (`{FailThreshold, DisableForXSeconds, CallWebhookURL}`); `LimitUtilizationWebhookSettings` (`{WebhookURL, NotifyTransitions{OKToWarning, WarningToExceeded, OKToExceeded, ExceededToWarning, WarningToOK, ExceededToOK}}`); `PreventUserLoginFromAlienIPs` and `DisableUserPasswordReset` (booleans). Secrets are redacted the same way, except that the two boolean options are always returned as their real value, because a true/false flag cannot hold a secret (before v6.0.2, `DisableUserPasswordReset` came back as `***REDACTED***` because its name contains `PASSWORD`, #3549).
 
 ::: code-group
 
@@ -314,6 +314,9 @@ Omitted parameters are now left unchanged. In earlier versions, a partial `setti
 | Stripo_APIKey | String | No | Stripo per-account API key list as a JSON-encoded STRING (a nested object is refused, because request keys are lowercased). Must be valid JSON and must fit the storage column (issue #1311). Empty clears. |
 | Unlayer_ProjectId | String | No | Unlayer project id |
 | Unlayer_APIKey | String | No | Unlayer API key |
+| S3_ENDPOINT | String | No | Host address of an S3-compatible service for the media library, for example `https://s3.example.com`, without a path. Empty for Amazon S3 (v6.0.8, #4112) |
+| S3_REGION | String | No | Region of the media library bucket, for example `us-east-1` or `auto`. Empty looks up the region of an Amazon S3 bucket (v6.0.8, #4112) |
+| S3_PATH_STYLE | Boolean | No | `true` puts the bucket in the path instead of the host name (v6.0.8, #4112) |
 
 ::: code-group
 
@@ -366,6 +369,7 @@ curl -X POST https://example.com/api.php \
 13: A value is the redaction marker ***REDACTED*** (omit the field to keep the stored value)
 14: ListFreshnessThresholds is not an object
 22: SEND_METHOD_LOCALMTA_PATH is not a valid local MTA path (v6.0.0; an empty value is accepted)
+23: S3_ENDPOINT, S3_REGION or S3_PATH_STYLE is not valid, see ErrorText (v6.0.8)
 15: FailedWebhookHandlerSettings is invalid (see ErrorText)
 16: LimitUtilizationWebhookSettings is invalid, or the webhook is Enabled with no NotifyTransitions flag set
 17: Stripo rejected the plugin id / secret key pair
@@ -382,6 +386,75 @@ NOT AVAILABLE IN DEMO MODE: Endpoint disabled in demo mode
 `settings.update` no longer accepts `PAYPALEXPRESSSTATUS`, `PAYPALEXPRESSBUSINESSNAME`, `PAYPALEXPRESSPURCHASEDESCRIPTION` or `PAYPALEXPRESSCURRENCY`, because the built-in PayPal Express Checkout gateway has been removed. Sending one is **ignored rather than refused**, exactly as for any other unrecognised field, so an existing integration does not start returning errors. It simply no longer changes anything.
 
 `settings.get` and `system.getsettings` still return those values, because the columns remain on the configuration table and no migration drops them. They are historical data and nothing in the product reads them. See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for what to use instead.
+:::
+
+## Test Media Storage Connection
+
+<Badge type="info" text="POST" /> `/api/v1/settings.mediastorage.test`
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key (privilege `Settings`)
+- v1 REST alias: `POST /api/v1/settings.mediastorage.test`. Legacy access via `/api.php` is also supported
+- Not available to admin AI assistants, and refused in demo mode
+- Added in v6.0.8 (#4112)
+:::
+
+Test the S3-compatible connection media library files are stored with: a probe object is written, read back and deleted. Every parameter is optional and replaces the stored value for this test only. Nothing is saved.
+
+**Request Body Parameters:**
+
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| Command   | String | Yes      | API command: `settings.mediastorage.test` |
+| SessionID | String | No       | Session ID obtained from login        |
+| APIKey    | String | No       | Admin API key for authentication      |
+| S3_ENDPOINT | String | No     | Host address of the service. Empty for Amazon S3 |
+| S3_REGION | String | No       | Region of the bucket                  |
+| S3_PATH_STYLE | Boolean | No  | Put the bucket in the path            |
+| S3_BUCKET | String | No       | Bucket name                           |
+| S3_MEDIALIBRARY_PATH | String | No | Path in the bucket               |
+| S3_ACCESS_ID | String | No    | Access key ID                         |
+| S3_SECRET_KEY | String | No   | Secret key. Empty uses the stored key |
+
+A refused connection is a successful call with `Connected` `false`. `Step` is the part that failed (`settings`, `write`, `read` or `delete`) and `Message` the provider's own error.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "settings.mediastorage.test",
+    "APIKey": "your-admin-api-key",
+    "S3_ENDPOINT": "https://account-id.r2.cloudflarestorage.com",
+    "S3_REGION": "auto",
+    "S3_BUCKET": "media"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Connected": false,
+  "Step": "write",
+  "Message": "AccessDenied: Access Denied"
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 99999
+}
+```
+
+```txt [Error Codes]
+0: Success
+99998: Authentication failure
+99999: Not enough privileges
+```
+
 :::
 
 ## Get Delivery Routes
