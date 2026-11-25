@@ -895,6 +895,8 @@ curl -X POST https://example.com/api/v1/smscampaign.send \
 34: The campaign changed after it was costed; run the estimate again
 35: The confirmation token is invalid or has expired
 36: The estimate result is incomplete; run the estimate again
+40: Account pending approval (HTTP 403): the account is not Trusted. Added in v6.0.8
+41: The account status could not be read, so nothing was sent (HTTP 503). Added in v6.0.8
 ```
 
 :::
@@ -981,6 +983,8 @@ curl -X POST https://example.com/api/v1/smscampaign.schedule \
 12: ScheduledAt is not in the future (HTTP 422)
 13: Timezone is not a known timezone (HTTP 422)
 31-36: The estimate and token errors listed under smscampaign.send
+40: Account pending approval (HTTP 403): the account is not Trusted. Added in v6.0.8
+41: The account status could not be read, so nothing was sent (HTTP 503). Added in v6.0.8
 ```
 
 :::
@@ -1094,6 +1098,8 @@ curl -X POST https://example.com/api/v1/smscampaign.resume \
 3: Only a Paused campaign can be resumed
 4: Paused on cost drift; pass AcknowledgeCost=1 to resume anyway
 5: The campaign changed status before it could be resumed; read it again
+40: Account pending approval (HTTP 403): the account is not Trusted. Added in v6.0.8
+41: The account status could not be read, so nothing was sent (HTTP 503). Added in v6.0.8
 ```
 
 :::
@@ -1672,6 +1678,8 @@ curl -X POST https://example.com/api/v1/smscampaign.test \
 16: The account has sent its daily limit of tests in the last 24 hours (new in v6.0.4)
 17: Too soon after the previous test (new in v6.0.4)
 18: The test numbers or limits could not be read, so nothing was sent (new in v6.0.4)
+40: Account pending approval (HTTP 403): the account is not Trusted. Added in v6.0.8
+41: The account status could not be read, so nothing was sent (HTTP 503). Added in v6.0.8
 ```
 
 :::
@@ -1876,6 +1884,8 @@ curl -X POST https://example.com/api/v1/sms.testnumber.add \
 8: The code could not be created or queued, so none was sent
 9: The test numbers could not be updated, try again
 10: SMS rate limit exceeded for an interval
+40: Account pending approval (HTTP 403): the account is not Trusted. Added in v6.0.8
+41: The account status could not be read, so nothing was sent (HTTP 503). Added in v6.0.8
 ```
 
 :::
@@ -2064,6 +2074,8 @@ curl -X POST https://example.com/api/v1/sms.send \
 10: The message is too long for the gateway's concatenation limit
 11: SMS rate limit exceeded for an interval
 12: The message could not be queued, so nothing was sent
+40: Account pending approval (HTTP 403): the account is not Trusted. Added in v6.0.8
+41: The account status could not be read, so nothing was sent (HTTP 503). Added in v6.0.8
 ```
 
 :::

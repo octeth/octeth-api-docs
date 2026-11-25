@@ -41,6 +41,25 @@ WHERE (EmailAddress LIKE '*@%' OR EmailAddress LIKE '@%')
 
 **Not affected:** the default response fields of every suppression command. The new fields are returned only with `IncludeDomainEntries`.
 
+### Account review
+
+#### An Untrusted account cannot send SMS or auto responders
+
+An account whose `ReputationLevel` is not `Trusted` could send SMS and auto responder mail although campaigns, journeys and the email gateway were held. It no longer can (octeth/oempro#3088).
+
+- `sms.send`, `sms.testnumber.add`, `smscampaign.send`, `smscampaign.schedule`, `smscampaign.resume`, `smscampaign.test` and `autoresponder.sendtest` answer HTTP 403 with code `40` (`Account pending approval`). When the account's status cannot be read they answer HTTP 503 with code `41`, and nothing is sent.
+- An SMS campaign that is already sending stops releasing messages and goes on when the account becomes `Trusted`. A journey Send SMS step waits like a journey email. A single SMS that was queued before the account was held fails with `Account pending approval`.
+- Queued auto responder mail waits and goes out after the account becomes `Trusted`, within an hour.
+
+**Not affected:** `Trusted` accounts, and the responses of every command listed above for them.
+
+**Who needs to act:** an operator with accounts that are still `Untrusted` and send SMS or auto responders. Approve them before the upgrade, or tell them. To list the candidates:
+
+```sql
+SELECT UserID, EmailAddress FROM oempro_users
+WHERE ReputationLevel <> 'Trusted' AND AccountStatus = 'Enabled';
+```
+
 ## Tier 2: shape and value changes
 
 ### SMS campaigns

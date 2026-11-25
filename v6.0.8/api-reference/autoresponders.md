@@ -763,6 +763,8 @@ curl -X POST https://example.com/api.php \
 10: Too many recipients (max 5 per call)
 11: All recipients failed delivery (returned only when zero recipients were accepted)
 99: NOT AVAILABLE IN DEMO MODE
+40: Account pending approval (HTTP 403): the account is not Trusted. Added in v6.0.8
+41: The account status could not be read, so nothing was sent (HTTP 503). Added in v6.0.8
 ```
 
 :::

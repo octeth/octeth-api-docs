@@ -53,6 +53,10 @@ URL at the final address, not at one that redirects.
 | Event | Sent when |
 |---|---|
 | `user.signed_up` | A new user completes the sign-up form |
+| `account_review.pending` | A new account waits for review (added in v6.0.8) |
+| `account_review.plan_changed` | An account that waits for review changes plan (added in v6.0.8) |
+| `account_review.domain_verified` | An account that waits for review verifies its first sender domain (added in v6.0.8) |
+| `account_review.blocked_send` | An account that waits for review tries to send for the first time (added in v6.0.8) |
 | `subscription.activated` | A new subscription starts, or a subscription that was past due or suspended becomes active again |
 | `subscription.plan_changed` | A subscription moves to another plan |
 | `subscription.cancel_scheduled` | A cancellation is scheduled for the end of the billing period |
@@ -206,6 +210,21 @@ took effect) or `dunning` (the account stayed suspended past the grace period).
   "subscription_id": 311
 }
 ```
+
+### `account_review.*`
+
+```json
+"data": {
+  "user_id": 1042,
+  "email": "alice@acme.com",
+  "name": "Alice Anderson",
+  "event_at": "2026-11-25T12:00:00Z",
+  "review_url": "https://example.com/user/staff/customers/1042?tab=review",
+  "domain": "acme.com"
+}
+```
+
+Each event is sent at most once per account. `email` and `name` are `null` when the account could not be read. `account_review.plan_changed` carries `user_group_id`, `account_review.domain_verified` carries `domain` and `account_review.blocked_send` carries `channel`. `account_review.pending` carries none of the three.
 
 ### `webhook.test`
 

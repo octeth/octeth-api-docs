@@ -57,7 +57,7 @@ See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for the
 | ForwardToFriendFooter | String | No | Forward to friend footer text |
 | AccountStatus | String | No | Account status ('Enabled' or 'Disabled', default: 'Enabled') |
 | AvailableCredits | Integer | No | Initial credits (default: 0) |
-| ReputationLevel | String | No | Reputation level ('Trusted' or 'Untrusted'). When omitted, the **New account reputation** setting on the staff **Settings > Sign-up** screen applies (`Untrusted` on a default install). Before v6.0.1 the default was 'Trusted'. An `Untrusted` account's campaigns wait for approval and it cannot send through the email gateway |
+| ReputationLevel | String | No | Reputation level ('Trusted' or 'Untrusted'). When omitted, the user group's `SignupReview` option decides (added in v6.0.8), and when the group has none, the **New account reputation** setting on the staff **Settings > Sign-up** screen applies (`Untrusted` on a default install). Before v6.0.1 the default was 'Trusted'. An `Untrusted` account's campaigns wait for approval and it cannot send through the email gateway, SMS or auto responders |
 | SignUpIPAddress | String | No | User signup IP address |
 | SSOID | String | No | Single sign-on ID |
 | SignupAttribution | Object or String | No | Where the account signed up from: a JSON object, or a JSON-encoded string of one, with any of the keys `ref`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term` and `referrer`. Unknown keys are dropped. Control characters are removed, values are trimmed and cut to 100 characters (255 for `referrer`), and empty values are dropped. Returned by `user.get` and `users.get`. The new user interface sends it for sign-ups on its registration page, including sign-ups with Google. Added in v6.0.8 |
@@ -2358,6 +2358,7 @@ curl -X POST https://example.com/api.php \
 | DisableListUnsubscribeHeader | `true` / `false` | Boolean |
 | DefaultSenderDomain, UserAreaLogoutURL | String | String (trimmed) |
 | DefaultSenderDomainMonthlyLimit | Non-negative integer | Integer |
+| SignupReview <Badge type="tip" text="New in v6.0.8" /> | Empty (follow the install's New account reputation), `Required` (a new account of the group starts `Untrusted`) or `NotRequired` (it starts `Trusted`). Applies when the account is created without a `ReputationLevel` | String |
 | EmailGatewayDNSTemplate, EmailCampaignDNSTemplate | A template name from `EMAILGATEWAY_DNS_TEMPLATES` / `EMAILCAMPAIGN_DNS_TEMPLATES` (case-sensitive; `Default` always exists) | String |
 
 <Badge type="tip" text="New in v6.0.5" /> `EmailGatewayDefaultOpenTracking` and `EmailGatewayDefaultLinkTracking` set the open and click tracking a sender domain starts with when an account of the group creates one. A group that has never stored them behaves as `Enabled`, and the keys appear in returned group `Options` only once a group stores them. Existing sender domains are not changed when they are set.

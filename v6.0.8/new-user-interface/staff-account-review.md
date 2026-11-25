@@ -4,6 +4,7 @@ A new account that is not yet **Trusted** cannot send until a staff member appro
 
 | Screen | Path on a default install | Permission |
 |---|---|---|
+| Account reviews | `/user/staff/reviews` | User.Edit (deciding needs User.Update) |
 | Account review settings | `/user/staff/settings/account-review` | Settings |
 | Account review tab | `/user/staff/customers/<user ID>?tab=review` | User.Edit (approving needs User.Update) |
 | The customer's review page | `/user/account/review` | Any signed-in customer with a sending hold |
@@ -12,12 +13,24 @@ A new account that is not yet **Trusted** cannot send until a staff member appro
 
 An account has a sending hold while either of these is true:
 
-- Its reputation is not **Trusted**. Campaigns wait for approval, journey emails wait, and the email gateway API and SMTP relay refuse its sends.
+- Its reputation is not **Trusted**. Campaigns wait for approval, journey emails and SMS wait, auto responders wait, SMS campaigns stop and the SMS API, the email gateway API and the SMTP relay refuse its sends.
 - `PHONE_VERIFICATION_REQUIRED_TO_SEND_EG_EMAILS` is `true` in `.oempro_env` and the account has no verified phone number. The email gateway refuses its sends.
 
 While a hold applies, every page of the account shows a banner with a button to its review page. The banner goes away, and the review page sends the customer to the dashboard, once no hold applies.
 
+`PHONE_VERIFICATION_REQUIRED_TO_SEND_EG_EMAILS` is deprecated as a way to approve accounts. Use account review.
+
 Answering the questions never changes the account's reputation. Only a staff member approves an account.
+
+## Choose which accounts start in review
+
+A new account starts **Untrusted** or **Trusted** by the first of these that is set:
+
+1. The reputation the caller gives, for example the staff **Create user** page.
+2. The user group's **New accounts** setting, on the **General** tab of the group: **Wait for review**, **Start approved** or **Follow the install setting**.
+3. **New account reputation** under **Settings > Sign-up**.
+
+Existing accounts are never changed by these settings.
 
 ## What the customer sees
 
@@ -56,13 +69,43 @@ A question that is off is not shown to the customer, and an answer to it is not 
 
 The first time an account submits its answers, Octeth emails the alert address (`ALERT_RECIPIENT_EMAIL`, set under **Email delivery**) with the answers and a link to the account. The email goes through the install's system email settings. Later changes send another email at most once a day.
 
-## Review and approve an account
+Octeth also tells you when an account that waits for review does one of these, once per account for each:
 
-1. Open the account from **Accounts > Users**.
-2. Click the **Account review** tab. It shows the status, the submission time, the checklist and every answer the account gave, including answers to questions you have turned off since.
-3. Click **Approve account**, then confirm. The account becomes **Trusted** and can send.
+| What happened | Email | Slack | Webhook |
+|---|---|---|---|
+| It signed up | Yes | Yes | `account_review.pending` |
+| It changed its plan | Yes | Yes | `account_review.plan_changed` |
+| It verified its first sender domain | Yes | Yes | `account_review.domain_verified` |
+| It tried to send for the first time | Yes, for the email gateway | Yes | `account_review.blocked_send` |
 
-Setting an account to **Trusted** anywhere else (the staff edit page, or `user.update` through the API) counts as approving it too.
+Slack needs `ACCOUNT_REVIEW_SLACK_WEBHOOK_URL` in `.oempro_env`. Webhooks are set on the [Webhooks](./webhooks) page. The emails and Slack messages go out within about 5 minutes. The email about a blocked email gateway send can repeat once a day.
+
+## The review queue
+
+**Accounts > Account reviews** lists every account that waits for review, oldest first.
+
+- **To review** holds every account that you have not declined. **Answers submitted** holds the ones that answered your questions. **Declined** holds the ones you declined.
+- Filter by text (name, company, email, website or signup IP), user group, country and account age.
+- Each row shows the signup IP and country, the plan and its payment status, the sender domains and their age, what the account says it sends, and the signals: signup screening, a refused send, a failed payment, the email domain and a different last sign-in address. The country next to the IP shows only when the server has the PHP geoip extension.
+- **Approve** sets the account to **Trusted**. A note is optional.
+- **Decline** needs a note. It changes nothing for the customer: the account still cannot send, and the customer still sees that it is in review. It leaves the **To review** list until the customer changes their answers.
+- Select several accounts to approve or decline them together with one note.
+
+## Review one account
+
+1. Open the account from the queue, or from **Accounts > Users**, and click the **Account review** tab.
+2. Read the status, the **Signals** and every answer the account gave, including answers to questions you have turned off since.
+3. Click **Approve account** or **Decline**.
+
+On an approved account, **Send back to review** sets it to **Untrusted** and needs a note. It stops sending at once on every channel, queued email gateway messages included.
+
+**Decision history** lists every decision with the staff member, the time, the note and what could be seen at that moment. A reputation change on the staff edit page is listed too, and so is an account approved through the API, as "Outside the staff area". Customers never see it. Deleting the account deletes its history.
+
+## The signup email
+
+A new account that waits for review gets one email, after its email address is confirmed. Existing accounts get nothing.
+
+To change it, open **Settings > Account review** and use the **Signup email** card. The **Message** accepts `{first_name}`, `{brand}` and `{review_url}` (a link to the review page), and the **Subject** accepts `{brand}`. Turn it off to send nothing. The email goes through the install's system email settings. A refused email is tried again every 10 minutes for 7 days.
 
 ## The approval email
 
@@ -81,4 +124,4 @@ The default subject is "Your account is approved", and the default message says 
 
 If the system email settings are wrong, the email is retried every minute for 24 hours and then dropped.
 
-To ask the customer for more information, or to decline an account, reply to them by email and disable the account if needed. The review page has no "needs information" or "declined" state.
+To ask the customer for more information, email them from their staff page. The review page has no "needs information" or "declined" state, so declining an account does not tell the customer. Disable the account when you are sure it is abusive.
