@@ -14,7 +14,7 @@ Every worker adds itself to a list when it starts and updates its entry, called 
 
 A worker that has not pinged for **10 minutes** is marked **Stale**.
 
-A worker is marked **Hung** when the process is still running on the server but it has not pinged for longer than its own limit. The limit is between 15 minutes and 6 hours, depending on how long its jobs can take. Restart a hung worker on the server, for example `/opt/octeth/cli/octeth.sh backend:restart import`. Hung workers are found among the standard workers of the install. Plugin workers and the send engine are not checked.
+A worker is marked **Hung** when the process is still running on the server but it has not pinged for longer than its own limit. The limit is between 15 minutes and 6 hours, depending on how long its jobs can take. Restart a hung worker on the server: `/opt/octeth/cli/octeth.sh supervisor:status supervisor` lists each process with its PID, and `/opt/octeth/cli/octeth.sh supervisor:restart supervisor oempro_import:oempro_import-0` restarts only that one. Do not use `backend:restart` for this. It restarts every worker and the cron jobs, and it interrupts the jobs that are running. Hung workers are found among the standard workers of the install. Plugin workers and the send engine are not checked.
 
 To be told about a hung worker, add an operator alert on the `worker_hung` metric, see [the configuration page](../getting-started/octeth-configuration).
 
