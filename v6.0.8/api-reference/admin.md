@@ -2763,6 +2763,7 @@ Retrieves a list of all currently active processes with their details, including
 | StaleMinutes | Integer | No       | Filter processes that haven't pinged in the last X minutes (useful for detecting stale/stuck processes) |
 | OrderField   | String  | No       | Field to sort by: `ProcessID`, `PID`, `ProcessType`, `RegisteredAt`, `LastPingedAt`, `MemoryUsage`, `MemoryPeakUsage` (default: LastPingedAt) |
 | OrderType    | String  | No       | Sort direction: `ASC` or `DESC` (default: DESC)                                                  |
+| IncludeHeartbeat | Boolean | No   | With `true`, the response also carries `Heartbeat` (v6.0.8). Without it the response is unchanged |
 
 ::: code-group
 
@@ -2851,6 +2852,18 @@ curl -X POST https://example.com/api/v1/admin.processes.list \
 
 :::
 
+### The `Heartbeat` object
+
+Returned by `admin.processes.list` only with `IncludeHeartbeat=true` (v6.0.8). It compares the registry with the processes the supervisor runs.
+
+| Key | Description |
+|-----|-------------|
+| Status | `ok`, `hung`, or `unknown` when the supervisor or the registry could not be read, or when every worker stopped pinging at once |
+| Reason | Why the status is `unknown`, otherwise empty |
+| Checked | Number of running workers compared |
+| Hung | Running workers with no ping for longer than their limit. Each has `Program`, `Process`, `Type`, `PID`, `ProcessID`, `SecondsSinceLastPing` and `StaleAfter` (seconds) |
+| NoHeartbeat | Running workers with no registry row, in the same form. This is normal for a worker whose feature is switched off |
+
 ## Clear Stale Processes
 
 <Badge type="info" text="POST" /> `/api/v1/admin.processes.clear`
@@ -2873,6 +2886,7 @@ Deletes rows from the process registry (`oempro_processes`) whose `LastPingedAt`
 | Command      | String  | Yes      | API command: `admin.processes.clear`                                                                     |
 | AdminAPIKey  | String  | Yes      | Admin API key                                                                                            |
 | StaleMinutes | Integer | No       | Rows whose last ping is older than this many minutes are deleted. Default 10. Clamped to 1..1440; a non-numeric value is refused with `ErrorCode 1`. |
+| KeepRunning  | Boolean | No       | With `true`, rows of workers that are still running are kept, so the row of a hung worker is not cleared (v6.0.8). Refused with `ErrorCode 3` when the running workers cannot be read |
 
 ::: code-group
 
@@ -2909,6 +2923,7 @@ curl -X POST https://example.com/api/v1/admin.processes.clear \
 0: Success
 1: StaleMinutes is not numeric
 2: Process cleanup query failed
+3: KeepRunning was set and the running workers could not be read
 NOT AVAILABLE IN DEMO MODE.: DEMO_MODE_ENABLED is on
 99998: Authentication failure
 99999: Not enough privileges

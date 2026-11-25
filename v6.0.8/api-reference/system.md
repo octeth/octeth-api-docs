@@ -194,6 +194,10 @@ The endpoint performs comprehensive health checks on the following components:
 - The Supervisor check reports processes not in `RUNNING` state with format: `# process_name: STATE`
 - The SendEngine check discovers containers dynamically using Docker Compose project prefix detection
 
+### The `WorkerHeartbeat` check
+
+Present only when `WORKER_HEARTBEAT_HEALTH_CHECK` is `warn` or `fail` (v6.0.8, default `off`). It names workers that the supervisor reports as `RUNNING` but that stopped sending their heartbeat. With `warn` the value starts with `WARNING:` and the result does not change. With `fail` it starts with `CRITICAL:` and the endpoint answers HTTP 503. When the heartbeat could not be checked the value is a `WARNING:` in both modes.
+
 ### The `ClientIPResolution` check
 
 <Badge type="tip" text="New in v6.0.0" />

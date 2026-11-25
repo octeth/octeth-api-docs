@@ -56,6 +56,14 @@ The two `sms-events` status error texts no longer name Keitaro: "The status filt
 
 **Who needs to act:** an integration that compares `ErrorText` against the old "Keitaro conversion" messages.
 
+### Administration
+
+#### Every worker appears in the process registry
+
+`admin.processes.list` now returns rows for workers that never registered before, such as the email gateway events, MTA log and SMS workers, and queue workers keep their row while they wait for work (octeth/oempro#1312). `AvailableProcessTypes` lists 13 more types, and the `Metrics` of `admin.alerts.get` gain `worker_hung`. The new `Heartbeat` object, the `KeepRunning` parameter and the `WorkerHeartbeat` health check entry appear only when they are asked for.
+
+**Who needs to act:** an integration that accepts only a fixed list of process types.
+
 ### Journeys
 
 #### ScheduledPull time windows follow daylight saving time in the account timezone

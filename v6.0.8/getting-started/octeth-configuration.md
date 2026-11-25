@@ -482,6 +482,14 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     A running import records progress about every two minutes, so this is a no-progress limit and not a limit on the total duration. An import that made no progress for more than 7 days is marked `Failed` without a webhook or plugin hook, so an upgrade does not send notifications about old imports.
 
+    Hung workers can be reported by the health check:
+
+    ```bash
+    WORKER_HEARTBEAT_HEALTH_CHECK=off                       # off, warn or fail (default: off)
+    ```
+
+    **`WORKER_HEARTBEAT_HEALTH_CHECK`**: how `system.health.check` reports a worker that is still running but stopped sending its heartbeat. With `off` the response is unchanged. With `warn` it carries a `WorkerHeartbeat` entry that does not change the result. With `fail` the endpoint also answers HTTP 503 while a worker is hung. Any other value is treated as `off`. The `worker_hung` operator alert, the setup readiness report and the staff Workers screen report hung workers whatever this setting is.
+
 28. **Long-Running Worker Memory Hygiene**
 
     ```bash
@@ -2216,7 +2224,7 @@ Octeth raises its own alerts with no AI agent running. Add a rule on the server:
 echo "https://api.telegram.org/bot<token>/sendMessage?chat_id=<chat>" | /opt/octeth/cli/octeth.sh alerts:add --metric=worker_down --threshold=0 --webhook-stdin
 ```
 
-Metrics: `complaint_rate`, `bounce_rate`, `delivery_server_failure_rate` (percent over `--window` minutes, default 60), `queue_depth`, `worker_down`, `disk_usage`. For `complaint_rate` and `bounce_rate`, email gateway messages are counted over the window. Campaign and autoresponder sends are stored per UTC day, so their bounces and complaints are counted from the start of the same UTC day: each rate compares events with the sends of the same period. A rate needs at least 200 messages before it can fire.
+Metrics: `complaint_rate`, `bounce_rate`, `delivery_server_failure_rate` (percent over `--window` minutes, default 60), `queue_depth`, `worker_down`, `worker_hung` (workers that run without a heartbeat), `disk_usage`. For `complaint_rate` and `bounce_rate`, email gateway messages are counted over the window. Campaign and autoresponder sends are stored per UTC day, so their bounces and complaints are counted from the start of the same UTC day: each rate compares events with the sends of the same period. A rate needs at least 200 messages before it can fire.
 
 `--cooldown` (minutes, default 60) is the quiet time after an alert. A webhook URL is read from stdin only, because it can carry a token, and it is never shown again. `alerts:list`, `alerts:events`, `alerts:enable`, `alerts:disable`, `alerts:remove`, `alerts:test ID` and `alerts:check [--dry-run]` manage and exercise the rules. The check runs every five minutes from cron (`cli/operator_alerts.php` in `oempro_cron`).
 

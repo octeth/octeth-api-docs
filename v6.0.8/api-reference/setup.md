@@ -140,7 +140,7 @@ Returns every alert rule and the most recent alerts. Octeth checks enabled rules
 | AdminAPIKey | String  | No       | Admin API key for authentication                     |
 | Limit       | Integer | No       | Recent alerts to return, 1 to 100. Default 20.       |
 
-Rule metrics. Possible values: `complaint_rate`, `bounce_rate`, `delivery_server_failure_rate` (percent over the window), `queue_depth` (messages), `worker_down` (workers), `disk_usage` (percent). For `complaint_rate` and `bounce_rate`, email gateway messages are counted over the rule's window. Campaign and autoresponder sends are stored per UTC day, so their bounces and complaints are counted from the start of the same UTC day, and each rate compares events with the sends of the same period.
+Rule metrics. Possible values: `complaint_rate`, `bounce_rate`, `delivery_server_failure_rate` (percent over the window), `queue_depth` (messages), `worker_down` (workers), `worker_hung` (workers), `disk_usage` (percent). For `complaint_rate` and `bounce_rate`, email gateway messages are counted over the rule's window. Campaign and autoresponder sends are stored per UTC day, so their bounces and complaints are counted from the start of the same UTC day, and each rate compares events with the sends of the same period.
 
 ::: code-group
 
