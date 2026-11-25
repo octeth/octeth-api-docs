@@ -16,7 +16,7 @@ Release in progress. Changelog will be updated upon release.
 
 ### New Features
 
-- (To be documented)
+- **Plan activity on the staff customer page:** the Billing tab now lists every plan change of a customer, with the date, the plan, the price and whether the customer, a staff member or Octeth made it. History starts with this upgrade (#3089)
 
 ### Enhancements
 

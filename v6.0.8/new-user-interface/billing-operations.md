@@ -149,6 +149,23 @@ download any of their invoices as a PDF.
 
 The **Lifetime paid** figure is net of refunds.
 
+#### Plan activity
+
+The **Plan activity** card on the **Billing** tab lists how the customer got to their current plan, newest first:
+when a plan started, upgrades, downgrades and switches, scheduled and undone cancellations, cancellations,
+payments going past due, suspensions and recoveries. Each row shows the date, the plan, the price after the
+event and who caused it:
+
+- **Customer**: the customer did it on their own billing page, or by signing up.
+- **Staff**, with the email address: a staff member did it from this page, or while switched to the customer.
+- **Automatic**: a billing run, a failed payment, dunning or another scheduled job.
+
+The last row is always **Signed up**. The list shows ten events, and **Show more** adds older ones.
+
+History starts with the v6.0.8 upgrade. An existing customer gets one starting row, **On plan when tracking began**,
+and an ended subscription gets a **Canceled** row with its own date. A user group changed in the classic admin area
+is not a billing change and does not appear.
+
 #### Refunding a payment
 
 In the customer's payments list, press **Refund** next to a succeeded payment. Leave the amount
