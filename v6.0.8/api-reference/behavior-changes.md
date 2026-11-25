@@ -38,6 +38,14 @@ None recorded yet.
 
 **Who needs to act:** nobody, unless an integration relied on the refusal to skip SMS rules.
 
+#### Abandoned imports end as `Failed`
+
+An import whose worker stopped (a crash, an out-of-memory kill or a deployment) stayed in `Importing` before v6.0.8. Import workers now mark such an import `Failed` after `IMPORT_STALE_TIMEOUT_MINUTES` without progress, 360 by default (octeth/oempro#4200). The final status webhook is sent once, with `ImportStatus` `Failed`. Contacts imported before the stop remain on the list.
+
+After the upgrade, imports left in `Importing` by earlier versions are marked `Failed` too. Those with no progress for more than 7 days are marked without a webhook.
+
+**Who needs to act:** nobody. An integration that treats `Importing` as still running can stop waiting when the status becomes `Failed`.
+
 ### Segments
 
 #### `converted` and `not converted` SMS operators

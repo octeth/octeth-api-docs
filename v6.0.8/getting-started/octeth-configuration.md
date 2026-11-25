@@ -470,6 +470,18 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     **Choosing a value.** Progress is measured from the most recent of the job's start, last-update and submit timestamps. Campaign and multi-list exports refresh their last-update timestamp as they run, so for those this is a *no-progress* budget rather than a total-runtime budget; subscriber exports do not report progress, so their whole runtime counts against it. Keep the value comfortably above your longest healthy export. Octeth runs **two** export workers, so a value that is too low can mark a job as failed while another worker is still legitimately working on it — no data is corrupted if that happens (the running worker detects the `Failed` verdict and does not overwrite it), but the user loses an export that would otherwise have completed. Lower it only if your exports are known to be small and you want stranded jobs surfaced faster. A reaped job has its finish time recorded, so its partial result file is reclaimed by the normal `EXPORT_FILE_RETENTION_DAYS` cleanup once the retention window elapses.
 
+    Abandoned subscriber imports are recovered the same way:
+
+    ```bash
+    IMPORT_STALE_TIMEOUT_MINUTES=360                        # Minutes an import may stall in "Importing" before it is marked Failed (default: 360)
+    ```
+
+    **`IMPORT_STALE_TIMEOUT_MINUTES`**: the number of minutes a subscriber import may stay in the `Importing` state without making progress before an import worker marks it `Failed`. Accepted range `15` to `10080` (15 minutes to 7 days). Values outside it are ignored and the 360-minute default is used.
+
+    An import worker claims a queued import and runs it outside of a database transaction. If the worker process dies during the import (a PHP fatal error, an out-of-memory kill or a `SIGKILL` during a deployment), the import would stay in `Importing` forever. The import workers now find such imports, mark them `Failed`, delete the uploaded file, and send the final status webhook. Contacts that were already imported stay on the list, and the import can be started again.
+
+    A running import records progress about every two minutes, so this is a no-progress limit and not a limit on the total duration. An import that made no progress for more than 7 days is marked `Failed` without a webhook or plugin hook, so an upgrade does not send notifications about old imports.
+
 28. **Long-Running Worker Memory Hygiene**
 
     ```bash
