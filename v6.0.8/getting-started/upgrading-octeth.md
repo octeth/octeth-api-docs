@@ -446,6 +446,10 @@ The `usergroup.*` API commands are unchanged.
 
 Plugins that registered `UserGroup.Update.FieldValidator` or `FormItem.AddTo.Admin.UserGroupLimitsForm` no longer have them called. See [API Behavior Changes](/v6.0.2/api-reference/behavior-changes).
 
+### Outbound HTTPS requests verify certificates
+
+Outbound HTTPS requests now check the server certificate. The upgrade adds `OUTBOUND_TLS_VERIFY=warn`: a request to a server with a self-signed, expired or otherwise untrusted certificate still goes through, and each failing endpoint is logged as an ERROR ("TLS certificate verification failed") and counted in the `oempro_outbound_tls_failures_total` metric. A later release changes the default to `enforce`, which fails those requests. Before then, check the log or the metric, and fix or replace the endpoints it names. See "Outbound TLS Certificate Verification" in [Octeth Configuration](/v6.0.8/getting-started/octeth-configuration).
+
 ## Post-Upgrade Verification
 
 After the upgrade completes, verify everything is working:

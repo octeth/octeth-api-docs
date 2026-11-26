@@ -1888,6 +1888,22 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     Introduced in v6.0.8 (issue #4106).
 
+61. **Outbound TLS Certificate Verification**
+
+    ```bash
+    OUTBOUND_TLS_VERIFY=warn        # warn, enforce or off (default: warn)
+    ```
+
+    Controls whether Octeth checks the server certificate on outbound HTTPS requests: tenant webhooks, list web service integrations, import from URL, remote content, operator alerts, the user limit webhook and plugin APIs.
+
+    - `warn` (default): the certificate is verified. When verification fails, Octeth logs an ERROR ("TLS certificate verification failed") with the calling feature, host and account, once per feature and host per process, counts it in the `oempro_outbound_tls_failures_total` metric, and sends the request again without verifying the issuer, so it still goes through. A POST that failed on a redirect target is not sent again, because the first host already received it.
+    - `enforce`: a request to a server whose certificate cannot be verified fails.
+    - `off`: certificates are not verified, as before v6.0.8. Not recommended.
+
+    In every mode the host name is still checked when the issuer is not, as before: a certificate issued for another name fails. Requests to fixed public services (octeth.com, plugin vendor APIs) are always verified, and requests to the install's own `APP_URL` never are, whatever this is set to. Any other value acts as `warn`. A later release changes the default to `enforce`.
+
+    Introduced in v6.0.8 (issue #4033).
+
 
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.
