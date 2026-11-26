@@ -60,6 +60,27 @@ SELECT UserID, EmailAddress FROM oempro_users
 WHERE ReputationLevel <> 'Trusted' AND AccountStatus = 'Enabled';
 ```
 
+### Journeys
+
+#### Journey run criteria apply `excludeAutomated` and `includeAutomated`
+
+Run criteria sent to `journey.create` or `journey.update` lost the `excludeAutomated` and `includeAutomated` rule keys, because the API lowercases every request key and the criteria engine reads them in camelCase (octeth/oempro#4208). Both keys are now kept, and journeys saved before the upgrade are evaluated with them too, so a live journey can start or skip different subscribers.
+
+- A `campaign-events` or `journey-email-action` rule with `excludeAutomated: true` counts human opens only. Before, it counted every open.
+- A `campaign-events` click rule with `includeAutomated: true` counts automated clicks too. Before, it left them out.
+- A `journey-email-action` click rule with `includeAutomated: false` counts human clicks only. Before, it counted every click.
+- `journey.get` returns the camelCase keys for a journey saved after the upgrade. A journey saved before keeps the lowercased keys in `journey.get` until it is saved again.
+
+**Not affected:** run criteria without either key, decision criteria, and journeys saved in the Journey Builder.
+
+**Who needs to act:** an integration that sets either key in `run_criteria`. To list the journeys that change:
+
+```sql
+SELECT JourneyID, RelUserID, JourneyName FROM oempro_journeys
+WHERE TriggerParameters LIKE BINARY '%excludeautomated%'
+   OR TriggerParameters LIKE BINARY '%includeautomated%';
+```
+
 ## Tier 2: shape and value changes
 
 ### SMS campaigns
@@ -187,6 +208,7 @@ The `delivery_server_id` of a transactional email delivery activity is the serve
 - If **Media library file** in **Settings**, **Uploads and media** is still 10,240 bytes, the old default, raise it. New installs start at 5 MB.
 - If a custom plugin loads `aws_s3`, switch it to the AWS SDK in `vendor/`. The old class is removed.
 
+- If you set `excludeAutomated` or `includeAutomated` in journey `run_criteria` through the API, list the affected journeys with the query under [Journeys](#journeys) and check that the new filtering is what you want.
 - If you call `event.track` from a server, handle HTTP 500 with `ErrorCode` `100005`. The event was not confirmed, and a retry can record it twice.
 - If you run ScheduledPull journeys with a time window and no journey **Timezone**, check that the new local-time window is the one you want. To pin a window to a specific zone, set the journey's **Timezone**.
 - If your integration matches the `ErrorText` "The status filter is only available for Keitaro conversion rules." or "The Keitaro conversion status must be text of 1 to 64 characters.", match error code `12` or the new texts instead.
