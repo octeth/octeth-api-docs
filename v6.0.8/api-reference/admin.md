@@ -7431,7 +7431,7 @@ Octeth screens three points where a sender enters the platform, with determinist
 | Point | When | Rules | Hold |
 |---|---|---|---|
 | Signup | Every new account (`User.Create`, the public sign-up page, SSO), local checks only. The opt-in external lookups run a few minutes later in `cli/signup_screening.php` and store a second result | `disposable_domain`, `no_mx` (one DNS query, 2 seconds at most), `young_domain` (RDAP registration date, opt-in), `website_not_live` (opt-in, at most 256 KB read), `ip_signup_burst`, `suspended_domain` | An account that took the default reputation stays `Untrusted` |
-| List import | The import worker, after the import finished, on a bounded sample of up to 2,000 addresses | `role_addresses`, `invalid_syntax`, `no_mx_domains`, `spam_traps`, `bounce_history` (hard bounces and complaints on any tenant, counts only, operator only), `free_mail_shift` | Campaigns to the list go to Pending Approval until the import is released |
+| List import | The import worker, after the import finished, on a bounded sample of up to 2,000 addresses. <Badge type="warning" text="Changed in v6.0.8" /> Also every list sync run that added contacts, on a sample of up to 2,000 of the addresses it added (`SubjectType` `list_sync`, `SubjectID` the run's `RunID`). A run too small for any rule to be measured stores no result | `role_addresses`, `invalid_syntax`, `no_mx_domains`, `spam_traps`, `bounce_history` (hard bounces and complaints on any tenant, counts only, operator only), `free_mail_shift` | Campaigns to the list go to Pending Approval until the import or sync run is released. A held sync run does not pause the sync |
 | Campaign content | The campaign picker, when a `Ready` campaign starts sending (immediate, scheduled, resumed, recurring, auto-resend and A/B winner sends), on the emails and lists of that send | `spam_score` (SpamAssassin, local rules, one run per send), `link_text_mismatch`, `credential_form`, `url_shortener`, `brand_impersonation`, `suspended_reuse` (operator only) | The campaign goes to Pending Approval instead of sending. `Campaign.Approve` records what was approved, so the same emails and lists are not held again. While a campaign is sending, `email.update` refuses changes to the emails it uses (ErrorCode 22), and a change to an email of a `Ready` or `Paused` campaign removes its approval, so it is screened again when it starts or resumes |
 
 A signal that cannot be read (a DNS timeout, ClickHouse unreachable, SpamAssassin missing or timed out) makes the result `unknown`: it never holds anything by itself and is never counted as clean. Rules marked operator only read other accounts' data. They add to the operator's `Score` and can flag an item, but the hold decision and the customer's reason use `CustomerScore`, which leaves them out. `bounce_history` reads the suppression lists and the email gateway events of the last 30 days (`eg_events` keeps 31). The phishing rules allow the user's own verified sender domains. User group settings are the `Screening*` parameters of `UserGroup.Create`, `UserGroup.Update` and `UserGroup.Patch`, and the global lists are set with [Update Screening Settings](#update-screening-settings).
@@ -7447,7 +7447,7 @@ A signal that cannot be read (a DNS timeout, ClickHouse unreachable, SpamAssassi
 - Not available to admin agent keys: a release loosens a hold
 :::
 
-Releases a held list import, so campaigns to its list stop going to Pending Approval because of it. A held campaign is released through the existing approval flow (`Campaign.Approve`), and a held signup by changing the account's `ReputationLevel`.
+Releases a held list import, or <Badge type="warning" text="Changed in v6.0.8" /> a held list sync run (`SubjectType` `list_sync`), so campaigns to its list stop going to Pending Approval because of it. A held campaign is released through the existing approval flow (`Campaign.Approve`), and a held signup by changing the account's `ReputationLevel`.
 
 **Request Body Parameters:**
 
@@ -7456,7 +7456,7 @@ Releases a held list import, so campaigns to its list stop going to Pending Appr
 | Command | String | Yes | API command: `admin.screening.release` |
 | SessionID | String | No | Session ID obtained from login |
 | AdminAPIKey | String | No | Admin API key |
-| ScreeningResultID | Integer | Yes | The held import result, from `admin.risk.user` `Screening` |
+| ScreeningResultID | Integer | Yes | The held import or list sync result, from `admin.risk.user` `Screening` |
 
 ::: code-group
 
@@ -7490,7 +7490,7 @@ curl -X POST https://example.com/api/v1/admin.screening.release \
 0: Success
 1: ScreeningResultID is required
 2: Screening result not found
-3: The result is not a held import
+3: The result is not a held import or list sync run
 4: The import was already released
 5003: User is outside the user groups this admin account may access
 6: The screening result could not be read or updated

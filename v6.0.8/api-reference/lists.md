@@ -3484,6 +3484,8 @@ The `Sync` object in the success response above is shortened. It has every field
 
 Returns the runs of a sync, newest first, with what each run changed. `Total` is the number of runs the sync has.
 
+A run whose added contacts were held for review by list import screening carries a `Screening` object: `Status` is `held` until an administrator releases it, then `released`, and `Reason` is the explanation to show the account. Campaigns to the list need approval while a run is held. Every other run has no `Screening` key.
+
 **Request Body Parameters:**
 
 | Parameter | Type    | Required | Description                                  |
@@ -3528,7 +3530,11 @@ curl -X POST https://example.com/api/v1/list.sync.runs \
       "Removed": 2,
       "Skipped": 6,
       "Failed": 0,
-      "ErrorText": ""
+      "ErrorText": "",
+      "Screening": {
+        "Status": "held",
+        "Reason": "Contacts this list sync added are waiting for a review by our team, and campaigns to the list need approval until then. Many addresses are shared role mailboxes such as info@ or sales@."
+      }
     }
   ],
   "Total": 42
