@@ -502,7 +502,7 @@ Performs a **live DNS lookup** for each expected record (CNAME / A / MX / TXT). 
 
 The endpoint **persists Status** based on the result (mirrors what the UI's edit page does on every load):
 
-- All records resolve correctly → `Status = 'Enabled'`, or `Status = 'Blocked'` (awaiting administrator approval) when the user group has **New domains need manual approval** (`EmailGatewayNewDomainManualApproval`) enabled. A domain that is already `Enabled` stays `Enabled`.
+- All records resolve correctly → `Status = 'Enabled'`, or `Status = 'Blocked'` (awaiting administrator approval) when the user group has **New domains need manual approval** (`EmailGatewayNewDomainManualApproval`) enabled. A domain that is already `Enabled` stays `Enabled`. On an account created in the last 30 days (`SENDER_DOMAIN_GATES_NEW_ACCOUNT_DAYS`), a domain that passes is also set to `Blocked` (awaiting approval) when it looks like a protected brand's domain or its WHOIS age is under 30 days or unknown <Badge type="tip" text="New in v6.0.8" />. See [Behavior Changes in v6.0.8](./behavior-changes#sender-domains).
 - Any record fails → `Status = 'Approval Pending'`
 - A domain that is `Blocked`, `Suspended`, `Disabled` or `Deleted` keeps that status whatever DNS returns. Only an administrator can move it out (changed in v6.0.1, issue #3077).
 
@@ -933,6 +933,8 @@ current status must be one of `Enabled`, `Suspended`, `Blocked`, `Approval Pendi
 (campaign); both act on the same stored row. `Status` and `DomainType` are matched case-insensitively.
 This is the only way to reach `Suspended` and `Blocked` through the API; the user-auth
 `user.senderdomain.update` accepts only `Enabled` and `Disabled`.
+
+Setting `Enabled` approves a domain held for review and clears its `HoldReason`. <Badge type="tip" text="New in v6.0.8" /> The returned `Domain` carries `HoldReason`: why a new account's domain was held after verification, `lookalike:<protected domain>`, `age:<days>d` or `age:unknown`, or null. `admin.user.senderdomains.get` and `admin.senderdomains.pending.get` return it on each domain too. User-facing commands never return it (issue #3083).
 
 **Request Body Parameters:**
 

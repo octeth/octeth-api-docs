@@ -305,7 +305,7 @@ With `IncludeDiagnostics=true` the response also carries `DNSDiagnostics`: `Chec
 :::
 
 ::: tip How the domain status changes
-When every DNS record passes, the domain becomes `Enabled`, or `Blocked` (awaiting administrator approval) when the user group has **New domains need manual approval** enabled. A domain that is already `Enabled` stays `Enabled`. When a record fails, the domain becomes `Approval Pending`. A domain that is `Blocked`, `Suspended`, `Disabled` or `Deleted` keeps that status whatever DNS returns, so only an administrator can move it out. Before v6.0.1, a failed check moved a `Blocked` or `Suspended` domain to `Approval Pending`, from which a later passing check could enable it.
+When every DNS record passes, the domain becomes `Enabled`, or `Blocked` (awaiting administrator approval) when the user group has **New domains need manual approval** enabled. A domain that is already `Enabled` stays `Enabled`. On an account created in the last 30 days (`SENDER_DOMAIN_GATES_NEW_ACCOUNT_DAYS`), a domain that passes is also set to `Blocked` (awaiting approval) when it looks like a protected brand's domain or its WHOIS age is under 30 days or unknown <Badge type="tip" text="New in v6.0.8" />. See [Behavior Changes in v6.0.8](./behavior-changes#sender-domains). When a record fails, the domain becomes `Approval Pending`. A domain that is `Blocked`, `Suspended`, `Disabled` or `Deleted` keeps that status whatever DNS returns, so only an administrator can move it out. Before v6.0.1, a failed check moved a `Blocked` or `Suspended` domain to `Approval Pending`, from which a later passing check could enable it.
 :::
 
 ## Get All Sender Domains

@@ -114,6 +114,21 @@ What runs differently after the conversion:
 
 **Who needs to act:** a plugin that hooks `Cron.Sync`. Move the callback to `Cron.General`, which fires every 5 minutes, or ship a `cli/` script with its own crontab line.
 
+### Sender domains
+
+#### A new account's lookalike or young sender domain waits for approval
+
+A sender domain that passed DNS verification became `Enabled` unless the user group required manual approval. On an account created in the last 30 days it now becomes `Blocked` (awaiting approval) when it looks like a protected brand's domain, when its WHOIS creation date is less than 30 days ago, or when WHOIS returns no creation date (octeth/oempro#3083).
+
+- `emailgateway.verifydomain`, `user.senderdomain.verify` (including `VerifyAll`), the sender domain screens and the dnschecker plugin worker all apply it. The response shape is unchanged: `Status` is `Blocked`, a value these commands could already return under manual approval.
+- An administrator approves the domain by enabling it (`admin.senderdomain.status.update` with `Status` `Enabled`, or the staff area). Administrators see why it was held in the new `HoldReason` field of `admin.senderdomains.pending.get`, `admin.user.senderdomains.get` and `admin.senderdomain.status.update`: `lookalike:<protected domain>`, `age:<days>d` or `age:unknown`. User-facing commands never return it.
+- The optional domainvalidator plugin worker (off by default) now suspends a domain younger than `SENDER_DOMAIN_MIN_AGE_DAYS` (default 30) instead of its former hard-coded 5 days, for every account. An operator who runs it and wants the old floor sets `SENDER_DOMAIN_MIN_AGE_DAYS=5`, which also lowers the new-account gate.
+- Verification now waits for a WHOIS lookup on these accounts, up to 5 seconds per WHOIS server, once per domain per cache period.
+
+**Not affected:** accounts older than 30 days, domains that were already `Enabled` before the upgrade, and a domain that is itself a protected domain or a subdomain of one.
+
+**Who needs to act:** an operator whose new customers add sender domains. Expect held domains in the approval queue. To turn the checks off, set `SENDER_DOMAIN_GATES_NEW_ACCOUNT_DAYS=0`. To keep only one of them, set `SENDER_DOMAIN_MIN_AGE_DAYS=0` or `SENDER_DOMAIN_LOOKALIKE_CHECK=false`. Add your own and your customers' brands to `SENDER_DOMAIN_PROTECTED_BRANDS`. Run the `oempro_sender_domains.HoldReason` migration (`dbmigrator.php migrate`, part of the upgrade) so the reason is stored. Before it runs, held domains are still held, without a recorded reason.
+
 ## Tier 2: shape and value changes
 
 ### List sync
@@ -250,6 +265,7 @@ The `delivery_server_id` of a transactional email delivery activity is the serve
 
 ## Upgrade checklist
 
+- If new customers add sender domains, expect domains of accounts younger than 30 days that are lookalikes of a protected brand, younger than 30 days or of unknown age to wait in the sender domain approval queue. Set `SENDER_DOMAIN_GATES_NEW_ACCOUNT_DAYS=0` to keep the old behaviour, and list your own brands in `SENDER_DOMAIN_PROTECTED_BRANDS`.
 - List the `*@domain` and `@domain` suppression rows with the query under [Suppression](#suppression), and delete the ones that should not block a whole domain before you upgrade.
 - If you store media in Amazon S3, check that the access key may read and delete objects, not only write them, and run **Test connection** in **Settings**, **Uploads and media**. Set the region there if the lookup cannot reach Amazon S3.
 - If **Media library file** in **Settings**, **Uploads and media** is still 10,240 bytes, the old default, raise it. New installs start at 5 MB.
