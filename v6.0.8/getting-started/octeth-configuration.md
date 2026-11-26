@@ -1855,6 +1855,24 @@ The example file `_dockerfiles/examples/.oempro_env.example` doubles as the key 
 
     Introduced in v6.0.6 (issue #4006).
 
+60. **List Sync Allowed Hosts**
+
+    ```bash
+    LIST_SYNC_ALLOWED_HOSTS=        # Private hosts a list sync may connect to: host names, IPs or CIDRs, comma-separated (default: empty)
+    ```
+
+    A [list sync](/v6.0.8/api-reference/lists#list-sync) reads subscribers from a MySQL server whose host the account enters, so Octeth checks the host before every connection. By default it refuses loopback, private (RFC 1918), link-local (cloud metadata included), carrier-grade NAT, unique-local, unspecified, multicast and reserved addresses, and Octeth's own containers (`oempro_mysql`, `oempro_redis` and the other service names and addresses). A host name is refused when any address it resolves to is refused. Empty, the default, allows public addresses only.
+
+    To let syncs reach a database on your own network, list it here: comma-separated host names, IP addresses or CIDR ranges, for example `LIST_SYNC_ALLOWED_HOSTS=crm-db.internal,10.20.0.15,10.30.0.0/16`.
+
+    - A listed host name is accepted whatever it resolves to.
+    - A listed IP address or CIDR range accepts the addresses it covers.
+    - Octeth's own containers and the compose network `192.168.99.0/24` open only when their exact name or exact IP address is listed. A CIDR range never opens them, so `192.168.0.0/16` for an office network does not also expose Octeth's own database.
+
+    A refused host fails the connection test and the run with "This host is not allowed", and a sync whose runs fail 5 times in a row is paused. The setting affects list sync only. It is read on every connection, so a change applies to the next test or run without a restart.
+
+    Introduced in v6.0.8 (issue #4106).
+
 
 ::: warning Important
 The `.oempro_env` file contains sensitive credentials. Never commit this file to version control or share it publicly. Keep secure backups in encrypted storage.

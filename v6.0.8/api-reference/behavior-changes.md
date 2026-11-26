@@ -81,7 +81,54 @@ WHERE TriggerParameters LIKE BINARY '%excludeautomated%'
    OR TriggerParameters LIKE BINARY '%includeautomated%';
 ```
 
+### List sync
+
+#### The legacy MySQL list sync is replaced by List Sync
+
+The scheduled MySQL list sync that lists configured on the legacy **Synchronization** screen is replaced by [List Sync](./lists#list-sync), managed with the new `list.sync.*` commands and on the list's **Sync** tab in the new interface (octeth/oempro#4106). `cli/sync.php`, its cron line and the legacy Synchronization screen are removed.
+
+After the upgrade, Octeth converts every list whose legacy `SyncStatus` is `Enabled` into a list sync, once, within a minute of the first scheduler run:
+
+- The sync is named "Legacy MySQL sync", reads the legacy query (`SourceType` `query`), matches rows by email and keeps the legacy field mapping and period. Every Month becomes every 4 weeks. The first run is due one period after the last legacy sync.
+- `RemovalBehavior` is `ignore`, as before: contacts whose rows leave the source stay on the list.
+- `TriggerActions` is on, because the legacy sync started autoresponders.
+- The password is stored encrypted in the new sync.
+- The list's legacy `SyncStatus` is set to `Disabled`.
+- A legacy query the new query check refuses (anything but a single read-only `SELECT`), or a mapping with no email column, gives a sync that is `Paused` with the reason in `LastError`.
+
+What runs differently after the conversion:
+
+- An unsubscribed contact is no longer resubscribed. Unsubscribed, hard bounced and suppressed contacts are skipped and never rewritten.
+- A source host that is private, loopback or one of Octeth's own containers is refused unless the operator lists it in `LIST_SYNC_ALLOWED_HOSTS`. Such a sync fails, and after 5 failed runs in a row it is paused.
+- The report email after each sync (`SyncSendReportEmail`) is no longer sent. The run history on the **Sync** tab and `list.sync.runs` replace it.
+
+#### `list.update` accepts the `Sync` parameters but they have no effect
+
+`list.update` still accepts `SyncStatus`, `SyncPeriod`, `SyncSendReportEmail`, `SyncMySQLHost`, `SyncMySQLPort`, `SyncMySQLUsername`, `SyncMySQLPassword`, `SyncMySQLDBName`, `SyncMySQLQuery` and `SyncFieldMapping`, with the same validation and the same response (octeth/oempro#4106). They now write only columns that nothing reads, so setting `SyncStatus` to `Enabled` starts no sync. `SyncMySQLPassword` is no longer stored at all. There is no flag that keeps the old behavior, because the legacy sync engine is removed.
+
+**Who needs to act:** an integration that sets up a list sync through `list.update`. Move it to `list.sync.create`.
+
+#### The `Cron.Sync` plugin hook no longer fires
+
+`Cron.Sync` was fired by `cli/sync.php` every 10 minutes, and that script is removed (octeth/oempro#4106).
+
+**Who needs to act:** a plugin that hooks `Cron.Sync`. Move the callback to `Cron.General`, which fires every 5 minutes, or ship a `cli/` script with its own crontab line.
+
 ## Tier 2: shape and value changes
+
+### List sync
+
+#### `list.get` and `list.clone` return a blank `SyncMySQLPassword`
+
+`list.get` returned the legacy sync password in plain text in `SyncMySQLPassword`. After the upgrade that column is blanked on every list, so `list.get` and `list.clone` return it as an empty string (octeth/oempro#4106). Both responses keep their shape, and the other `Sync` fields are unchanged. The passwords of converted syncs are stored encrypted in the new sync and are never returned: `list.sync.get` returns `HasPassword` instead.
+
+**Who needs to act:** nobody, unless an integration read the password from `list.get`.
+
+#### The new `Lists.Sync` permission
+
+The `list.sync.*` commands need the new user group permission `Lists.Sync` (**Sync lists from an external database**), which is off for every group by default (octeth/oempro#4106). The upgrade grants it to every group that had the legacy `List.ExternalMySQL` permission, so their users keep a working sync.
+
+**Who needs to act:** an administrator who wants other groups to use List Sync. Enable the permission on those groups.
 
 ### SMS campaigns
 
@@ -208,6 +255,8 @@ The `delivery_server_id` of a transactional email delivery activity is the serve
 - If **Media library file** in **Settings**, **Uploads and media** is still 10,240 bytes, the old default, raise it. New installs start at 5 MB.
 - If a custom plugin loads `aws_s3`, switch it to the AWS SDK in `vendor/`. The old class is removed.
 
+- If a list synced from a MySQL server on your own network or in a container, list that host in `LIST_SYNC_ALLOWED_HOSTS` before the upgrade, or the converted sync fails and pauses. After the upgrade, check each converted sync on the list's **Sync** tab.
+- If an integration sets up list syncs through the `Sync` parameters of `list.update`, or a plugin hooks `Cron.Sync`, move it as described under [List sync](#list-sync).
 - If you set `excludeAutomated` or `includeAutomated` in journey `run_criteria` through the API, list the affected journeys with the query under [Journeys](#journeys) and check that the new filtering is what you want.
 - If you call `event.track` from a server, handle HTTP 500 with `ErrorCode` `100005`. The event was not confirmed, and a retry can record it twice.
 - If you run ScheduledPull journeys with a time window and no journey **Timezone**, check that the new local-time window is the one you want. To pin a window to a specific zone, set the journey's **Timezone**.

@@ -244,13 +244,13 @@ curl -X POST https://example.com/api.php \
 | ReqByEmailSearchToAddress                       | String  | No       | Email address for subscription by email requests             |
 | ReqByEmailSubscriptionCommand                   | String  | No       | Command word for email subscription requests                 |
 | ReqByEmailUnsubscriptionCommand                 | String  | No       | Command word for email unsubscription requests               |
-| SyncStatus                                      | String  | No       | Data sync status: "Enabled" or "Disabled"                    |
+| SyncStatus                                      | String  | No       | <Badge type="warning" text="Changed in v6.0.8" /> Legacy MySQL sync status: "Enabled" or "Disabled". Still accepted, but has no effect: the legacy sync was replaced by [List Sync](#list-sync). This and the other `Sync` parameters below only write inert columns |
 | SyncPeriod                                      | String  | No       | Synchronization period                                       |
 | SyncSendReportEmail                             | String  | No       | Send sync report emails: "Yes" or "No"                       |
 | SyncMySQLHost                                   | String  | No       | MySQL host for data synchronization                          |
 | SyncMySQLPort                                   | Integer | No       | MySQL port for data synchronization                          |
 | SyncMySQLUsername                               | String  | No       | MySQL username for sync                                      |
-| SyncMySQLPassword                               | String  | No       | MySQL password for sync                                      |
+| SyncMySQLPassword                               | String  | No       | <Badge type="warning" text="Changed in v6.0.8" /> Accepted but no longer stored. The column is always blank |
 | SyncMySQLDBName                                 | String  | No       | MySQL database name for sync                                 |
 | SyncMySQLQuery                                  | String  | No       | SQL query for data synchronization                           |
 | SyncFieldMapping                                | String  | No       | Field mapping configuration for sync                         |
@@ -2225,7 +2225,7 @@ Source values are the `SubscriptionSource` ENUM:
 |-------------|---------------------------------------------------------------------------------------------------------------------------------|
 | `CSVImport` | All bulk import paths (CSV file, MySQL query, Mailchimp/ActiveCampaign/Drip pulls). The provider name lives in `SubscriptionSourceRef`. |
 | `API`       | `subscriber.create`, `subscriber.subscribe` (when no integration context), Journey "Subscribe to list" action.                  |
-| `Webhook`   | Wufoo integration, Campaign Monitor migrator, scheduled MySQL sync. The integration id lives in `SubscriptionSourceRef`.        |
+| `Webhook`   | Wufoo integration, Campaign Monitor migrator, [List Sync](#list-sync) (`SubscriptionSourceRef` `list_sync`). The integration id lives in `SubscriptionSourceRef`. |
 | `Manual`    | Admin/user "Add subscriber" UI in the dashboard.                                                                                |
 | `Other`     | Free-text custom source — the label lives in `SubscriptionSourceRef`.                                                           |
 | `Unknown`   | Default for backfilled historical rows and any unspecified writes.                                                              |
@@ -2625,6 +2625,907 @@ curl -X POST https://example.com/api/v1/list.sms.settings \
 8: The list holds subscribers with a real email address
 9: The list is too large to rebuild (above 100,000 rows)
 10: The SMSOnly flag could not be written
+```
+
+:::
+
+## List Sync
+
+<Badge type="tip" text="New in v6.0.8" /> A list sync keeps a list up to date from an external MySQL table or `SELECT` query on a schedule. Each run reads the source, adds rows that are new, updates rows that changed and, in full mode, can unsubscribe or delete subscribers whose rows left the source. The sync is one-way: nothing is written back to the source.
+
+These commands replace the legacy MySQL list sync (the `Sync*` parameters of [`list.update`](#update-a-list)). See [API Behavior Changes in v6.0.8](./behavior-changes#list-sync) for what changed for existing integrations.
+
+How a run treats your subscribers:
+
+- A subscriber who is unsubscribed, hard bounced or suppressed (list, account or system-wide suppression, including domain and pattern entries) is skipped. A sync never resubscribes or rewrites such a subscriber, and a removal skips it too.
+- New subscribers are added as `Subscribed` without a confirmation email, also on a double opt-in list.
+- Autoresponders, journeys, web service integrations and the list's subscribe and unsubscribe behaviours run only when `TriggerActions` is `true`. It is `false` by default.
+- The account's subscriber limit applies. Rows past the limit fail with the reason `subscriber_limit`.
+- Only the custom fields named in `FieldMapping` are written. Global custom fields are supported.
+- Removals (`RemovalBehavior` `unsubscribe` or `delete`) happen only in full mode, and only after a run read the whole source without an error.
+- After 5 failed runs in a row a sync is paused. Resume it with [`list.sync.update`](#update-a-list-sync) and `Status` `Active`.
+
+Every command needs the `Lists.Sync` permission, which is off for every user group by default. An administrator enables it on the user group (**Sync lists from an external database**). Groups that had the legacy `List.ExternalMySQL` permission get `Lists.Sync` on upgrade.
+
+The source host is checked on every connection. Loopback, private, link-local, carrier-grade NAT, unique-local, multicast and reserved addresses, and Octeth's own containers, are refused unless the operator lists them in [`LIST_SYNC_ALLOWED_HOSTS`](/v6.0.8/getting-started/octeth-configuration). The connection runs in a read-only session and each statement is stopped after 60 seconds.
+
+**The sync object**
+
+`list.sync.list`, `list.sync.get`, `list.sync.create`, `list.sync.update` and `list.sync.run` return syncs in this shape. The password is never returned. Times are UTC, `YYYY-MM-DD HH:MM:SS`, or `null`.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| SyncID | Integer | ID of the sync |
+| ListID | Integer | The list the sync writes to |
+| Name | String | Name of the sync |
+| ConnectorType | String | Always `mysql` |
+| Host, Port, Username, Database | String, Integer, String, String | The connection |
+| HasPassword | Boolean | Whether a password is stored |
+| SourceType | String | `table` or `query` |
+| SourceTable | String | The table, when `SourceType` is `table` |
+| SourceQuery | String | The `SELECT` query, when `SourceType` is `query` |
+| KeyType | String | `email` or `id` |
+| KeyColumn | String | The source column that identifies a row |
+| FieldMapping | Array | `{"Source": column, "Target": "EmailAddress"}` or `{"Source": column, "Target": "CustomField7"}` entries |
+| Tags | Array | Tag IDs given to every subscriber the sync adds or updates |
+| Mode | String | `full` or `incremental` |
+| WatermarkColumn | String | The column incremental mode reads changes by |
+| LastWatermark | String | The highest watermark value a successful incremental run has seen |
+| RemovalBehavior | String | `ignore`, `unsubscribe` or `delete` |
+| TriggerActions | Boolean | Whether autoresponders, journeys, web services and list behaviours run |
+| IntervalMinutes | Integer | Minutes between runs |
+| Status | String | `Active`, `Failing` (the last run failed) or `Paused` |
+| ConsecutiveFailures | Integer | Failed runs in a row |
+| LastError | String | The error of the last failed run, or empty |
+| CreatedFrom | String | `user`, or `legacy` for a sync converted from the legacy MySQL sync |
+| NextRunAt, LastRunAt, CreatedAt, UpdatedAt | String | Times of the sync |
+| LastRun | Object | The latest run (see the run object), or `null` |
+
+**The run object**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| RunID | Integer | ID of the run |
+| SyncID | Integer | The sync |
+| Trigger | String | `schedule` or `manual` |
+| Status | String | `Running`, `Completed` or `Failed` |
+| StartedAt, FinishedAt | String | Times of the run. `FinishedAt` is `null` while it runs |
+| RowsRead | Integer | Rows read from the source |
+| Added, Updated, Unchanged | Integer | Subscribers added, updated, and left as they were |
+| Removed | Integer | Subscribers unsubscribed or deleted by the removal behaviour |
+| Skipped | Integer | Rows skipped because the subscriber is unsubscribed, hard bounced or suppressed |
+| Failed | Integer | Rows that could not be written, for example an invalid email address or the subscriber limit |
+| ErrorText | String | Why the run failed, or empty |
+
+### List Syncs <Badge type="tip" text="New in v6.0.8" />
+
+<Badge type="info" text="GET" /> `/api/v1/list.sync.list`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Lists.Sync`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the account's list syncs, each with its latest run. Send `ListID` to return the syncs of one list only.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                  |
+|-----------|---------|----------|----------------------------------------------|
+| Command   | String  | Yes      | API command: `list.sync.list`                |
+| SessionID | String  | No       | Session ID obtained from login               |
+| APIKey    | String  | No       | API key for authentication                   |
+| ListID    | Integer | No       | Return only the syncs of this list           |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.sync.list \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.sync.list",
+    "APIKey": "your-api-key",
+    "ListID": 124
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Syncs": [
+    {
+      "SyncID": 12,
+      "ListID": 124,
+      "Name": "Customers from the shop database",
+      "ConnectorType": "mysql",
+      "Host": "db.example.com",
+      "Port": 3306,
+      "Username": "octeth_reader",
+      "Database": "shop",
+      "HasPassword": true,
+      "SourceType": "table",
+      "SourceTable": "customers",
+      "SourceQuery": "",
+      "KeyType": "email",
+      "KeyColumn": "email",
+      "FieldMapping": [
+        { "Source": "email", "Target": "EmailAddress" },
+        { "Source": "first_name", "Target": "CustomField7" }
+      ],
+      "Tags": [3],
+      "Mode": "full",
+      "WatermarkColumn": "",
+      "LastWatermark": "",
+      "RemovalBehavior": "unsubscribe",
+      "TriggerActions": false,
+      "IntervalMinutes": 1440,
+      "Status": "Active",
+      "ConsecutiveFailures": 0,
+      "LastError": "",
+      "CreatedFrom": "user",
+      "NextRunAt": "2026-11-27 09:00:00",
+      "LastRunAt": "2026-11-26 09:00:00",
+      "CreatedAt": "2026-11-20 14:12:05",
+      "UpdatedAt": "2026-11-26 09:01:42",
+      "LastRun": {
+        "RunID": 88,
+        "SyncID": 12,
+        "Trigger": "schedule",
+        "Status": "Completed",
+        "StartedAt": "2026-11-26 09:00:00",
+        "FinishedAt": "2026-11-26 09:01:42",
+        "RowsRead": 5120,
+        "Added": 14,
+        "Updated": 37,
+        "Unchanged": 5061,
+        "Removed": 2,
+        "Skipped": 6,
+        "Failed": 0,
+        "ErrorText": ""
+      }
+    }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "List not found"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: ListID is invalid
+2: List not found (does not exist or does not belong to this account)
+```
+
+:::
+
+### Get a List Sync <Badge type="tip" text="New in v6.0.8" />
+
+<Badge type="info" text="GET" /> `/api/v1/list.sync.get`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Lists.Sync`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns one sync with its latest run. The response carries `HasPassword`, never the password.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                  |
+|-----------|---------|----------|----------------------------------------------|
+| Command   | String  | Yes      | API command: `list.sync.get`                 |
+| SessionID | String  | No       | Session ID obtained from login               |
+| APIKey    | String  | No       | API key for authentication                   |
+| SyncID    | Integer | Yes      | ID of the sync                               |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.sync.get \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.sync.get",
+    "APIKey": "your-api-key",
+    "SyncID": 12
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Sync": {
+    "SyncID": 12,
+    "ListID": 124,
+    "Name": "Customers from the shop database",
+    "ConnectorType": "mysql",
+    "Host": "db.example.com",
+    "Port": 3306,
+    "Username": "octeth_reader",
+    "Database": "shop",
+    "HasPassword": true,
+    "SourceType": "table",
+    "SourceTable": "customers",
+    "SourceQuery": "",
+    "KeyType": "email",
+    "KeyColumn": "email",
+    "FieldMapping": [
+      { "Source": "email", "Target": "EmailAddress" },
+      { "Source": "first_name", "Target": "CustomField7" }
+    ],
+    "Tags": [3],
+    "Mode": "full",
+    "WatermarkColumn": "",
+    "LastWatermark": "",
+    "RemovalBehavior": "unsubscribe",
+    "TriggerActions": false,
+    "IntervalMinutes": 1440,
+    "Status": "Active",
+    "ConsecutiveFailures": 0,
+    "LastError": "",
+    "CreatedFrom": "user",
+    "NextRunAt": "2026-11-27 09:00:00",
+    "LastRunAt": "2026-11-26 09:00:00",
+    "CreatedAt": "2026-11-20 14:12:05",
+    "UpdatedAt": "2026-11-26 09:01:42",
+    "LastRun": null
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "Sync not found"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: SyncID is missing or invalid
+2: Sync not found (does not exist or does not belong to this account)
+```
+
+:::
+
+### Create a List Sync <Badge type="tip" text="New in v6.0.8" />
+
+<Badge type="info" text="POST" /> `/api/v1/list.sync.create`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Lists.Sync`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Creates a scheduled sync from a MySQL table or `SELECT` query into one of the account's lists. The new sync is due at once, so its first run starts within a minute. The password is stored encrypted and never returned. Test the connection and read the source's columns first with [`list.sync.test`](#test-a-list-sync-connection) and [`list.sync.columns`](#get-list-sync-source-columns).
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `list.sync.create` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| ListID | Integer | Yes | ID of the list to sync into |
+| Name | String | Yes | Name of the sync, at most 150 characters |
+| ConnectorType | String | No | Source type. Possible values: `mysql` (default) |
+| Host | String | Yes | Host name or IP address of the MySQL server, without a scheme or path |
+| Port | Integer | No | Port of the MySQL server, 1 to 65535. Default `3306` |
+| Username | String | Yes | MySQL user. Use a user that can only read the source |
+| Password | String | Yes | MySQL password, at most 1024 characters. Stored encrypted |
+| Database | String | Yes | Database name |
+| SourceType | String | No | Possible values: `table` (default), `query` |
+| SourceTable | String | Conditional | Required when `SourceType` is `table`. The table name, or `database.table` |
+| SourceQuery | String | Conditional | Required when `SourceType` is `query`. One `SELECT` statement, at most 65,535 bytes |
+| KeyType | String | No | What identifies a row. Possible values: `email` (default), `id`. With `id`, an email address that changes in the source renames the existing subscriber instead of adding a new one |
+| KeyColumn | String | Yes | The source column that identifies a row. With `KeyType` `email` it must be the column mapped to `EmailAddress` |
+| FieldMapping | Array or String | Yes | JSON array (or JSON string) of `{"Source": "<column>", "Target": "<field>"}` entries. `Target` is `EmailAddress` or `CustomField` followed by a custom field ID, such as `CustomField7`. Exactly one entry targets `EmailAddress`, and each target appears once. A custom field must belong to the list or be a global field of the account. Columns left out are not imported |
+| Tags | Array | No | Tag IDs of the list (array, JSON array or comma-separated list, at most 50) given to every subscriber the sync adds or updates |
+| Mode | String | No | Possible values: `full` (default, reads every row each run), `incremental` (reads only rows whose watermark is above the last value seen) |
+| WatermarkColumn | String | Conditional | Required when `Mode` is `incremental`. A column that grows when a row changes, such as `updated_at` or an auto-increment ID |
+| RemovalBehavior | String | No | What happens to subscribers whose row left the source. Possible values: `ignore` (default), `unsubscribe` (from this list only), `delete` (from this list). Applies in full mode only, because an incremental run cannot see removed rows |
+| TriggerActions | Boolean | No | Run autoresponders, journeys, web service integrations and list behaviours for synced subscribers. Default `false`. With `true`, the first run enrolls every row of the source as a new subscriber |
+| IntervalMinutes | Integer | No | Minutes between runs, 15 to 43200 (30 days). Default `1440` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.sync.create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.sync.create",
+    "APIKey": "your-api-key",
+    "ListID": 124,
+    "Name": "Customers from the shop database",
+    "Host": "db.example.com",
+    "Port": 3306,
+    "Username": "octeth_reader",
+    "Password": "source-db-password",
+    "Database": "shop",
+    "SourceType": "query",
+    "SourceQuery": "SELECT id, email, first_name FROM customers WHERE active = 1",
+    "KeyType": "id",
+    "KeyColumn": "id",
+    "FieldMapping": [
+      { "Source": "email", "Target": "EmailAddress" },
+      { "Source": "first_name", "Target": "CustomField7" }
+    ],
+    "Tags": [3],
+    "Mode": "full",
+    "RemovalBehavior": "unsubscribe",
+    "TriggerActions": false,
+    "IntervalMinutes": 60
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "SyncID": 12,
+  "Sync": {
+    "SyncID": 12,
+    "ListID": 124,
+    "Name": "Customers from the shop database",
+    "HasPassword": true,
+    "SourceType": "query",
+    "KeyType": "id",
+    "KeyColumn": "id",
+    "Mode": "full",
+    "RemovalBehavior": "unsubscribe",
+    "TriggerActions": false,
+    "IntervalMinutes": 60,
+    "Status": "Active",
+    "CreatedFrom": "user",
+    "NextRunAt": "2026-11-26 14:12:05",
+    "LastRun": null
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 12,
+  "ErrorText": "FieldMapping must map exactly one column to EmailAddress"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: ListID is missing or invalid
+2: List not found (does not exist or does not belong to this account)
+3: Name is missing or longer than 150 characters
+4: ConnectorType is not mysql
+5: Host, Port, Username or Database is missing or invalid
+6: Password is missing
+7: SourceType is not table or query
+8: SourceTable or SourceQuery is missing for the SourceType
+9: SourceQuery is not a single SELECT statement
+10: KeyType is not email or id
+11: KeyColumn is missing, or with KeyType email it is not the column mapped to EmailAddress
+12: FieldMapping is invalid (wrong shape, no or several EmailAddress targets, or a target mapped twice)
+13: A mapped custom field is not a field of this list or a global field of the account
+14: Tags is invalid, or a tag does not exist on this list
+15: Mode is not full or incremental
+16: WatermarkColumn is missing for incremental mode
+17: RemovalBehavior is not ignore, unsubscribe or delete
+18: IntervalMinutes is not between 15 and 43200
+19: TriggerActions is not true or false
+20: The sync could not be saved
+```
+
+:::
+
+The `Sync` object in the success response above is shortened. It has every field of [the sync object](#list-sync).
+
+### Update a List Sync <Badge type="tip" text="New in v6.0.8" />
+
+<Badge type="info" text="POST" /> `/api/v1/list.sync.update`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Lists.Sync`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Changes a sync, or pauses or resumes it. Send any parameter of [`list.sync.create`](#create-a-list-sync) except `ListID`: fields you leave out keep their stored value. A sync cannot move to another list.
+
+- **Password.** Omitted or empty keeps the stored password, but only while `Host`, `Port` and `Username` are unchanged. A stored password is never sent to another server or paired with another user. Change any of the three without sending the password and the call fails with error `6`.
+- **Status.** `Paused` stops scheduled runs. `Active` resumes the sync: it resets `ConsecutiveFailures`, clears `LastError` and makes the sync due at once.
+- **Source and key changes.** A change of `SourceType`, `SourceTable`, `SourceQuery`, `KeyType` or `KeyColumn` clears what the sync remembers about each source row, so the next run matches rows to subscribers by email again and never treats the old rows as removed. A change of the source, key, `Mode` or `WatermarkColumn` also resets `LastWatermark`, and is refused with error `24` while a run is in progress.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `list.sync.update` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| SyncID | Integer | Yes | ID of the sync |
+| Status | String | No | Possible values: `Active` (resume), `Paused` (pause) |
+| Name | String | No | New name, at most 150 characters |
+| ConnectorType | String | No | Possible values: `mysql` |
+| Host | String | No | New MySQL host. Send `Password` with it |
+| Port | Integer | No | New MySQL port, 1 to 65535. Send `Password` with it |
+| Username | String | No | New MySQL user. Send `Password` with it |
+| Password | String | No | New MySQL password. Omitted or empty keeps the stored one while `Host`, `Port` and `Username` are unchanged |
+| Database | String | No | New database name |
+| SourceType | String | No | Possible values: `table`, `query` |
+| SourceTable | String | No | The table, when `SourceType` is `table` |
+| SourceQuery | String | No | One `SELECT` statement, when `SourceType` is `query` |
+| KeyType | String | No | Possible values: `email`, `id` |
+| KeyColumn | String | No | The source column that identifies a row |
+| FieldMapping | Array or String | No | The whole mapping, which replaces the stored one. Same format as in `list.sync.create` |
+| Tags | Array | No | The whole tag set, which replaces the stored one. An empty value removes every tag |
+| Mode | String | No | Possible values: `full`, `incremental` |
+| WatermarkColumn | String | No | Required when `Mode` is `incremental` |
+| RemovalBehavior | String | No | Possible values: `ignore`, `unsubscribe`, `delete` |
+| TriggerActions | Boolean | No | Run autoresponders, journeys, web service integrations and list behaviours for synced subscribers |
+| IntervalMinutes | Integer | No | Minutes between runs, 15 to 43200 |
+
+Send at least one config field or `Status`.
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.sync.update \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.sync.update",
+    "APIKey": "your-api-key",
+    "SyncID": 12,
+    "IntervalMinutes": 360,
+    "Status": "Active"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Sync": {
+    "SyncID": 12,
+    "ListID": 124,
+    "Name": "Customers from the shop database",
+    "IntervalMinutes": 360,
+    "Status": "Active",
+    "ConsecutiveFailures": 0,
+    "LastError": "",
+    "NextRunAt": "2026-11-26 15:30:00"
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 6,
+  "ErrorText": "Send the password again: Host, Port or Username changed"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: SyncID is missing or invalid
+2: Sync not found (does not exist or does not belong to this account)
+3: Name is missing or longer than 150 characters
+4: ConnectorType is not mysql
+5: Host, Port, Username or Database is missing or invalid
+6: Password is missing, or Host, Port or Username changed and no password was sent
+7: SourceType is not table or query
+8: SourceTable or SourceQuery is missing for the SourceType
+9: SourceQuery is not a single SELECT statement
+10: KeyType is not email or id
+11: KeyColumn is missing, or with KeyType email it is not the column mapped to EmailAddress
+12: FieldMapping is invalid (wrong shape, no or several EmailAddress targets, or a target mapped twice)
+13: A mapped custom field is not a field of this list or a global field of the account
+14: Tags is invalid, or a tag does not exist on this list
+15: Mode is not full or incremental
+16: WatermarkColumn is missing for incremental mode
+17: RemovalBehavior is not ignore, unsubscribe or delete
+18: IntervalMinutes is not between 15 and 43200
+19: TriggerActions is not true or false
+20: The sync could not be saved
+21: Status is not Active or Paused
+22: ListID cannot change
+23: Nothing to change (no config field and no Status sent)
+24: A run is in progress (source, key, mode or watermark change)
+```
+
+:::
+
+The `Sync` object in the success response above is shortened. It has every field of [the sync object](#list-sync).
+
+### Delete a List Sync <Badge type="tip" text="New in v6.0.8" />
+
+<Badge type="info" text="POST" /> `/api/v1/list.sync.delete`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Lists.Sync`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Deletes a sync with its run history. Subscribers it added stay on the list. A sync cannot be deleted while it runs: pause it, then delete it when the run has stopped.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                  |
+|-----------|---------|----------|----------------------------------------------|
+| Command   | String  | Yes      | API command: `list.sync.delete`              |
+| SessionID | String  | No       | Session ID obtained from login               |
+| APIKey    | String  | No       | API key for authentication                   |
+| SyncID    | Integer | Yes      | ID of the sync                               |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.sync.delete \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.sync.delete",
+    "APIKey": "your-api-key",
+    "SyncID": 12
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "A run is in progress. Pause the sync, then delete it when the run has stopped."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: SyncID is missing or invalid
+2: Sync not found (does not exist or does not belong to this account)
+3: The sync could not be deleted
+4: A run is in progress
+```
+
+:::
+
+### Test a List Sync Connection <Badge type="tip" text="New in v6.0.8" />
+
+<Badge type="info" text="POST" /> `/api/v1/list.sync.test`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Lists.Sync`
+- Rate limit: 10 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Connects to a MySQL server and, when you send source fields, checks the source too. Nothing is stored. The host is checked against the private-address rules and `LIST_SYNC_ALLOWED_HOSTS` as on every run.
+
+Send `SyncID` to test a stored sync: its connection and source fill the fields you leave out. Its stored password is used only while `Host`, `Port` and `Username` are unchanged.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `list.sync.test` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| SyncID | Integer | No | A stored sync whose connection and source fill the fields not sent |
+| ConnectorType | String | No | Possible values: `mysql` (default) |
+| Host | String | Conditional | MySQL host. Required without `SyncID` |
+| Port | Integer | No | MySQL port. Default `3306` |
+| Username | String | Conditional | MySQL user. Required without `SyncID` |
+| Password | String | Conditional | MySQL password. Required without `SyncID`, or when `Host`, `Port` or `Username` differs from the stored sync |
+| Database | String | Conditional | Database name. Required without `SyncID` |
+| SourceType | String | No | `table` or `query`. Send a source field to check the source as well |
+| SourceTable | String | No | The table to check |
+| SourceQuery | String | No | The `SELECT` query to check |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.sync.test \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.sync.test",
+    "APIKey": "your-api-key",
+    "Host": "db.example.com",
+    "Port": 3306,
+    "Username": "octeth_reader",
+    "Password": "source-db-password",
+    "Database": "shop"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 7,
+  "ErrorText": "This host is not allowed. Private, loopback and internal addresses are refused unless the administrator lists them in LIST_SYNC_ALLOWED_HOSTS.",
+  "ProbeErrorCode": "host_blocked"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: SyncID is invalid
+2: Sync not found (does not exist or does not belong to this account)
+3: Host, Port, Username or Database is missing or invalid
+4: Password is required
+5: The source is missing or invalid
+6: SourceQuery is not a single SELECT statement
+7: The connection or source check failed (see ProbeErrorCode)
+8: The sync service is not reachable
+9: ConnectorType is not supported
+```
+
+:::
+
+With error `7`, `ProbeErrorCode` says what failed: `host_blocked` (the host is refused), `query_rejected` (the query is not a single read-only `SELECT`), `connect_failed` (the server could not be reached or refused the login), `query_failed` (the table or query could not be read) or `invalid`. `ErrorText` never contains the password.
+
+### Get List Sync Source Columns <Badge type="tip" text="New in v6.0.8" />
+
+<Badge type="info" text="POST" /> `/api/v1/list.sync.columns`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Lists.Sync`
+- Rate limit: 10 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the columns of a source and up to five sample rows, to build `FieldMapping`. Nothing is stored. It takes the same parameters as [`list.sync.test`](#test-a-list-sync-connection), and the source is required.
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| Command | String | Yes | API command: `list.sync.columns` |
+| SessionID | String | No | Session ID obtained from login |
+| APIKey | String | No | API key for authentication |
+| SyncID | Integer | No | A stored sync whose connection and source fill the fields not sent |
+| ConnectorType | String | No | Possible values: `mysql` (default) |
+| Host | String | Conditional | MySQL host. Required without `SyncID` |
+| Port | Integer | No | MySQL port. Default `3306` |
+| Username | String | Conditional | MySQL user. Required without `SyncID` |
+| Password | String | Conditional | MySQL password. Required without `SyncID`, or when `Host`, `Port` or `Username` differs from the stored sync |
+| Database | String | Conditional | Database name. Required without `SyncID` |
+| SourceType | String | Conditional | Possible values: `table` (default), `query`. Required without `SyncID` |
+| SourceTable | String | Conditional | Required when `SourceType` is `table` |
+| SourceQuery | String | Conditional | Required when `SourceType` is `query`. One `SELECT` statement |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.sync.columns \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.sync.columns",
+    "APIKey": "your-api-key",
+    "Host": "db.example.com",
+    "Username": "octeth_reader",
+    "Password": "source-db-password",
+    "Database": "shop",
+    "SourceType": "table",
+    "SourceTable": "customers"
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Columns": [
+    { "Name": "id", "Type": "int" },
+    { "Name": "email", "Type": "varchar" },
+    { "Name": "first_name", "Type": "varchar" }
+  ],
+  "Sample": [
+    { "id": "1", "email": "jane@example.com", "first_name": "Jane" },
+    { "id": "2", "email": "omar@example.com", "first_name": "Omar" }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 7,
+  "ErrorText": "The source query failed: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'shop.customer' doesn't exist",
+  "ProbeErrorCode": "query_failed"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: SyncID is invalid
+2: Sync not found (does not exist or does not belong to this account)
+3: Host, Port, Username or Database is missing or invalid
+4: Password is required
+5: The source is missing or invalid
+6: SourceQuery is not a single SELECT statement
+7: The connection or source check failed (see ProbeErrorCode)
+8: The sync service is not reachable
+9: ConnectorType is not supported
+```
+
+:::
+
+### Run a List Sync Now <Badge type="tip" text="New in v6.0.8" />
+
+<Badge type="info" text="POST" /> `/api/v1/list.sync.run`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Lists.Sync`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Makes a sync due now, so its next run starts within a minute. A sync that is running finishes that run first. A paused sync is refused: resume it with [`list.sync.update`](#update-a-list-sync) and `Status` `Active`, which also makes it due at once.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                  |
+|-----------|---------|----------|----------------------------------------------|
+| Command   | String  | Yes      | API command: `list.sync.run`                 |
+| SessionID | String  | No       | Session ID obtained from login               |
+| APIKey    | String  | No       | API key for authentication                   |
+| SyncID    | Integer | Yes      | ID of the sync                               |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.sync.run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.sync.run",
+    "APIKey": "your-api-key",
+    "SyncID": 12
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Sync": {
+    "SyncID": 12,
+    "ListID": 124,
+    "Name": "Customers from the shop database",
+    "Status": "Active",
+    "NextRunAt": "2026-11-26 15:30:00"
+  }
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "The sync is paused. Resume it before running it."
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: SyncID is missing or invalid
+2: Sync not found (does not exist or does not belong to this account)
+3: The sync is paused
+4: The sync could not be updated
+```
+
+:::
+
+The `Sync` object in the success response above is shortened. It has every field of [the sync object](#list-sync).
+
+### Get List Sync Run History <Badge type="tip" text="New in v6.0.8" />
+
+<Badge type="info" text="GET" /> `/api/v1/list.sync.runs`
+
+::: tip API Usage Notes
+- Authentication required: User API Key
+- Required permissions: `Lists.Sync`
+- Rate limit: 100 requests per 60 seconds
+- Legacy endpoint access via `/api.php` is also supported
+:::
+
+Returns the runs of a sync, newest first, with what each run changed. `Total` is the number of runs the sync has.
+
+**Request Body Parameters:**
+
+| Parameter | Type    | Required | Description                                  |
+|-----------|---------|----------|----------------------------------------------|
+| Command   | String  | Yes      | API command: `list.sync.runs`                |
+| SessionID | String  | No       | Session ID obtained from login               |
+| APIKey    | String  | No       | API key for authentication                   |
+| SyncID    | Integer | Yes      | ID of the sync                               |
+| Limit     | Integer | No       | Runs to return, 1 to 100. Default `20`       |
+| Offset    | Integer | No       | Runs to skip. Default `0`                    |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api/v1/list.sync.runs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Command": "list.sync.runs",
+    "APIKey": "your-api-key",
+    "SyncID": 12,
+    "Limit": 20,
+    "Offset": 0
+  }'
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Runs": [
+    {
+      "RunID": 88,
+      "SyncID": 12,
+      "Trigger": "schedule",
+      "Status": "Completed",
+      "StartedAt": "2026-11-26 09:00:00",
+      "FinishedAt": "2026-11-26 09:01:42",
+      "RowsRead": 5120,
+      "Added": 14,
+      "Updated": 37,
+      "Unchanged": 5061,
+      "Removed": 2,
+      "Skipped": 6,
+      "Failed": 0,
+      "ErrorText": ""
+    }
+  ],
+  "Total": 42
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 3,
+  "ErrorText": "Limit must be between 1 and 100"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: SyncID is missing or invalid
+2: Sync not found (does not exist or does not belong to this account)
+3: Limit or Offset is invalid (Limit must be 1 to 100, Offset a non-negative integer)
 ```
 
 :::

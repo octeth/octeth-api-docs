@@ -465,6 +465,116 @@ Click **Save** to apply the SMS settings.
 SMS Settings are only visible when SMS marketing features are enabled for your account. For details on SMS campaigns, see [SMS Messages](./sms-messages).
 :::
 
+## Sync a list from an external database
+
+If your contacts live in your own MySQL database, such as a shop or CRM database, a list sync keeps an Octeth list up to date from it automatically. You connect the database once and choose a schedule. On every run, Octeth reads the rows, adds the new ones as subscribers and updates the ones that changed. You no longer need to export and import a file each time your data changes.
+
+The sync works in one direction only. Octeth reads your database and never writes to it.
+
+### Before you start
+
+- **The Lists.Sync permission.** The **Sync** tab appears only when your user group has the **Sync lists from an external database** permission. It is off by default. Ask your Octeth administrator to enable it on your user group.
+- **A database user that can only read.** Create a MySQL user for Octeth that can read the table or view you want to sync, and nothing else. Octeth also opens every connection in read-only mode.
+- **A reachable database server.** Octeth connects to public addresses only. If your database is on a private network (for example `10.x.x.x` or `192.168.x.x`), your Octeth administrator must add it to the allowed hosts first. Otherwise the connection is refused with "This host is not allowed".
+
+### Create a sync
+
+1. Navigate to **Lists** and open the list you want to keep up to date.
+2. Click the **Sync** tab.
+3. Click **New sync**.
+
+[[SCREENSHOT: The Sync tab of a list with the New sync button and the list of syncs]]
+
+The wizard has four steps.
+
+**Step 1: Connection**
+
+1. Enter a **Sync name**, for example "Customers from the shop database". It is shown on the Sync tab and in the run history.
+2. Enter the **Host**, **Port** (usually `3306`), **User**, **Password** and **Database** of your MySQL server.
+3. Click **Test connection** to check that Octeth can reach the database and sign in.
+4. Click **Next**.
+
+The password is stored encrypted and is never shown again. When you edit a sync later, leave the password empty to keep the stored one. If you change the host, port or user, you must enter the password again.
+
+**Step 2: Source**
+
+1. Choose where the rows come from:
+   - **Table**: enter the table name, or `database.table`.
+   - **SELECT query**: enter one `SELECT` statement, for example `SELECT email, first_name, plan FROM customers WHERE active = 1`. Only a single `SELECT` is accepted, and each statement is stopped after 60 seconds.
+2. Click **Load columns**. Octeth shows the columns and the first rows of your source so you can check them.
+3. Click **Next**.
+
+Each row of the source becomes one subscriber.
+
+**Step 3: Key and mapping**
+
+1. In **Match rows by**, choose how Octeth recognizes the same contact on the next run:
+   - **Email address**: a row is matched to the subscriber with the same email address.
+   - **An ID column**: a row is matched by a column that never changes, such as a customer ID. Choose it in **ID column**. When a contact's email address changes in your database, Octeth renames the existing subscriber instead of adding a new one.
+2. In the **Columns** table, choose a **Field in this list** for each column you want to import. Map exactly one column to **Email address**. Columns set to **Do not import** are ignored. Global custom fields are shared by all of your lists.
+3. Under **Tags**, select the tags every subscriber this sync adds or updates should get. Tags must exist on the list first.
+4. Click **Next**.
+
+[[SCREENSHOT: The Key and mapping step with source columns mapped to list fields]]
+
+**Step 4: Behaviour**
+
+1. Choose the **Mode**:
+   - **Full** reads every row on each run. Choose it when you want contacts removed from your database to be handled in Octeth too.
+   - **Incremental** reads only rows that changed since the last run. It is faster for large tables. Choose a **Watermark column** that grows whenever a row changes, such as `updated_at` or an auto-increment ID.
+2. In **Rows removed from the source**, choose what happens to subscribers whose row is no longer in your database:
+   - **Keep them in the list** (the default).
+   - **Unsubscribe them from this list**.
+   - **Delete them from this list**.
+3. Choose how often the sync should **Run**, from every 15 minutes to every 4 weeks.
+4. Decide whether to turn on **Autoresponders and journeys** (see the warning below).
+5. Click **Create sync**.
+
+The first run starts within a minute of saving.
+
+::: info
+An incremental sync cannot detect rows removed from your database, because it reads only rows that changed. Removed rows stay in the list. Choose **Full** if you want them unsubscribed or deleted. In full mode, removals happen only after a run read your whole source without an error, so a failed run never removes anyone.
+:::
+
+::: warning
+**Autoresponders and journeys** is off by default, so synced subscribers are added and updated quietly. If you turn it on, every subscriber the sync adds starts the list's autoresponders and journeys and calls its web service integrations, just like a new signup. The first run adds every row of your source, so this can send email to your whole existing base at once. Turn it on only when that is what you want.
+:::
+
+### What a sync never changes
+
+A sync respects the choices your contacts made in Octeth:
+
+- A subscriber who **unsubscribed** stays unsubscribed. The sync does not resubscribe them, even when their row is still in your database.
+- A subscriber whose address **hard bounced** is not updated.
+- An address on a **suppression list** (the list's, your account's or the system-wide one) is not added or updated.
+- New subscribers are added without a confirmation email, also on a double opt-in list.
+- Only the fields you mapped are written. Other fields of a subscriber keep their values.
+
+These rows are counted as **Skipped** in the run history. A removal behaviour skips them too.
+
+The subscriber limit of your account still applies. Rows above the limit are counted as **Failed**.
+
+### Run history
+
+Click a sync on the **Sync** tab to open its run history. Each run shows when it started, whether it was scheduled or started with **Run now**, and how many rows it read, added, updated, left unchanged, removed, skipped and failed. A failed run shows its error.
+
+[[SCREENSHOT: The run history of a sync with the counts of each run]]
+
+From the Sync tab or the run history you can also:
+
+- Click **Run now** to start a run within a minute instead of waiting for the schedule.
+- Click **Edit** to change the sync. The next run uses the new settings.
+- Choose **Pause** to stop scheduled runs, and **Resume** to start them again.
+- Choose **Delete** to remove the sync and its run history. The subscribers it added stay in the list.
+
+### When a sync keeps failing
+
+If a run fails, for example because the database is unreachable or the password changed, the sync shows the error on the Sync tab and tries again at its next scheduled time. After **5 failed runs in a row**, Octeth pauses the sync so it stops retrying. Fix the cause, for example by editing the connection, then choose **Resume**. The sync runs again within a minute.
+
+::: tip
+A sync moved from the earlier synchronization settings is marked **Moved** on the Sync tab. Check its settings once after an upgrade. It keeps contacts whose rows leave the source, and it runs autoresponders for new subscribers, as the earlier sync did.
+:::
+
 ## Related Features
 
 Lists serve as the central hub for many features in Octeth. The following articles cover list-level features in detail:
