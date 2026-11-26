@@ -2649,6 +2649,8 @@ Every command needs the `Lists.Sync` permission, which is off for every user gro
 
 The source host is checked on every connection. Loopback, private, link-local, carrier-grade NAT, unique-local, multicast and reserved addresses, and Octeth's own containers, are refused unless the operator lists them in [`LIST_SYNC_ALLOWED_HOSTS`](/v6.0.8/getting-started/octeth-configuration). The connection runs in a read-only session and each statement is stopped after 60 seconds.
 
+The connection is encrypted with TLS by default (`TLS` `true`). Octeth checks the server's certificate against the public certificate authorities, or against the sync's own `CACertificate` when one is set, and checks that it was issued for `Host`. A server that offers no TLS, a certificate Octeth cannot trust and a certificate for another host each fail the connection with `ProbeErrorCode` `tls_failed` and a message that names the cause, and the session must use TLS 1.2 or later. Set `TLS` to `false` only for a database on a trusted private network: the synced data and the password then travel unencrypted, and Octeth answers a server that asks for the password in clear text (`mysql_clear_password`). Syncs converted from the legacy MySQL sync start with `TLS` `false`, because the legacy sync never encrypted, and report `TLSWarning` `true` until TLS is turned on.
+
 **The sync object**
 
 `list.sync.list`, `list.sync.get`, `list.sync.create`, `list.sync.update` and `list.sync.run` return syncs in this shape. The password is never returned. Times are UTC, `YYYY-MM-DD HH:MM:SS`, or `null`.
@@ -2661,6 +2663,9 @@ The source host is checked on every connection. Loopback, private, link-local, c
 | ConnectorType | String | Always `mysql` |
 | Host, Port, Username, Database | String, Integer, String, String | The connection |
 | HasPassword | Boolean | Whether a password is stored |
+| TLS | Boolean | Whether the connection is encrypted and the server certificate verified |
+| HasCACertificate | Boolean | Whether the sync has its own CA certificate. The certificate itself is never returned |
+| TLSWarning | Boolean | `true` for a sync converted from the legacy MySQL sync that still connects without TLS |
 | SourceType | String | `table` or `query` |
 | SourceTable | String | The table, when `SourceType` is `table` |
 | SourceQuery | String | The `SELECT` query, when `SourceType` is `query` |
@@ -2928,6 +2933,8 @@ Creates a scheduled sync from a MySQL table or `SELECT` query into one of the ac
 | Username | String | Yes | MySQL user. Use a user that can only read the source |
 | Password | String | Yes | MySQL password, at most 1024 characters. Stored encrypted |
 | Database | String | Yes | Database name |
+| TLS | Boolean | No | Encrypt the connection and verify the server's certificate and host name. Default `true`. `false` sends the data and the password unencrypted: use it only on a trusted private network |
+| CACertificate | String | No | The CA certificate that signed the server's certificate, in PEM form (one or more certificates, at most 16 KB). Needed for a self-signed server or a managed database CA such as Amazon RDS, Google Cloud SQL or Azure. Without it, Octeth trusts the public certificate authorities. Ignored when `TLS` is `false`. Stored encrypted and never returned |
 | SourceType | String | No | Possible values: `table` (default), `query` |
 | SourceTable | String | Conditional | Required when `SourceType` is `table`. The table name, or `database.table` |
 | SourceQuery | String | Conditional | Required when `SourceType` is `query`. One `SELECT` statement, at most 65,535 bytes |
@@ -3027,6 +3034,8 @@ curl -X POST https://example.com/api/v1/list.sync.create \
 18: IntervalMinutes is not between 15 and 43200
 19: TriggerActions is not true or false
 20: The sync could not be saved
+25: TLS is not true or false
+26: CACertificate is not a PEM certificate, or is longer than 16 KB
 ```
 
 :::
@@ -3046,7 +3055,8 @@ The `Sync` object in the success response above is shortened. It has every field
 
 Changes a sync, or pauses or resumes it. Send any parameter of [`list.sync.create`](#create-a-list-sync) except `ListID`: fields you leave out keep their stored value. A sync cannot move to another list.
 
-- **Password.** Omitted or empty keeps the stored password, but only while `Host`, `Port` and `Username` are unchanged. A stored password is never sent to another server or paired with another user. Change any of the three without sending the password and the call fails with error `6`.
+- **Password.** Omitted or empty keeps the stored password, but only while `Host`, `Port` and `Username` are unchanged, `TLS` is not turned off and `CACertificate` is unchanged. A stored password is never sent to another server, paired with another user or resent without encryption. Change any of these without sending the password and the call fails with error `6`. Turning `TLS` on keeps the stored password.
+- **CA certificate.** Omitted keeps the stored certificate, an empty value removes it, and a new one replaces it.
 - **Status.** `Paused` stops scheduled runs. `Active` resumes the sync: it resets `ConsecutiveFailures`, clears `LastError` and makes the sync due at once.
 - **Source and key changes.** A change of `SourceType`, `SourceTable`, `SourceQuery`, `KeyType` or `KeyColumn` clears what the sync remembers about each source row, so the next run matches rows to subscribers by email again and never treats the old rows as removed. A change of the source, key, `Mode` or `WatermarkColumn` also resets `LastWatermark`, and is refused with error `24` while a run is in progress.
 
@@ -3064,8 +3074,10 @@ Changes a sync, or pauses or resumes it. Send any parameter of [`list.sync.creat
 | Host | String | No | New MySQL host. Send `Password` with it |
 | Port | Integer | No | New MySQL port, 1 to 65535. Send `Password` with it |
 | Username | String | No | New MySQL user. Send `Password` with it |
-| Password | String | No | New MySQL password. Omitted or empty keeps the stored one while `Host`, `Port` and `Username` are unchanged |
+| Password | String | No | New MySQL password. Omitted or empty keeps the stored one while `Host`, `Port` and `Username` are unchanged, `TLS` is not turned off and `CACertificate` is unchanged |
 | Database | String | No | New database name |
+| TLS | Boolean | No | Turn the encrypted connection on or off. Turning it off needs `Password` |
+| CACertificate | String | No | A new CA certificate in PEM form, or an empty value to remove the stored one. Needs `Password` |
 | SourceType | String | No | Possible values: `table`, `query` |
 | SourceTable | String | No | The table, when `SourceType` is `table` |
 | SourceQuery | String | No | One `SELECT` statement, when `SourceType` is `query` |
@@ -3116,7 +3128,7 @@ curl -X POST https://example.com/api/v1/list.sync.update \
 {
   "Success": false,
   "ErrorCode": 6,
-  "ErrorText": "Send the password again: Host, Port or Username changed"
+  "ErrorText": "Send the password again: Host, Port, Username, TLS or CACertificate changed"
 }
 ```
 
@@ -3127,7 +3139,7 @@ curl -X POST https://example.com/api/v1/list.sync.update \
 3: Name is missing or longer than 150 characters
 4: ConnectorType is not mysql
 5: Host, Port, Username or Database is missing or invalid
-6: Password is missing, or Host, Port or Username changed and no password was sent
+6: Password is missing, or Host, Port, Username, TLS or CACertificate changed and no password was sent
 7: SourceType is not table or query
 8: SourceTable or SourceQuery is missing for the SourceType
 9: SourceQuery is not a single SELECT statement
@@ -3146,6 +3158,8 @@ curl -X POST https://example.com/api/v1/list.sync.update \
 22: ListID cannot change
 23: Nothing to change (no config field and no Status sent)
 24: A run is in progress (source, key, mode or watermark change)
+25: TLS is not true or false
+26: CACertificate is not a PEM certificate, or is longer than 16 KB
 ```
 
 :::
@@ -3238,8 +3252,10 @@ Send `SyncID` to test a stored sync: its connection and source fill the fields y
 | Host | String | Conditional | MySQL host. Required without `SyncID` |
 | Port | Integer | No | MySQL port. Default `3306` |
 | Username | String | Conditional | MySQL user. Required without `SyncID` |
-| Password | String | Conditional | MySQL password. Required without `SyncID`, or when `Host`, `Port` or `Username` differs from the stored sync |
+| Password | String | Conditional | MySQL password. Required without `SyncID`, or when `Host`, `Port` or `Username` differs from the stored sync, `TLS` is turned off or `CACertificate` changes |
 | Database | String | Conditional | Database name. Required without `SyncID` |
+| TLS | Boolean | No | As in `list.sync.create`. Default `true`, or the stored sync's value with `SyncID` |
+| CACertificate | String | No | As in `list.sync.create`. With `SyncID`, omitted uses the stored certificate |
 | SourceType | String | No | `table` or `query`. Send a source field to check the source as well |
 | SourceTable | String | No | The table to check |
 | SourceQuery | String | No | The `SELECT` query to check |
@@ -3287,11 +3303,13 @@ curl -X POST https://example.com/api/v1/list.sync.test \
 7: The connection or source check failed (see ProbeErrorCode)
 8: The sync service is not reachable
 9: ConnectorType is not supported
+10: TLS is not true or false
+11: CACertificate is not a PEM certificate, or is longer than 16 KB
 ```
 
 :::
 
-With error `7`, `ProbeErrorCode` says what failed: `host_blocked` (the host is refused), `query_rejected` (the query is not a single read-only `SELECT`), `connect_failed` (the server could not be reached or refused the login), `query_failed` (the table or query could not be read) or `invalid`. `ErrorText` never contains the password.
+With error `7`, `ProbeErrorCode` says what failed: `host_blocked` (the host is refused), `query_rejected` (the query is not a single read-only `SELECT`), `connect_failed` (the server could not be reached or refused the login), `tls_failed` (the server offers no TLS, its certificate is not trusted, or it was not issued for this host; `ErrorText` says which), `query_failed` (the table or query could not be read) or `invalid`. `ErrorText` never contains the password.
 
 ### Get List Sync Source Columns <Badge type="tip" text="New in v6.0.8" />
 
@@ -3318,8 +3336,10 @@ Returns the columns of a source and up to five sample rows, to build `FieldMappi
 | Host | String | Conditional | MySQL host. Required without `SyncID` |
 | Port | Integer | No | MySQL port. Default `3306` |
 | Username | String | Conditional | MySQL user. Required without `SyncID` |
-| Password | String | Conditional | MySQL password. Required without `SyncID`, or when `Host`, `Port` or `Username` differs from the stored sync |
+| Password | String | Conditional | MySQL password. Required without `SyncID`, or when `Host`, `Port` or `Username` differs from the stored sync, `TLS` is turned off or `CACertificate` changes |
 | Database | String | Conditional | Database name. Required without `SyncID` |
+| TLS | Boolean | No | As in `list.sync.create`. Default `true`, or the stored sync's value with `SyncID` |
+| CACertificate | String | No | As in `list.sync.create`. With `SyncID`, omitted uses the stored certificate |
 | SourceType | String | Conditional | Possible values: `table` (default), `query`. Required without `SyncID` |
 | SourceTable | String | Conditional | Required when `SourceType` is `table` |
 | SourceQuery | String | Conditional | Required when `SourceType` is `query`. One `SELECT` statement |
@@ -3377,6 +3397,8 @@ curl -X POST https://example.com/api/v1/list.sync.columns \
 7: The connection or source check failed (see ProbeErrorCode)
 8: The sync service is not reachable
 9: ConnectorType is not supported
+10: TLS is not true or false
+11: CACertificate is not a PEM certificate, or is longer than 16 KB
 ```
 
 :::

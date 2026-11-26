@@ -491,10 +491,27 @@ The wizard has four steps.
 
 1. Enter a **Sync name**, for example "Customers from the shop database". It is shown on the Sync tab and in the run history.
 2. Enter the **Host**, **Port** (usually `3306`), **User**, **Password** and **Database** of your MySQL server.
-3. Click **Test connection** to check that Octeth can reach the database and sign in.
-4. Click **Next**.
+3. Leave **Use an encrypted connection (TLS)** on. If your server uses a self-signed certificate or a managed database certificate, paste its CA certificate into **CA certificate** (see [Encrypted connections](#encrypted-connections) below).
+4. Click **Test connection** to check that Octeth can reach the database and sign in.
+5. Click **Next**.
 
-The password is stored encrypted and is never shown again. When you edit a sync later, leave the password empty to keep the stored one. If you change the host, port or user, you must enter the password again.
+The password and the CA certificate are stored encrypted and are never shown again. When you edit a sync later, leave the password empty to keep the stored one. If you change the host, port or user, turn TLS off, or change the CA certificate, you must enter the password again.
+
+#### Encrypted connections
+
+Octeth encrypts the connection to your database with TLS by default, so your contacts' data and the database password cannot be read on the way. It also checks the server's certificate: the certificate must be signed by a certificate authority Octeth trusts and must be issued for the host you entered. If one of these checks fails, **Test connection** says which:
+
+- **The server does not offer TLS.** Turn on TLS on your MySQL server. MySQL 8 enables it by default.
+- **The certificate is not trusted.** The server uses a self-signed certificate, such as the one MySQL creates when it is installed, or a certificate from a private CA. Paste the CA certificate that signed it into **CA certificate**. For a self-signed MySQL server, this is the `ca.pem` file in the server's data directory.
+- **The certificate does not name this host.** Enter the host name the certificate was issued for, not an IP address or another alias.
+
+Managed databases sign their certificates with their own CA. Download it from your provider and paste it into **CA certificate**:
+
+- **Amazon RDS and Aurora:** the certificate bundle for your database's region, from the AWS documentation page "Using SSL/TLS to encrypt a connection to a DB instance". Use the regional bundle, not the global one, which is larger than the 16 KB Octeth accepts.
+- **Google Cloud SQL:** the server CA certificate on the **Connections** page of your instance.
+- **Azure Database for MySQL:** the root CA certificate listed in the Azure documentation for your server type.
+
+Turn **Use an encrypted connection (TLS)** off only when the database is on a trusted private network. The synced data and the password then travel unencrypted, and Octeth sends the password in clear text to a server that asks for it that way.
 
 **Step 2: Source**
 
@@ -572,7 +589,7 @@ From the Sync tab or the run history you can also:
 If a run fails, for example because the database is unreachable or the password changed, the sync shows the error on the Sync tab and tries again at its next scheduled time. After **5 failed runs in a row**, Octeth pauses the sync so it stops retrying. Fix the cause, for example by editing the connection, then choose **Resume**. The sync runs again within a minute.
 
 ::: tip
-A sync moved from the earlier synchronization settings is marked **Moved** on the Sync tab. Check its settings once after an upgrade. It keeps contacts whose rows leave the source, and it runs autoresponders for new subscribers, as the earlier sync did.
+A sync moved from the earlier synchronization settings is marked **Moved** on the Sync tab. Check its settings once after an upgrade. It keeps contacts whose rows leave the source, and it runs autoresponders for new subscribers, as the earlier sync did. It also connects without encryption, as the earlier sync did, and the Sync tab shows a warning until you edit it and turn on **Use an encrypted connection (TLS)**. Click **Test connection** after turning it on: if your server needs a CA certificate, add it as described in [Encrypted connections](#encrypted-connections).
 :::
 
 ## Related Features

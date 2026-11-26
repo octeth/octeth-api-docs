@@ -93,6 +93,7 @@ After the upgrade, Octeth converts every list whose legacy `SyncStatus` is `Enab
 - `RemovalBehavior` is `ignore`, as before: contacts whose rows leave the source stay on the list.
 - `TriggerActions` is on, because the legacy sync started autoresponders.
 - The password is stored encrypted in the new sync.
+- `TLS` is off, because the legacy sync never encrypted its connection and the server may not offer TLS. New syncs use TLS by default (octeth/oempro#4211). The **Sync** tab shows a warning on each converted sync, and `list.sync.get` returns `TLSWarning` `true`, until TLS is turned on.
 - The list's legacy `SyncStatus` is set to `Disabled`.
 - A legacy query the new query check refuses (anything but a single read-only `SELECT`), or a mapping with no email column, gives a sync that is `Paused` with the reason in `LastError`.
 
@@ -107,6 +108,12 @@ What runs differently after the conversion:
 `list.update` still accepts `SyncStatus`, `SyncPeriod`, `SyncSendReportEmail`, `SyncMySQLHost`, `SyncMySQLPort`, `SyncMySQLUsername`, `SyncMySQLPassword`, `SyncMySQLDBName`, `SyncMySQLQuery` and `SyncFieldMapping`, with the same validation and the same response (octeth/oempro#4106). They now write only columns that nothing reads, so setting `SyncStatus` to `Enabled` starts no sync. `SyncMySQLPassword` is no longer stored at all. There is no flag that keeps the old behavior, because the legacy sync engine is removed.
 
 **Who needs to act:** an integration that sets up a list sync through `list.update`. Move it to `list.sync.create`.
+
+#### A converted sync reads its database without encryption until TLS is turned on
+
+New list syncs connect with TLS and verify the server's certificate and host name (octeth/oempro#4211). A sync converted from the legacy MySQL sync keeps connecting in plaintext, as the legacy sync did, so the upgrade does not fail syncs whose server offers no TLS. Its synced data and database password cross the network unencrypted until someone turns TLS on.
+
+**Who needs to act:** the owner of each converted sync. Open the list's **Sync** tab, edit the sync, turn on **Use an encrypted connection (TLS)** and click **Test connection**. A self-signed server or a managed database (Amazon RDS, Google Cloud SQL, Azure) needs its CA certificate pasted into **CA certificate**. Through the API, send `TLS` `true` (and `CACertificate` when needed) to `list.sync.update`.
 
 #### The `Cron.Sync` plugin hook no longer fires
 
