@@ -23,6 +23,7 @@ See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for the
 ::: tip API Usage Notes
 - Authentication required: Admin API Key
 - v1 REST alias: `POST /api/v1/user.create`. Legacy access via `/api.php` is also supported
+- Every successful call records the operator webhook event `user.signed_up` when it is selected on the new interface's Webhooks page (v6.0.8)
 :::
 
 **Request Body Parameters:**
@@ -61,6 +62,7 @@ See [Behavior changes in v6.0.0](/v6.0.0/api-reference/behavior-changes) for the
 | SignUpIPAddress | String | No | User signup IP address |
 | SSOID | String | No | Single sign-on ID |
 | SignupAttribution | Object or String | No | Where the account signed up from: a JSON object, or a JSON-encoded string of one, with any of the keys `ref`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term` and `referrer`. Unknown keys are dropped. Control characters are removed, values are trimmed and cut to 100 characters (255 for `referrer`), and empty values are dropped. Returned by `user.get` and `users.get`. The new user interface sends it for sign-ups on its registration page, including sign-ups with Google. Added in v6.0.8 |
+| SignupSource | String | No | How the account was created, for the operator webhook's `user.signed_up` event: `ui` or `admin`. Read only from the new user interface's own container and ignored from any other caller, which is reported as `api` (admin API key) or `admin` (admin session). Does not change the response. Added in v6.0.8 |
 
 ::: code-group
 

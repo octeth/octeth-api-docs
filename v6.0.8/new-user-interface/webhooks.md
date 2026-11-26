@@ -1,7 +1,8 @@
-# Webhooks for Sign-Ups and Subscriptions
+# Webhooks for Account Events and Subscriptions
 
 The new interface can tell another system when something happens to your customers: a new
-user signs up, a subscription starts, changes plan, is canceled, or falls behind on payment.
+user signs up or signs in, an account is disabled, flagged for abuse or deleted, or a
+subscription starts, changes plan, is canceled, or falls behind on payment.
 You give it one URL, for example an n8n workflow, and it sends a signed JSON request to that
 URL for every event you pick.
 
@@ -16,8 +17,11 @@ your customers set up for their own lists and subscribers in the classic interfa
 ## Before you start
 
 - The webhook is **off by default**. Nothing is recorded or sent until you turn it on.
-- The sign-up event works whether or not the [billing system](./billing-setup) is on. The
+- The account events work whether or not the [billing system](./billing-setup) is on. The
   subscription events exist only when billing is on.
+- Account events (sign-up, sign-in, deletion, disabling and abuse flags) are recorded by
+  Octeth itself and picked up by the scheduled task, so they arrive within about two minutes.
+  Octeth records only the events ticked on this page.
 - Events are sent by the interface's scheduled task, which runs every minute in the new
   interface container. No extra service is needed.
 
@@ -27,7 +31,7 @@ your customers set up for their own lists and subscribers in the classic interfa
    `/user/staff/webhooks` on a default install.
 2. Turn on **Send webhook events**.
 3. Enter the **Endpoint URL** that should receive the events.
-4. Tick the **events** you want.
+4. Tick the **events** you want. They are grouped as Account, Risk and Billing.
 5. Click **Save webhook settings**. The first save creates a **signing secret**.
 6. Under **Signing secret**, click **Reveal**, copy the secret and give it to your receiver
    so it can check that each request came from your platform.
@@ -52,7 +56,12 @@ URL at the final address, not at one that redirects.
 
 | Event | Sent when |
 |---|---|
-| `user.signed_up` | A new user completes the sign-up form |
+| `user.signed_up` | A user account is created: the sign-up form, Google sign-up, a staff member, the classic admin area, the API (`user.create`), SSO, or the classic public sign-up page. Before v6.0.8 only the sign-up form and Google sign-up sent it |
+| `user.login` | A user signs in with a password, with Google, through SSO, or on the new interface (added in v6.0.8). Using an API key does not send it |
+| `user.deleted` | A user account is deleted (added in v6.0.8) |
+| `user.suspended` | A user account is disabled, by an administrator or by an abuse check (added in v6.0.8) |
+| `user.reactivated` | A disabled user account is enabled again (added in v6.0.8) |
+| `user.account_flagged` | An abuse check, for example the peakmonitor plug-in, suspends an account (added in v6.0.8) |
 | `account_review.pending` | A new account waits for review (added in v6.0.8) |
 | `account_review.plan_changed` | An account that waits for review changes plan (added in v6.0.8) |
 | `account_review.domain_verified` | An account that waits for review verifies its first sender domain (added in v6.0.8) |
@@ -94,6 +103,9 @@ The body always has the same four fields:
 - `occurred_at` is when the event happened, in UTC.
 - `data` depends on the event type, as shown below. `user_id` is the customer's user ID in
   Octeth.
+- Every account event's `data` (the `user.*` events) starts with the same five fields:
+  `user_id`, `email`, `username`, `name` and `user_group_id`. A field Octeth does not have is
+  `null`.
 
 ### `user.signed_up`
 
@@ -101,7 +113,9 @@ The body always has the same four fields:
 "data": {
   "user_id": 1042,
   "email": "alice@acme.com",
+  "username": "alice@acme.com",
   "name": "Alice Anderson",
+  "user_group_id": 3,
   "company": "Acme Inc",
   "signed_up_at": "2026-10-01T12:00:00Z",
   "attribution": {
@@ -112,9 +126,17 @@ The body always has the same four fields:
     "utm_content": null,
     "utm_term": null,
     "referrer": "https://ghost.example/docs/integrations?src=nav"
-  }
+  },
+  "source": "ui",
+  "signup_ip": "203.0.113.9"
 }
 ```
+
+`source` says how the account was created: `ui` (the new interface's sign-up form or Google
+sign-up), `admin` (a staff member in the new interface, or the classic admin area), `api`
+(`user.create` with an admin API key), `sso`, or `signup` (the classic public sign-up page).
+`signup_ip` is the address recorded for the sign-up, or `null`. `username`, `user_group_id`,
+`source` and `signup_ip` were added in v6.0.8.
 
 `attribution` says where the sign-up came from. It is read from the first visit to the registration
 page in the visitor's browser session that carries any of these values: the `ref`, `utm_source`,
@@ -130,6 +152,72 @@ untrusted text. Added in v6.0.8.
 This event sends the new user's email address, name and company to your URL. Make sure the
 receiving system is one you are allowed to share that data with.
 :::
+
+### `user.login`
+
+```json
+"data": {
+  "user_id": 1042,
+  "email": "alice@acme.com",
+  "username": "alice@acme.com",
+  "name": "Alice Anderson",
+  "user_group_id": 3,
+  "method": "password",
+  "ip": "203.0.113.9"
+}
+```
+
+`method` is `password` (the classic sign-in, or the `user.login` API with a username and
+password), `ui` (the new interface's password sign-in), `google` (Google sign-in on the new
+interface) or `sso`. `ip` is the client address, or `null`. An integration that exchanges an
+API key for a session sends nothing. Added in v6.0.8.
+
+::: warning
+This event sends the user's email address and IP address on every sign-in. Make sure the
+receiving system is one you are allowed to share that data with, and use an `https://` URL.
+:::
+
+### `user.deleted`
+
+`data` holds the five common fields, read just before the account was deleted, and nothing
+else. It is sent only for an account that was really deleted. Added in v6.0.8.
+
+### `user.suspended` and `user.reactivated`
+
+```json
+"data": {
+  "user_id": 1042,
+  "email": "alice@acme.com",
+  "username": "alice@acme.com",
+  "name": "Alice Anderson",
+  "user_group_id": 3,
+  "previous_status": "Enabled",
+  "actor": "admin",
+  "admin_id": 1
+}
+```
+
+`previous_status` is the account status before the change. `actor` is `admin` for a change an
+administrator made (`admin_id` is that administrator's ID when Octeth knows it, otherwise
+`null`) or `system` for an abuse check (`admin_id` is `null`). A change between two statuses
+that both stop the account sends nothing. Added in v6.0.8.
+
+### `user.account_flagged`
+
+```json
+"data": {
+  "user_id": 1042,
+  "email": "alice@acme.com",
+  "username": "alice@acme.com",
+  "name": "Alice Anderson",
+  "user_group_id": 3,
+  "reason": "Bounce rate 18% over the last hour",
+  "plugin": "peakmonitor"
+}
+```
+
+Sent together with `user.suspended` when an abuse check suspends an account. `plugin` is the
+check that decided, `reason` is what it saw. Added in v6.0.8.
 
 ### `subscription.activated`
 
@@ -289,6 +377,8 @@ function verify(string $rawBody, string $header, string $secret): bool
   response was lost. Use `id` to ignore repeats.
 - Events can arrive out of order when an earlier one is being retried. Use `occurred_at` if
   order matters.
+- Account events are recorded by Octeth and picked up every minute, so they can arrive up to
+  two minutes after they happen. Order by `occurred_at`, not by arrival.
 - While the webhook is turned off, events that were already recorded wait and are sent once
   you turn it on again.
 
@@ -311,7 +401,8 @@ and those events will be retried as failures.
 4. Click **Send test event** in Octeth. The workflow's executions list shows the request,
    with the event in the body.
 5. Add a **Switch** node on `{{ $json.body.type }}` to branch per event, for example
-   `user.signed_up` to your CRM node and `subscription.past_due` to a Slack node.
+   `user.signed_up` to your CRM node, and `user.account_flagged` and `subscription.past_due`
+   to a Slack node.
 
 To check the signature in n8n, turn on the Webhook node's **Raw Body** option so the
 original bytes are available, and verify them in a **Code** node with the Node.js example
@@ -338,3 +429,7 @@ checks the signature, make sure it has the current secret and verifies the raw b
 
 **Deliveries fail with HTTP 301 or 302.** Your URL redirects, and redirects are not followed.
 Use the final URL, for example with `https://` instead of `http://`.
+
+**Account events never arrive, but the test event does.** Save the Webhooks page once: saving
+tells Octeth which account events to record. Then look for
+`Operator webhook events could not be claimed` in `docker logs oempro_ui`.

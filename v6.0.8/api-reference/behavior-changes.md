@@ -270,6 +270,16 @@ The `delivery_server_id` of a transactional email delivery activity is the serve
 
 **Who needs to act:** an integration that reads this value.
 
+### Operator webhook
+
+#### `user.signed_up` for every new account, and new account events
+
+The operator webhook's `user.signed_up` is now recorded by Octeth inside `user.create`, the classic public sign-up page and SSO, so it is sent for accounts created by staff, the classic admin area, the API and SSO too, not only for the new interface's sign-up form and Google sign-up (octeth/oempro#3317). Its `data` gains `username`, `user_group_id`, `source` and `signup_ip`, and every earlier field keeps its name and meaning. It is sent up to about a minute later than before, still ahead of the `subscription.activated` that follows a sign-up.
+
+New selectable events: `user.login`, `user.deleted`, `user.suspended`, `user.reactivated` and `user.account_flagged`. Nothing is sent for them until they are ticked on the Webhooks page. `user.create` accepts an optional `SignupSource`, read only from the new user interface's container, and its response is unchanged.
+
+**Who needs to act:** a receiver of `user.signed_up` that assumed every event came from the sign-up form. Read `source` to tell the paths apart.
+
 ## Upgrade checklist
 
 - If new customers add sender domains, expect domains of accounts younger than 30 days that are lookalikes of a protected brand, younger than 30 days or of unknown age to wait in the sender domain approval queue. Set `SENDER_DOMAIN_GATES_NEW_ACCOUNT_DAYS=0` to keep the old behaviour, and list your own brands in `SENDER_DOMAIN_PROTECTED_BRANDS`.

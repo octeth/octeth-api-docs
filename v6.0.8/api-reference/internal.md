@@ -403,3 +403,186 @@ curl -X POST https://example.com/api.php \
 ```
 
 :::
+
+## Claim Operator Webhook Events
+
+<Badge type="info" text="POST" /> `/api.php`
+
+<Badge type="tip" text="New in v6.0.8" />
+
+Hands out the operator webhook events Octeth recorded (`user.signed_up`, `user.login`, `user.deleted`, `user.suspended`, `user.reactivated`, `user.account_flagged`), oldest first, under a claim token. A claimed event is hidden from other calls for 10 minutes. If it is not acknowledged with `admin.operatorevents.ack` by then, it is handed out again with the same `EventID`. Events older than 7 days are deleted unread. The new user interface calls it every minute and delivers the events through the operator webhook.
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privileges: `Settings`
+- Only the new user interface's own container may call it. A call from any other address is refused with error 4.
+- Not available to admin agent keys
+- Rate limit: 120 requests per 60 seconds
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.operatorevents.claim` |
+| AdminAPIKey | String | Yes | Admin API key |
+| Limit | Integer | No | How many events to return, from 1 to 200. Default 100 |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  --data-urlencode "Command=admin.operatorevents.claim" \
+  --data-urlencode "AdminAPIKey=your-admin-api-key" \
+  --data-urlencode "Limit=100"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Token": "3f2a9c0e5b7d41f8a6c2e9b0d4f1a7c3",
+  "Events": [
+    { "EventID": "01JD8Z6K3W8B4N5Q2R7T1V0X9Y", "EventType": "user.login", "UserID": 42, "OccurredAt": 1795600000, "Data": { "user_id": 42, "method": "sso" } }
+  ]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 1,
+  "ErrorText": "Limit must be a whole number from 1 to 200"
+}
+```
+
+```txt [Error Codes]
+0: Success. OccurredAt is a Unix timestamp. Data is the event's webhook data
+1: Limit is not a whole number from 1 to 200
+4: Not called from the new user interface
+5: The events could not be read
+```
+
+:::
+
+## Acknowledge Operator Webhook Events
+
+<Badge type="info" text="POST" /> `/api.php`
+
+<Badge type="tip" text="New in v6.0.8" />
+
+Deletes events claimed with `admin.operatorevents.claim` once they are stored. Only events still held by the token are deleted, so an event that timed out and was claimed again by a later call stays for that call.
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privileges: `Settings`
+- Only the new user interface's own container may call it. A call from any other address is refused with error 4.
+- Not available to admin agent keys
+- Rate limit: 120 requests per 60 seconds
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.operatorevents.ack` |
+| AdminAPIKey | String | Yes | Admin API key |
+| Token | String | Yes | The token `admin.operatorevents.claim` returned |
+| EventIDs | String or Array | Yes | 1 to 200 event IDs from that claim, comma-separated |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  --data-urlencode "Command=admin.operatorevents.ack" \
+  --data-urlencode "AdminAPIKey=your-admin-api-key" \
+  --data-urlencode "Token=3f2a9c0e5b7d41f8a6c2e9b0d4f1a7c3" \
+  --data-urlencode "EventIDs=01JD8Z6K3W8B4N5Q2R7T1V0X9Y"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Deleted": 1
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 2,
+  "ErrorText": "EventIDs must list 1 to 200 event ids"
+}
+```
+
+```txt [Error Codes]
+0: Success
+1: Token is missing or invalid
+2: EventIDs is missing, holds an invalid ID, or lists more than 200
+4: Not called from the new user interface
+5: The events could not be deleted
+```
+
+:::
+
+## Set Operator Webhook Event Types
+
+<Badge type="info" text="POST" /> `/api.php`
+
+<Badge type="tip" text="New in v6.0.8" />
+
+Stores which operator webhook event types Octeth records. The new user interface sends the types ticked on its Webhooks page when the page is saved, and an empty list while the webhook is off. Unknown types are ignored, and an empty value stops all recording.
+
+::: tip API Usage Notes
+- Authentication required: Admin API Key
+- Required privileges: `Settings`
+- Only the new user interface's own container may call it. A call from any other address is refused with error 4.
+- Not available to admin agent keys
+- Rate limit: 120 requests per 60 seconds
+- Legacy endpoint access via `/api.php` only (no v1 REST alias configured)
+:::
+
+**Request Body Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| Command | String | Yes | API command: `admin.operatorevents.types.set` |
+| AdminAPIKey | String | Yes | Admin API key |
+| Types | String or Array | No | Comma-separated event types: `user.signed_up`, `user.login`, `user.deleted`, `user.suspended`, `user.reactivated`, `user.account_flagged` |
+
+::: code-group
+
+```bash [Example Request]
+curl -X POST https://example.com/api.php \
+  --data-urlencode "Command=admin.operatorevents.types.set" \
+  --data-urlencode "AdminAPIKey=your-admin-api-key" \
+  --data-urlencode "Types=user.signed_up,user.login"
+```
+
+```json [Success Response]
+{
+  "Success": true,
+  "ErrorCode": 0,
+  "Types": ["user.signed_up", "user.login"]
+}
+```
+
+```json [Error Response]
+{
+  "Success": false,
+  "ErrorCode": 4,
+  "ErrorText": "This command is only available to the new user interface"
+}
+```
+
+```txt [Error Codes]
+0: Success. Types lists the event types now recorded
+1: Types is not a list
+4: Not called from the new user interface
+5: The setting could not be stored
+```
+
+:::
