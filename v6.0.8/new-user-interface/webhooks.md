@@ -1,8 +1,9 @@
 # Webhooks for Account Events and Subscriptions
 
 The new interface can tell another system when something happens to your customers: a new
-user signs up or signs in, an account is disabled, flagged for abuse or deleted, or a
-subscription starts, changes plan, is canceled, or falls behind on payment.
+user signs up or signs in, creates their first list, sends their first campaign, hits a
+sending limit, an account is disabled, flagged for abuse or deleted, or a subscription
+starts, changes plan, is canceled, or falls behind on payment.
 You give it one URL, for example an n8n workflow, and it sends a signed JSON request to that
 URL for every event you pick.
 
@@ -19,8 +20,8 @@ your customers set up for their own lists and subscribers in the classic interfa
 - The webhook is **off by default**. Nothing is recorded or sent until you turn it on.
 - The account events work whether or not the [billing system](./billing-setup) is on. The
   subscription events exist only when billing is on.
-- Account events (sign-up, sign-in, deletion, disabling and abuse flags) are recorded by
-  Octeth itself and picked up by the scheduled task, so they arrive within about two minutes.
+- Account, activation and sending events (sign-up, sign-in, first-time milestones, finished
+  campaigns, sending limits, deletion, disabling and abuse flags) are recorded by Octeth itself and picked up by the scheduled task, so they arrive within about two minutes.
   Octeth records only the events ticked on this page.
 - Events are sent by the interface's scheduled task, which runs every minute in the new
   interface container. No extra service is needed.
@@ -31,7 +32,7 @@ your customers set up for their own lists and subscribers in the classic interfa
    `/user/staff/webhooks` on a default install.
 2. Turn on **Send webhook events**.
 3. Enter the **Endpoint URL** that should receive the events.
-4. Tick the **events** you want. They are grouped as Account, Risk and Billing.
+4. Tick the **events** you want. They are grouped as Account, Activation, Sending, Risk and Billing.
 5. Click **Save webhook settings**. The first save creates a **signing secret**.
 6. Under **Signing secret**, click **Reveal**, copy the secret and give it to your receiver
    so it can check that each request came from your platform.
@@ -59,6 +60,14 @@ URL at the final address, not at one that redirects.
 | `user.signed_up` | A user account is created: the sign-up form, Google sign-up, a staff member, the classic admin area, the API (`user.create`), SSO, or the classic public sign-up page. Before v6.0.8 only the sign-up form and Google sign-up sent it |
 | `user.login` | A user signs in with a password, with Google, through SSO, or on the new interface (added in v6.0.8). Using an API key does not send it |
 | `user.deleted` | A user account is deleted (added in v6.0.8) |
+| `user.first_list_created` | A user creates their first list (added in v6.0.8) |
+| `user.first_subscribers_imported` | A user's first subscriber import completes (added in v6.0.8) |
+| `user.sender_domain_verified` | A sender domain passes verification and is ready to send from (added in v6.0.8) |
+| `user.first_campaign_sent` | A user's first campaign finishes sending (added in v6.0.8) |
+| `user.first_journey_sent` | A journey's first email to go out for its owner is accepted for delivery (added in v6.0.8) |
+| `user.first_gateway_send` | A user's first email through the email gateway is accepted for delivery (added in v6.0.8) |
+| `campaign.sent` | Any campaign finishes sending (added in v6.0.8) |
+| `user.limit_reached` | A user hits a sending limit, at most once per limit and period (added in v6.0.8) |
 | `user.suspended` | A user account is disabled, by an administrator or by an abuse check (added in v6.0.8) |
 | `user.reactivated` | A disabled user account is enabled again (added in v6.0.8) |
 | `user.account_flagged` | An abuse check, for example the peakmonitor plug-in, suspends an account (added in v6.0.8) |
@@ -218,6 +227,71 @@ that both stop the account sends nothing. Added in v6.0.8.
 
 Sent together with `user.suspended` when an abuse check suspends an account. `plugin` is the
 check that decided, `reason` is what it saw. Added in v6.0.8.
+
+### First-time events
+
+Each "first" event is sent once per account, ever. Accounts that already did the thing before
+the upgrade to v6.0.8 are recorded during the upgrade and never send it. Octeth records the
+milestone even while the event is not ticked, so turning the event on later does not announce
+a first that happened earlier. Every one carries the five common fields, plus:
+
+- `user.first_list_created`: `list_id`, `list_name`.
+- `user.first_subscribers_imported`: `list_id`, `imported_count`.
+- `user.first_campaign_sent`: `campaign_id`, `campaign_name`, `total_recipients`. A campaign
+  in which every recipient failed is not a sent campaign.
+- `user.first_journey_sent`: `journey_id`, `journey_name`.
+- `user.first_gateway_send`: `domain`, the sender domain of that email. Journey emails go out
+  through the email gateway too, so an account whose first gateway email came from a journey
+  sends both this event and `user.first_journey_sent`.
+
+Added in v6.0.8.
+
+### `user.sender_domain_verified`
+
+`data` holds the five common fields, `domain_id` and `domain`. It is sent every time a domain
+becomes ready to send from after verification, not only the first time. Added in v6.0.8.
+
+### `campaign.sent`
+
+```json
+"data": {
+  "user_id": 1042,
+  "email": "alice@acme.com",
+  "username": "alice@acme.com",
+  "name": "Alice Anderson",
+  "user_group_id": 3,
+  "campaign_id": 881,
+  "campaign_name": "Spring roast launch",
+  "total_recipients": 12000,
+  "total_sent": 11940,
+  "total_failed": 60
+}
+```
+
+A recurring campaign sends it for each run. Added in v6.0.8.
+
+### `user.limit_reached`
+
+```json
+"data": {
+  "user_id": 1042,
+  "email": "alice@acme.com",
+  "username": "alice@acme.com",
+  "name": "Alice Anderson",
+  "user_group_id": 3,
+  "limit_type": "gateway_daily",
+  "limit": 5000,
+  "used": 5000,
+  "period": "2026-11-26"
+}
+```
+
+`limit_type` is `gateway_daily`, `gateway_monthly` or `gateway_lifetime` (email gateway
+sends), `campaign_emails_daily` or `campaign_emails_monthly` (campaign emails) or
+`campaigns_monthly` (number of campaigns). `period` is the day (`YYYY-MM-DD`), the month
+(`YYYY-MM`) or `lifetime`. It is sent once per user, limit type and period, however many sends
+the limit refuses. `used` is what the user had used when the limit stopped a send. Added in
+v6.0.8.
 
 ### `subscription.activated`
 

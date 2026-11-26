@@ -276,7 +276,7 @@ The `delivery_server_id` of a transactional email delivery activity is the serve
 
 The operator webhook's `user.signed_up` is now recorded by Octeth inside `user.create`, the classic public sign-up page and SSO, so it is sent for accounts created by staff, the classic admin area, the API and SSO too, not only for the new interface's sign-up form and Google sign-up (octeth/oempro#3317). Its `data` gains `username`, `user_group_id`, `source` and `signup_ip`, and every earlier field keeps its name and meaning. It is sent up to about a minute later than before, still ahead of the `subscription.activated` that follows a sign-up.
 
-New selectable events: `user.login`, `user.deleted`, `user.suspended`, `user.reactivated` and `user.account_flagged`. Nothing is sent for them until they are ticked on the Webhooks page. `user.create` accepts an optional `SignupSource`, read only from the new user interface's container, and its response is unchanged.
+New selectable events: `user.login`, `user.deleted`, `user.suspended`, `user.reactivated`, `user.account_flagged`, `user.first_list_created`, `user.first_subscribers_imported`, `user.sender_domain_verified`, `user.first_campaign_sent`, `user.first_journey_sent`, `user.first_gateway_send`, `campaign.sent` and `user.limit_reached`. Nothing is sent for them until they are ticked on the Webhooks page, and the upgrade records the first-time milestones every existing account already reached, so it sends no "first" event for them. `user.create` accepts an optional `SignupSource`, read only from the new user interface's container, and its response is unchanged.
 
 **Who needs to act:** a receiver of `user.signed_up` that assumed every event came from the sign-up form. Read `source` to tell the paths apart.
 
