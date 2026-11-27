@@ -12,7 +12,7 @@ import {fileURLToPath} from 'node:url'
 const BUILT_VERSIONS = 7
 // The released version the menu marks "(Current)" and purged pages redirect to.
 // Move it to the new version on release day, not when its directory is created.
-const CURRENT_VERSION = 'v6.0.7'
+const CURRENT_VERSION = 'v6.0.8'
 const DEV_REPO_BLOB = 'https://github.com/octeth/octeth-api-docs/blob/main'
 const DOCS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const versionParts = (dir) => dir.slice(1).split('.').map((part) => (part === 'x' ? 0 : Number(part)))
@@ -96,7 +96,7 @@ export default defineConfig({
             {
                 text: CURRENT_VERSION,
                 items: [
-                    {text: 'v6.0.8 (In development)', link: '/v6.0.8/'},
+                    {text: 'v6.0.8', link: '/v6.0.8/'},
                     {text: 'v6.0.7', link: '/v6.0.7/'},
                     {text: 'v6.0.6', link: '/v6.0.6/'},
                     {text: 'v6.0.5', link: '/v6.0.5/'},
