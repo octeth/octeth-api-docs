@@ -12,33 +12,66 @@ This document tracks the complete release history of Octeth, including new featu
 
 ### Release Summary
 
-Release in progress. Changelog will be updated upon release.
+Octeth v6.0.8 keeps lists in sync with an external MySQL database, fails delivery servers over to a fallback automatically, and protects self-signup installations with captcha, signup limits, sender domain approval holds and a staff account review queue. It adds a media library with S3-compatible storage to the new interface's email editors, whole-domain suppression, recipient estimates that account for suppression, and more operator webhook events. Passwords are now stored with a modern hash, outbound HTTPS checks certificates, and the images carry the PHP security releases of 2026-11-19. This release changes behavior on upgrade, so read the Upgrade Notes and the [API behavior changes in v6.0.8](/v6.0.8/api-reference/behavior-changes) before upgrading an installation that other systems call.
 
 ### New Features
 
-- **Plan activity on the staff customer page:** the Billing tab now lists every plan change of a customer, with the date, the plan, the price and whether the customer, a staff member or Octeth made it. History starts with this upgrade (#3089)
-- **Delivery server failover:** a delivery server can have a fallback server. When Octeth cannot connect to it, its Email Gateway and autoresponder email goes to the fallback until it recovers, with Slack alerts, Prometheus metrics and a manual mark down for maintenance. Reload the cron container so the recovery probe runs.
+- **List sync from an external MySQL database** - A list can follow a table or a query in an external MySQL database on a schedule, with field and tag mapping, removal rules and run history on the list's new Sync tab. Connections are encrypted by default, contacts a sync adds are screened like an import, and existing list syncs are converted to the new sync on upgrade (#4106, #4211, #4213)
+- **Delivery server failover** - A delivery server can have a fallback server. When Octeth cannot connect to it, its Email Gateway and autoresponder email goes to the fallback until it recovers, with Slack alerts, metrics and a manual mark down for maintenance. Reload the cron container so the recovery probe runs (#3232)
+- **Signup protection** - The new interface's sign-up can require a captcha, refuse disposable and deny-listed email domains and limit signups. Sender domains that new accounts add are held for approval when they imitate a protected brand or were registered recently (#3083)
+- **Account review** - Staff have a review queue for new and changed accounts, with decision history and optional Slack notifications. An account waiting for review can no longer send SMS or auto responders (#3088)
+- **Plan activity on the staff customer page** - The Billing tab lists every plan change of a customer, with the date, the plan, the price and whether the customer, a staff member or Octeth made it. History starts with this upgrade (#3089)
+- **Media library** - The new interface's email editors can upload images and pick them from a media library, stored locally, in the database or in S3-compatible storage such as Amazon S3, Cloudflare R2, MinIO or Wasabi. Images in sent mail are served from the sender domain's tracking host (#4112)
+- **Whole-domain suppression** - `*@example.com` entries suppress every address at a domain, at system, account or list scope (#3662)
+- **More operator webhook events** - The operator webhook can report logins, deletions, suspensions, first-time milestones, campaign completion and limit events, and sends `user.signed_up` for accounts created through every path (#3317)
+- **Human-only journey email rules** - Journey email rules in segments can leave automated opens and clicks out (#2162)
+- **Signup source** - Sign-ups through the new interface record their referral code, UTM parameters and referrer (#4144)
 
 ### Enhancements
 
-- (To be documented)
+- **Journey Decision warnings** - Deleting a journey step or template that a journey Decision checks now warns first (#1231)
+- **Bulk delete drafts** - Selected draft campaigns can be deleted together from the campaigns list (#4155)
+- **SMS campaign list** - The SMS campaign list shows conversions and full campaign names (#4159)
+- **SMS rate limit status** - The SMS campaign list and report say when an account rate limit is holding a campaign (#3418)
+- **Cleaner headers** - Campaign editors, edit pages and detail pages show the record name once (#4162, #4234)
+- **SMS campaign AI tools** - The SMS campaign tools of the Octeth AI connector accept audience rules directly (#3793)
+- **Reliable background work** - Every background message now waits for the message queue to confirm it, so work is not lost silently (#3846)
+- **Hung worker detection** - Background workers report a heartbeat, so a worker that stops making progress is detected and can raise an alert (#1312)
+- **Faster delivery server reports** - The delivery server performance matrix loads faster on large campaigns (#2823)
+- **Segment validation** - Segment screens in the classic interface check SMS activity rules the same way the API does (#3026)
 
 ### Bug Fixes
 
-- (To be documented)
+- **Recipient estimates** - Campaign recipient estimates now count only addresses that will receive the campaign, after suppression (#4145)
+- **Stuck imports** - Abandoned imports end as Failed instead of staying in Importing, and imports from third-party email platforms can no longer hang (#4200)
+- **Journey run criteria** - Journey run criteria set through the API now apply the "human opens only" and "include automated clicks" options (#4208)
+- **Subscriber search** - Subscriber search and bulk actions accept SMS activity rules, and the conversion rule is no longer labelled for a single tracking integration (#4157)
+- **ScheduledPull time windows** - Time windows that follow the account timezone now follow daylight saving time (#4136)
+- **List sync renames** - A list sync that changes a subscriber's email address keeps their global custom field values (#4212)
+- **Date range picker** - The date range picker closes after a preset or a custom range is chosen (#4146)
+- **Bounce processing sample** - The log pipeline sample on the staff Bounces screen now reads the bounce file the accounting sample on the same screen writes (#4163)
 
 ### Security Patches
 
-- The `octeth/oempro` image (`v6.0.8`) and the `oempro_ui` image carry the PHP security releases of 2026-11-19: PHP 5.6.40-110, 8.1.34-15 and 8.4.28-3 from packages.sury.org, and `php:8.4.28-apache` for the new interface. They fix the session handling RCEs CVE-2026-126714 and CVE-2026-115560, the timezone cache use-after-free CVE-2026-129496 and the DOM serialization double free CVE-2026-129501, among others. CVE-2026-127960, a denial of service only, has no fix for PHP 5.6 yet.
-- The image build now installs PHP 8.4 by version and fails if any PHP branch other than 5.6, 8.1 and 8.4 is installed or if Apache enables any PHP module other than PHP 5.6. A repository moving its default PHP version can no longer change the PHP in the image.
-- **Passwords stored with `password_hash()`:** user and administrator passwords are now stored with a per-account salt and a work factor (bcrypt) instead of a single MD5 digest. Existing accounts are upgraded automatically the next time they sign in with their password. The session token of an account no longer contains its password hash (#2921)
+- **PHP security releases** - The `octeth/oempro` image (`v6.0.8`) and the `oempro_ui` image carry the PHP security releases of 2026-11-19: PHP 5.6.40-110, 8.1.34-15 and 8.4.28-3, and `php:8.4.28-apache` for the new interface. They fix the session handling RCEs CVE-2026-126714 and CVE-2026-115560, the timezone cache use-after-free CVE-2026-129496 and the DOM serialization double free CVE-2026-129501, among others. CVE-2026-127960, a denial of service only, has no fix for PHP 5.6 yet (#4166)
+- **Pinned PHP versions in the image** - The image build installs PHP 8.4 by version and fails if any PHP branch other than 5.6, 8.1 and 8.4 is installed or if the web server enables any PHP module other than PHP 5.6. A package repository moving its default PHP version can no longer change the PHP in the image (#4166)
+- **Passwords stored with `password_hash()`** - User and administrator passwords are stored with a per-account salt and a work factor (bcrypt) instead of a single MD5 digest. Existing accounts are upgraded automatically the next time they sign in with their password. The session token of an account no longer contains its password hash (#2921)
+- **Outbound HTTPS certificate verification** - Webhooks, integrations and other outbound HTTPS requests now verify the server certificate. In the default `warn` mode a failing certificate is logged and counted, and the request still goes through (#4033)
+- **List sync connections and screening** - List sync connections to the source database use verified TLS by default, private and internal addresses are refused unless an operator allows them, and contacts a sync adds are screened like a manual import (#4211, #4213)
 
 ### Upgrade Notes
 
-- The upgrade moves every Octeth container to the `octeth/oempro:v6.0.8` image and recreates it. This signs out every user and administrator of the classic user area and admin area (their sessions are files inside the container), and restarts the background workers and cron. The new interface keeps its sessions in Redis and is not affected. Plan the upgrade for a quiet period. If your `docker-compose.override.yml` pins an `octeth/oempro` image tag, change it to `v6.0.8` by hand, and redeploy dedicated MTA hosts with `cli/sendengine-deploy-to-server.sh`.
-- `oempro_ui` is rebuilt on your server from `php:8.4.28-apache`. The upgrade pulls this new base image automatically.
-- **Logstash pipeline sample on the staff Bounces screen:** the sample now reads `/var/log/pmta/bounces.csv`, the file the PowerMTA accounting sample on the same screen writes. Earlier versions printed `/var/log/pmta/bounces-*.csv`, which matches no file, so a pipeline copied from the screen read no bounces and logged no error. If you set up Logstash from that sample, change the `path` in its `file` input to `[ "/var/log/pmta/bounces.csv" ]` and restart Logstash.
-- **Password storage:** each account's stored password is upgraded at its first password sign-in after this release. That sign-in ends the account's other open sessions once, team member sessions of the account included. Remembered browsers stay signed in. Do not roll back to an earlier version after the upgrade: an account that has been upgraded cannot sign in there until its password is reset. If you set passwords with your own SQL, set `PasswordAlgo` to `NULL` in the same statement, or use `./cli/octeth.sh admin:change-password` and `user.update` instead (#2921)
+- **New image** - The upgrade moves every Octeth container to the `octeth/oempro:v6.0.8` image and recreates it. This signs out every user and administrator of the classic user area and admin area (their sessions are files inside the container), and restarts the background workers and cron. The new interface keeps its sessions in Redis and is not affected. Plan the upgrade for a quiet period. If your `docker-compose.override.yml` pins an `octeth/oempro` image tag, change it to `v6.0.8` by hand, and redeploy dedicated MTA hosts with `cli/sendengine-deploy-to-server.sh`.
+- **New interface image** - `oempro_ui` is rebuilt on your server from `php:8.4.28-apache`. The upgrade pulls this new base image automatically.
+- **Password storage** - Each account's stored password is upgraded at its first password sign-in after this release. That sign-in ends the account's other open sessions once, team member sessions of the account included. Remembered browsers stay signed in. Do not roll back to an earlier version after the upgrade: an account that has been upgraded cannot sign in there until its password is reset. If you set passwords with your own SQL, set `PasswordAlgo` to `NULL` in the same statement, or use `./cli/octeth.sh admin:change-password` and `user.update` instead (#2921)
+- **Outbound certificate checks** - The upgrade adds `OUTBOUND_TLS_VERIFY=warn`. Requests to a server with a self-signed, expired or otherwise untrusted certificate still go through, and each one is logged as "TLS certificate verification failed" and counted in the `oempro_outbound_tls_failures_total` metric. A later release changes the default to `enforce`, which fails those requests, so fix or replace the endpoints the log names before then. See "Outbound TLS Certificate Verification" in [Octeth Configuration](/v6.0.8/getting-started/octeth-configuration) (#4033)
+- **Sender domains of new accounts** - Accounts younger than 30 days now have a newly verified sender domain held for approval when it imitates a protected brand, is younger than 30 days or its age is unknown. Set `SENDER_DOMAIN_GATES_NEW_ACCOUNT_DAYS=0` in `.oempro_env` to keep the earlier behavior, and list your own brands in `SENDER_DOMAIN_PROTECTED_BRANDS` (#3083)
+- **Accounts pending review** - Accounts that are not Trusted can no longer send SMS or auto responders. Approve such accounts before the upgrade if they should keep sending. The query is in the [API behavior changes](/v6.0.8/api-reference/behavior-changes#account-review) (#3088)
+- **Whole-domain suppression rows take effect** - Existing `*@domain` suppression rows added by an administrator or a user start suppressing the whole domain after the upgrade. List them with the query in the [API behavior changes](/v6.0.8/api-reference/behavior-changes#suppression) and delete any that should not block a whole domain before upgrading (#3662)
+- **List syncs are converted** - Existing list syncs are converted to the new list sync on the first sync run after the upgrade. A sync that reads a MySQL server on your own network or in a container needs that host in `LIST_SYNC_ALLOWED_HOSTS` before the upgrade, or the converted sync fails and pauses. After the upgrade, check each converted sync on the list's Sync tab (#4106, #4211)
+- **Media in S3** - If you store media in Amazon S3, check that the access key may read and delete objects, not only write them, and run Test connection in Settings, Uploads and media. Uploaded files are no longer public in the bucket, and are served through Octeth. If the Media library file size limit is still the old 10,240 byte default, raise it (#4112)
+- **Bounce processing sample** - The log pipeline sample on the staff Bounces screen now reads `/var/log/pmta/bounces.csv`, the file the accounting sample on the same screen writes. Earlier versions printed `/var/log/pmta/bounces-*.csv`, which matches no file, so a pipeline copied from the screen read no bounces and logged no error. If you set up a pipeline from that sample, change the `path` in its `file` input to `[ "/var/log/pmta/bounces.csv" ]` and restart it (#4163)
+- **ScheduledPull time windows move with daylight saving time** - A ScheduledPull journey with a time window and no journey Timezone opens and closes at the same local account time all year. During summer time it runs one hour earlier in UTC than before. Set the journey's Timezone to pin a window to a specific zone (#4136)
 
 ### Deprecations
 
