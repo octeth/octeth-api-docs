@@ -1,0 +1,509 @@
+# Webhooks for Account Events and Subscriptions
+
+The new interface can tell another system when something happens to your customers: a new
+user signs up or signs in, creates their first list, sends their first campaign, hits a
+sending limit, an account is disabled, flagged for abuse or deleted, or a subscription
+starts, changes plan, is canceled, or falls behind on payment.
+You give it one URL, for example an n8n workflow, and it sends a signed JSON request to that
+URL for every event you pick.
+
+Use it to add new users to your CRM, start an onboarding sequence, post a message in Slack,
+or provision something in another system, without changing Octeth itself.
+
+::: info
+This is one webhook for you, the operator of the platform. It is separate from the webhooks
+your customers set up for their own lists and subscribers in the classic interface.
+:::
+
+## Before you start
+
+- The webhook is **off by default**. Nothing is recorded or sent until you turn it on.
+- The account events work whether or not the [billing system](./billing-setup) is on. The
+  subscription events exist only when billing is on.
+- Account, activation and sending events (sign-up, sign-in, first-time milestones, finished
+  campaigns, sending limits, deletion, disabling and abuse flags) are recorded by Octeth itself and picked up by the scheduled task, so they arrive within about two minutes.
+  Octeth records only the events ticked on this page.
+- Events are sent by the interface's scheduled task, which runs every minute in the new
+  interface container. No extra service is needed.
+
+## Setting it up
+
+1. Sign in to the staff area and choose **Settings**, then **Webhooks** in the left menu. The page is at
+   `/user/staff/webhooks` on a default install.
+2. Turn on **Send webhook events**.
+3. Enter the **Endpoint URL** that should receive the events.
+4. Tick the **events** you want. They are grouped as Account, Activation, Sending, Risk and Billing.
+5. Click **Save webhook settings**. The first save creates a **signing secret**.
+6. Under **Signing secret**, click **Reveal**, copy the secret and give it to your receiver
+   so it can check that each request came from your platform.
+7. Click **Send test event** to check the connection. The result appears straight away, and
+   the request shows in **Recent deliveries**.
+
+You can send a test event while the webhook is still off, which is a good way to check your
+endpoint before any real event is sent.
+
+### Which URLs are allowed
+
+- `https://` to any address.
+- `http://` only to an endpoint on the same server or on a private network, for example an
+  n8n container next to Octeth at `http://n8n:5678/webhook/...`. Anything on the public
+  internet must use `https://`.
+- Link-local and cloud metadata addresses (such as `169.254.169.254`) are always refused.
+
+The address is checked again before every request, and redirects are not followed. Point the
+URL at the final address, not at one that redirects.
+
+## The events
+
+| Event | Sent when |
+|---|---|
+| `user.signed_up` | A user account is created: the sign-up form, Google sign-up, a staff member, the classic admin area, the API (`user.create`), SSO, or the classic public sign-up page. Before v6.0.8 only the sign-up form and Google sign-up sent it |
+| `user.login` | A user signs in with a password, with Google, through SSO, or on the new interface (added in v6.0.8). Using an API key does not send it |
+| `user.deleted` | A user account is deleted (added in v6.0.8) |
+| `user.first_list_created` | A user creates their first list (added in v6.0.8) |
+| `user.first_subscribers_imported` | A user's first subscriber import completes (added in v6.0.8) |
+| `user.sender_domain_verified` | A sender domain passes verification and is ready to send from (added in v6.0.8) |
+| `user.first_campaign_sent` | A user's first campaign finishes sending (added in v6.0.8) |
+| `user.first_journey_sent` | A journey's first email to go out for its owner is accepted for delivery (added in v6.0.8) |
+| `user.first_gateway_send` | A user's first email through the email gateway is accepted for delivery (added in v6.0.8) |
+| `campaign.sent` | Any campaign finishes sending (added in v6.0.8) |
+| `user.limit_reached` | A user hits a sending limit, at most once per limit and period (added in v6.0.8) |
+| `user.suspended` | A user account is disabled, by an administrator or by an abuse check (added in v6.0.8) |
+| `user.reactivated` | A disabled user account is enabled again (added in v6.0.8) |
+| `user.account_flagged` | An abuse check, for example the peakmonitor plug-in, suspends an account (added in v6.0.8) |
+| `account_review.pending` | A new account waits for review (added in v6.0.8) |
+| `account_review.plan_changed` | An account that waits for review changes plan (added in v6.0.8) |
+| `account_review.domain_verified` | An account that waits for review verifies its first sender domain (added in v6.0.8) |
+| `account_review.blocked_send` | An account that waits for review tries to send for the first time (added in v6.0.8) |
+| `subscription.activated` | A new subscription starts, or a subscription that was past due or suspended becomes active again |
+| `subscription.plan_changed` | A subscription moves to another plan |
+| `subscription.cancel_scheduled` | A cancellation is scheduled for the end of the billing period |
+| `subscription.cancel_unscheduled` | A scheduled cancellation is undone |
+| `subscription.canceled` | A subscription ends |
+| `subscription.past_due` | A renewal payment fails |
+| `subscription.suspended` | An account is suspended after its payment retries run out |
+
+An ordinary renewal of an active subscription sends nothing. Add-on changes, invoices and
+successful payments are not sent.
+
+## What a request looks like
+
+Every event is an HTTP `POST` with a JSON body and these headers:
+
+| Header | Value |
+|---|---|
+| `Content-Type` | `application/json` |
+| `X-Octeth-Event` | The event type, for example `user.signed_up` |
+| `X-Octeth-Delivery` | The event ID, the same as `id` in the body |
+| `X-Octeth-Signature` | `t=<unix time>,v1=<signature>`, see [Checking the signature](#checking-the-signature) |
+
+The body always has the same four fields:
+
+```json
+{
+  "id": "01J9Z6K3W8B4N5Q2R7T1V0X9YA",
+  "type": "user.signed_up",
+  "occurred_at": "2026-10-01T12:00:00Z",
+  "data": { }
+}
+```
+
+- `id` is unique per event. Use it to ignore an event you have already handled.
+- `occurred_at` is when the event happened, in UTC.
+- `data` depends on the event type, as shown below. `user_id` is the customer's user ID in
+  Octeth.
+- Every account event's `data` (the `user.*` events) starts with the same five fields:
+  `user_id`, `email`, `username`, `name` and `user_group_id`. A field Octeth does not have is
+  `null`.
+
+### `user.signed_up`
+
+```json
+"data": {
+  "user_id": 1042,
+  "email": "alice@acme.com",
+  "username": "alice@acme.com",
+  "name": "Alice Anderson",
+  "user_group_id": 3,
+  "company": "Acme Inc",
+  "signed_up_at": "2026-10-01T12:00:00Z",
+  "attribution": {
+    "ref": "integration-ghost",
+    "utm_source": "ghost-docs",
+    "utm_medium": null,
+    "utm_campaign": null,
+    "utm_content": null,
+    "utm_term": null,
+    "referrer": "https://ghost.example/docs/integrations?src=nav"
+  },
+  "source": "ui",
+  "signup_ip": "203.0.113.9"
+}
+```
+
+`source` says how the account was created: `ui` (the new interface's sign-up form or Google
+sign-up), `admin` (a staff member in the new interface, or the classic admin area), `api`
+(`user.create` with an admin API key), `sso`, or `signup` (the classic public sign-up page).
+`signup_ip` is the address recorded for the sign-up, or `null`. `username`, `user_group_id`,
+`source` and `signup_ip` were added in v6.0.8.
+
+`attribution` says where the sign-up came from. It is read from the first visit to the registration
+page in the visitor's browser session that carries any of these values: the `ref`, `utm_source`,
+`utm_medium`, `utm_campaign`, `utm_content` and `utm_term` query parameters of that page's URL, and
+the page that linked to it (`referrer`, the full URL cut to 255 characters). The other values are
+cut to 100 characters. A sign-up with Google started from the registration page carries it too.
+Every key is always present, and a value that was not captured is `null`. A visit to the sign-in
+page is not recorded, a referrer on your own installation's domain is left out, and browsers and
+email clients often send no referrer. The values are typed by the visitor, so treat them as
+untrusted text. Added in v6.0.8.
+
+::: warning
+This event sends the new user's email address, name and company to your URL. Make sure the
+receiving system is one you are allowed to share that data with.
+:::
+
+### `user.login`
+
+```json
+"data": {
+  "user_id": 1042,
+  "email": "alice@acme.com",
+  "username": "alice@acme.com",
+  "name": "Alice Anderson",
+  "user_group_id": 3,
+  "method": "password",
+  "ip": "203.0.113.9"
+}
+```
+
+`method` is `password` (the classic sign-in, or the `user.login` API with a username and
+password), `ui` (the new interface's password sign-in), `google` (Google sign-in on the new
+interface) or `sso`. `ip` is the client address, or `null`. An integration that exchanges an
+API key for a session sends nothing. Added in v6.0.8.
+
+::: warning
+This event sends the user's email address and IP address on every sign-in. Make sure the
+receiving system is one you are allowed to share that data with, and use an `https://` URL.
+:::
+
+### `user.deleted`
+
+`data` holds the five common fields, read just before the account was deleted, and nothing
+else. It is sent only for an account that was really deleted. Added in v6.0.8.
+
+### `user.suspended` and `user.reactivated`
+
+```json
+"data": {
+  "user_id": 1042,
+  "email": "alice@acme.com",
+  "username": "alice@acme.com",
+  "name": "Alice Anderson",
+  "user_group_id": 3,
+  "previous_status": "Enabled",
+  "actor": "admin",
+  "admin_id": 1
+}
+```
+
+`previous_status` is the account status before the change. `actor` is `admin` for a change an
+administrator made (`admin_id` is that administrator's ID when Octeth knows it, otherwise
+`null`) or `system` for an abuse check (`admin_id` is `null`). A change between two statuses
+that both stop the account sends nothing. Added in v6.0.8.
+
+### `user.account_flagged`
+
+```json
+"data": {
+  "user_id": 1042,
+  "email": "alice@acme.com",
+  "username": "alice@acme.com",
+  "name": "Alice Anderson",
+  "user_group_id": 3,
+  "reason": "Bounce rate 18% over the last hour",
+  "plugin": "peakmonitor"
+}
+```
+
+Sent together with `user.suspended` when an abuse check suspends an account. `plugin` is the
+check that decided, `reason` is what it saw. Added in v6.0.8.
+
+### First-time events
+
+Each "first" event is sent once per account, ever. Accounts that already did the thing before
+the upgrade to v6.0.8 are recorded during the upgrade and never send it. Octeth records the
+milestone even while the event is not ticked, so turning the event on later does not announce
+a first that happened earlier. Every one carries the five common fields, plus:
+
+- `user.first_list_created`: `list_id`, `list_name`.
+- `user.first_subscribers_imported`: `list_id`, `imported_count`.
+- `user.first_campaign_sent`: `campaign_id`, `campaign_name`, `total_recipients`. A campaign
+  in which every recipient failed is not a sent campaign.
+- `user.first_journey_sent`: `journey_id`, `journey_name`.
+- `user.first_gateway_send`: `domain`, the sender domain of that email. Journey emails go out
+  through the email gateway too, so an account whose first gateway email came from a journey
+  sends both this event and `user.first_journey_sent`.
+
+Added in v6.0.8.
+
+### `user.sender_domain_verified`
+
+`data` holds the five common fields, `domain_id` and `domain`. It is sent every time a domain
+becomes ready to send from after verification, not only the first time. Added in v6.0.8.
+
+### `campaign.sent`
+
+```json
+"data": {
+  "user_id": 1042,
+  "email": "alice@acme.com",
+  "username": "alice@acme.com",
+  "name": "Alice Anderson",
+  "user_group_id": 3,
+  "campaign_id": 881,
+  "campaign_name": "Spring roast launch",
+  "total_recipients": 12000,
+  "total_sent": 11940,
+  "total_failed": 60
+}
+```
+
+A recurring campaign sends it for each run. Added in v6.0.8.
+
+### `user.limit_reached`
+
+```json
+"data": {
+  "user_id": 1042,
+  "email": "alice@acme.com",
+  "username": "alice@acme.com",
+  "name": "Alice Anderson",
+  "user_group_id": 3,
+  "limit_type": "gateway_daily",
+  "limit": 5000,
+  "used": 5000,
+  "period": "2026-11-26"
+}
+```
+
+`limit_type` is `gateway_daily`, `gateway_monthly` or `gateway_lifetime` (email gateway
+sends), `campaign_emails_daily` or `campaign_emails_monthly` (campaign emails) or
+`campaigns_monthly` (number of campaigns). `period` is the day (`YYYY-MM-DD`), the month
+(`YYYY-MM`) or `lifetime`. It is sent once per user, limit type and period, however many sends
+the limit refuses. `used` is what the user had used when the limit stopped a send. Added in
+v6.0.8.
+
+### `subscription.activated`
+
+```json
+"data": {
+  "user_id": 1042,
+  "subscription_id": 311,
+  "plan": { "key": "plan.free", "name": "Free" },
+  "previous_status": null
+}
+```
+
+`previous_status` is `null` for a new subscription, or `past_due` or `suspended` when a
+subscription recovers after a successful payment.
+
+### `subscription.plan_changed`
+
+```json
+"data": {
+  "user_id": 1042,
+  "subscription_id": 311,
+  "direction": "upgrade",
+  "from_plan": { "key": "plan.free", "name": "Free" },
+  "to_plan": { "key": "plan.growth", "name": "Growth" }
+}
+```
+
+`direction` is `upgrade` or `downgrade` when the price changes, and `switch` when the
+customer moves to a plan with the same price.
+
+### `subscription.cancel_scheduled` and `subscription.cancel_unscheduled`
+
+```json
+"data": {
+  "user_id": 1042,
+  "subscription_id": 311,
+  "cancels_at": "2026-11-01T00:00:00Z",
+  "actor": "customer"
+}
+```
+
+`cancel_unscheduled` has the same fields without `cancels_at`. `actor` is `customer` when
+the customer did it, `staff` when someone on your team did it from the staff area, and
+`system` when a scheduled job did it.
+
+### `subscription.canceled`
+
+```json
+"data": {
+  "user_id": 1042,
+  "subscription_id": 311,
+  "reason": "period_end"
+}
+```
+
+`reason` is `immediate` (canceled straight away), `period_end` (a scheduled cancellation
+took effect) or `dunning` (the account stayed suspended past the grace period).
+
+### `subscription.past_due`
+
+```json
+"data": {
+  "user_id": 1042,
+  "subscription_id": 311,
+  "invoice_id": 5120,
+  "amount": { "amount_cents": 4900, "currency": "usd" }
+}
+```
+
+`amount` is what the customer owes on the unpaid renewal invoice, after any account balance.
+`invoice_id` and `amount` are `null` if no open renewal invoice was found.
+
+### `subscription.suspended`
+
+```json
+"data": {
+  "user_id": 1042,
+  "subscription_id": 311
+}
+```
+
+### `account_review.*`
+
+```json
+"data": {
+  "user_id": 1042,
+  "email": "alice@acme.com",
+  "name": "Alice Anderson",
+  "event_at": "2026-11-25T12:00:00Z",
+  "review_url": "https://example.com/user/staff/customers/1042?tab=review",
+  "domain": "acme.com"
+}
+```
+
+Each event is sent at most once per account. `email` and `name` are `null` when the account could not be read. `account_review.plan_changed` carries `user_group_id`, `account_review.domain_verified` carries `domain` and `account_review.blocked_send` carries `channel`. `account_review.pending` carries none of the three.
+
+### `webhook.test`
+
+Sent only by the **Send test event** button.
+
+```json
+"data": {
+  "message": "This is a test event sent from the Webhooks settings page."
+}
+```
+
+## Checking the signature
+
+The signature proves that a request came from your platform and was not changed on the way.
+To check it:
+
+1. Read the raw request body exactly as it arrived. Do not parse and re-encode the JSON
+   first, because that changes the bytes.
+2. Split `X-Octeth-Signature` into `t` and `v1`.
+3. Calculate an HMAC-SHA256 of `<t>.<raw body>` with your signing secret, as lowercase hex.
+4. Compare it with `v1` using a constant-time comparison.
+5. Optionally reject requests whose `t` is more than a few minutes old, to stop replays.
+
+Node.js:
+
+```js
+const crypto = require('crypto');
+
+function verify(rawBody, header, secret) {
+  const parts = Object.fromEntries(header.split(',').map(p => p.split('=')));
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(`${parts.t}.${rawBody}`)
+    .digest('hex');
+  return parts.v1 && expected.length === parts.v1.length
+    && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(parts.v1));
+}
+```
+
+PHP:
+
+```php
+function verify(string $rawBody, string $header, string $secret): bool
+{
+    if (!preg_match('/^t=(\d+),v1=([0-9a-f]{64})$/', $header, $m)) {
+        return false;
+    }
+    $expected = hash_hmac('sha256', $m[1] . '.' . $rawBody, $secret);
+    return hash_equals($expected, $m[2]);
+}
+```
+
+## Delivery, retries and duplicates
+
+- Events are sent within about a minute, in the background. Signing up and billing actions
+  never wait for your endpoint.
+- Any `2xx` response counts as delivered. Respond quickly and do the slow work afterwards:
+  a request that takes longer than 5 seconds counts as a failure.
+- A failed delivery is retried after 1 minute, 5 minutes, 15 minutes, 1 hour, 3 hours,
+  6 hours and 12 hours. After 8 attempts (about 22 hours) the event is marked **Failed**.
+- An event can arrive more than once, for example when your endpoint handled it but the
+  response was lost. Use `id` to ignore repeats.
+- Events can arrive out of order when an earlier one is being retried. Use `occurred_at` if
+  order matters.
+- Account events are recorded by Octeth and picked up every minute, so they can arrive up to
+  two minutes after they happen. Order by `occurred_at`, not by arrival.
+- While the webhook is turned off, events that were already recorded wait and are sent once
+  you turn it on again.
+
+**Recent deliveries** on the Webhooks page lists the last 50 events with their status, number
+of attempts, the last response code and, for a failure, the error. Delivered events are kept
+for 30 days and failed ones for 90 days.
+
+### Rotating the secret
+
+Click **Rotate secret** if the secret may have leaked. The new secret is used from the next
+request on, so update your receiver straight away: until you do, it will reject every event,
+and those events will be retried as failures.
+
+## Example: n8n
+
+1. In n8n, create a workflow and add a **Webhook** node.
+2. Set **HTTP Method** to `POST` and choose a **Path**, for example `octeth`.
+3. Copy the node's **Production URL** and paste it into **Endpoint URL** on the Octeth
+   Webhooks page. Save, then activate the workflow in n8n.
+4. Click **Send test event** in Octeth. The workflow's executions list shows the request,
+   with the event in the body.
+5. Add a **Switch** node on `{{ $json.body.type }}` to branch per event, for example
+   `user.signed_up` to your CRM node, and `user.account_flagged` and `subscription.past_due`
+   to a Slack node.
+
+To check the signature in n8n, turn on the Webhook node's **Raw Body** option so the
+original bytes are available, and verify them in a **Code** node with the Node.js example
+above. On a self-hosted n8n the Code node can use the `crypto` module only when n8n runs
+with `NODE_FUNCTION_ALLOW_BUILTIN=crypto`.
+
+## Troubleshooting
+
+**The page warns that events are waiting to be sent.** Events are sent by the scheduled task
+in the new interface container. Check that the container is running and that its cron is
+working:
+
+```bash
+docker exec oempro_ui php /var/www/html/ui/artisan schedule:list
+docker logs --tail 50 oempro_ui
+```
+
+**Saving says the host could not be resolved.** The server running Octeth cannot look up that
+host name. Check the spelling, or, for a container on the same Docker network, use the name
+that network knows it by.
+
+**Every delivery fails with HTTP 401 or 403.** Your receiver is rejecting the request. If it
+checks the signature, make sure it has the current secret and verifies the raw body.
+
+**Deliveries fail with HTTP 301 or 302.** Your URL redirects, and redirects are not followed.
+Use the final URL, for example with `https://` instead of `http://`.
+
+**Account events never arrive, but the test event does.** Save the Webhooks page once: saving
+tells Octeth which account events to record. Then look for
+`Operator webhook events could not be claimed` in `docker logs oempro_ui`.
